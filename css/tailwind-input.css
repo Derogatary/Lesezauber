@@ -1,0 +1,10 @@
+@import "tailwindcss";
+
+/* Entspricht der bisherigen tailwind.config im <head> (CDN-Version) */
+@theme {
+  --color-brand-50: #f0f3ff;
+  --color-brand-100: #e0e7ff;
+  --color-brand-500: #6366f1;
+  --color-brand-600: #4f46e5;
+  --color-brand-700: #4338ca;
+}

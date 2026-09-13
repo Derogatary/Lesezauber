@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="de" class="h-full bg-slate-900">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>LeseZauber Pro</title>
+
+    <!-- PWA: installierbar machen -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#4f46e5">
+    <link rel="icon" href="icons/icon-192.png">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="LeseZauber">
+    <!-- Tailwind CSS: eigener Build statt CDN (schneller, kein Live-Compiling im Browser) -->
+    <link rel="stylesheet" href="css/tailwind.css">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="h-full flex items-center justify-center p-0 sm:p-4 bg-slate-900 font-sans antialiased select-none">
+
+    <!-- Mobile Screen Frame Container -->
+    <div id="appShell" class="w-full max-w-md md:max-w-3xl lg:max-w-5xl h-full sm:h-[90vh] bg-slate-50 sm:rounded-3xl shadow-2xl flex flex-col relative overflow-hidden border-0 sm:border-4 border-slate-800">
+
+        <!-- ================= VIEW 1: BIBLIOTHEK ================= -->
+        <main id="viewLibrary" class="flex-grow overflow-y-auto pb-24 px-4 pt-6 view-transition">
+            <header class="mb-6 flex justify-between items-center">
+                <div>
+                    <h1 class="text-2xl font-extrabold text-slate-900 flex items-center gap-2">
+                        <span>LeseZauber</span>
+                        <span class="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full uppercase tracking-wider font-bold">Pro</span>
+                    </h1>
+                    <p id="libraryGreeting" class="text-sm text-slate-500 font-semibold">Deine interaktive Kinderbuch-Welt</p>
+                    <p id="streakBadge" class="hidden text-xs font-bold text-amber-600 mt-0.5"></p>
+                </div>
+                <button onclick="app.nav.go('settings')" aria-label="Einstellungen öffnen" class="w-10 h-10 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-600 hover:bg-slate-100 shadow-sm transition active:scale-95">
+                    ⚙️
+                </button>
+            </header>
+
+            <!-- NEU: sanfte Backup-Erinnerung -->
+            <div id="backupReminder" class="hidden mb-4 bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-center justify-between gap-2">
+                <p class="text-xs text-amber-800 font-medium">💾 Lange kein Backup mehr gemacht.</p>
+                <div class="flex gap-2 flex-shrink-0">
+                    <button onclick="app.nav.go('settings')" class="text-xs bg-amber-600 text-white font-bold px-2.5 py-1 rounded-lg">Sichern</button>
+                    <button onclick="app.actions.dismissBackupReminder()" aria-label="Erinnerung schließen" class="text-xs text-amber-600 font-bold px-1">✕</button>
+                </div>
+            </div>
+
+            <!-- NEU: "Weiterlesen"-Karte fürs zuletzt gelesene Buch -->
+            <div id="continueReadingBar" class="mb-4"></div>
+
+            <!-- Profil-Auswahl (rein lokal, kein Login/Server) -->
+            <div class="mb-4 flex items-center gap-2">
+                <select id="profileSelect" onchange="app.actions.switchProfile(this.value)" class="flex-grow text-sm bg-white border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500 shadow-sm font-semibold text-slate-700">
+                </select>
+                <button onclick="app.actions.renameProfile(app.state.currentProfileId)" aria-label="Profil umbenennen" title="Profil umbenennen" class="w-10 h-10 flex-shrink-0 bg-white border border-slate-200 rounded-xl flex items-center justify-center text-slate-500 hover:bg-slate-50 shadow-sm">✏️</button>
+                <button onclick="app.actions.deleteProfile(app.state.currentProfileId)" aria-label="Profil löschen" title="Profil löschen" class="w-10 h-10 flex-shrink-0 bg-white border border-slate-200 rounded-xl flex items-center justify-center text-slate-500 hover:bg-red-50 hover:text-red-600 shadow-sm">🗑️</button>
+            </div>
+
+            <!-- Geteilte Start-Buttons für Kamera und Galerie -->
+            <div class="flex gap-3 mb-6">
+                <button onclick="app.actions.createBook()" class="flex-1 bg-white border-2 border-indigo-100 hover:border-indigo-300 rounded-2xl p-4 text-center transition cursor-pointer shadow-sm active:scale-95 group">
+                    <div class="bg-indigo-100 group-hover:bg-indigo-200 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-2 transition">
+                        <span class="text-2xl">📸</span>
+                    </div>
+                    <h3 class="text-sm font-bold text-indigo-900">Foto machen</h3>
+                    <p class="text-[10px] text-slate-500 mt-0.5">Seite für Seite scannen</p>
+                </button>
+                <div class="flex-1 relative bg-white border-2 border-emerald-100 hover:border-emerald-300 rounded-2xl p-4 text-center transition cursor-pointer shadow-sm active:scale-95 group">
+                    <input type="file" accept="image/*" multiple onchange="app.actions.createBookFromUpload(event)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+                    <div class="bg-emerald-100 group-hover:bg-emerald-200 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-2 transition">
+                        <span class="text-2xl">🖼️</span>
+                    </div>
+                    <h3 class="text-sm font-bold text-emerald-900">Galerie Import</h3>
+                    <p class="text-[10px] text-slate-500 mt-0.5">Mehrere Fotos wählen</p>
+                </div>
+            </div>
+
+            <!-- NEU: PDF-Import - dezenter dritter Weg unter den Hauptbuttons -->
+            <button onclick="app.actions.triggerPdfImport()" class="w-full mb-6 text-xs text-slate-500 hover:text-slate-700 font-semibold flex items-center justify-center gap-1.5 py-1">
+                <span>📄</span>
+                <span>Oder: PDF-Datei importieren</span>
+            </button>
+            <input id="pdfFileInput" type="file" accept="application/pdf" onchange="app.actions.createBookFromPdf(event)" class="hidden">
+
+            <section>
+                <div class="mb-4 flex gap-2">
+                    <input id="librarySearch" type="text" oninput="app.actions.debounceLibrarySearch()" placeholder="🔍 Buch suchen..." class="flex-grow text-sm bg-white border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500 shadow-sm">
+                    <select id="librarySort" onchange="app.render.library()" aria-label="Sortierung" class="text-sm bg-white border border-slate-200 rounded-xl px-2 py-2.5 focus:outline-none focus:border-indigo-500 shadow-sm">
+                        <option value="newest">Neueste</option>
+                        <option value="oldest">Älteste</option>
+                        <option value="title">A-Z</option>
+                    </select>
+                </div>
+                <h2 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3 px-1">Deine Bibliothek</h2>
+                <div id="libraryList" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    <!-- Dynamic Books get injected here -->
+                </div>
+            </section>
+        </main>
+
+        <!-- ================= VIEW 2: BUCH DETAIL & SEITEN ================= -->
+        <main id="viewBook" class="flex-grow overflow-y-auto pb-24 px-4 pt-6 view-hidden view-transition">
+            <header class="mb-4 flex items-center justify-between gap-2">
+                <button onclick="app.nav.go('lib')" class="p-2 -ml-2 text-slate-600 hover:text-slate-900 flex items-center gap-1 font-semibold text-sm flex-shrink-0">
+                    ❮ Bibliothek
+                </button>
+                <div class="flex items-center gap-2">
+                    <button onclick="app.actions.printBook()" aria-label="Buch drucken" title="Buch drucken" class="text-xs text-slate-600 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 px-2.5 py-1.5 rounded-lg font-bold transition">
+                        🖨️
+                    </button>
+                    <button onclick="app.actions.downloadBook(app.state.currentBookId)" class="text-xs text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1.5 rounded-lg font-bold transition">
+                        📥 Download
+                    </button>
+                    <button onclick="app.actions.confirmDeleteBook(app.state.currentBookId)" class="text-xs text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 px-2.5 py-1.5 rounded-lg font-bold transition">
+                        Löschen
+                    </button>
+                </div>
+            </header>
+
+            <div id="bookDetailHeader" class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 mb-6 flex gap-4 items-center">
+                <!-- Book Meta injected here -->
+            </div>
+
+            <div id="resumeBar" class="mb-4">
+                <!-- "Weiterlesen"-Button wird hier bei Bedarf injiziert -->
+            </div>
+
+            <!-- Mass-Action Bar -->
+            <div id="batchActionBar" class="mb-6 hidden">
+                <button onclick="app.actions.analyzeAllPending()" class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold py-3 px-4 rounded-xl shadow-lg hover:opacity-95 active:scale-98 transition flex items-center justify-center gap-2 magic-glow">
+                    <span>✨</span>
+                    <span>Alle unanalysierten Seiten auslesen</span>
+                </button>
+            </div>
+
+            <div class="flex justify-between items-center mb-3 px-1">
+                <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500">Enthaltene Seiten</h3>
+                <button onclick="app.actions.appendPageToBook()" class="text-xs bg-indigo-50 text-indigo-700 font-bold px-3 py-1.5 rounded-lg hover:bg-indigo-100 transition flex items-center gap-1">
+                    <span>+ Seite hinzufügen</span>
+                </button>
+            </div>
+
+            <div id="pagesGrid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                <!-- Page Cards injected here -->
+            </div>
+        </main>
+
+        <!-- ================= VIEW 3: CAMERA SCANNER ================= -->
+        <main id="viewScanner" class="flex-grow flex flex-col bg-black view-hidden view-transition absolute inset-0 z-50">
+            <div class="absolute top-0 inset-x-0 p-4 flex justify-between items-center z-20 bg-gradient-to-b from-black/80 to-transparent">
+                <button onclick="app.actions.cancelScanner()" aria-label="Kamera schließen" class="w-10 h-10 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center text-white active:scale-90 transition">
+                    ✕
+                </button>
+                <div class="bg-indigo-600/90 backdrop-blur-md text-white px-4 py-1.5 rounded-full font-bold text-xs shadow-lg">
+                    Buchseite fotografieren
+                </div>
+                <div class="w-10"></div>
+            </div>
+
+            <div class="flex-grow relative overflow-hidden flex items-center justify-center">
+                <video id="cameraVideo" autoplay playsinline class="w-full h-full object-cover"></video>
+                <!-- Framing Guide -->
+                <div class="absolute inset-8 border-2 border-white/40 rounded-2xl pointer-events-none flex items-center justify-center">
+                    <p class="text-white/60 text-xs bg-black/40 px-3 py-1 rounded-full backdrop-blur-sm">Text gut lesbar ausrichten</p>
+                </div>
+            </div>
+
+            <div class="p-6 bg-slate-950 flex justify-center items-center gap-6">
+                <button onclick="app.actions.capturePhoto()" class="w-20 h-20 bg-white rounded-full border-4 border-slate-300 shadow-2xl flex items-center justify-center active:scale-90 transition">
+                    <div class="w-16 h-16 bg-indigo-600 rounded-full border-2 border-white"></div>
+                </button>
+            </div>
+        </main>
+
+        <!-- ================= VIEW 4: INTERAKTIVER READER ================= -->
+        <main id="viewReader" class="flex-grow overflow-y-auto pb-24 px-4 pt-6 view-hidden view-transition md:max-w-2xl md:mx-auto md:w-full">
+            <header class="mb-4 flex items-center justify-between">
+                <button onclick="app.nav.go('book')" class="p-2 -ml-2 text-slate-600 hover:text-slate-900 flex items-center gap-1 font-semibold text-sm">
+                    ❮ Übersicht
+                </button>
+                <div id="readerPageCounter" class="text-xs font-bold bg-slate-200 text-slate-700 px-3 py-1 rounded-full">
+                    Seite 1
+                </div>
+            </header>
+
+            <!-- NEU: Persona nur fürs Lesen umschalten -->
+            <div class="mb-3 flex items-center gap-2">
+                <label for="readerPersonaSelect" class="text-[11px] font-bold text-slate-500 flex-shrink-0">🎭 Erzähler:</label>
+                <select id="readerPersonaSelect" onchange="app.actions.switchReadingPersona(this.value)" class="flex-grow text-xs bg-white border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:border-indigo-500">
+                </select>
+            </div>
+
+            <!-- Auto-Vorlese-Modus: liest Seite für Seite automatisch vor -->
+            <button id="btnAutoRead" onclick="app.tts.toggleAutoRead()" class="w-full mb-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold py-3 rounded-xl shadow-md hover:opacity-95 active:scale-98 transition flex items-center justify-center gap-2">
+                ▶️ Buch automatisch vorlesen
+            </button>
+
+            <!-- NEU: Vollbild-Vorlese-Modus (nur Bild, keine Bedienelemente) -->
+            <button onclick="app.actions.toggleFocusMode()" class="w-full mb-4 bg-slate-800 hover:bg-slate-900 text-white font-bold py-2.5 rounded-xl text-sm transition flex items-center justify-center gap-2">
+                🌙 Vollbild-Vorlese-Modus
+            </button>
+
+            <!-- Image Container -->
+            <div class="relative bg-black rounded-2xl overflow-hidden shadow-md mb-4 max-h-64 flex items-center justify-center">
+                <img id="readerImg" class="w-full h-full object-contain" src="" alt="Buchseite">
+            </div>
+
+            <!-- Tab Switcher (Original / Erstleser / Zauberer) -->
+            <div class="flex bg-slate-200 p-1 rounded-xl mb-4 gap-1 text-xs font-bold">
+                <button id="tabOriginal" onclick="app.readerUI.setTab('original')" class="flex-1 py-2 rounded-lg text-center bg-white shadow-sm text-indigo-900">
+                    📖 Original
+                </button>
+                <button id="tabErstleser" onclick="app.readerUI.setTab('erstleser')" class="flex-1 py-2 rounded-lg text-center text-slate-600 hover:text-slate-900">
+                    🎈 Erstleser (5J)
+                </button>
+                <button id="tabQuiz" onclick="app.readerUI.setTab('quiz')" class="flex-1 py-2 rounded-lg text-center text-slate-600 hover:text-slate-900">
+                    🧙‍♂️ Frag KI
+                </button>
+            </div>
+
+            <!-- Tab Content 1: Original Text -->
+            <div id="contentOriginal" class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+                <div class="flex justify-between items-start">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500">Gedruckter Text</h3>
+                    <button onclick="app.tts.speakCurrentText()" aria-label="Text vorlesen" class="bg-indigo-100 hover:bg-indigo-200 text-indigo-700 p-2 rounded-full transition text-lg leading-none">
+                        🔊
+                    </button>
+                </div>
+                <p id="readerOriginalText" class="text-slate-800 leading-relaxed font-medium text-base">Lade Text...</p>
+            </div>
+
+            <!-- Tab Content 2: Erstleser Modus -->
+            <div id="contentErstleser" class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-4 hidden">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-indigo-500">Vereinfacht für Kinder</h3>
+                        <p class="text-[11px] text-slate-500">Mit Emojis für schwierige Wörter</p>
+                    </div>
+                    <button onclick="app.tts.speakCurrentText()" aria-label="Vereinfachten Text vorlesen" class="bg-indigo-100 hover:bg-indigo-200 text-indigo-700 p-2 rounded-full transition text-lg leading-none">
+                        🔊
+                    </button>
+                </div>
+                <p id="readerErstleserText" class="text-slate-800 leading-relaxed font-medium text-lg bg-indigo-50/50 p-4 rounded-xl border border-indigo-100">Lade Text...</p>
+            </div>
+
+            <!-- Tab Content 3: Quiz & KI Frag den Zauberer -->
+            <div id="contentQuiz" class="space-y-4 hidden">
+                <!-- AI Image Description -->
+                <div class="bg-purple-50 p-4 rounded-2xl border border-purple-100">
+                    <h4 class="text-xs font-bold text-purple-800 uppercase tracking-wider mb-1">🖼️ Bildbeschreibung</h4>
+                    <p id="readerImageDesc" class="text-sm text-purple-950 leading-relaxed">Lade Beschreibung...</p>
+                </div>
+
+                <!-- Quiz Card -->
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-2">
+                    <h4 class="text-xs font-bold text-amber-600 uppercase tracking-wider">❓ Rätselfrage</h4>
+                    <p id="readerQuizQ" class="text-sm font-bold text-slate-800">Lade Frage...</p>
+                    <button id="btnShowQuizA" onclick="document.getElementById('readerQuizA').classList.toggle('hidden')" class="text-xs bg-amber-100 text-amber-800 px-3 py-1.5 rounded-lg font-bold hover:bg-amber-200 transition">
+                        Antwort verraten
+                    </button>
+                    <p id="readerQuizA" class="text-sm text-emerald-700 font-medium bg-emerald-50 p-2 rounded-lg border border-emerald-100 hidden">Lade Antwort...</p>
+                </div>
+
+                <!-- Chat Box -->
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                    <h4 class="text-xs font-bold text-indigo-600 uppercase tracking-wider">💬 Frag den Zauberer zum Bild</h4>
+                    <div id="chatHistory" class="space-y-2 max-h-36 overflow-y-auto text-xs">
+                        <!-- Chat messages injected here -->
+                    </div>
+                    <div class="flex gap-2">
+                        <input id="chatInput" type="text" placeholder="Z.B. Was macht der Bär?" class="flex-grow text-xs bg-slate-100 border border-slate-300 rounded-xl px-3 py-2 focus:outline-none focus:border-indigo-500">
+                        <button onclick="app.actions.askWizard()" class="bg-indigo-600 text-white font-bold text-xs px-4 py-2 rounded-xl hover:bg-indigo-700 transition">
+                            Fragen
+                        </button>
+                    </div>
+                </div>
+
+                <!-- NEU: Verständnisfragen zum GESAMTEN Buch - nur auf der letzten Seite sichtbar -->
+                <div id="bookQuizSection" class="hidden space-y-3">
+                    <div class="bg-indigo-50 p-4 rounded-2xl border border-indigo-100 text-center space-y-2">
+                        <p class="text-sm font-bold text-indigo-900">🎉 Du hast das ganze Buch geschafft!</p>
+                        <button id="bookQuizGenerateBtn" onclick="app.actions.generateBookQuiz()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-4 py-2 rounded-xl transition">
+                            Verständnisfragen zum Buch erstellen
+                        </button>
+                    </div>
+                    <div id="bookQuizContainer" class="space-y-2"></div>
+                    <button onclick="app.actions.generateBookQuiz(true)" class="text-[11px] text-slate-500 hover:text-slate-600 underline mx-auto block">
+                        Neu erstellen
+                    </button>
+                </div>
+            </div>
+        </main>
+
+        <!-- ================= VOLLBILD-VORLESE-MODUS ================= -->
+        <div id="viewFocus" class="hidden absolute inset-0 z-40 bg-black flex flex-col">
+            <div class="absolute top-0 inset-x-0 p-4 flex justify-between items-center z-10 bg-gradient-to-b from-black/70 to-transparent">
+                <button onclick="app.actions.toggleFocusMode()" aria-label="Vollbild-Vorlese-Modus verlassen" class="w-10 h-10 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center text-white active:scale-90 transition">✕</button>
+                <div id="focusPageCounter" class="text-white text-xs font-bold bg-black/40 px-3 py-1 rounded-full"></div>
+                <div class="w-10"></div>
+            </div>
+            <div class="flex-grow flex items-center justify-center overflow-hidden">
+                <img id="focusImg" class="max-w-full max-h-full object-contain" src="" alt="Buchseite">
+            </div>
+            <div class="p-6 flex justify-center">
+                <button id="focusPlayBtn" onclick="app.tts.toggleAutoRead()" aria-label="Vorlesen starten oder stoppen" class="w-16 h-16 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center text-white text-2xl active:scale-90 transition">▶️</button>
+            </div>
+        </div>
+
+        <!-- ================= VIEW 5: EINSTELLUNGEN ================= -->
+        <main id="viewSettings" class="flex-grow overflow-y-auto pb-24 px-4 pt-6 view-hidden view-transition">
+            <header class="mb-6 flex items-center justify-between">
+                <button onclick="app.nav.go('lib')" class="p-2 -ml-2 text-slate-600 hover:text-slate-900 flex items-center gap-1 font-semibold text-sm">
+                    ❮ Zurück
+                </button>
+                <h1 class="text-lg font-bold text-slate-900">Einstellungen</h1>
+                <div class="w-8"></div>
+            </header>
+
+            <div class="space-y-6">
+                <!-- API Key Config -->
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-500">
+                        Google Gemini API Key
+                    </label>
+                    <input id="inputApiKey" type="password" placeholder="AIzaSy..." class="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 font-mono focus:outline-none focus:border-indigo-500">
+                    <div class="flex justify-between items-center pt-1">
+                        <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-xs text-indigo-600 font-semibold hover:underline flex items-center gap-1">
+                            <span>🔑 Kostenlosen Key holen</span>
+                            <span>↗</span>
+                        </a>
+                        <span class="text-[10px] text-slate-500">Gemini 3.6 Flash</span>
+                    </div>
+                </div>
+
+                <!-- NEU: Hintergrund-Vorbereitung (opt-in) -->
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-2">
+                    <div class="flex items-center justify-between">
+                        <label for="toggleBackgroundPregen" class="text-xs font-bold uppercase tracking-wider text-slate-500">
+                            Im Hintergrund vorbereiten
+                        </label>
+                        <input id="toggleBackgroundPregen" type="checkbox" onchange="app.settingsConfig.toggleBackgroundPregen(this.checked)" class="w-5 h-5 accent-indigo-600">
+                    </div>
+                    <p class="text-[11px] text-slate-500">Erstellt automatisch fehlende Erzähler-Varianten und Buch-Quiz, wenn gerade nichts anderes läuft. Verbraucht zusätzliche KI-Anfragen im Hintergrund - bei knappem Tageslimit lieber ausgeschaltet lassen.</p>
+                    <p id="pregenStatus" class="text-[11px] text-slate-500 font-semibold"></p>
+                </div>
+
+                <!-- Mistral als optionaler Fallback -->
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-500">
+                        Mistral-Fallback (optional)
+                    </label>
+                    <p class="text-[11px] text-slate-500">Springt nur ein, wenn Gemini mal ausfällt oder das Tageslimit erreicht ist.</p>
+                    <input id="inputMistralKey" type="password" placeholder="Mistral API Key (optional)" class="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 font-mono focus:outline-none focus:border-indigo-500">
+                    <a href="https://console.mistral.ai/" target="_blank" class="text-xs text-indigo-600 font-semibold hover:underline flex items-center gap-1">
+                        <span>🔑 Kostenlosen Mistral-Key holen</span>
+                        <span>↗</span>
+                    </a>
+                </div>
+
+                <!-- Persona Selection -->
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-500">
+                        Erzähler-Persona
+                    </label>
+                    <!-- Optionen werden jetzt dynamisch aus js/config.js befuellt (siehe render/settings.js) -->
+                    <select id="selectPersona" class="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500 font-medium">
+                    </select>
+                </div>
+
+                <!-- System TTS Voice Selection -->
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-500">
+                        Vorlese-Stimme (Gerät)
+                    </label>
+                    <select id="selectVoice" class="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500 font-medium">
+                        <option value="">Standard-Systemstimme</option>
+                    </select>
+                    <p class="text-[11px] text-slate-500">Zeigt alle auf deinem Gerät installierten Stimmen - auch andere Sprachen (z.B. US-/UK-Englisch), praktisch für fremdsprachige Bücher. Tipp: Auf iOS/Android lassen sich in den Systemeinstellungen weitere Stimmen herunterladen.</p>
+                </div>
+
+                <!-- Speicherplatz-Nutzung -->
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-2">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-500">
+                        Speicherplatz
+                    </label>
+                    <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                        <div id="storageBar" class="bg-indigo-500 h-full transition-all" style="width: 0%"></div>
+                    </div>
+                    <p id="storageInfo" class="text-[11px] text-slate-500">Wird ermittelt...</p>
+                </div>
+
+                <!-- Backup: Export & Import -->
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-500">
+                        Bibliothek sichern
+                    </label>
+                    <p class="text-[11px] text-slate-500">Speichert alle Bücher als Datei - zum Sichern oder Übertragen auf ein neues Gerät.</p>
+                    <div class="flex gap-2">
+                        <button onclick="app.actions.exportLibrary()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 rounded-xl text-sm transition">
+                            📤 Exportieren
+                        </button>
+                        <button onclick="app.actions.triggerImportLibrary()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 rounded-xl text-sm transition">
+                            📥 Importieren
+                        </button>
+                    </div>
+                    <input id="importFileInput" type="file" accept="application/json" onchange="app.actions.importLibrary(event)" class="hidden">
+                </div>
+
+                <button onclick="app.settingsConfig.save()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl shadow-lg transition active:scale-98">
+                    Einstellungen speichern
+                </button>
+            </div>
+        </main>
+
+        <!-- Dynamic Loader Overlay -->
+        <div id="loaderOverlay" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-50 flex flex-col items-center justify-center p-6 text-white hidden">
+            <div class="w-16 h-16 border-4 border-indigo-400 border-t-transparent rounded-full animate-spin mb-4"></div>
+            <h3 id="processTitle" class="text-lg font-bold">Verarbeite...</h3>
+            <p id="processSub" class="text-xs text-slate-300 mt-1">Bitte warten</p>
+            <button onclick="app.actions.cancelAnalysis()" class="mt-6 bg-red-500/20 hover:bg-red-500/40 border border-red-500/50 text-red-200 px-4 py-2 rounded-xl text-xs font-bold transition">
+                Vorgang abbrechen
+            </button>
+        </div>
+
+        <!-- Toast Notifications -->
+        <div id="toast" role="status" aria-live="polite" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-4 py-2.5 rounded-full shadow-2xl text-xs font-bold border border-slate-700 flex items-center gap-2 opacity-0 pointer-events-none transition-all duration-300 z-50">
+            <span id="toastIcon">ℹ️</span>
+            <span id="toastMsg">Meldung</span>
+            <button id="toastUndoBtn" onclick="app.ui.handleUndo()" class="hidden ml-1 underline text-indigo-300 hover:text-indigo-200">Rückgängig</button>
+        </div>
+
+    </div>
+
+    <!-- JavaScript Application Logic: aufgeteilt in Module unter /js -->
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>

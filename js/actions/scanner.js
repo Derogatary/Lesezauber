@@ -1,0 +1,261 @@
+import { app } from '../core.js';
+
+Object.assign(app.actions, {
+    cancelAnalysis() {
+        app.state.cancelAnalysis = true;
+        const sub = document.getElementById('processSub');
+        if (sub) sub.innerText = 'Abbruch wird eingeleitet...';
+    },
+
+    cancelScanner() {
+        this.stopCamera();
+        const book = app.library[app.state.currentBookId];
+        if (book && book.pages.length === 0) {
+            app.dbOps.deleteBook(app.state.currentBookId);
+            app.nav.go('lib');
+        } else {
+            app.nav.go('book');
+        }
+    },
+
+    // NEU: Sicherheitsabfrage vor dem Löschen eines ganzen Buches - anders
+    // als beim Löschen einer einzelnen Seite gibt es hier kein Rückgängig,
+    // das sollte man nicht versehentlich per Klick auslösen können.
+    confirmDeleteBook(bookId) {
+        const book = app.library[bookId];
+        if (!book) return;
+        const confirmed = confirm(`"${book.title}" endgültig löschen? Das kann NICHT rückgängig gemacht werden.`);
+        if (confirmed) {
+            app.dbOps.deleteBook(bookId);
+        }
+    },
+
+    createBook() {
+        if (!app.settings.apiKey) {
+            app.ui.toast('Bitte zuerst API Key eintragen!', '🔑');
+            app.nav.go('settings');
+            return;
+        }
+        const id = 'book_' + Date.now();
+        const newBook = { id, title: 'Neues Buch', author: 'Unbekannt', created: Date.now(), profileId: app.state.currentProfileId, pages: [] };
+        app.dbOps.saveBook(newBook);
+        app.state.currentBookId = id;
+        app.render.book(id);
+        this.startCamera();
+    },
+
+    async createBookFromUpload(e) {
+        const files = Array.from(e.target.files);
+        if (files.length === 0) return;
+
+        if (!app.settings.apiKey) {
+            app.ui.toast('Bitte zuerst API Key eintragen!', '🔑');
+            app.nav.go('settings');
+            e.target.value = '';
+            return;
+        }
+
+        const id = 'book_' + Date.now();
+        const newBook = { id, title: 'Neues Buch', author: 'Unbekannt', created: Date.now(), profileId: app.state.currentProfileId, pages: [] };
+        app.library[id] = newBook;
+        app.state.currentBookId = id;
+
+        files.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+        app.ui.showLoader('Importiere Bilder...', `Verarbeite 0 von ${files.length}`);
+
+        let skipped = 0;
+        for (let i = 0; i < files.length; i++) {
+            try {
+                const img = await app.utils.loadImageElement(files[i]);
+                const { full, thumb } = app.utils.createImageVariants(img, img.naturalWidth, img.naturalHeight);
+                newBook.pages.push({
+                    id: Date.now() + i,
+                    imgUrl: full,
+                    thumbUrl: thumb,
+                    status: 'pending',
+                    text: '', erstleserText: '', desc: '', quizQ: '', quizA: ''
+                });
+            } catch (err) {
+                // NEU: eine einzelne beschädigte/ungültige Datei darf nicht
+                // den kompletten Mehrfach-Import abbrechen - überspringen
+                // und mit den restlichen Dateien weitermachen.
+                console.error(`Datei "${files[i].name}" übersprungen:`, err);
+                skipped++;
+            }
+        }
+
+        if (skipped > 0) {
+            app.ui.toast(`${skipped} Datei(en) übersprungen (ungültiges Bild)`, '⚠️');
+        }
+
+        app.dbOps.saveBook(newBook);
+        app.ui.hideLoader();
+        app.render.book(id);
+        e.target.value = '';
+    },
+
+    appendPageToBook() {
+        this.startCamera();
+    },
+
+    async startCamera() {
+        app.nav.go('scanner');
+        try {
+            app.state.mediaStream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: 'environment' }, audio: false
+            });
+            document.getElementById('cameraVideo').srcObject = app.state.mediaStream;
+        } catch (e) {
+            app.ui.toast('Kamera-Zugriff verweigert', '❌');
+            app.nav.go('book');
+        }
+    },
+
+    stopCamera() {
+        if (app.state.mediaStream) {
+            app.state.mediaStream.getTracks().forEach(t => t.stop());
+            app.state.mediaStream = null;
+        }
+    },
+
+    capturePhoto() {
+        const video = document.getElementById('cameraVideo');
+        const nativeWidth = video.videoWidth || 1280;
+        const nativeHeight = video.videoHeight || 720;
+
+        // NEU: erzeugt direkt zwei WebP-Varianten (Lesegröße + kleine
+        // Vorschau) statt einer einzelnen JPEG-Version in voller Größe.
+        const { full, thumb } = app.utils.createImageVariants(video, nativeWidth, nativeHeight);
+
+        this.stopCamera();
+
+        const book = app.library[app.state.currentBookId];
+        const pageIdx = book.pages.length;
+        book.pages.push({
+            id: Date.now(),
+            imgUrl: full,
+            thumbUrl: thumb,
+            status: 'pending',
+            text: '', erstleserText: '', desc: '', quizQ: '', quizA: ''
+        });
+
+        app.dbOps.saveBook(book);
+
+        // Vorher blieb der Bildschirm nach dem Foto auf der (jetzt
+        // ausgeschalteten) Kamera hängen. Jetzt geht es automatisch zurück
+        // zur Buchansicht - von dort kann man über "+ Seite hinzufügen"
+        // die nächste Seite fotografieren.
+        app.nav.go('book');
+
+        // Läuft im Hintergrund weiter. Das .catch() fängt einen möglichen
+        // Fehler ab, der sonst unbehandelt in der Konsole gelandet wäre.
+        this.analyzePage(pageIdx).catch(() => {});
+    },
+
+    // NEU: gezielt eine einzelne (fehlgeschlagene) Seite neu analysieren,
+    // ohne den ganzen Batch-Lauf erneut zu starten.
+    retryPage(idx) {
+        this.analyzePage(idx).catch(() => {});
+    },
+
+    // NEU: personaId ist jetzt optional (Standard: globale Persona) - so
+    // kann man beim Lesen gezielt eine andere Persona nachladen lassen,
+    // ohne den bestehenden Aufruf (Batch, Kamera, Retry) zu verändern.
+    async analyzePage(pageIdx, isBatch = false, personaId = app.settings.persona) {
+        const book = app.library[app.state.currentBookId];
+        const page = book.pages[pageIdx];
+        if (!page || page.status === 'processing') return;
+
+        page.status = 'processing';
+        if (!isBatch) {
+            app.state.apiBusy = true;
+            app.render.book(book.id);
+        }
+
+        try {
+            const b64 = page.imgUrl.split(',')[1];
+            const isCover = (pageIdx === 0 && (!book.title || book.title === 'Neues Buch'));
+            const result = await app.api.analyze(b64, isCover, personaId, page.pdfSourceText || null);
+
+            // NEU: Ergebnis landet unter der jeweiligen Persona, statt die
+            // alten Felder zu überschreiben - so bleiben bereits erzeugte
+            // Versionen anderer Personas erhalten.
+            if (!page.variants) page.variants = {};
+            page.variants[personaId] = {
+                // Ist der Text aus einer PDF-Textebene bekannt, wird GENAU
+                // dieser statt der KI-Erkennung verwendet - garantiert
+                // korrekt, keine OCR-Fehler möglich.
+                text: page.pdfSourceText || result.originalText || 'Kein Text.',
+                erstleserText: result.simplifiedText || page.pdfSourceText || result.originalText || 'Kein Text.',
+                desc: result.imageDescription || 'Keine Beschreibung.',
+                quizQ: result.quizQuestion || 'Was siehst du auf dem Bild?',
+                quizA: result.quizAnswer || 'Schau genau hin!'
+            };
+            page.status = 'done';
+
+            if (isCover && result.title && result.title !== 'null') {
+                book.title = result.title;
+                book.author = result.author && result.author !== 'null' ? result.author : 'Unbekannt';
+            }
+        } catch (e) {
+            page.status = 'error';
+            app.ui.toast(e.message, '❌');
+            throw e;
+        } finally {
+            app.dbOps.saveBook(book);
+            // NEU: je nachdem, von wo aus die Analyse angestoßen wurde
+            // (Buchübersicht oder direkt aus dem Reader heraus, z.B. beim
+            // Nachladen einer neuen Persona), die passende Ansicht neu
+            // zeichnen.
+            if (!isBatch) {
+                app.state.apiBusy = false;
+                if (app.state.currentView === 'reader') {
+                    app.render.reader(app.state.currentPageIdx);
+                } else {
+                    app.render.book(book.id);
+                }
+            }
+        }
+    },
+
+    async analyzeAllPending() {
+        const book = app.library[app.state.currentBookId];
+        if (!book) return;
+
+        const pendingIndices = [];
+        book.pages.forEach((p, i) => { if (p.status === 'pending' || p.status === 'error') pendingIndices.push(i); });
+        if (pendingIndices.length === 0) return;
+
+        app.state.cancelAnalysis = false;
+        app.state.apiBusy = true;
+        app.ui.showLoader('Magie wirkt...', `Analysiere 1 von ${pendingIndices.length}`);
+
+        let count = 1;
+        for (let idx of pendingIndices) {
+            if (app.state.cancelAnalysis) {
+                app.ui.toast('Analyse abgebrochen', '⏹️');
+                break;
+            }
+
+            const sub = document.getElementById('processSub');
+            if (sub) sub.innerText = `Lese Seite ${count} von ${pendingIndices.length}`;
+
+            try {
+                await this.analyzePage(idx, true);
+            } catch (err) {
+                app.ui.toast('Abbruch wegen Fehler', '⚠️');
+                break;
+            }
+
+            if (count < pendingIndices.length && !app.state.cancelAnalysis) {
+                if (sub) sub.innerText = `Warte auf API (Kostenlos-Modus)...`;
+                await new Promise(r => setTimeout(r, 4500));
+            }
+            count++;
+        }
+
+        app.state.apiBusy = false;
+        app.ui.hideLoader();
+        app.render.book(book.id);
+    }
+});

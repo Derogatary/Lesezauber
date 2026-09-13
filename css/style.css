@@ -1,0 +1,22 @@
+.view-hidden { display: none !important; }
+.view-transition { transition: opacity 0.25s ease-in-out, transform 0.25s ease-in-out; }
+
+/* Custom scrollbar for clean mobile experience */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+
+/* Pulse animations for magic elements */
+@keyframes magicGlow {
+    0%, 100% { box-shadow: 0 0 15px rgba(99, 102, 241, 0.4); }
+    50% { box-shadow: 0 0 25px rgba(168, 85, 247, 0.7); }
+}
+.magic-glow { animation: magicGlow 3s infinite; }
+
+/* Barrierefreiheit: Personen, die in ihrem Betriebssystem reduzierte
+   Bewegung eingestellt haben (z.B. wegen vestibulärer Beschwerden),
+   bekommen die Puls-/Glow-Animationen nicht angezeigt. */
+@media (prefers-reduced-motion: reduce) {
+    .magic-glow { animation: none; box-shadow: 0 0 15px rgba(99, 102, 241, 0.4); }
+    .animate-pulse { animation: none; }
+}
