@@ -6,7 +6,9 @@ import { app } from './core.js';
 // Buch-Quiz) und erledigt genau diese eine - nie mehr, und nie während
 // gerade etwas anderes mit der KI läuft. So bleibt die Kostenlos-Grenze
 // im Blick, auch wenn man das Feature aktiviert.
-const BACKGROUND_PAUSE_MS = 6000;
+// Erhöht von 6s auf 9s - Hintergrundarbeit hat keine Eile und soll das
+// Minutenlimit nicht zusätzlich zu regulären Analysen strapazieren.
+const BACKGROUND_PAUSE_MS = 9000;
 
 function findNextMissingTask() {
     for (const bookId of Object.keys(app.library)) {
@@ -53,6 +55,8 @@ async function generatePersonaVariantForPage(book, pageIdx, personaId) {
         quizQ: result.quizQuestion || 'Was siehst du auf dem Bild?',
         quizA: result.quizAnswer || 'Schau genau hin!'
     };
+    // NEU: auch bei im Hintergrund vorbereiteten Varianten Vokabeln sammeln
+    app.actions.recordVocabulary(result.vocabulary);
     app.dbOps.saveBook(book);
 }
 
@@ -60,7 +64,7 @@ async function generateBookQuizInBackground(book) {
     const personaId = app.settings.persona;
     const compiledText = book.pages
         .map((p, i) => {
-            const variant = app.utils.resolvePageVariant(p, personaId);
+            const variant = app.utils.resolveAnyVariant(p, personaId);
             return variant && variant.text ? `Seite ${i + 1}: ${variant.text}` : null;
         })
         .filter(Boolean)

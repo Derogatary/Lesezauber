@@ -24,7 +24,7 @@ function buildAnalyzePrompt(isCover, personaId, knownText) {
     // eines PDFs), muss die KI ihn nicht per OCR erraten - das vermeidet
     // Erkennungsfehler beim eigentlichen Lesetext.
     const knownTextBlock = knownText
-        ? `\nDer exakte Text dieser Seite ist bereits bekannt (aus der Textebene, NICHT per Bilderkennung raten):\n"${knownText}"\nNutze GENAU diesen Wortlaut unverändert als "originalText".\n`
+        ? `\nDer exakte Text dieser Seite ist bereits bekannt (aus der Textebene, NICHT per Bilderkennung raten):\n"${knownText}"\nNutze GENAU diesen Wortlaut UNVERÄNDERT nur für "originalText". Das Feld "simplifiedText" MUSS trotzdem eine eigene, wirklich vereinfachte Version mit Emojis sein - NICHT einfach der bekannte Text unverändert kopiert, genau wie bei jeder anderen Seite auch.\n`
         : '';
 
     return `Rolle: ${personaInstruction(personaId)}
@@ -34,11 +34,13 @@ Nutze exakt dieses Schema:
 {
   "originalText": "Der exakte gedruckte Text (Wenn leer: 'Kein Text.')",
   "simplifiedText": "Den Text für 5-Jährige umschreiben. ERSETZE 2-4 Nomen durch passende Emojis.",
+  "vocabulary": [{"word": "Beispiel-Nomen", "emoji": "🌳"}],
   "imageDescription": "Beschreibe die Illustration in 2 Sätzen passend zur Rolle.",
   "quizQuestion": "Eine leichte Verständnisfrage zum Bild.",
   "quizAnswer": "Die kurze Antwort darauf."
   ${isCover ? ', "title": "Gefundener Titel oder null", "author": "Gefundener Autor oder null"' : ''}
-}`;
+}
+Das Feld "vocabulary" listet GENAU die Nomen (in Grundform, z.B. "Baum" statt "Bäume"), die du in "simplifiedText" durch ein Emoji ersetzt hast, zusammen mit dem jeweils verwendeten Emoji.`;
 }
 
 // Gemeinsame Aufräum-Logik für beide Anbieter: manche Modelle wrappen die

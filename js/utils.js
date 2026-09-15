@@ -64,6 +64,21 @@ Object.assign(app.utils, {
         return null;
     },
 
+    // NEU: findet EINE vorhandene Textversion einer Seite - bevorzugt die
+    // angegebene Persona, fällt aber auf jede andere bereits vorhandene
+    // zurück. Sinnvoll für Fälle wie den Druck, wo der Original-Text
+    // ohnehin persona-unabhängig sein sollte, aber vielleicht nur für eine
+    // ANDERE Persona schon erzeugt wurde.
+    resolveAnyVariant(page, preferredPersonaId) {
+        const preferred = this.resolvePageVariant(page, preferredPersonaId);
+        if (preferred) return preferred;
+        if (page.variants) {
+            const anyKey = Object.keys(page.variants)[0];
+            if (anyKey) return page.variants[anyKey];
+        }
+        return null;
+    },
+
     // NEU: zählt, wie viele Persona-Varianten in der gesamten Bibliothek
     // noch fehlen - für die Fortschrittsanzeige der Hintergrund-Vorbereitung.
     countMissingVariants() {
@@ -113,6 +128,35 @@ Object.assign(app.utils, {
 
         localStorage.setItem(key, JSON.stringify(data));
         return data;
+    },
+
+    // NEU: entfernt Emojis vor dem Vorlesen (Browser würden sonst versuchen,
+    // sie als Wort auszusprechen) und ersetzt sie durch ein Komma als
+    // kleine, natürliche Sprechpause.
+    stripEmojiForSpeech(text) {
+        if (!text) return text;
+        return text
+            .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{1F1E6}-\u{1F1FF}\u{2B00}-\u{2BFF}]/gu, ', ')
+            .replace(/,\s*,/g, ',')
+            .replace(/\s+/g, ' ')
+            .trim();
+    },
+
+    // NEU: baut aus einem Text HTML mit einem <span> pro Wort (inkl.
+    // Start-Index), damit beim Vorlesen genau das gerade gesprochene Wort
+    // hervorgehoben werden kann (Speedreader-artig). Nutzt den bereits
+    // emoji-bereinigten Text, damit die Zeichen-Positionen exakt zu dem
+    // passen, was der Browser tatsächlich vorliest.
+    buildSpeechHighlightHtml(text) {
+        const clean = this.stripEmojiForSpeech(text);
+        let idx = 0;
+        const html = clean.split(/(\s+)/).map(token => {
+            const start = idx;
+            idx += token.length;
+            if (token === '' || /^\s+$/.test(token)) return token;
+            return `<span class="speech-word" data-start="${start}">${this.sanitize(token)}</span>`;
+        }).join('');
+        return { clean, html };
     },
 
     sanitize(str) {

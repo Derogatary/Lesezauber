@@ -7,8 +7,11 @@ import { app } from './core.js';
 // einzelnen Seite schreibt nur noch dieses eine Buch, nicht mehr die
 // komplette Bibliothek neu.
 const DB_NAME = 'LeseZauberDB';
-const DB_VERSION = 1;
+// NEU: Version 2 - zusätzlicher Speicher für den Vokabeltrainer. Bereits
+// vorhandene Bücher bleiben beim Upgrade unangetastet erhalten.
+const DB_VERSION = 2;
 const STORE_NAME = 'books';
+const VOCAB_STORE_NAME = 'vocabulary';
 
 // Key, unter dem die Bibliothek in der alten (localStorage-basierten)
 // Version dieser App gespeichert wurde - nur für die einmalige Migration
@@ -26,6 +29,9 @@ function openDatabase() {
             const db = event.target.result;
             if (!db.objectStoreNames.contains(STORE_NAME)) {
                 db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+            }
+            if (!db.objectStoreNames.contains(VOCAB_STORE_NAME)) {
+                db.createObjectStore(VOCAB_STORE_NAME, { keyPath: 'word' });
             }
         };
 
@@ -65,6 +71,27 @@ async function deleteBookFromDB(id) {
     });
 }
 
+// NEU: Vokabel-Speicherfunktionen (gleiches Muster wie bei Büchern)
+async function getAllVocabFromDB() {
+    const db = await openDatabase();
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction(VOCAB_STORE_NAME, 'readonly');
+        const request = tx.objectStore(VOCAB_STORE_NAME).getAll();
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+    });
+}
+
+async function putVocabInDB(entry) {
+    const db = await openDatabase();
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction(VOCAB_STORE_NAME, 'readwrite');
+        tx.objectStore(VOCAB_STORE_NAME).put(entry);
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+    });
+}
+
 // Einmalige Migration: bestehende Bücher aus der alten localStorage-Version
 // in IndexedDB übernehmen. Betrifft nur Leute, die die App schon vorher
 // benutzt haben - für alle anderen passiert hier einfach nichts.
@@ -82,33 +109,35 @@ async function migrateFromLocalStorageIfNeeded() {
     } catch (e) {
         console.error('Migration aus altem Speicher fehlgeschlagen:', e);
     } finally {
-        // In jedem Fall aufräumen, damit nicht bei jedem Start erneut
-        // versucht wird zu migrieren.
         localStorage.removeItem(OLD_LOCALSTORAGE_KEY);
     }
 }
 
 Object.assign(app.dbOps, {
     // Wird einmal beim App-Start aufgerufen (siehe main.js), BEVOR die
-    // erste Ansicht gerendert wird. Füllt app.library, das der Rest des
-    // Codes danach ganz normal synchron liest und beschreibt wie bisher.
+    // erste Ansicht gerendert wird. Füllt app.library und app.vocabulary,
+    // die der Rest des Codes danach ganz normal synchron liest/beschreibt.
     async init() {
         try {
             await migrateFromLocalStorageIfNeeded();
+
             const books = await getAllBooksFromDB();
             app.library = {};
             books.forEach(book => { app.library[book.id] = book; });
+
+            const vocab = await getAllVocabFromDB();
+            app.vocabulary = {};
+            vocab.forEach(entry => { app.vocabulary[entry.word] = entry; });
         } catch (e) {
             console.error('Bibliothek konnte nicht geladen werden:', e);
             app.library = {};
+            app.vocabulary = {};
             app.ui.toast('Bibliothek konnte nicht geladen werden.', '⚠️');
         }
     },
 
     saveBook(book) {
         app.library[book.id] = book;
-        // Läuft im Hintergrund; der Rest der App muss darauf nicht warten,
-        // da app.library (oben) sofort aktuell ist.
         putBookInDB(book).catch(e => {
             console.error('Speichern fehlgeschlagen:', e);
             app.ui.toast('Speichern fehlgeschlagen.', '⚠️');
@@ -122,5 +151,13 @@ Object.assign(app.dbOps, {
         });
         app.nav.go('lib');
         app.ui.toast('Buch gelöscht', '🗑️');
+    },
+
+    // NEU: eine Vokabel speichern/aktualisieren
+    saveVocabEntry(entry) {
+        app.vocabulary[entry.word] = entry;
+        putVocabInDB(entry).catch(e => {
+            console.error('Vokabel konnte nicht gespeichert werden:', e);
+        });
     }
 });

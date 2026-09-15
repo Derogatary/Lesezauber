@@ -12,6 +12,14 @@ Object.assign(app.render, {
         document.getElementById('inputMistralKey').value = app.settings.mistralApiKey;
         personaSelect.value = app.settings.persona;
 
+        // NEU: gespeicherte Vorlesegeschwindigkeit anzeigen
+        const rateInput = document.getElementById('inputSpeechRate');
+        const rateLabel = document.getElementById('speechRateValue');
+        if (rateInput) {
+            rateInput.value = app.settings.speechRate;
+            if (rateLabel) rateLabel.innerText = app.settings.speechRate.toFixed(1) + 'x';
+        }
+
         // NEU: Hintergrund-Vorbereitung - Status + Fortschritt anzeigen
         const bgToggle = document.getElementById('toggleBackgroundPregen');
         if (bgToggle) bgToggle.checked = app.settings.backgroundPregenEnabled;
@@ -33,7 +41,17 @@ Object.assign(app.render, {
                     const quotaMb = (quota / (1024 * 1024)).toFixed(0);
                     const pct = Math.min(100, Math.round((usage / quota) * 100));
                     infoEl.innerText = `${usageMb} MB von ca. ${quotaMb} MB genutzt (${pct}%)`;
-                    if (barEl) barEl.style.width = pct + '%';
+                    if (barEl) {
+                        barEl.style.width = pct + '%';
+                        // NEU: proaktive Warnfarbe ab 80%, statt erst beim
+                        // tatsächlichen Fehlschlag zu merken, dass es eng wird.
+                        barEl.className = pct >= 80
+                            ? 'bg-red-500 h-full transition-all'
+                            : 'bg-indigo-500 h-full transition-all';
+                    }
+                    if (pct >= 80) {
+                        infoEl.innerHTML += ' <span class="text-red-600 font-bold">- wird knapp, evtl. Zeit für ein Backup + Aufräumen</span>';
+                    }
                 } else {
                     infoEl.innerText = `${usageMb} MB genutzt`;
                 }

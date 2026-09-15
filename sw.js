@@ -1,7 +1,7 @@
 // Bei jeder inhaltlichen Änderung an einer dieser Dateien diese Nummer
 // erhöhen - sonst bekommen wiederkehrende Besucher weiter die alte
 // zwischengespeicherte Version ausgeliefert.
-const CACHE_NAME = 'lesezauber-shell-v4';
+const CACHE_NAME = 'lesezauber-shell-v12';
 
 // Nur die eigenen, lokalen Dateien werden zwischengespeichert (die
 // "App-Hülle"). Die Gemini-/Mistral-APIs werden absichtlich NICHT
@@ -31,10 +31,16 @@ const APP_SHELL = [
     './js/actions/bookQuiz.js',
     './js/actions/focusMode.js',
     './js/actions/pdfImport.js',
+    './js/actions/vocabTrainer.js',
     './js/render/library.js',
     './js/render/book.js',
     './js/render/reader.js',
     './js/render/settings.js',
+    './js/render/vocab.js',
+    './js/backgroundPregen.js',
+    './js/keyboard.js',
+    './js/gestures.js',
+    './js/actions/epubImport.js',
     './manifest.json'
 ];
 

@@ -40,6 +40,15 @@ Eine Web-App, mit der du Kinderbuch-Seiten mit dem Handy fotografierst (oder aus
 - 📄 PDF-Import: jede PDF-Seite wird automatisch als Bild gerendert und läuft durch dieselbe Analyse wie fotografierte Seiten
 - ✅ Bereits auswählbarer PDF-Text wird direkt übernommen statt per OCR neu erkannt zu werden (fehlerfrei, spart aber keinen KI-Aufruf, da Bildbeschreibung/Quiz weiterhin nötig sind)
 - 🔄 Optionaler Mistral-Fallback, falls Gemini mal ausfällt oder das Tageslimit erreicht ist
+- ♻️ Automatischer zweiter Versuch bei kurzzeitiger Google-Server-Überlastung (503), statt den ganzen Analyse-Stapel abzubrechen
+- 🎓 Vokabeltrainer: sammelt automatisch die Nomen, die durch Emojis ersetzt wurden, als Karteikarten zum Üben
+- ❓ Eingebaute Hilfe-Ansicht, ⌨️ Tastatursteuerung am Desktop (Pfeiltasten, Escape)
+- ✓ Zeigt im Reader an, welche Personas für die aktuelle Seite schon vorbereitet sind
+- 🌙 Dark Mode (folgt automatisch der Systemeinstellung)
+- 👆 Wisch-Gesten im Reader (zusätzlich zu Buttons/Pfeiltasten)
+- 📚 EPUB-Import: liest den Text direkt aus (kein OCR nötig), nutzt das erste Bild pro Kapitel oder rendert den Text als Ersatzbild
+- 🔤 Wort-für-Wort-Hervorhebung beim Vorlesen (Speedreader-Stil), einstellbare Vorlesegeschwindigkeit
+- 🧠 Kombinierter Modus: automatisches Vorlesen inkl. Rätselfragen mit Rate-Pause
 - 🎭 Persona beim Lesen umschaltbar (unabhängig von der Standard-Persona), wird pro Seite bei Bedarf einmalig nachgeladen und dauerhaft gespeichert
 - 🎉 Verständnisfragen zum gesamten Buch am Ende (nicht nur pro Seite)
 - ⚡ Eigener Tailwind-Build statt CDN (schnelleres Laden, kein Live-Compiling im Browser)
@@ -53,6 +62,21 @@ Diese App läuft komplett im Browser – es gibt keinen eigenen Server, alle Dat
 2. App öffnen (z.B. über die GitHub-Pages-Adresse dieses Repos)
 3. Unter ⚙️ Einstellungen den API-Key eintragen
 4. Loslegen: Buch anlegen und erste Seite fotografieren
+
+## ☁️ Backup über Google Drive
+
+Die App synchronisiert nicht automatisch mit der Cloud - Export/Import unter ⚙️ Einstellungen ist der Weg dafür. So landet eine Export-Datei bequem in Google Drive:
+
+**Am Handy (Android oder iPhone):**
+1. ⚙️ Einstellungen → "📤 Exportieren" antippen - die Datei wird heruntergeladen
+2. Über die normale "Teilen"-Funktion des Handys (oder die Download-Benachrichtigung) → **Google Drive** als Ziel auswählen
+3. Fertig - die Datei liegt in Drive, abrufbar von jedem Gerät mit demselben Google-Konto
+
+**Am PC/Laptop:**
+1. ⚙️ Einstellungen → "📤 Exportieren" - Datei landet im Download-Ordner
+2. Auf **drive.google.com** einloggen, "Neu" → "Datei-Upload" → die exportierte Datei auswählen
+
+**Wiederherstellen** (neues Gerät oder nach Datenverlust): Datei aus Drive herunterladen, dann in LeseZauber unter ⚙️ → "📥 Importieren" auswählen - alle Bücher sind wieder da und genauso bearbeitbar wie vorher.
 
 ## 🛠 Lokal entwickeln
 
@@ -121,10 +145,16 @@ main.js                  Bindet alle Module zusammen und startet die App
 
 ## 🗺 Mögliche nächste Schritte
 
-- API-Key über ein kleines Backend absichern
-- Automatische Cloud-Synchronisierung (z.B. Google Drive) statt manuellem Export/Import
-- Eigener Tailwind-Build statt CDN (bessere Ladezeit, siehe "Performance" unten)
+**Bleibt komplett im Browser (kein Server nötig):**
+- 🎨 KI-generierte Illustrationen für textlastige EPUB-Kapitel ohne eigenes Bild, optional im Comic-Stil (Gemini kann mittlerweile auch Bilder erzeugen, gleicher Key wie bisher) - Cover-Bild-Sonderfall erstmal nicht nötig
+- 📱 Native App / Android-Store-Verpackung (Capacitor) - verpackt den bestehenden Code weitgehend unverändert
+- 🎬 Video-Export (Seite + KI-Stimme als Videodatei) - der aufwändigste offene Punkt, braucht eine Sprach-API mit echter Audiodatei-Ausgabe (z.B. ElevenLabs)
+
+**Bräuchte einen eigenen Server** (aktuell bewusst zurückgestellt):
+- API-Key über ein Backend absichern
+- Automatische Cloud-Synchronisierung (statt manuellem Export/Import)
+- Echte Multi-Geräte-Accounts mit Login
 
 ## 🧑‍💻 Technologie
 
-Reines HTML/CSS/JavaScript (ES-Module), [Tailwind CSS](https://tailwindcss.com/) per CDN, [Google Gemini API](https://ai.google.dev/) für die Bildanalyse. Kein Build-Prozess, keine Abhängigkeiten zum Installieren.
+Reines HTML/CSS/JavaScript (ES-Module), [Tailwind CSS](https://tailwindcss.com/) (eigener Build, kein CDN), [Google Gemini API](https://ai.google.dev/) für die Bildanalyse, [PDF.js](https://mozilla.github.io/pdf.js/) für den PDF-Import, [JSZip](https://stuk.github.io/jszip/) für den EPUB-Import. Kein Server, kein Backend - läuft komplett im Browser.

@@ -19,12 +19,22 @@ Object.assign(app.render, {
         document.getElementById('readerPageCounter').innerText = `Seite ${pageIdx + 1} / ${book.pages.length}`;
         document.getElementById('readerImg').src = page.imgUrl;
 
-        // NEU: Persona-Auswahl fürs Lesen befüllen
+        // NEU: Vor/Zurück-Buttons an den Buchgrenzen deaktivieren
+        const prevBtn = document.getElementById('prevPageBtn');
+        const nextBtn = document.getElementById('nextPageBtn');
+        if (prevBtn) prevBtn.disabled = pageIdx === 0;
+        if (nextBtn) nextBtn.disabled = pageIdx === book.pages.length - 1;
+
+        // Persona-Auswahl fürs Lesen befüllen - Haken zeigt, welche
+        // Personas für DIESE Seite schon vorbereitet sind (kein erneutes
+        // Warten nötig), statt erst beim Auswählen zu merken.
         const personaSelect = document.getElementById('readerPersonaSelect');
         if (personaSelect) {
-            personaSelect.innerHTML = app.personas.map(p =>
-                `<option value="${p.id}" ${p.id === app.state.readingPersonaId ? 'selected' : ''}>${app.utils.sanitize(p.label)}</option>`
-            ).join('');
+            personaSelect.innerHTML = app.personas.map(p => {
+                const ready = app.utils.resolvePageVariant(page, p.id) !== null;
+                const marker = ready ? '✓ ' : '';
+                return `<option value="${p.id}" ${p.id === app.state.readingPersonaId ? 'selected' : ''}>${marker}${app.utils.sanitize(p.label)}</option>`;
+            }).join('');
         }
 
         const variant = app.utils.resolvePageVariant(page, app.state.readingPersonaId);

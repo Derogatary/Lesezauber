@@ -1,4 +1,67 @@
+/* ================= Dark Mode ================= */
+/* Reagiert automatisch auf die Systemeinstellung (prefers-color-scheme),
+   kein Umschalter in der App nötig. Statt jede einzelne Stelle in HTML/JS
+   anzufassen, werden hier die immer wiederkehrenden Tailwind-Klassen
+   gezielt für den Dark-Modus überschrieben - deutlich wartungsärmer als
+   überall "dark:" Klassen zu ergänzen. */
+@media (prefers-color-scheme: dark) {
+    body { background-color: #0f172a; }
+
+    /* Flächen / Karten */
+    .bg-white { background-color: #1e293b !important; }
+    .bg-slate-50 { background-color: #0f172a !important; }
+    .bg-slate-100 { background-color: #334155 !important; }
+    .bg-slate-200 { background-color: #334155 !important; }
+
+    /* Text */
+    .text-slate-900 { color: #f1f5f9 !important; }
+    .text-slate-800 { color: #e2e8f0 !important; }
+    .text-slate-700 { color: #cbd5e1 !important; }
+    .text-slate-600 { color: #94a3b8 !important; }
+    .text-slate-500 { color: #94a3b8 !important; }
+    .text-slate-400 { color: #64748b !important; }
+    .text-slate-300 { color: #475569 !important; }
+
+    /* Rahmen */
+    .border-slate-100 { border-color: #334155 !important; }
+    .border-slate-200 { border-color: #334155 !important; }
+    .border-slate-300 { border-color: #475569 !important; }
+
+    /* Platzhaltertext in Eingabefeldern */
+    input::placeholder { color: #64748b; }
+
+    /* Farbige Hervorhebungs-Karten (Indigo/Amber/Rot/Grün/Lila) -
+       dunklerer, gedämpfter Hintergrund statt der hellen Pastelltöne */
+    .bg-indigo-50, .bg-indigo-100 { background-color: rgba(99, 102, 241, 0.15) !important; }
+    .bg-amber-50, .bg-amber-100 { background-color: rgba(245, 158, 11, 0.15) !important; }
+    .bg-red-50, .bg-red-100 { background-color: rgba(239, 68, 68, 0.15) !important; }
+    .bg-emerald-50, .bg-emerald-100 { background-color: rgba(16, 185, 129, 0.15) !important; }
+    .bg-purple-50 { background-color: rgba(168, 85, 247, 0.15) !important; }
+
+    .text-indigo-600, .text-indigo-700, .text-indigo-800, .text-indigo-900 { color: #a5b4fc !important; }
+    .text-amber-600, .text-amber-800 { color: #fcd34d !important; }
+    .text-red-500, .text-red-600, .text-red-700, .text-red-800 { color: #fca5a5 !important; }
+    .text-emerald-700, .text-emerald-800, .text-emerald-900 { color: #6ee7b7 !important; }
+    .text-purple-800, .text-purple-900, .text-purple-950 { color: #d8b4fe !important; }
+
+    .border-indigo-100 { border-color: rgba(99, 102, 241, 0.3) !important; }
+    .border-amber-200 { border-color: rgba(245, 158, 11, 0.3) !important; }
+    .border-emerald-100, .border-emerald-300 { border-color: rgba(16, 185, 129, 0.3) !important; }
+}
+
 .view-hidden { display: none !important; }
+
+/* NEU: Hervorhebung des gerade vorgelesenen Wortes (Speedreader-Stil) */
+.speech-word.speech-highlight {
+    background-color: #fde047;
+    color: #1e293b;
+    border-radius: 4px;
+    padding: 0 2px;
+    transition: background-color 0.1s ease;
+}
+@media (prefers-color-scheme: dark) {
+    .speech-word.speech-highlight { background-color: #ca8a04; color: #fff; }
+}
 .view-transition { transition: opacity 0.25s ease-in-out, transform 0.25s ease-in-out; }
 
 /* Custom scrollbar for clean mobile experience */

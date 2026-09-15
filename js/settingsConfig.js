@@ -13,16 +13,19 @@ Object.assign(app.settingsConfig, {
         const mistralKey = document.getElementById('inputMistralKey').value.trim();
         const persona = document.getElementById('selectPersona').value;
         const voice = document.getElementById('selectVoice').value;
+        const speechRate = parseFloat(document.getElementById('inputSpeechRate').value);
 
         app.settings.apiKey = key;
         app.settings.mistralApiKey = mistralKey;
         app.settings.persona = persona;
         app.settings.voiceUri = voice;
+        app.settings.speechRate = speechRate;
 
         localStorage.setItem('lz_api_key', key);
         localStorage.setItem('lz_mistral_key', mistralKey);
         localStorage.setItem('lz_persona', persona);
         localStorage.setItem('lz_voice', voice);
+        localStorage.setItem('lz_speech_rate', String(speechRate));
 
         app.ui.toast('Einstellungen gespeichert!', '✅');
         app.nav.go('lib');

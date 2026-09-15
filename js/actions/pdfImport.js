@@ -83,11 +83,22 @@ Object.assign(app.actions, {
 
             app.dbOps.saveBook(newBook);
             app.ui.hideLoader();
-            app.render.book(id);
+            // FIX: siehe gleicher Fix beim Galerie-Import - app.nav.go()
+            // wechselt die Ansicht tatsächlich, statt sie nur unsichtbar
+            // im Hintergrund zu aktualisieren.
+            app.nav.go('book');
         } catch (err) {
             console.error('PDF-Import fehlgeschlagen:', err);
             app.ui.hideLoader();
-            app.ui.toast('PDF konnte nicht gelesen werden.', '❌');
+            // NEU: spezifischere Meldung statt immer nur "konnte nicht
+            // gelesen werden" - hilft einzuordnen, woran es liegt.
+            let message = 'PDF konnte nicht gelesen werden.';
+            if (err?.name === 'PasswordException') {
+                message = 'Dieses PDF ist passwortgeschützt - wird aktuell nicht unterstützt.';
+            } else if (err?.name === 'InvalidPDFException') {
+                message = 'Die Datei scheint kein gültiges PDF zu sein.';
+            }
+            app.ui.toast(message, '❌');
         } finally {
             e.target.value = '';
         }

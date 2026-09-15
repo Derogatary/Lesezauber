@@ -5,7 +5,9 @@ Object.assign(app.settings, {
     mistralApiKey: localStorage.getItem('lz_mistral_key') || '',
     persona: localStorage.getItem('lz_persona') || 'standard',
     voiceUri: localStorage.getItem('lz_voice') || '',
-    backgroundPregenEnabled: localStorage.getItem('lz_bg_pregen') === '1'
+    backgroundPregenEnabled: localStorage.getItem('lz_bg_pregen') === '1',
+    // NEU: einstellbare Vorlesegeschwindigkeit (0.5 = langsam, 1.5 = schnell)
+    speechRate: parseFloat(localStorage.getItem('lz_speech_rate') || '0.9')
 });
 
 Object.assign(app.state, {
@@ -22,5 +24,10 @@ Object.assign(app.state, {
     // NEU: Vollbild-Vorlese-Modus aktiv?
     focusMode: false,
     // NEU: Backup-Erinnerung für diese Sitzung weggeklickt?
-    backupReminderDismissed: false
+    backupReminderDismissed: false,
+    // NEU: Zustand für den Vokabeltrainer (aktuelles Karten-Deck + Position)
+    vocabDeck: [],
+    vocabIndex: 0,
+    // NEU: kombinierter Modus - beim Auto-Vorlesen auch Raetselfragen stellen
+    autoReadWithQuiz: false
 });

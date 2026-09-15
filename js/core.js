@@ -7,6 +7,8 @@ export const app = {
     state: {},
     settings: {},
     library: {},
+    // NEU: gesammelte Vokabeln (Wort -> Emoji), profilübergreifend
+    vocabulary: {},
     personas: [],
     dbOps: {},
     nav: {},

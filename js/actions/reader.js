@@ -30,6 +30,20 @@ Object.assign(app.actions, {
 
     // NEU: Persona nur für das gerade geöffnete Buch umschalten - ändert
     // NICHT die globale Standard-Persona für zukünftige Scans.
+    // NEU: manuelle Vor/Zurück-Navigation im Reader - funktioniert immer,
+    // unabhängig vom Analyse-Status einer Seite (auch eine fehlerhafte
+    // oder noch nicht analysierte Seite lässt sich so überspringen).
+    goToPage(direction) {
+        const book = app.library[app.state.currentBookId];
+        if (!book) return;
+        const newIdx = app.state.currentPageIdx + direction;
+        if (newIdx < 0 || newIdx >= book.pages.length) return;
+
+        app.state.currentPageIdx = newIdx;
+        app.render.reader(newIdx);
+        if (app.state.focusMode) app.render.focusMode();
+    },
+
     switchReadingPersona(personaId) {
         app.state.readingPersonaId = personaId;
         app.render.reader(app.state.currentPageIdx);

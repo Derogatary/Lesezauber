@@ -17,7 +17,7 @@ Object.assign(app.actions, {
         const personaId = app.state.readingPersonaId || app.settings.persona;
         const compiledText = book.pages
             .map((p, i) => {
-                const variant = app.utils.resolvePageVariant(p, personaId);
+                const variant = app.utils.resolveAnyVariant(p, personaId);
                 return variant && variant.text ? `Seite ${i + 1}: ${variant.text}` : null;
             })
             .filter(Boolean)

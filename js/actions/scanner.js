@@ -90,7 +90,11 @@ Object.assign(app.actions, {
 
         app.dbOps.saveBook(newBook);
         app.ui.hideLoader();
-        app.render.book(id);
+        // FIX: vorher wurde nur der Inhalt der Buchansicht aktualisiert,
+        // ohne tatsächlich dorthin zu wechseln - man landete unsichtbar
+        // wieder in der Bibliothek. app.nav.go() wechselt die Ansicht UND
+        // rendert sie.
+        app.nav.go('book');
         e.target.value = '';
     },
 
@@ -193,6 +197,9 @@ Object.assign(app.actions, {
             };
             page.status = 'done';
 
+            // NEU: gefundene Nomen+Emoji-Paare in den Vokabeltrainer übernehmen
+            app.actions.recordVocabulary(result.vocabulary);
+
             if (isCover && result.title && result.title !== 'null') {
                 book.title = result.title;
                 book.author = result.author && result.author !== 'null' ? result.author : 'Unbekannt';
@@ -243,13 +250,31 @@ Object.assign(app.actions, {
             try {
                 await this.analyzePage(idx, true);
             } catch (err) {
-                app.ui.toast('Abbruch wegen Fehler', '⚠️');
-                break;
+                // NEU: ein 503 ("Service Unavailable") ist eine kurzzeitige
+                // Überlastung bei Google selbst, nicht euer Kontingent -
+                // dafür lohnt sich ein automatischer zweiter Versuch nach
+                // kurzer Pause, statt gleich den ganzen Stapel abzubrechen.
+                if (String(err.message).includes('503')) {
+                    if (sub) sub.innerText = 'Google-Server kurz überlastet, versuche erneut...';
+                    await new Promise(r => setTimeout(r, 5000));
+                    try {
+                        await this.analyzePage(idx, true);
+                    } catch (retryErr) {
+                        app.ui.toast('Abbruch wegen Fehler', '⚠️');
+                        break;
+                    }
+                } else {
+                    app.ui.toast('Abbruch wegen Fehler', '⚠️');
+                    break;
+                }
             }
 
             if (count < pendingIndices.length && !app.state.cancelAnalysis) {
                 if (sub) sub.innerText = `Warte auf API (Kostenlos-Modus)...`;
-                await new Promise(r => setTimeout(r, 4500));
+                // Erhöht von 4,5s auf 6,5s: bei ca. 10 Anfragen/Minute
+                // Freikontingent lag die alte Pause zu nah am Limit -
+                // führte zu Abbrüchen nach ca. 10 Seiten.
+                await new Promise(r => setTimeout(r, 6500));
             }
             count++;
         }

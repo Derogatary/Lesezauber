@@ -54,7 +54,7 @@ Object.assign(app.render, {
                                 <button onclick="app.actions.toggleCardMenu(${p.id})" title="Mehr Optionen" aria-label="Mehr Optionen" class="text-sm px-1.5 py-1 text-slate-500 hover:text-slate-800">⋮</button>
                                 <div id="cardMenu-${p.id}" data-card-menu="${p.id}" class="hidden absolute right-0 bottom-full mb-1 bg-white border border-slate-200 rounded-lg shadow-lg py-1 z-10 min-w-[150px]">
                                     <button onclick="app.actions.setCover(${p.id}); app.actions.toggleCardMenu(${p.id})" class="w-full text-left px-3 py-2 text-xs hover:bg-slate-50 ${isCover ? 'text-amber-600 font-bold' : 'text-slate-700'}">${isCover ? '⭐ Ist Cover' : '☆ Als Cover festlegen'}</button>
-                                    ${p.status === 'error' ? `<button onclick="app.actions.retryPage(${i}); app.actions.toggleCardMenu(${p.id})" class="w-full text-left px-3 py-2 text-xs hover:bg-slate-50 text-indigo-600">🔄 Erneut versuchen</button>` : ''}
+                                    ${(p.status === 'error' || p.status === 'pending') ? `<button onclick="app.actions.retryPage(${i}); app.actions.toggleCardMenu(${p.id})" class="w-full text-left px-3 py-2 text-xs hover:bg-slate-50 text-indigo-600">${p.status === 'error' ? '🔄 Erneut versuchen' : '▶️ Analysieren'}</button>` : ''}
                                     <button onclick="app.actions.deletePage(${i})" class="w-full text-left px-3 py-2 text-xs hover:bg-red-50 text-red-500">🗑️ Entfernen</button>
                                 </div>
                             </div>

@@ -16,7 +16,7 @@ Object.assign(app.nav, {
         }
 
         // Hide all main views safely
-        ['viewLibrary', 'viewBook', 'viewScanner', 'viewReader', 'viewSettings'].forEach(id => {
+        ['viewLibrary', 'viewBook', 'viewScanner', 'viewReader', 'viewSettings', 'viewVocab', 'viewHelp'].forEach(id => {
             const el = document.getElementById(id);
             if (el) el.classList.add('view-hidden');
         });
@@ -37,6 +37,11 @@ Object.assign(app.nav, {
         } else if (viewId === 'settings') {
             document.getElementById('viewSettings').classList.remove('view-hidden');
             app.render.settings();
+        } else if (viewId === 'vocab') {
+            document.getElementById('viewVocab').classList.remove('view-hidden');
+            app.render.vocabTrainer();
+        } else if (viewId === 'help') {
+            document.getElementById('viewHelp').classList.remove('view-hidden');
         }
     }
 });

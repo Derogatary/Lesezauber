@@ -38,7 +38,7 @@ Object.assign(app.actions, {
 
         const personaId = app.state.readingPersonaId || app.settings.persona;
         const pagesHtml = book.pages.map((p, i) => {
-            const variant = app.utils.resolvePageVariant(p, personaId);
+            const variant = app.utils.resolveAnyVariant(p, personaId);
             const text = variant?.text || '';
             return `
                 <div style="page-break-after: always; text-align:center; padding: 24px 16px;">

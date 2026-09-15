@@ -21,15 +21,20 @@ import './actions/backup.js';
 import './actions/bookQuiz.js';
 import './actions/focusMode.js';
 import './actions/pdfImport.js';
+import './actions/epubImport.js';
+import './actions/vocabTrainer.js';
 
 import './render/library.js';
 import './render/book.js';
 import './render/reader.js';
 import './render/settings.js';
+import './render/vocab.js';
 
 import './readerUI.js';
 import './settingsConfig.js';
 import './backgroundPregen.js';
+import './keyboard.js';
+import './gestures.js';
 
 app.init = async function () {
     // Speech synthesis listener for voice loading
@@ -60,6 +65,27 @@ if ('serviceWorker' in navigator) {
         });
     });
 }
+
+// NEU: globales Sicherheitsnetz - fängt unerwartete Fehler ab, die sonst
+// zu einem stillen "die App reagiert einfach nicht mehr" führen würden,
+// und zeigt stattdessen eine verständliche Meldung.
+window.addEventListener('error', (e) => {
+    console.error('Unerwarteter Fehler:', e.error || e.message);
+    app.ui?.toast?.('Ein unerwarteter Fehler ist aufgetreten.', '⚠️');
+});
+window.addEventListener('unhandledrejection', (e) => {
+    console.error('Unbehandelter Promise-Fehler:', e.reason);
+    app.ui?.toast?.('Ein unerwarteter Fehler ist aufgetreten.', '⚠️');
+});
+
+// NEU: Offline-Erkennung - klare Rückmeldung statt einer verwirrenden
+// "Verbindungsfehler"-Meldung mitten in der Analyse.
+window.addEventListener('offline', () => {
+    app.ui?.toast?.('Du bist offline - Scannen/Analysieren braucht wieder Internet.', '📡');
+});
+window.addEventListener('online', () => {
+    app.ui?.toast?.('Wieder online', '✅');
+});
 
 document.addEventListener('DOMContentLoaded', () => {
     app.init();

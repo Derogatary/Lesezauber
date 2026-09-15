@@ -4,9 +4,6 @@ Object.assign(app.tts, {
     synth: window.speechSynthesis,
     loadVoices() {
         if (!this.synth) return;
-        // NEU: alle installierten Stimmen anzeigen (nicht nur deutsche) -
-        // sortiert nach Sprache, damit z.B. "en-GB"/"en-US" leichter
-        // auffindbar sind, wenn viele Stimmen installiert sind.
         const voices = this.synth.getVoices()
             .slice()
             .sort((a, b) => a.lang.localeCompare(b.lang) || a.name.localeCompare(b.name));
@@ -22,38 +19,70 @@ Object.assign(app.tts, {
         });
     },
 
-    // "onEnd" wird optional aufgerufen, sobald der Satz zu Ende vorgelesen
-    // wurde - das nutzt der Auto-Vorlese-Modus, um zur nächsten Seite zu
-    // springen.
-    speak(text, onEnd) {
+    // NEU: "highlightElementId" ist optional - wird sie mitgegeben, wird
+    // dort eine Wort-für-Wort-Hervorhebung angezeigt, synchron zum
+    // Vorlesen (per SpeechSynthesis-"boundary"-Ereignis, von den meisten
+    // Browsern unterstützt - ohne dieses Ereignis passiert einfach keine
+    // Hervorhebung, der Rest funktioniert trotzdem normal weiter).
+    speak(text, onEnd, highlightElementId) {
         if (!this.synth || !text) return;
         this.synth.cancel();
-        const utter = new SpeechSynthesisUtterance(text);
+
+        let cleanText;
+        if (highlightElementId) {
+            const { clean, html } = app.utils.buildSpeechHighlightHtml(text);
+            cleanText = clean;
+            const el = document.getElementById(highlightElementId);
+            if (el) el.innerHTML = html;
+        } else {
+            cleanText = app.utils.stripEmojiForSpeech(text);
+        }
+
+        const utter = new SpeechSynthesisUtterance(cleanText);
+        // NEU: einstellbare Geschwindigkeit statt fest 0.9
+        utter.rate = app.settings.speechRate || 0.9;
 
         if (app.settings.voiceUri) {
             const voices = this.synth.getVoices();
             const chosen = voices.find(v => v.voiceURI === app.settings.voiceUri);
             if (chosen) {
                 utter.voice = chosen;
-                // NEU: Sprache kommt jetzt von der gewählten Stimme selbst
-                // (z.B. "en-US" oder "en-GB"), statt fest "de-DE" zu
-                // erzwingen - dadurch passen Text und Aussprache zusammen,
-                // auch bei einer englischen oder anderssprachigen Stimme.
                 utter.lang = chosen.lang;
             } else {
                 utter.lang = 'de-DE';
             }
         } else {
-            utter.lang = 'de-DE'; // Standard, wenn keine Stimme explizit gewählt ist
+            utter.lang = 'de-DE';
+        }
+
+        if (highlightElementId) {
+            const container = document.getElementById(highlightElementId);
+            utter.onboundary = (event) => {
+                if (event.name !== 'word' || !container) return;
+                const spans = container.querySelectorAll('.speech-word');
+                let target = null;
+                spans.forEach(span => {
+                    if (parseInt(span.dataset.start, 10) <= event.charIndex) target = span;
+                });
+                spans.forEach(span => span.classList.remove('speech-highlight'));
+                if (target) {
+                    target.classList.add('speech-highlight');
+                    target.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+                }
+            };
         }
 
         if (onEnd) utter.onend = onEnd;
         this.synth.speak(utter);
     },
 
+    // Ermittelt, welches Textfeld gerade sichtbar ist (Original oder
+    // Erstleser), für die Hervorhebung beim Vorlesen.
+    _currentTextElementId() {
+        return app.state.activeTab === 'erstleser' ? 'readerErstleserText' : 'readerOriginalText';
+    },
+
     speakCurrentText() {
-        // Einzel-Vorlesen soll den Auto-Modus nicht durcheinanderbringen:
-        // läuft er gerade, wird er zuerst sauber gestoppt.
         if (app.state.autoReadActive) this.stopAutoRead();
 
         const book = app.library[app.state.currentBookId];
@@ -65,14 +94,10 @@ Object.assign(app.tts, {
         if (!variant) return;
 
         const text = app.state.activeTab === 'erstleser' ? (variant.erstleserText || variant.text) : variant.text;
-        this.speak(text);
+        this.speak(text, null, this._currentTextElementId());
     },
 
     // ================= Auto-Vorlese-Modus =================
-    // Liest die aktuelle Seite (im gerade aktiven Tab: Original oder
-    // Erstleser) vor und springt danach automatisch zur nächsten Seite,
-    // bis das Buch zu Ende ist oder man selbst stoppt.
-
     toggleAutoRead() {
         if (app.state.autoReadActive) {
             this.stopAutoRead();
@@ -95,6 +120,9 @@ Object.assign(app.tts, {
         if (focusBtn) focusBtn.innerText = '▶️';
     },
 
+    // Liest Seitenzahl an, dann den Text (mit Wort-Hervorhebung), dann die
+    // Bildbeschreibung, optional die Rätselfrage+Antwort (kombinierter
+    // Modus), bevor es zur nächsten Seite weitergeht.
     _readCurrentThenAdvance() {
         if (!app.state.autoReadActive) return;
 
@@ -116,24 +144,53 @@ Object.assign(app.tts, {
         if (focusBtn) focusBtn.innerText = '⏸️';
 
         const text = app.state.activeTab === 'erstleser' ? (variant.erstleserText || variant.text) : variant.text;
+        const pageNum = app.state.currentPageIdx + 1;
 
-        this.speak(text, () => {
-            // Falls in der Zwischenzeit gestoppt wurde (z.B. Nutzer hat
-            // etwas anderes angeklickt), hier nicht weitermachen.
-            if (!app.state.autoReadActive) return;
-
+        const advanceToNext = () => {
             const isLastPage = app.state.currentPageIdx >= book.pages.length - 1;
             if (isLastPage) {
                 this.stopAutoRead();
                 app.ui.toast('Buch zu Ende vorgelesen 🎉', '📖');
                 return;
             }
-
             app.state.currentPageIdx++;
             app.render.reader(app.state.currentPageIdx);
             if (app.state.focusMode) app.render.focusMode();
-            // Kurze Pause zwischen den Seiten, bevor es weitergeht.
             setTimeout(() => this._readCurrentThenAdvance(), 600);
+        };
+
+        // NEU: kombinierter Modus - nach der Bildbeschreibung zusätzlich
+        // Rätselfrage stellen, kurze Pause zum Raten, dann Antwort vorlesen.
+        const maybeAskQuiz = () => {
+            if (!app.state.autoReadActive) return;
+            if (app.state.autoReadWithQuiz && variant.quizQ) {
+                this.speak(variant.quizQ, () => {
+                    if (!app.state.autoReadActive) return;
+                    setTimeout(() => {
+                        if (!app.state.autoReadActive) return;
+                        this.speak(variant.quizA, advanceToNext);
+                    }, 4000); // Zeit zum Raten, bevor die Antwort kommt
+                });
+            } else {
+                advanceToNext();
+            }
+        };
+
+        const describeImage = () => {
+            if (!app.state.autoReadActive) return;
+            if (variant.desc) {
+                this.speak('Ich beschreibe jetzt das Bild.', () => {
+                    if (!app.state.autoReadActive) return;
+                    this.speak(variant.desc, maybeAskQuiz);
+                });
+            } else {
+                maybeAskQuiz();
+            }
+        };
+
+        this.speak(`Seite ${pageNum}.`, () => {
+            if (!app.state.autoReadActive) return;
+            this.speak(text, describeImage, this._currentTextElementId());
         });
     }
 });
