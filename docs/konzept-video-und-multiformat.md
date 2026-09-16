@@ -361,3 +361,58 @@ Stand September 2026 - vor einer Umsetzung noch einmal prüfen, das bewegt sich 
 - [mp4-muxer](https://github.com/boxcast/mp4-muxer)
 - [GitHub Community Discussion #13309 - COOP/COEP-Header auf GitHub Pages](https://github.com/orgs/community/discussions/13309)
 - [COOP/COEP-Header auf statischem Hosting setzen (Workaround)](https://blog.tomayac.com/2025/03/08/setting-coop-coep-headers-on-static-hosting-like-github-pages/)
+
+---
+
+## Anhang: kleines Glossar
+
+Im Stil des README-Abschnitts "Für Einsteiger" - die Begriffe, die oben ohne Erklärung
+vorkommen:
+
+**DOM** (Document Object Model) - die lebende Liste aller HTML-Elemente einer Seite, so wie
+der Browser sie gerade im Speicher hält. Wenn der Code `document.getElementById('readerImg')`
+aufruft und daran etwas ändert, arbeitet er am DOM, und der Browser zeichnet die Änderung
+selbst neu. "DOM-basiert" heißt also: **Wir beschreiben nur, was da stehen soll, und der
+Browser kümmert sich um Schriftart, Zeilenumbruch und Darstellung.** Genau das macht heute die
+Wort-Hervorhebung beim Vorlesen: `buildSpeechHighlightHtml()` erzeugt für jedes Wort ein
+`<span>`, und das aktuell gesprochene bekommt eine Hintergrundfarbe.
+
+**Canvas** - eine leere Zeichenfläche aus reinen Bildpunkten. Hier gibt es keine Elemente und
+keine automatische Textdarstellung; man malt Pixel. Der Vergleich: DOM ist wie Schreiben in
+Word (das Programm bricht Zeilen um und markiert Text für einen), Canvas ist wie Buchstaben
+mit dem Pinsel auf ein Bild malen - jeder Zeilenumbruch muss selbst berechnet werden.
+**Warum das für Video zählt:** Ein Videobild besteht aus Pixeln. Man kann kein HTML in ein
+Video stecken. Die Untertitel müssen also gemalt statt beschrieben werden - deshalb lässt
+sich `buildSpeechHighlightHtml()` dafür nicht wiederverwenden, obwohl es dieselbe Aufgabe
+löst. Das ist kein Fehler im bestehenden Code, sondern ein anderer Zeichen-Weg.
+
+**Codec / Container / Muxer** - drei Dinge, die oft verwechselt werden. Der **Codec**
+(z.B. H.264 für Bild, AAC für Ton) presst die Daten klein. Der **Container** (z.B. MP4 oder
+WebM) ist die Verpackung, die Bild- und Tonspur zusammen mit Zeitinformationen in einer Datei
+bündelt - vergleichbar mit einem ZIP-Archiv, nur für Video. **Muxen** ist das Einpacken.
+`.mp4` sagt also nur etwas über die Verpackung, nicht über den Inhalt - deshalb reicht es
+nicht, eine Datei umzubenennen.
+
+**Blob** - ein Klumpen Binärdaten im Arbeitsspeicher des Browsers (z.B. eine fertige Datei
+vor dem Download). Problem bei Video: ein 200-MB-Blob belegt tatsächlich 200 MB RAM.
+
+**OPFS** (Origin Private File System) - ein privater Dateibereich, den jede Web-App auf dem
+Gerät bekommt. Unsichtbar im normalen Dateimanager, aber man kann dort stückweise
+hineinschreiben, statt alles im Arbeitsspeicher zu halten.
+
+**Echtzeit vs. schneller als Echtzeit** - `MediaRecorder` nimmt auf wie ein Camcorder:
+8 Minuten Video = 8 Minuten warten, Fenster muss sichtbar bleiben. WebCodecs rechnet
+stattdessen Bild für Bild so schnell das Gerät kann - unabhängig davon, wie lang das Video
+am Ende ist.
+
+**HTTP-Header / COOP / COEP** - unsichtbare Zusatzinformationen, die ein Server zu jeder
+Datei mitschickt ("das ist ein Bild", "das darfst du zwischenspeichern"). Manche
+Browser-Funktionen schalten sich nur frei, wenn bestimmte Header gesetzt sind. GitHub Pages
+liefert nur Dateien aus und lässt einen die Header nicht selbst bestimmen - deshalb die
+Sackgasse in Abschnitt 4.4.
+
+**Branch / Pull Request** - ein **Branch** ist eine parallele Fassung des Projekts, in der man
+arbeiten kann, ohne die Hauptfassung (`main`) anzufassen. Ein **Pull Request** ist auf GitHub
+die Bitte "bitte diese Fassung in `main` übernehmen", mit Übersicht der Änderungen.
+Solange etwas nur auf einem Branch liegt, ist es **nicht** in der Hauptfassung und landet
+auch nicht in dem Ordner, den man normalerweise herunterlädt.
