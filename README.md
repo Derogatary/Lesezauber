@@ -172,6 +172,8 @@ js/
   vendor/
     pdfjs/                  PDF.js (Mozilla) - wird nur bei PDF-Import nachgeladen
 main.js                  Bindet alle Module zusammen und startet die App
+docs/
+  ROADMAP.md            Konzepte & offene Entscheidungen für die nächsten Schritte
 ```
 
 **Neue Funktion hinzufügen?** In der Regel reicht eine neue Datei unter `js/actions/` oder `js/render/`, die in `js/main.js` importiert wird – der Rest des Codes muss dafür nicht angefasst werden.
@@ -185,6 +187,8 @@ main.js                  Bindet alle Module zusammen und startet die App
 - iOS Safari kann Website-Speicher (auch IndexedDB) nach langer Inaktivität automatisch löschen, wenn die Seite nicht zum Homescreen hinzugefügt wurde – regelmäßiger Export ist deshalb weiterhin empfehlenswert.
 
 ## 🗺 Mögliche nächste Schritte
+
+> **Ausführliche Konzepte, offene Entscheidungen und eine Kostenübersicht stehen in [`docs/ROADMAP.md`](docs/ROADMAP.md).** Die Liste hier ist nur die Kurzfassung.
 
 **Bleibt komplett im Browser (kein Server nötig):**
 - 🎨 KI-generierte Illustrationen für textlastige EPUB-Kapitel ohne eigenes Bild, optional im Comic-Stil (Gemini kann mittlerweile auch Bilder erzeugen, gleicher Key wie bisher) - Cover-Bild-Sonderfall erstmal nicht nötig

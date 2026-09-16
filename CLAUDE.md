@@ -123,7 +123,7 @@ import './actions/meineNeueDatei.js';
 
 ## Persona-System
 
-`js/config.js` definiert `app.personas` (Array von `{id, label, instruction}`). Neue Persona = neuer Eintrag dort, taucht automatisch überall auf (Settings-Dropdown, Reader-Dropdown), keine weiteren Code-Änderungen nötig.
+`js/config.js` definiert `app.personas` (Array von `{id, label, instruction, ttsStyle}`). `instruction` steuert, wie die KI den Text **schreibt**, das optionale `ttsStyle`, wie die KI-Stimme ihn **spricht** (fehlt es, dient `instruction` als Rückfall). Neue Persona = neuer Eintrag dort, taucht automatisch überall auf (Settings-Dropdown, Reader-Dropdown), keine weiteren Code-Änderungen nötig.
 
 Die Persona färbt bei Anbietern mit `supportsStyle` (Gemini, OpenAI) auch die **Stimmlage** - über `app.ttsProviders.styleHintFor()`, abschaltbar in den Einstellungen.
 
@@ -175,6 +175,8 @@ Kein CI/CD - der Nutzer lädt den kompletten Ordnerinhalt manuell über die GitH
 
 ## Offene Punkte (Stand zuletzt besprochen)
 
+**Ausführliche Konzepte, offene Entscheidungen und Kostenübersicht: [`docs/ROADMAP.md`](docs/ROADMAP.md).** Diese Datei bei größeren Änderungen mitpflegen - sie ist der Einstieg für eine neue Sitzung.
+
 Größere, noch nicht begonnene Features (brauchen erst Abstimmung mit dem Nutzer, nicht einfach lospreschen):
 - Vollbild-Modus: Text + Hervorhebung ergänzen
 - Zweiseitiges Buch-Layout für PC/Tablet
@@ -217,4 +219,4 @@ Feste Regeln dabei:
 
 ## Versionsstand
 
-Aktuell `v0.10.1-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Zähl die Version bei größeren Änderungen entsprechend hoch (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).
+Aktuell `v0.10.2-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Zähl die Version bei größeren Änderungen entsprechend hoch (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).

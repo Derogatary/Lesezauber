@@ -29,7 +29,20 @@ Object.assign(app.render, {
         if (needsOwnKey && keyInput) {
             keyInput.value = app.settings[provider.keySetting] || '';
             if (keyLabel) keyLabel.innerText = `API-Key (${provider.label.split(' (')[0]})`;
-            if (keyLink) keyLink.href = provider.keyUrl || '#';
+        }
+
+        // NEU: Links zum Anbieter (Key-Seite + Preisliste) bei jeder
+        // KI-Stimme zeigen - auch bei Gemini, das kein eigenes Key-Feld hat.
+        const linkRow = document.getElementById('ttsLinkRow');
+        const pricingLink = document.getElementById('ttsPricingLink');
+        if (linkRow) linkRow.classList.toggle('hidden', !provider.neural);
+        if (keyLink) {
+            keyLink.href = provider.keyUrl || '#';
+            keyLink.classList.toggle('hidden', !provider.keyUrl);
+        }
+        if (pricingLink) {
+            pricingLink.href = provider.pricingUrl || '#';
+            pricingLink.classList.toggle('hidden', !provider.pricingUrl);
         }
 
         // Stimmen-Auswahl: bei ElevenLabs bevorzugt die aus dem Konto

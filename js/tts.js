@@ -124,6 +124,18 @@ Object.assign(app.tts, {
         this.synth.speak(utter);
     },
 
+    // NEU: feste Ansage je Seite statt Zufall. Bei einer KI-Stimme wird
+    // jede gesprochene Zeile zwischengespeichert - eine zufällige Ansage
+    // hätte pro Seite bis zu fünf verschiedene Aufnahmen erzeugt. Aus der
+    // Seiten-ID abgeleitet bleibt die Abwechslung zwischen den Seiten
+    // erhalten, dieselbe Seite klingt aber immer gleich.
+    _introForPage(page) {
+        const id = String((page && page.id) || '');
+        let sum = 0;
+        for (let i = 0; i < id.length; i++) sum += id.charCodeAt(i);
+        return IMAGE_INTROS[sum % IMAGE_INTROS.length];
+    },
+
     _currentTextElementId() {
         return app.state.activeTab === 'erstleser' ? 'readerErstleserText' : 'readerOriginalText';
     },
@@ -242,11 +254,11 @@ Object.assign(app.tts, {
         const describeImage = () => {
             if (!app.state.autoReadActive) return;
             if (variant.desc) {
-                const intro = IMAGE_INTROS[Math.floor(Math.random() * IMAGE_INTROS.length)];
-                this.speak(intro, () => {
-                    if (!app.state.autoReadActive) return;
-                    this.speak(variant.desc, maybeAskQuiz);
-                });
+                // FIX: Ansage und Bildbeschreibung laufen jetzt in EINEM
+                // Sprechvorgang. Vorher waren es zwei - bei einer KI-Stimme
+                // also zwei API-Aufrufe und zwei Aufnahmen pro Seite. Klingt
+                // nebenbei natürlicher, weil die Pause dazwischen wegfällt.
+                this.speak(`${this._introForPage(page)} ${variant.desc}`, maybeAskQuiz);
             } else {
                 maybeAskQuiz();
             }

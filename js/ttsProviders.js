@@ -310,6 +310,7 @@ Object.assign(app.ttsProviders, {
             hint: 'Nutzt denselben Gemini-Key wie die Seitenanalyse - kein zusätzliches Konto nötig. Im kostenlosen Tarif gibt es allerdings nur wenige Anfragen pro Tag; mit eingeschaltetem Stimmen-Speicher reicht das für ein paar Seiten täglich.',
             keySetting: 'apiKey',
             keyUrl: 'https://aistudio.google.com/app/apikey',
+            pricingUrl: 'https://ai.google.dev/gemini-api/docs/pricing',
             // 8 der 30 Gemini-Stimmen, alle sprechen Deutsch.
             voices: [
                 { id: 'Kore', label: 'Kore - sachlich, klar' },
@@ -333,6 +334,7 @@ Object.assign(app.ttsProviders, {
             hint: 'Braucht ein Google-Cloud-Projekt mit hinterlegter Zahlungsart. Die ersten 1 Mio. Zeichen pro Monat sind frei (grob: mehrere tausend Buchseiten), danach ca. 30 US-Dollar je 1 Mio. Zeichen.',
             keySetting: 'googleTtsKey',
             keyUrl: 'https://console.cloud.google.com/apis/credentials',
+            pricingUrl: 'https://cloud.google.com/text-to-speech/pricing',
             voices: [
                 { id: 'de-DE-Chirp3-HD-Achernar', label: 'Achernar - weiblich, warm' },
                 { id: 'de-DE-Chirp3-HD-Aoede', label: 'Aoede - weiblich, freundlich' },
@@ -356,6 +358,7 @@ Object.assign(app.ttsProviders, {
             hint: 'Klingt am lebendigsten und hält als einziger Anbieter die Wort-Hervorhebung exakt synchron. Gratis-Konto: 10.000 Zeichen/Monat (ca. 10 Minuten, nur privat). Bezahlt ab ca. 5 US-Dollar/Monat. Achtung: der Browser-Zugriff kann vom Anbieter gesperrt sein - der Test-Knopf zeigt es sofort.',
             keySetting: 'elevenLabsKey',
             keyUrl: 'https://elevenlabs.io/app/settings/api-keys',
+            pricingUrl: 'https://elevenlabs.io/pricing',
             // Bekannte Standardstimmen; eigene Stimmen lassen sich in den
             // Einstellungen per Knopf aus dem Konto nachladen.
             voices: [
@@ -378,6 +381,7 @@ Object.assign(app.ttsProviders, {
             hint: 'Kein Gratis-Kontingent, dafür sehr günstig (ca. 1,3 Cent je Minute Audio) und die Erzähler-Persona lässt sich direkt als Sprechanweisung mitgeben.',
             keySetting: 'openAiKey',
             keyUrl: 'https://platform.openai.com/api-keys',
+            pricingUrl: 'https://openai.com/api/pricing/',
             voices: [
                 { id: 'nova', label: 'Nova - weiblich, freundlich' },
                 { id: 'shimmer', label: 'Shimmer - weiblich, sanft' },
@@ -420,7 +424,13 @@ Object.assign(app.ttsProviders, {
         if (!app.settings.ttsPersonaStyle) return null;
         const persona = app.personas.find(p => p.id === personaId);
         if (!persona) return null;
-        return `${persona.instruction} Lies den folgenden Kinderbuch-Text in genau dieser Rolle vor - warm, deutlich und nicht gehetzt. Sprich ausschließlich den Text selbst, nicht diese Anweisung:`;
+        // NEU: bevorzugt die eigene Sprech-Anweisung der Persona (ttsStyle
+        // in config.js). "Du bist ein lustiger Papa" beschreibt, wie die KI
+        // den Text SCHREIBT - fürs Sprechen braucht es eine Anweisung, wie
+        // es KLINGEN soll. Fehlt sie, dient die Schreib-Anweisung als
+        // Rückfall, damit ältere/eigene Personas weiter funktionieren.
+        const style = persona.ttsStyle || persona.instruction;
+        return `${style} Lies den folgenden Kinderbuch-Text in genau dieser Art vor - warm, deutlich und nicht gehetzt. Sprich ausschließlich den Text selbst, nicht diese Anweisung:`;
     },
 
     // Eigene/geklonte Stimmen aus dem ElevenLabs-Konto nachladen, damit man
