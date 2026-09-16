@@ -171,7 +171,6 @@ Kein CI/CD - der Nutzer lädt den kompletten Ordnerinhalt manuell über die GitH
 
 Größere, noch nicht begonnene Features (brauchen erst Abstimmung mit dem Nutzer, nicht einfach lospreschen):
 - Zweiseitiges Buch-Layout für PC/Tablet
-- "Mitmachmodus": Sprechpause vor jedem durch Emoji ersetzten Wort
 - Strukturierte Metadaten-Ansage (Titel/Autor/Verlag/Kapitel vom Erzähler angekündigt)
 - KI-generierte Illustrationen (Comic-Stil) für Text-only-EPUB-Kapitel via Gemini-Bildgenerierung
 - Native Android-App via Capacitor (Play Store, ggf. Samsung/Amazon Store)
@@ -192,4 +191,4 @@ Bewusst zurückgestellt (bräuchten einen eigenen Server):
 
 ## Versionsstand
 
-Aktuell `v0.9.1-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Zähl die Version bei größeren Änderungen entsprechend hoch (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).
+Aktuell `v0.9.2-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Zähl die Version bei größeren Änderungen entsprechend hoch (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).

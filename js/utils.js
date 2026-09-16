@@ -171,6 +171,26 @@ Object.assign(app.utils, {
         return { clean, html };
     },
 
+    // NEU: teilt Text in Text-/Emoji-Häppchen auf - Basis für den
+    // Mitmachmodus, der vor jedem emoji-ersetzten Wort eine Sprechpause
+    // zum Mitraten einlegt (siehe app.tts.speakMitmach). Gleiche
+    // Emoji-Zeichenbereiche wie stripEmojiForSpeech, damit beide Stellen
+    // konsistent erkennen, was ein "Emoji-Wort" ist.
+    splitBySpeechEmoji(text) {
+        if (!text) return [];
+        const EMOJI_RE = /[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{1F1E6}-\u{1F1FF}\u{2B00}-\u{2BFF}]/gu;
+        const parts = [];
+        let lastIndex = 0;
+        let match;
+        while ((match = EMOJI_RE.exec(text)) !== null) {
+            if (match.index > lastIndex) parts.push({ type: 'text', value: text.slice(lastIndex, match.index) });
+            parts.push({ type: 'emoji', value: match[0] });
+            lastIndex = EMOJI_RE.lastIndex;
+        }
+        if (lastIndex < text.length) parts.push({ type: 'text', value: text.slice(lastIndex) });
+        return parts;
+    },
+
     sanitize(str) {
         if (!str) return '';
         const temp = document.createElement('div');

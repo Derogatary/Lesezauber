@@ -33,6 +33,7 @@ Eine Web-App, mit der du Kinderbuch-Seiten mit dem Handy fotografierst (oder aus
 - 🔧 Kompaktes "⋮"-Menü statt vieler Icons pro Seiten-Karte, Suche mit Debounce
 - 📱 Responsive: nutzt auf Tablet/Desktop mehr Spalten und Breite statt nur im Handy-Format
 - 🌙 Vollbild-Vorlese-Modus (Bild, Text mit Wort-Hervorhebung + Play/Pause, ideal fürs Bett)
+- 🙌 Mitmachmodus: liest den Erstleser-Text vor und pausiert vor jedem durch ein Emoji ersetzten Wort zum Mitraten
 - 🖨️ Buch drucken (einfache Druckansicht mit Bild + Text pro Seite)
 - 🔥 Lese-Serie pro Profil, 👋 persönliche Begrüßung mit "Weiterlesen"-Karte
 - 💾 Sanfte Erinnerung, wenn lange kein Backup mehr gemacht wurde

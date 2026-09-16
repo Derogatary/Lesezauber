@@ -31,5 +31,9 @@ Object.assign(app.state, {
     vocabDeck: [],
     vocabIndex: 0,
     // NEU: kombinierter Modus - beim Auto-Vorlesen auch Raetselfragen stellen
-    autoReadWithQuiz: false
+    autoReadWithQuiz: false,
+    // NEU: Mitmachmodus - liest den Erstleser-Text statt des Originaltexts
+    // vor und pausiert bei jedem durch ein Emoji ersetzten Wort, damit das
+    // Kind es selbst raten/mitsprechen kann
+    mitmachModus: false
 });

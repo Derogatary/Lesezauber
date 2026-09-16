@@ -33,7 +33,7 @@
                     </h1>
                     <p id="libraryGreeting" class="text-sm text-slate-500 font-semibold">Deine interaktive Kinderbuch-Welt</p>
                     <p id="streakBadge" class="hidden text-xs font-bold text-amber-600 mt-0.5"></p>
-                    <p class="text-[10px] text-slate-400 font-semibold mt-0.5">v0.9.1-beta</p>
+                    <p class="text-[10px] text-slate-400 font-semibold mt-0.5">v0.9.2-beta</p>
                 </div>
                 <div class="flex items-center gap-2 flex-shrink-0">
                     <button onclick="app.nav.go('help')" aria-label="Hilfe öffnen" title="Hilfe" class="w-10 h-10 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-600 hover:bg-slate-100 shadow-sm transition active:scale-95">
@@ -220,6 +220,13 @@
                 🧠 Beim automatischen Vorlesen auch Rätselfragen stellen
             </label>
 
+            <!-- NEU: Mitmachmodus - liest den Erstleser-Text statt des Originaltexts,
+                 mit Sprechpause zum Mitraten bei jedem durch ein Emoji ersetzten Wort -->
+            <label class="flex items-center gap-2 mb-3 text-xs text-slate-600">
+                <input type="checkbox" id="toggleMitmach" onchange="app.state.mitmachModus = this.checked" class="accent-indigo-600">
+                🙌 Mitmachmodus: Pause zum Mitraten bei Emoji-Wörtern (Erstleser-Text)
+            </label>
+
             <!-- Auto-Vorlese-Modus: liest Seite für Seite automatisch vor -->
             <button id="btnAutoRead" onclick="app.tts.toggleAutoRead()" class="w-full mb-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold py-3 rounded-xl shadow-md hover:opacity-95 active:scale-98 transition flex items-center justify-center gap-2">
                 ▶️ Buch automatisch vorlesen
@@ -359,7 +366,7 @@
                 </div>
                 <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
                     <h2 class="text-sm font-bold text-indigo-900 mb-1">🔊 Vorlesen</h2>
-                    <p class="text-xs text-slate-600 leading-relaxed">🔊-Symbol liest die aktuelle Seite einmal vor. "Buch automatisch vorlesen" liest Seite für Seite durch. "Vollbild-Vorlese-Modus" blendet alles bis auf Bild, Text mit Hervorhebung und Play/Pause aus - ideal fürs Bett.</p>
+                    <p class="text-xs text-slate-600 leading-relaxed">🔊-Symbol liest die aktuelle Seite einmal vor. "Buch automatisch vorlesen" liest Seite für Seite durch. "Vollbild-Vorlese-Modus" blendet alles bis auf Bild, Text mit Hervorhebung und Play/Pause aus - ideal fürs Bett. Mit "🙌 Mitmachmodus" wird stattdessen der Erstleser-Text vorgelesen und vor jedem durch ein Emoji ersetzten Wort eine Pause zum Mitraten eingelegt.</p>
                 </div>
                 <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
                     <h2 class="text-sm font-bold text-indigo-900 mb-1">🎭 Erzähler-Persona</h2>
