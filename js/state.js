@@ -9,7 +9,38 @@ Object.assign(app.settings, {
     // NEU: einstellbare Vorlesegeschwindigkeit (0.5 = langsam, 1.5 = schnell)
     speechRate: parseFloat(localStorage.getItem('lz_speech_rate') || '0.9'),
     // NEU: einstellbare Farbe fuer die Wort-Hervorhebung beim Vorlesen
-    highlightColor: localStorage.getItem('lz_highlight_color') || '#fde047'
+    highlightColor: localStorage.getItem('lz_highlight_color') || '#fde047',
+
+    // NEU: KI-Stimmen statt der maschinellen Gerätestimme.
+    // 'device' = wie bisher die eingebaute Stimme (Standard, damit sich für
+    // niemanden ungefragt etwas ändert und ohne Zusatz-Key alles läuft).
+    ttsProvider: localStorage.getItem('lz_tts_provider') || 'device',
+    // Pro Anbieter eine eigene Stimme merken - die IDs sind nicht
+    // untereinander austauschbar.
+    ttsVoices: (() => {
+        try {
+            return JSON.parse(localStorage.getItem('lz_tts_voices') || '{}');
+        } catch (e) {
+            console.error('Gespeicherte Stimmen-Auswahl unlesbar:', e);
+            return {};
+        }
+    })(),
+    // Eigene/geklonte Stimmen, die aus dem ElevenLabs-Konto geladen wurden
+    elevenVoices: (() => {
+        try {
+            return JSON.parse(localStorage.getItem('lz_eleven_voices') || '[]');
+        } catch (e) {
+            return [];
+        }
+    })(),
+    googleTtsKey: localStorage.getItem('lz_google_tts_key') || '',
+    elevenLabsKey: localStorage.getItem('lz_eleven_key') || '',
+    openAiKey: localStorage.getItem('lz_openai_key') || '',
+    // Erzeugte Sprachaufnahmen behalten: dieselbe Seite ein zweites Mal
+    // vorlesen kostet dann kein Kontingent mehr. Standard: an.
+    ttsCacheEnabled: localStorage.getItem('lz_tts_cache') !== '0',
+    // Sprechanweisung aus der Erzähler-Persona mitgeben (nur Gemini/OpenAI)
+    ttsPersonaStyle: localStorage.getItem('lz_tts_persona_style') !== '0'
 });
 
 Object.assign(app.state, {

@@ -53,7 +53,43 @@ Eine Web-App, mit der du Kinderbuch-Seiten mit dem Handy fotografierst (oder aus
 - 🎭 Persona beim Lesen umschaltbar (unabhängig von der Standard-Persona), wird pro Seite bei Bedarf einmalig nachgeladen und dauerhaft gespeichert
 - 🎉 Verständnisfragen zum gesamten Buch am Ende (nicht nur pro Seite)
 - ⚡ Eigener Tailwind-Build statt CDN (schnelleres Laden, kein Live-Compiling im Browser)
+- 🗣️ **Echte KI-Vorlese-Stimmen** statt der maschinellen Gerätestimme - wahlweise Gemini (Free Tier), Google Cloud Chirp 3 HD, ElevenLabs oder OpenAI, mit Probe-Anhören, Zwischenspeicher und automatischem Rückfall auf die Gerätestimme (siehe eigenen Abschnitt unten)
 - 🌙 Optionale Hintergrund-Vorbereitung: erstellt fehlende Erzähler-Varianten und Buch-Quiz automatisch, wenn gerade nichts läuft (aus-/einschaltbar in den Einstellungen)
+
+## 🗣️ Echte KI-Stimmen statt Roboterstimme
+
+Die eingebaute Handy-Stimme (`SpeechSynthesis`) setzt Sprache aus Silbenbausteinen zusammen - sie klingt deshalb flach und "abgehackt". Unter ⚙️ → **Vorlese-Stimme** lässt sich stattdessen eine neuronale KI-Stimme wählen, die den Text als echte Audiodatei einspricht.
+
+Alles läuft weiterhin ohne eigenen Server: Die App holt die Audiodatei direkt beim Anbieter und spielt sie ab.
+
+### Welcher Anbieter?
+
+| Anbieter | Kosten | Wann sinnvoll? | Key |
+|---|---|---|---|
+| **Gerätestimme** | kostenlos, offline | Standard. Wenn kein Internet da ist oder nichts extra eingerichtet werden soll. | – |
+| **Gemini KI-Stimme** | **Free Tier** (kostenlos, aber wenige Anfragen/Tag) | Zum Ausprobieren ohne neues Konto - nutzt denselben Key wie die Seitenanalyse. | vorhandener Gemini-Key |
+| **Google Cloud Chirp 3 HD** | 1 Mio. Zeichen/Monat gratis, danach ca. 30 $/Mio. Zeichen | Der Alltags-Tipp fürs ganze Buch: 1 Mio. Zeichen sind grob mehrere tausend Buchseiten. Braucht ein Google-Cloud-Projekt mit hinterlegter Zahlungsart. | eigener API-Key |
+| **ElevenLabs** | 10.000 Zeichen/Monat gratis (privat), bezahlt ab ca. 5 $/Monat | Beste Vorlese-Qualität und als einziger Anbieter zeichengenaue Zeitstempel → die Wort-Hervorhebung läuft exakt mit. | eigener API-Key |
+| **OpenAI** | kein Gratis-Kontingent, ca. 1,3 Cent je Minute Audio | Günstig und gut steuerbar - die Erzähler-Persona wird als Sprechanweisung mitgeschickt. | eigener API-Key |
+
+Faustregel: **Gemini** zum kostenlosen Reinschnuppern, **Google Cloud Chirp 3 HD** für den Dauerbetrieb, **ElevenLabs**, wenn es besonders schön klingen soll.
+
+### Was die App dabei mitmacht
+
+- **Stimmen-Speicher:** Jede erzeugte Aufnahme landet in der lokalen Datenbank. Dieselbe Seite ein zweites Mal vorlesen kostet dann kein Kontingent mehr und startet sofort. Abschaltbar; Belegung und "Leeren"-Knopf stehen direkt darunter.
+- **Vorbereitung im Hintergrund:** Während eine Seite vorgelesen wird, entsteht die Audiodatei der nächsten Seite schon - so bleibt beim Umblättern keine Stille.
+- **Rückfall:** Kein Internet, Tageslimit erreicht oder Key falsch? Dann springt automatisch die Gerätestimme ein, mit einem kurzen Hinweis - das Vorlesen bricht nie einfach ab.
+- **Wort-Hervorhebung:** Läuft auch bei KI-Stimmen mit. Bei ElevenLabs zeichengenau, bei den übrigen Anbietern anhand der Audiolänge geschätzt.
+- **Persona-Stimmlage:** Bei Gemini und OpenAI wird die gewählte Erzähler-Persona als Sprechanweisung mitgeschickt - die "Gute-Nacht-Fee" klingt dann tatsächlich sanfter als der "Weise Professor".
+
+### Einrichten
+
+1. ⚙️ Einstellungen → **Vorlese-Stimme** → Anbieter wählen
+2. API-Key eintragen (bei Gemini nicht nötig - der Key von oben wird mitbenutzt)
+3. Stimme auswählen und auf **🔊 Stimme testen** tippen. Der Test sagt direkt, ob der Key funktioniert.
+4. Speichern.
+
+> **Hinweis zu ElevenLabs:** Der Anbieter rät von API-Keys direkt im Browser ab und kann Browser-Zugriffe sperren. Meldet der Test "vom Browser aus nicht erreichbar", liegt es daran - dann bleiben Google Cloud oder OpenAI als Alternativen. Eigene/geklonte Stimmen aus dem eigenen Konto lassen sich per Knopf nachladen.
 
 ## 🚀 Live nutzen
 
@@ -112,7 +148,9 @@ js/
   profiles.js             Lokale Profile (kein Login/Server nötig)
   nav.js                  Ansichten-Router
   api.js                  Google-Gemini-Anfragen
-  tts.js                  Sprachausgabe inkl. Auto-Vorlese-Modus
+  tts.js                  Sprachausgabe inkl. Auto-Vorlese-Modus (Weiche Gerät/KI-Stimme)
+  ttsProviders.js         KI-Stimmen-Anbieter (Gemini, Google Cloud, ElevenLabs, OpenAI)
+  ttsNeural.js            Abspielen, Zwischenspeicher & Wort-Hervorhebung der KI-Stimmen
   ui.js                   Toast-Meldungen & Ladeanzeige
   utils.js                Hilfsfunktionen (Bildverkleinerung, Sanitizing, Cover)
   readerUI.js             Tab-Umschaltung im Reader
@@ -140,7 +178,8 @@ main.js                  Bindet alle Module zusammen und startet die App
 ## ⚠️ Bekannte Grenzen
 
 - Alle Daten liegen im Browser des jeweiligen Geräts (IndexedDB) – kein automatischer Abgleich zwischen mehreren Geräten. Für den Umzug auf ein neues Gerät: Export/Import unter ⚙️ nutzen.
-- Der Gemini-API-Key liegt im Klartext im Browser des Geräts (kein eigener Server dazwischen).
+- Der Gemini-API-Key liegt im Klartext im Browser des Geräts (kein eigener Server dazwischen). Das gilt genauso für die Keys der KI-Stimmen-Anbieter - deshalb dort möglichst Keys mit knappem Budget/Limit verwenden.
+- KI-Stimmen brauchen Internet. Bereits gespeicherte Aufnahmen (Stimmen-Speicher) spielen auch offline; für alles andere übernimmt die Gerätestimme.
 - Kein Offline-Modus (Tailwind-CSS und die KI-Analyse brauchen eine Internetverbindung).
 - iOS Safari kann Website-Speicher (auch IndexedDB) nach langer Inaktivität automatisch löschen, wenn die Seite nicht zum Homescreen hinzugefügt wurde – regelmäßiger Export ist deshalb weiterhin empfehlenswert.
 
@@ -149,7 +188,7 @@ main.js                  Bindet alle Module zusammen und startet die App
 **Bleibt komplett im Browser (kein Server nötig):**
 - 🎨 KI-generierte Illustrationen für textlastige EPUB-Kapitel ohne eigenes Bild, optional im Comic-Stil (Gemini kann mittlerweile auch Bilder erzeugen, gleicher Key wie bisher) - Cover-Bild-Sonderfall erstmal nicht nötig
 - 📱 Native App / Android-Store-Verpackung (Capacitor) - verpackt den bestehenden Code weitgehend unverändert
-- 🎬 Video-Export (Seite + KI-Stimme als Videodatei) - der aufwändigste offene Punkt, braucht eine Sprach-API mit echter Audiodatei-Ausgabe (z.B. ElevenLabs)
+- 🎬 Video-Export (Seite + KI-Stimme als Videodatei) - der aufwändigste offene Punkt; die dafür nötige Sprach-API mit echter Audiodatei-Ausgabe ist seit den KI-Stimmen vorhanden
 
 **Bräuchte einen eigenen Server** (aktuell bewusst zurückgestellt):
 - API-Key über ein Backend absichern

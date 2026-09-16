@@ -28,19 +28,64 @@ Object.assign(app.tts, {
         });
     },
 
-    speak(text, onEnd, highlightElementId) {
-        if (!this.synth || !text) return;
-        this.synth.cancel();
+    // NEU: bereitet den Text fürs Vorlesen auf - Emojis raus (sonst
+    // versucht die Stimme, sie auszusprechen) und, falls ein Textfeld
+    // angegeben ist, ein <span> pro Wort für die Hervorhebung. Beide
+    // Sprechwege (Gerät und KI-Stimme) nutzen danach denselben Text, damit
+    // die Hervorhebung in beiden Fällen zu den Zeichenpositionen passt.
+    _prepare(text, highlightElementId) {
+        if (!highlightElementId) return app.utils.stripEmojiForSpeech(text);
 
-        let cleanText;
-        if (highlightElementId) {
-            const { clean, html } = app.utils.buildSpeechHighlightHtml(text);
-            cleanText = clean;
-            const el = document.getElementById(highlightElementId);
-            if (el) el.innerHTML = html;
-        } else {
-            cleanText = app.utils.stripEmojiForSpeech(text);
+        const { clean, html } = app.utils.buildSpeechHighlightHtml(text);
+        const el = document.getElementById(highlightElementId);
+        if (el) el.innerHTML = html;
+        return clean;
+    },
+
+    // NEU: zentrale Weiche zwischen Gerätestimme und KI-Stimme. Alles
+    // andere im Code ruft weiterhin einfach app.tts.speak(...) auf und muss
+    // nicht wissen, welcher Anbieter gerade eingestellt ist.
+    speak(text, onEnd, highlightElementId) {
+        if (!text) return;
+        this.stop();
+
+        const clean = this._prepare(text, highlightElementId);
+        if (!clean) return;
+
+        if (app.ttsNeural.isActive()) {
+            // Läuft asynchron (Netzwerk) und schaltet bei Problemen selbst
+            // auf die Gerätestimme um.
+            app.ttsNeural.speak(clean, onEnd, highlightElementId);
+            return;
         }
+
+        this.speakWithDevice(clean, onEnd, highlightElementId);
+    },
+
+    // NEU: stoppt beides - die Gerätestimme UND eine laufende KI-Aufnahme.
+    stop() {
+        if (this.synth) this.synth.cancel();
+        app.ttsNeural.stop();
+    },
+
+    // Die eingebaute Stimme des Geräts. Erwartet bereits aufbereiteten
+    // Text aus _prepare() (emoji-frei, Hervorhebung steht schon im DOM).
+    speakWithDevice(cleanText, onEnd, highlightElementId) {
+        // Sehr seltener Fall (alter/eingeschränkter Browser): Ohne
+        // Sprachausgabe würde das Auto-Vorlesen sonst stumm im
+        // Sekundentakt durchs ganze Buch blättern - deshalb hier abbrechen
+        // statt einfach weiterzureichen.
+        if (!this.synth) {
+            console.error('Dieses Gerät bietet keine Sprachausgabe (SpeechSynthesis).');
+            app.ui.toast('Dieses Gerät kann keinen Text vorlesen.', '⚠️');
+            if (app.state.autoReadActive) this.stopAutoRead();
+            return;
+        }
+        if (!cleanText) {
+            if (onEnd) onEnd();
+            return;
+        }
+        this.synth.cancel();
 
         const utter = new SpeechSynthesisUtterance(cleanText);
         utter.rate = app.settings.speechRate || 0.9;
@@ -117,7 +162,7 @@ Object.assign(app.tts, {
 
     stopAutoRead() {
         app.state.autoReadActive = false;
-        if (this.synth) this.synth.cancel();
+        this.stop();
         const btn = document.getElementById('btnAutoRead');
         if (btn) btn.innerHTML = '▶️ Buch automatisch vorlesen';
         const focusBtn = document.getElementById('focusPlayBtn');
@@ -148,6 +193,16 @@ Object.assign(app.tts, {
         if (btn) btn.innerHTML = '⏸ Vorlesen stoppen';
         const focusBtn = document.getElementById('focusPlayBtn');
         if (focusBtn) focusBtn.innerText = '⏸️';
+
+        // NEU: Bei einer KI-Stimme dauert das Erzeugen der Audiodatei ein
+        // paar Sekunden. Während diese Seite vorgelesen wird, entsteht die
+        // nächste schon im Hintergrund - so bleibt beim Umblättern keine
+        // Stille. Ohne KI-Stimme passiert hier nichts.
+        const nextPage = book.pages[app.state.currentPageIdx + 1];
+        if (nextPage) {
+            const nextVariant = app.utils.resolvePageVariant(nextPage, app.state.readingPersonaId);
+            if (nextVariant && nextVariant.text) app.ttsNeural.warmUp(nextVariant.text);
+        }
 
         const advanceToNext = () => {
             const isLastPage = app.state.currentPageIdx >= book.pages.length - 1;

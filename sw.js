@@ -1,7 +1,7 @@
 // Bei jeder inhaltlichen Änderung an einer dieser Dateien diese Nummer
 // erhöhen - sonst bekommen wiederkehrende Besucher weiter die alte
 // zwischengespeicherte Version ausgeliefert.
-const CACHE_NAME = 'lesezauber-shell-v13';
+const CACHE_NAME = 'lesezauber-shell-v14';
 
 // Nur die eigenen, lokalen Dateien werden zwischengespeichert (die
 // "App-Hülle"). Die Gemini-/Mistral-APIs werden absichtlich NICHT
@@ -20,6 +20,8 @@ const APP_SHELL = [
     './js/nav.js',
     './js/api.js',
     './js/tts.js',
+    './js/ttsProviders.js',
+    './js/ttsNeural.js',
     './js/ui.js',
     './js/utils.js',
     './js/readerUI.js',

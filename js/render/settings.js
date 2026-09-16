@@ -1,6 +1,80 @@
 import { app } from '../core.js';
 
 Object.assign(app.render, {
+    // NEU: Der Bereich "Vorlese-Stimme" baut sich komplett aus
+    // app.ttsProviders.list auf. Ein neuer Anbieter dort taucht hier
+    // automatisch auf, ohne dass diese Datei angefasst werden muss.
+    async ttsProviderCard() {
+        const select = document.getElementById('selectTtsProvider');
+        if (!select) return;
+
+        const provider = app.ttsProviders.current();
+
+        select.innerHTML = app.ttsProviders.list
+            .map(p => `<option value="${p.id}">${app.utils.sanitize(p.label)}</option>`)
+            .join('');
+        select.value = provider.id;
+
+        const hint = document.getElementById('ttsProviderHint');
+        if (hint) hint.innerText = provider.hint || '';
+
+        // Key-Feld nur bei Anbietern mit eigenem Key. Gemini nutzt den
+        // Key, der weiter oben ohnehin schon eingetragen ist.
+        const keyRow = document.getElementById('ttsKeyRow');
+        const keyInput = document.getElementById('inputProviderKey');
+        const keyLabel = document.getElementById('ttsKeyLabel');
+        const keyLink = document.getElementById('ttsKeyLink');
+        const needsOwnKey = !!provider.keySetting && provider.keySetting !== 'apiKey';
+        if (keyRow) keyRow.classList.toggle('hidden', !needsOwnKey);
+        if (needsOwnKey && keyInput) {
+            keyInput.value = app.settings[provider.keySetting] || '';
+            if (keyLabel) keyLabel.innerText = `API-Key (${provider.label.split(' (')[0]})`;
+            if (keyLink) keyLink.href = provider.keyUrl || '#';
+        }
+
+        // Stimmen-Auswahl: bei ElevenLabs bevorzugt die aus dem Konto
+        // geladenen Stimmen, sonst die fest hinterlegte Auswahl.
+        const voiceRow = document.getElementById('ttsVoiceRow');
+        const voiceSelect = document.getElementById('selectTtsVoice');
+        if (voiceRow) voiceRow.classList.toggle('hidden', !provider.neural);
+        if (provider.neural && voiceSelect) {
+            const loaded = provider.id === 'elevenlabs' ? (app.settings.elevenVoices || []) : [];
+            const voices = loaded.length ? loaded : provider.voices;
+            voiceSelect.innerHTML = voices
+                .map(v => `<option value="${app.utils.sanitize(v.id)}">${app.utils.sanitize(v.label)}</option>`)
+                .join('');
+            voiceSelect.value = app.ttsProviders.voiceFor(provider);
+            // Steht die gemerkte Stimme nicht (mehr) zur Auswahl, greift
+            // wieder die Standardstimme des Anbieters.
+            if (!voiceSelect.value) voiceSelect.value = provider.defaultVoice;
+        }
+
+        const elevenBtn = document.getElementById('btnLoadElevenVoices');
+        if (elevenBtn) elevenBtn.classList.toggle('hidden', !provider.supportsVoiceFetch);
+
+        // Zusatz-Optionen (Persona-Stil, Stimmen-Speicher) sind nur bei
+        // einer KI-Stimme sinnvoll.
+        const optionsRow = document.getElementById('ttsOptionsRow');
+        if (optionsRow) optionsRow.classList.toggle('hidden', !provider.neural);
+
+        const styleRow = document.getElementById('ttsStyleRow');
+        if (styleRow) styleRow.classList.toggle('hidden', !provider.supportsStyle);
+        const styleToggle = document.getElementById('toggleTtsPersonaStyle');
+        if (styleToggle) styleToggle.checked = app.settings.ttsPersonaStyle !== false;
+
+        const cacheToggle = document.getElementById('toggleTtsCache');
+        if (cacheToggle) cacheToggle.checked = app.settings.ttsCacheEnabled !== false;
+
+        const cacheInfo = document.getElementById('ttsCacheInfo');
+        if (cacheInfo && provider.neural) {
+            const stats = await app.dbOps.getTtsCacheStats();
+            const mb = (stats.bytes / (1024 * 1024)).toFixed(1);
+            cacheInfo.innerText = stats.count
+                ? `${stats.count} gespeicherte Aufnahme(n), ${mb} MB`
+                : 'Noch nichts gespeichert.';
+        }
+    },
+
     async settings() {
         // Die Persona-Liste kommt aus config.js statt fest im HTML zu
         // stehen. Ergänzt man dort eine Persona, erscheint sie automatisch
@@ -33,6 +107,7 @@ Object.assign(app.render, {
             bgStatus.innerText = missing > 0 ? `${missing} Variante(n) noch offen` : 'Alles vorbereitet ✅';
         }
         app.tts.loadVoices();
+        await this.ttsProviderCard();
 
         // NEU: Speicherplatz-Nutzung anzeigen (grobe Schätzung des Browsers)
         const infoEl = document.getElementById('storageInfo');
