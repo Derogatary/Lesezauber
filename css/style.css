@@ -15,15 +15,26 @@
 
     /* Flächen / Karten */
     .bg-white { background-color: #1e293b !important; }
-    .bg-slate-50 { background-color: #0f172a !important; }
+    /* FIX: war identisch zur Seiten-Hintergrundfarbe (siehe body-Regel
+       unten). Für den App-Rahmen selbst fiel das nie auf (er deckt am
+       Handy die komplette Fläche ab, man sieht den body dahinter also nie).
+       Genau dieselbe Klasse wird aber auch als "eingelassene" Füllung von
+       Eingabefeldern/Dropdowns auf weißen Karten benutzt (z.B. die
+       Einstellungen-Felder) - dort verschmolz das Feld dadurch optisch
+       komplett mit der Seite dahinter und war praktisch nicht mehr zu
+       erkennen. Jetzt ein eigener, etwas hellerer Ton: dunkler als die
+       Karte (#1e293b), aber klar heller als der reine Seitenhintergrund. */
+    .bg-slate-50 { background-color: #172236 !important; }
     .bg-slate-100 { background-color: #334155 !important; }
     .bg-slate-200 { background-color: #334155 !important; }
 
     /* FIX: Tailwind-Klassen MIT Transparenzangabe (z.B. "bg-slate-50/95")
        sind für CSS eigene Klassennamen und wurden von den Regeln darüber
        NICHT miterfasst - die klebende Kopfzeile im Reader blieb dadurch
-       im Dark-Modus fast weiß, während der Rest dunkel war. */
-    .bg-slate-50\/95 { background-color: rgba(15, 23, 42, 0.95) !important; }
+       im Dark-Modus fast weiß, während der Rest dunkel war. Farbwert an
+       die obige .bg-slate-50-Anpassung angeglichen, damit die Kopfzeile
+       beim Scrollen weiter nahtlos mit der Seite dahinter verschmilzt. */
+    .bg-slate-50\/95 { background-color: rgba(23, 34, 54, 0.95) !important; }
 
     /* Text */
     .text-slate-900 { color: #f1f5f9 !important; }
