@@ -103,6 +103,30 @@ async function callMistralAnalyze(prompt, base64Image) {
     return parseModelJson(textResult);
 }
 
+// NEU: reiner Text-Aufruf (kein Bild) fürs Buch-Quiz, genutzt vom
+// Gemini/Mistral-Fallback-Paar unten.
+async function callMistralText(prompt) {
+    if (!app.settings.mistralApiKey) throw new Error('MISTRAL_KEY_MISSING');
+
+    const res = await fetch('https://api.mistral.ai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${app.settings.mistralApiKey}`
+        },
+        body: JSON.stringify({
+            model: MISTRAL_MODEL,
+            messages: [{ role: 'user', content: prompt }]
+        })
+    });
+
+    if (!res.ok) throw new Error(`Mistral-Fehler ${res.status}`);
+
+    const data = await res.json();
+    const textResult = data.choices?.[0]?.message?.content || '[]';
+    return parseModelJson(textResult);
+}
+
 Object.assign(app.api, {
     // personaId ist jetzt optional - ohne Angabe wird wie bisher die
     // globale Standard-Persona genutzt (bestehende Aufrufe funktionieren
@@ -177,14 +201,31 @@ Antworte AUSSCHLIESSLICH als valides JSON-Array ohne Markdown-Blöcke, exakt in 
   {"question": "...", "answer": "..."}
 ]`;
 
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${app.settings.apiKey}`, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.3 } })
-        });
+        // FIX: bisher als einziger API-Aufruf ohne Mistral-Fallback - fiel
+        // Gemini aus, ging das Buch-Quiz gar nicht, obwohl das README den
+        // Fallback allgemein verspricht. Jetzt wie analyze() gehandhabt.
+        try {
+            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${app.settings.apiKey}`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.3 } })
+            });
 
-        if (!res.ok) throw new Error(`Gemini-Fehler ${res.status}`);
-        const data = await res.json();
-        const textResult = data.candidates?.[0]?.content?.parts?.[0]?.text || '[]';
-        return parseModelJson(textResult);
+            if (!res.ok) throw new Error(`Gemini-Fehler ${res.status}`);
+            const data = await res.json();
+            const textResult = data.candidates?.[0]?.content?.parts?.[0]?.text || '[]';
+            return parseModelJson(textResult);
+        } catch (geminiError) {
+            if (!app.settings.mistralApiKey) throw geminiError;
+
+            console.warn('Gemini fehlgeschlagen, versuche Mistral-Fallback:', geminiError.message);
+            try {
+                const result = await callMistralText(prompt);
+                app.ui.toast('Gemini nicht erreichbar - Mistral eingesprungen', '🔄');
+                return result;
+            } catch (mistralError) {
+                console.error('Auch Mistral-Fallback fehlgeschlagen:', mistralError);
+                throw geminiError;
+            }
+        }
     }
 });
