@@ -33,7 +33,7 @@
                     </h1>
                     <p id="libraryGreeting" class="text-sm text-slate-500 font-semibold">Deine interaktive Kinderbuch-Welt</p>
                     <p id="streakBadge" class="hidden text-xs font-bold text-amber-600 mt-0.5"></p>
-                    <p class="text-[10px] text-slate-400 font-semibold mt-0.5">v0.9.2-beta</p>
+                    <p class="text-[10px] text-slate-400 font-semibold mt-0.5">v0.9.3-beta</p>
                 </div>
                 <div class="flex items-center gap-2 flex-shrink-0">
                     <button onclick="app.nav.go('help')" aria-label="Hilfe öffnen" title="Hilfe" class="w-10 h-10 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-600 hover:bg-slate-100 shadow-sm transition active:scale-95">
@@ -237,93 +237,101 @@
                 🌙 Vollbild-Vorlese-Modus
             </button>
 
-            <!-- Image Container -->
-            <div class="relative bg-black rounded-2xl overflow-hidden shadow-md mb-4 max-h-64 sm:max-h-96 md:max-h-[32rem] flex items-center justify-center" id="readerImageContainer">
-                <img id="readerImg" class="w-full h-full object-contain" src="" alt="Buchseite">
-            </div>
-
-            <!-- Tab Switcher (Original / Erstleser / Zauberer) -->
-            <div class="flex bg-slate-200 p-1 rounded-xl mb-4 gap-1 text-xs font-bold">
-                <button id="tabOriginal" onclick="app.readerUI.setTab('original')" class="flex-1 py-2 rounded-lg text-center bg-white shadow-sm text-indigo-900">
-                    📖 Original
-                </button>
-                <button id="tabErstleser" onclick="app.readerUI.setTab('erstleser')" class="flex-1 py-2 rounded-lg text-center text-slate-600 hover:text-slate-900">
-                    🎈 Erstleser (5J)
-                </button>
-                <button id="tabQuiz" onclick="app.readerUI.setTab('quiz')" class="flex-1 py-2 rounded-lg text-center text-slate-600 hover:text-slate-900">
-                    🧙‍♂️ Frag KI
-                </button>
-            </div>
-
-            <!-- Tab Content 1: Original Text -->
-            <div id="contentOriginal" class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-4">
-                <div class="flex justify-between items-start">
-                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500">Gedruckter Text</h3>
-                    <button onclick="app.tts.speakCurrentText()" aria-label="Text vorlesen" class="bg-indigo-100 hover:bg-indigo-200 text-indigo-700 p-2 rounded-full transition text-lg leading-none">
-                        🔊
-                    </button>
-                </div>
-                <p id="readerOriginalText" class="text-slate-800 leading-relaxed font-medium text-base">Lade Text...</p>
-            </div>
-
-            <!-- Tab Content 2: Erstleser Modus -->
-            <div id="contentErstleser" class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-4 hidden">
-                <div class="flex justify-between items-start">
-                    <div>
-                        <h3 class="text-xs font-bold uppercase tracking-wider text-indigo-500">Vereinfacht für Kinder</h3>
-                        <p class="text-[11px] text-slate-500">Mit Emojis für schwierige Wörter</p>
-                    </div>
-                    <button onclick="app.tts.speakCurrentText()" aria-label="Vereinfachten Text vorlesen" class="bg-indigo-100 hover:bg-indigo-200 text-indigo-700 p-2 rounded-full transition text-lg leading-none">
-                        🔊
-                    </button>
-                </div>
-                <p id="readerErstleserText" class="text-slate-800 leading-relaxed font-medium text-lg bg-indigo-50/50 p-4 rounded-xl border border-indigo-100">Lade Text...</p>
-            </div>
-
-            <!-- Tab Content 3: Quiz & KI Frag den Zauberer -->
-            <div id="contentQuiz" class="space-y-4 hidden">
-                <!-- AI Image Description -->
-                <div id="imageDescCard" class="bg-purple-50 p-4 rounded-2xl border border-purple-100">
-                    <h4 class="text-xs font-bold text-purple-800 uppercase tracking-wider mb-1">🖼️ Bildbeschreibung</h4>
-                    <p id="readerImageDesc" class="text-sm text-purple-950 leading-relaxed">Lade Beschreibung...</p>
+            <!-- NEU: Wrapper für Bild + Text - im zweiseitigen Layout (Option,
+                 siehe style.css .two-page-layout, nur ab Tablet-Breite) stehen
+                 beide nebeneinander wie ein aufgeschlagenes Buch, sonst wie
+                 gewohnt untereinander -->
+            <div id="readerLayoutGrid">
+                <!-- Image Container -->
+                <div class="relative bg-black rounded-2xl overflow-hidden shadow-md mb-4 max-h-64 sm:max-h-96 md:max-h-[32rem] flex items-center justify-center" id="readerImageContainer">
+                    <img id="readerImg" class="w-full h-full object-contain" src="" alt="Buchseite">
                 </div>
 
-                <!-- Quiz Card -->
-                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-2">
-                    <h4 class="text-xs font-bold text-amber-600 uppercase tracking-wider">❓ Rätselfrage</h4>
-                    <p id="readerQuizQ" class="text-sm font-bold text-slate-800">Lade Frage...</p>
-                    <button id="btnShowQuizA" onclick="document.getElementById('readerQuizA').classList.toggle('hidden')" class="text-xs bg-amber-100 text-amber-800 px-3 py-1.5 rounded-lg font-bold hover:bg-amber-200 transition">
-                        Antwort verraten
-                    </button>
-                    <p id="readerQuizA" class="text-sm text-emerald-700 font-medium bg-emerald-50 p-2 rounded-lg border border-emerald-100 hidden">Lade Antwort...</p>
-                </div>
-
-                <!-- Chat Box -->
-                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-3">
-                    <h4 class="text-xs font-bold text-indigo-600 uppercase tracking-wider">💬 Frag den Zauberer zum Bild</h4>
-                    <div id="chatHistory" class="space-y-2 max-h-36 overflow-y-auto text-xs">
-                        <!-- Chat messages injected here -->
-                    </div>
-                    <div class="flex gap-2">
-                        <input id="chatInput" type="text" placeholder="Z.B. Was macht der Bär?" class="flex-grow text-xs bg-slate-100 border border-slate-300 rounded-xl px-3 py-2 focus:outline-none focus:border-indigo-500">
-                        <button onclick="app.actions.askWizard()" class="bg-indigo-600 text-white font-bold text-xs px-4 py-2 rounded-xl hover:bg-indigo-700 transition">
-                            Fragen
+                <div id="readerTabArea">
+                    <!-- Tab Switcher (Original / Erstleser / Zauberer) -->
+                    <div class="flex bg-slate-200 p-1 rounded-xl mb-4 gap-1 text-xs font-bold">
+                        <button id="tabOriginal" onclick="app.readerUI.setTab('original')" class="flex-1 py-2 rounded-lg text-center bg-white shadow-sm text-indigo-900">
+                            📖 Original
+                        </button>
+                        <button id="tabErstleser" onclick="app.readerUI.setTab('erstleser')" class="flex-1 py-2 rounded-lg text-center text-slate-600 hover:text-slate-900">
+                            🎈 Erstleser (5J)
+                        </button>
+                        <button id="tabQuiz" onclick="app.readerUI.setTab('quiz')" class="flex-1 py-2 rounded-lg text-center text-slate-600 hover:text-slate-900">
+                            🧙‍♂️ Frag KI
                         </button>
                     </div>
-                </div>
 
-                <!-- NEU: Verständnisfragen zum GESAMTEN Buch - nur auf der letzten Seite sichtbar -->
-                <div id="bookQuizSection" class="hidden space-y-3">
-                    <div class="bg-indigo-50 p-4 rounded-2xl border border-indigo-100 text-center space-y-2">
-                        <p class="text-sm font-bold text-indigo-900">🎉 Du hast das ganze Buch geschafft!</p>
-                        <button id="bookQuizGenerateBtn" onclick="app.actions.generateBookQuiz()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-4 py-2 rounded-xl transition">
-                            Verständnisfragen zum Buch erstellen
-                        </button>
+                    <!-- Tab Content 1: Original Text -->
+                    <div id="contentOriginal" class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+                        <div class="flex justify-between items-start">
+                            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500">Gedruckter Text</h3>
+                            <button onclick="app.tts.speakCurrentText()" aria-label="Text vorlesen" class="bg-indigo-100 hover:bg-indigo-200 text-indigo-700 p-2 rounded-full transition text-lg leading-none">
+                                🔊
+                            </button>
+                        </div>
+                        <p id="readerOriginalText" class="text-slate-800 leading-relaxed font-medium text-base">Lade Text...</p>
                     </div>
-                    <div id="bookQuizContainer" class="space-y-2"></div>
-                    <button onclick="app.actions.generateBookQuiz(true)" class="text-[11px] text-slate-500 hover:text-slate-600 underline mx-auto block">
-                        Neu erstellen
-                    </button>
+
+                    <!-- Tab Content 2: Erstleser Modus -->
+                    <div id="contentErstleser" class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-4 hidden">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h3 class="text-xs font-bold uppercase tracking-wider text-indigo-500">Vereinfacht für Kinder</h3>
+                                <p class="text-[11px] text-slate-500">Mit Emojis für schwierige Wörter</p>
+                            </div>
+                            <button onclick="app.tts.speakCurrentText()" aria-label="Vereinfachten Text vorlesen" class="bg-indigo-100 hover:bg-indigo-200 text-indigo-700 p-2 rounded-full transition text-lg leading-none">
+                                🔊
+                            </button>
+                        </div>
+                        <p id="readerErstleserText" class="text-slate-800 leading-relaxed font-medium text-lg bg-indigo-50/50 p-4 rounded-xl border border-indigo-100">Lade Text...</p>
+                    </div>
+
+                    <!-- Tab Content 3: Quiz & KI Frag den Zauberer -->
+                    <div id="contentQuiz" class="space-y-4 hidden">
+                        <!-- AI Image Description -->
+                        <div id="imageDescCard" class="bg-purple-50 p-4 rounded-2xl border border-purple-100">
+                            <h4 class="text-xs font-bold text-purple-800 uppercase tracking-wider mb-1">🖼️ Bildbeschreibung</h4>
+                            <p id="readerImageDesc" class="text-sm text-purple-950 leading-relaxed">Lade Beschreibung...</p>
+                        </div>
+
+                        <!-- Quiz Card -->
+                        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-2">
+                            <h4 class="text-xs font-bold text-amber-600 uppercase tracking-wider">❓ Rätselfrage</h4>
+                            <p id="readerQuizQ" class="text-sm font-bold text-slate-800">Lade Frage...</p>
+                            <button id="btnShowQuizA" onclick="document.getElementById('readerQuizA').classList.toggle('hidden')" class="text-xs bg-amber-100 text-amber-800 px-3 py-1.5 rounded-lg font-bold hover:bg-amber-200 transition">
+                                Antwort verraten
+                            </button>
+                            <p id="readerQuizA" class="text-sm text-emerald-700 font-medium bg-emerald-50 p-2 rounded-lg border border-emerald-100 hidden">Lade Antwort...</p>
+                        </div>
+
+                        <!-- Chat Box -->
+                        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                            <h4 class="text-xs font-bold text-indigo-600 uppercase tracking-wider">💬 Frag den Zauberer zum Bild</h4>
+                            <div id="chatHistory" class="space-y-2 max-h-36 overflow-y-auto text-xs">
+                                <!-- Chat messages injected here -->
+                            </div>
+                            <div class="flex gap-2">
+                                <input id="chatInput" type="text" placeholder="Z.B. Was macht der Bär?" class="flex-grow text-xs bg-slate-100 border border-slate-300 rounded-xl px-3 py-2 focus:outline-none focus:border-indigo-500">
+                                <button onclick="app.actions.askWizard()" class="bg-indigo-600 text-white font-bold text-xs px-4 py-2 rounded-xl hover:bg-indigo-700 transition">
+                                    Fragen
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- NEU: Verständnisfragen zum GESAMTEN Buch - nur auf der letzten Seite sichtbar -->
+                        <div id="bookQuizSection" class="hidden space-y-3">
+                            <div class="bg-indigo-50 p-4 rounded-2xl border border-indigo-100 text-center space-y-2">
+                                <p class="text-sm font-bold text-indigo-900">🎉 Du hast das ganze Buch geschafft!</p>
+                                <button id="bookQuizGenerateBtn" onclick="app.actions.generateBookQuiz()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-4 py-2 rounded-xl transition">
+                                    Verständnisfragen zum Buch erstellen
+                                </button>
+                            </div>
+                            <div id="bookQuizContainer" class="space-y-2"></div>
+                            <button onclick="app.actions.generateBookQuiz(true)" class="text-[11px] text-slate-500 hover:text-slate-600 underline mx-auto block">
+                                Neu erstellen
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </main>
@@ -455,6 +463,17 @@
                     </div>
                     <p class="text-[11px] text-slate-500">Erstellt automatisch fehlende Erzähler-Varianten und Buch-Quiz, wenn gerade nichts anderes läuft. Verbraucht zusätzliche KI-Anfragen im Hintergrund - bei knappem Tageslimit lieber ausgeschaltet lassen.</p>
                     <p id="pregenStatus" class="text-[11px] text-slate-500 font-semibold"></p>
+                </div>
+
+                <!-- NEU: zweiseitiges Layout (Option) -->
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-2">
+                    <div class="flex items-center justify-between">
+                        <label for="toggleTwoPageLayout" class="text-xs font-bold uppercase tracking-wider text-slate-500">
+                            Zweiseitiges Layout (PC/Tablet)
+                        </label>
+                        <input id="toggleTwoPageLayout" type="checkbox" onchange="app.settingsConfig.toggleTwoPageLayout(this.checked)" class="w-5 h-5 accent-indigo-600">
+                    </div>
+                    <p class="text-[11px] text-slate-500">Zeigt Bild und Text beim Lesen auf größeren Bildschirmen nebeneinander wie ein aufgeschlagenes Buch. Auf dem Handy bleibt es immer wie gewohnt untereinander.</p>
                 </div>
 
                 <!-- Mistral als optionaler Fallback -->

@@ -56,6 +56,10 @@ app.init = async function () {
     // nach dem ersten Öffnen der Einstellungen
     document.documentElement.style.setProperty('--speech-highlight-color', app.settings.highlightColor);
 
+    // NEU: gespeichertes zweiseitiges Layout gleich anwenden, nicht erst
+    // nach dem ersten Umschalten in den Einstellungen
+    document.getElementById('viewReader')?.classList.toggle('two-page-layout', app.settings.twoPageLayout);
+
     app.nav.go('lib');
 };
 

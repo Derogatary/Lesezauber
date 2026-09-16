@@ -165,12 +165,10 @@ Kein CI/CD - der Nutzer lädt den kompletten Ordnerinhalt manuell über die GitH
 
 - Kein Server, keine Accounts, keine automatische Cloud-Synchronisierung - bewusst so, siehe README "Mögliche nächste Schritte"
 - API-Keys im Klartext im Browser - bekannte Grenze der reinen Client-Architektur
-- Zweiseitiges Desktop-Layout (Bild links/Text rechts) noch nicht umgesetzt
 
 ## Offene Punkte (Stand zuletzt besprochen)
 
 Größere, noch nicht begonnene Features (brauchen erst Abstimmung mit dem Nutzer, nicht einfach lospreschen):
-- Zweiseitiges Buch-Layout für PC/Tablet
 - Strukturierte Metadaten-Ansage (Titel/Autor/Verlag/Kapitel vom Erzähler angekündigt)
 - KI-generierte Illustrationen (Comic-Stil) für Text-only-EPUB-Kapitel via Gemini-Bildgenerierung
 - Native Android-App via Capacitor (Play Store, ggf. Samsung/Amazon Store)
@@ -191,4 +189,4 @@ Bewusst zurückgestellt (bräuchten einen eigenen Server):
 
 ## Versionsstand
 
-Aktuell `v0.9.2-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Zähl die Version bei größeren Änderungen entsprechend hoch (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).
+Aktuell `v0.9.3-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Zähl die Version bei größeren Änderungen entsprechend hoch (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).
