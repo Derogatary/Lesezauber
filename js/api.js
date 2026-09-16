@@ -19,13 +19,21 @@ function personaInstruction(personaId) {
     return found ? found.instruction : 'Du bist freundlich und neutral.';
 }
 
-function buildAnalyzePrompt(isCover, personaId, knownText) {
+function buildAnalyzePrompt(isCover, personaId, knownText, forceToc) {
     // NEU: Ist der Text der Seite schon bekannt (z.B. aus der Textebene
     // eines PDFs), muss die KI ihn nicht per OCR erraten - das vermeidet
     // Erkennungsfehler beim eigentlichen Lesetext.
     const knownTextBlock = knownText
         ? `\nDer exakte Text dieser Seite ist bereits bekannt (aus der Textebene, NICHT per Bilderkennung raten):\n"${knownText}"\nNutze GENAU diesen Wortlaut UNVERÄNDERT nur für "originalText". Das Feld "simplifiedText" MUSS trotzdem eine eigene, wirklich vereinfachte Version mit Emojis sein - NICHT einfach der bekannte Text unverändert kopiert, genau wie bei jeder anderen Seite auch.\n`
         : '';
+
+    // NEU: der Nutzer kann eine Seite explizit als Inhaltsverzeichnis
+    // markieren (siehe app.actions.setPageRole) - dann wird die Erkennung
+    // erzwungen statt der Standard-Formulierung, die bei ungewöhnlichem
+    // Layout sonst leicht null zurückliefert.
+    const tocInstruction = forceToc
+        ? `Diese Seite wurde vom Nutzer als Inhaltsverzeichnis markiert - extrahiere UNBEDINGT die Kapitelüberschriften in 'tocEntries' (Array, OHNE Seitenzahlen), auch bei ungewöhnlichem Layout.`
+        : `Falls diese Seite ein Inhaltsverzeichnis/eine Kapitelübersicht ist: Array der Kapitelüberschriften in gedruckter Reihenfolge, OHNE Seitenzahlen (z.B. ['Der Anfang', 'Das Abenteuer', 'Die Rückkehr']). Sonst null.`;
 
     return `Rolle: ${personaInstruction(personaId)}
 ${knownTextBlock}
@@ -40,7 +48,7 @@ Nutze exakt dieses Schema:
   "quizQuestion": "Falls hasIllustration=true: leichte Frage ZUM BILD. Falls hasIllustration=false: leichte Frage zum Textinhalt dieser Seite.",
   "quizAnswer": "Die kurze Antwort darauf.",
   "chapterTitle": "Falls diese Seite sichtbar ein NEUES Kapitel beginnt (eigene Kapitelüberschrift, z.B. 'Kapitel 3: Der geheime Wald'): die Überschrift GENAU wie gedruckt. Sonst null - die meisten Seiten sind KEIN Kapitelanfang.",
-  "tocEntries": "Falls diese Seite ein Inhaltsverzeichnis/eine Kapitelübersicht ist: Array der Kapitelüberschriften in gedruckter Reihenfolge, OHNE Seitenzahlen (z.B. [\"Der Anfang\", \"Das Abenteuer\", \"Die Rückkehr\"]). Sonst null."
+  "tocEntries": "${tocInstruction}"
   ${isCover ? ', "title": "Der auf dieser Seite gedruckte Buchtitel, so genau wie erkennbar (auch bei kunstvoller/kursiver Schrift genau hinschauen) - nur null, falls WIRKLICH kein Titel zu sehen ist", "author": "Der gedruckte Autorenname - nur null, falls wirklich keiner zu sehen ist", "publisher": "Der erkennbare Verlagsname (z.B. aus Logo/Impressum auf dieser Seite) - nur null, falls wirklich keiner zu sehen ist", "series": "Der Name der Buchreihe, falls auf dieser Seite als Reihenbezeichnung erkennbar (z.B. Bildermaus) - nur null, falls keine erkennbar ist"' : ''}
 }
 Das Feld "vocabulary" listet GENAU die Nomen (in Grundform, z.B. "Baum" statt "Bäume"), die du in "simplifiedText" durch ein Emoji ersetzt hast, zusammen mit dem jeweils verwendeten Emoji.`;
@@ -108,9 +116,10 @@ async function callMistralAnalyze(prompt, base64Image) {
 Object.assign(app.api, {
     // personaId ist jetzt optional - ohne Angabe wird wie bisher die
     // globale Standard-Persona genutzt (bestehende Aufrufe funktionieren
-    // unverändert weiter).
-    async analyze(base64Image, isCover, personaId = app.settings.persona, knownText = null) {
-        const prompt = buildAnalyzePrompt(isCover, personaId, knownText);
+    // unverändert weiter). forceToc ebenfalls optional - siehe
+    // app.actions.setPageRole('tocPageId', ...).
+    async analyze(base64Image, isCover, personaId = app.settings.persona, knownText = null, forceToc = false) {
+        const prompt = buildAnalyzePrompt(isCover, personaId, knownText, forceToc);
 
         try {
             return await callGeminiAnalyze(prompt, base64Image);

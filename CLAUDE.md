@@ -90,8 +90,11 @@ import './actions/meineNeueDatei.js';
 ```js
 {
   id, title, author, created, profileId, lastReadIdx, lastReadAt,
-  coverPageId,       // Seiten-ID (nicht Index!) des gewählten Covers
+  coverPageId,       // Seiten-ID (nicht Index!) des gewählten Covers (nur Anzeige, Bibliotheks-Thumbnail)
   publisher, series, // optional: von der KI auf der Titelseite erkannt (siehe analyzePage)
+  titlePageId, backCoverPageId, tocPageId,  // optional: Seiten-IDs, manuell per "Seiten-Rollen" markiert
+                     // (siehe app.actions.setPageRole) - ersetzen die automatischen Annahmen
+                     // (Titelseite = Seite 1) unabhängig von der Scan-Reihenfolge; leer = ignorieren
   bookQuiz: { questions: [{question, answer}] },  // optional, gecacht
   pages: [ ... ]
 }
@@ -115,7 +118,7 @@ import './actions/meineNeueDatei.js';
 }
 ```
 
-**Metadaten-Ansage:** `chapterTitle`/`tocEntries`/`publisher`/`series` sind persona-UNABHÄNGIG (wie `pdfSourceText`), da sie strukturelle Fakten sind, keine erzählte Vorlese-Variante. `app.tts._buildMetadataAnnouncements()` baut daraus die Ansage-Sätze - nur im automatischen Vorlesemodus (`_readCurrentThenAdvance`), NICHT beim einzelnen 🔊-Button (sonst nervt die Wiederholung bei jedem erneuten Antippen).
+**Metadaten-Ansage:** `chapterTitle`/`tocEntries`/`publisher`/`series` sind persona-UNABHÄNGIG (wie `pdfSourceText`), da sie strukturelle Fakten sind, keine erzählte Vorlese-Variante. `app.tts._buildMetadataAnnouncements()` baut daraus die Ansage-Sätze - nur im automatischen Vorlesemodus (`_readCurrentThenAdvance`), NICHT beim einzelnen 🔊-Button (sonst nervt die Wiederholung bei jedem erneuten Antippen). Für `backCoverPageId` gibt es KEIN eigenes KI-Feld - die Ansage ist nur eine kurze Einleitung ("Darum geht's:"), der eigentliche Klappentext wird direkt danach ganz normal als Seitentext vorgelesen.
 
 **Zwei Hilfsfunktionen sind der einzig sichere Weg, Seitentext zu lesen:**
 - `app.utils.resolvePageVariant(page, personaId)` - exakt diese Persona, sonst `null`
@@ -193,4 +196,4 @@ Bewusst zurückgestellt (bräuchten einen eigenen Server):
 
 ## Versionsstand
 
-Aktuell `v0.9.4-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Zähl die Version bei größeren Änderungen entsprechend hoch (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).
+Aktuell `v0.9.5-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Zähl die Version bei größeren Änderungen entsprechend hoch (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).

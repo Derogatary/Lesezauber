@@ -84,5 +84,33 @@ Object.assign(app.actions, {
         app.dbOps.saveBook(book);
         app.render.book(book.id);
         app.ui.toast('Cover festgelegt', '⭐');
+    },
+
+    // NEU: eine Seite als Titelseite/Rückseite-Klappentext/Inhaltsverzeichnis
+    // markieren (siehe "Seiten-Rollen"-Auswahl in der Buchansicht) -
+    // unabhängig von der Scan-Reihenfolge, erleichtert der KI die richtigen
+    // Metadaten-Felder zu füllen und app.tts._buildMetadataAnnouncements()
+    // die passenden Ansagen. role: 'titlePageId' | 'backCoverPageId' | 'tocPageId'.
+    // pageIdValue kommt als String aus dem <select> - Seiten-IDs sind
+    // Zahlen, deshalb über die Seite selbst statt den rohen String speichern.
+    setPageRole(role, pageIdValue) {
+        const book = app.library[app.state.currentBookId];
+        if (!book) return;
+        const page = book.pages.find(p => String(p.id) === pageIdValue);
+        book[role] = page ? page.id : null;
+        app.dbOps.saveBook(book);
+
+        const labels = { titlePageId: 'Titelseite', backCoverPageId: 'Rückseite/Klappentext', tocPageId: 'Inhaltsverzeichnis' };
+        app.ui.toast(page ? `${labels[role]} festgelegt` : `${labels[role]}-Markierung entfernt`, '🏷️');
+
+        // FIX: war die Seite schon analysiert, fehlen ggf. die rollen-
+        // spezifischen Felder (z.B. Titel/Autor, falls sie nicht ohnehin
+        // Seite 1 war) - erneut analysieren, damit sie nachgeliefert werden.
+        // retryPage() rendert die Buchansicht am Ende selbst neu.
+        if (page && page.status === 'done') {
+            app.actions.retryPage(book.pages.indexOf(page));
+        } else {
+            app.render.book(book.id);
+        }
     }
 });

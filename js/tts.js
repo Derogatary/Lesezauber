@@ -351,6 +351,15 @@ Object.assign(app.tts, {
             announcements.push(intro);
         }
 
+        // NEU: als Rückseite/Klappentext markierte Seite (siehe
+        // app.actions.setPageRole) - nur eine kurze Einleitung, der
+        // eigentliche Klappentext wird direkt danach ganz normal als
+        // Seitentext vorgelesen (keine Dopplung nötig, spart Aufbau von
+        // Spannung ohne separates KI-Feld).
+        if (book.backCoverPageId && page.id === book.backCoverPageId) {
+            announcements.push("Darum geht's:");
+        }
+
         if (page.chapterTitle) {
             announcements.push(pageIdx === 0
                 ? `Das Kapitel heißt: ${page.chapterTitle}.`

@@ -97,10 +97,15 @@ Object.assign(app.render, {
             return (b.profileId || 'default') === app.state.currentProfileId;
         });
 
+        // NEU: Suche prüft jetzt auch Verlag/Reihe, falls die KI sie auf
+        // der Titelseite erkannt hat - nicht nur Titel/Autor.
         if (query) {
             keys = keys.filter(id => {
                 const b = app.library[id];
-                return b.title.toLowerCase().includes(query) || b.author.toLowerCase().includes(query);
+                return b.title.toLowerCase().includes(query) ||
+                    b.author.toLowerCase().includes(query) ||
+                    (b.publisher || '').toLowerCase().includes(query) ||
+                    (b.series || '').toLowerCase().includes(query);
             });
         }
 

@@ -31,6 +31,22 @@ Object.assign(app.render, {
             ? `<button onclick="app.state.currentPageIdx=${resumeIdx}; app.nav.go('reader');" class="w-full bg-indigo-50 text-indigo-700 font-bold py-2.5 rounded-xl text-sm hover:bg-indigo-100 transition">▶ Weiterlesen (Seite ${resumeIdx + 1})</button>`
             : '';
 
+        // NEU: Seiten-Rollen-Auswahl (Titelseite/Rückseite/Inhaltsverzeichnis)
+        // befüllen - nur sichtbar, wenn es überhaupt Seiten zur Auswahl gibt.
+        const rolesCard = document.getElementById('pageRolesCard');
+        if (rolesCard) {
+            rolesCard.classList.toggle('hidden', book.pages.length === 0);
+            const roleOptions = (selectedId) => ['<option value="">– nicht festgelegt –</option>']
+                .concat(book.pages.map((p, i) => `<option value="${p.id}" ${selectedId === p.id ? 'selected' : ''}>Seite ${i + 1}</option>`))
+                .join('');
+            const titleSelect = document.getElementById('roleTitlePage');
+            if (titleSelect) titleSelect.innerHTML = roleOptions(book.titlePageId);
+            const backCoverSelect = document.getElementById('roleBackCoverPage');
+            if (backCoverSelect) backCoverSelect.innerHTML = roleOptions(book.backCoverPageId);
+            const tocSelect = document.getElementById('roleTocPage');
+            if (tocSelect) tocSelect.innerHTML = roleOptions(book.tocPageId);
+        }
+
         // Check if pending pages exist to toggle batch action bar
         const targetPersona = app.state.readingPersonaId || app.settings.persona;
         const hasPending = book.pages.some(p =>

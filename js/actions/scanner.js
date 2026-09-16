@@ -178,8 +178,14 @@ Object.assign(app.actions, {
 
         try {
             const b64 = page.imgUrl.split(',')[1];
-            const isCover = (pageIdx === 0 && (!book.title || book.title === 'Neues Buch'));
-            const result = await app.api.analyze(b64, isCover, personaId, page.pdfSourceText || null);
+            // NEU: explizite Titelseiten-Markierung (siehe app.actions.setPageRole)
+            // hat Vorrang vor der bisherigen Standard-Annahme "Seite 1 ist die
+            // Titelseite" - ohne Markierung bleibt das alte Verhalten unverändert.
+            const isCover = book.titlePageId
+                ? page.id === book.titlePageId
+                : (pageIdx === 0 && (!book.title || book.title === 'Neues Buch'));
+            const forceToc = !!book.tocPageId && page.id === book.tocPageId;
+            const result = await app.api.analyze(b64, isCover, personaId, page.pdfSourceText || null, forceToc);
 
             // NEU: Ergebnis landet unter der jeweiligen Persona, statt die
             // alten Felder zu überschreiben - so bleiben bereits erzeugte
