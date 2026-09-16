@@ -33,12 +33,13 @@ Analysiere die Kinderbuch-Seite. Antworte AUSSCHLIESSLICH in validem JSON-Format
 Nutze exakt dieses Schema:
 {
   "originalText": "Der exakte gedruckte Text (Wenn leer: 'Kein Text.')",
-  "simplifiedText": "Den Text für 5-Jährige umschreiben. ERSETZE 2-4 Nomen durch passende Emojis.",
+  "simplifiedText": "GENAU der Originaltext mit GLEICHEM Satzbau - ersetze NUR 2-4 einzelne Nomen direkt an ihrer Stelle durch ein passendes Emoji. KEINE Umformulierung, KEINE Vereinfachung des Satzbaus, KEINE neuen/anderen Sätze - nur die Emoji-Ersetzung.",
   "vocabulary": [{"word": "Beispiel-Nomen", "emoji": "🌳"}],
-  "imageDescription": "Beschreibe die Illustration in 2 Sätzen passend zur Rolle.",
-  "quizQuestion": "Eine leichte Verständnisfrage zum Bild.",
+  "hasIllustration": true oder false - true NUR wenn die Seite eine echte Illustration/Zeichnung/Foto zeigt, false bei einer reinen Textseite ohne Bild,
+  "imageDescription": "Falls hasIllustration=true: die Illustration in 2 Sätzen passend zur Rolle beschreiben. Falls hasIllustration=false: null",
+  "quizQuestion": "Falls hasIllustration=true: leichte Frage ZUM BILD. Falls hasIllustration=false: leichte Frage zum Textinhalt dieser Seite.",
   "quizAnswer": "Die kurze Antwort darauf."
-  ${isCover ? ', "title": "Gefundener Titel oder null", "author": "Gefundener Autor oder null"' : ''}
+  ${isCover ? ', "title": "Der auf dieser Seite gedruckte Buchtitel, so genau wie erkennbar (auch bei kunstvoller/kursiver Schrift genau hinschauen) - nur null, falls WIRKLICH kein Titel zu sehen ist", "author": "Der gedruckte Autorenname - nur null, falls wirklich keiner zu sehen ist"' : ''}
 }
 Das Feld "vocabulary" listet GENAU die Nomen (in Grundform, z.B. "Baum" statt "Bäume"), die du in "simplifiedText" durch ein Emoji ersetzt hast, zusammen mit dem jeweils verwendeten Emoji.`;
 }

@@ -26,7 +26,11 @@ Object.assign(app.render, {
             : '';
 
         // Check if pending pages exist to toggle batch action bar
-        const hasPending = book.pages.some(p => p.status === 'pending' || p.status === 'error');
+        const targetPersona = app.state.readingPersonaId || app.settings.persona;
+        const hasPending = book.pages.some(p =>
+            p.status === 'pending' || p.status === 'error' ||
+            (p.status === 'done' && !app.utils.resolvePageVariant(p, targetPersona))
+        );
         document.getElementById('batchActionBar').classList.toggle('hidden', !hasPending);
 
         const grid = document.getElementById('pagesGrid');

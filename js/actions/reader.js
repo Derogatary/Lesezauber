@@ -39,9 +39,21 @@ Object.assign(app.actions, {
         const newIdx = app.state.currentPageIdx + direction;
         if (newIdx < 0 || newIdx >= book.pages.length) return;
 
+        // FIX: lief das Auto-Vorlesen gerade (z.B. noch für die alte
+        // Seite), lief die "Kette" bisher unbemerkt weiter und sprang am
+        // Ende von der NEUEN currentPageIdx aus nochmal +1 weiter -
+        // sichtbar z.B. als Sprung auf S.8 während des Vorlesens, der
+        // Erzähler landete danach aber bei S.9. Jetzt wird die laufende
+        // Vorlese-Kette sauber gestoppt und bei Bedarf an der neuen Stelle
+        // neu gestartet, statt im Hintergrund weiterzulaufen.
+        const wasReading = app.state.autoReadActive;
+        if (wasReading) app.tts.stopAutoRead();
+
         app.state.currentPageIdx = newIdx;
         app.render.reader(newIdx);
         if (app.state.focusMode) app.render.focusMode();
+
+        if (wasReading) app.tts.startAutoRead();
     },
 
     switchReadingPersona(personaId) {

@@ -7,6 +7,12 @@
 @media (prefers-color-scheme: dark) {
     body { background-color: #0f172a; }
 
+    /* NEU: native Auswahlfelder (select/option) nutzen ohne diesen Hinweis
+       oft weiterhin schwarze Schrift, unabhängig von unseren eigenen
+       Farbklassen - color-scheme sagt dem Browser, selbst helle Text-
+       farben für seine eingebauten Bedienelemente zu verwenden. */
+    select, option { color-scheme: dark; }
+
     /* Flächen / Karten */
     .bg-white { background-color: #1e293b !important; }
     .bg-slate-50 { background-color: #0f172a !important; }
@@ -53,7 +59,7 @@
 
 /* NEU: Hervorhebung des gerade vorgelesenen Wortes (Speedreader-Stil) */
 .speech-word.speech-highlight {
-    background-color: #fde047;
+    background-color: var(--speech-highlight-color, #fde047);
     color: #1e293b;
     border-radius: 4px;
     padding: 0 2px;

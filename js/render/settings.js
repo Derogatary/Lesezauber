@@ -20,6 +20,10 @@ Object.assign(app.render, {
             if (rateLabel) rateLabel.innerText = app.settings.speechRate.toFixed(1) + 'x';
         }
 
+        // NEU: gespeicherte Hervorhebungsfarbe anzeigen
+        const colorInput = document.getElementById('inputHighlightColor');
+        if (colorInput) colorInput.value = app.settings.highlightColor;
+
         // NEU: Hintergrund-Vorbereitung - Status + Fortschritt anzeigen
         const bgToggle = document.getElementById('toggleBackgroundPregen');
         if (bgToggle) bgToggle.checked = app.settings.backgroundPregenEnabled;

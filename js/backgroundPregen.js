@@ -51,8 +51,8 @@ async function generatePersonaVariantForPage(book, pageIdx, personaId) {
     page.variants[personaId] = {
         text: page.pdfSourceText || result.originalText || 'Kein Text.',
         erstleserText: result.simplifiedText || page.pdfSourceText || result.originalText || 'Kein Text.',
-        desc: result.imageDescription || 'Keine Beschreibung.',
-        quizQ: result.quizQuestion || 'Was siehst du auf dem Bild?',
+        desc: result.hasIllustration === false ? null : (result.imageDescription || null),
+        quizQ: result.quizQuestion || (result.hasIllustration === false ? 'Worum ging es auf dieser Seite?' : 'Was siehst du auf dem Bild?'),
         quizA: result.quizAnswer || 'Schau genau hin!'
     };
     // NEU: auch bei im Hintergrund vorbereiteten Varianten Vokabeln sammeln

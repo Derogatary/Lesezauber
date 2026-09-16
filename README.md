@@ -49,6 +49,7 @@ Eine Web-App, mit der du Kinderbuch-Seiten mit dem Handy fotografierst (oder aus
 - 📚 EPUB-Import: liest den Text direkt aus (kein OCR nötig), nutzt das erste Bild pro Kapitel oder rendert den Text als Ersatzbild
 - 🔤 Wort-für-Wort-Hervorhebung beim Vorlesen (Speedreader-Stil), einstellbare Vorlesegeschwindigkeit
 - 🧠 Kombinierter Modus: automatisches Vorlesen inkl. Rätselfragen mit Rate-Pause
+- 🎨 Farbauswahl für die Wort-Hervorhebung, mehrere Bugfixes aus dem 15.09.-Feedback (Persona-Wechsel-Erkennung bei "Alle analysieren", Seitenzahl-Aussprache entfernt, Original-Text beim Vorlesen, "Alle Profile"-Filter gegen unsichtbare Bücher, Online/Offline-Anzeige, Versionsnummer)
 - 🎭 Persona beim Lesen umschaltbar (unabhängig von der Standard-Persona), wird pro Seite bei Bedarf einmalig nachgeladen und dauerhaft gespeichert
 - 🎉 Verständnisfragen zum gesamten Buch am Ende (nicht nur pro Seite)
 - ⚡ Eigener Tailwind-Build statt CDN (schnelleres Laden, kein Live-Compiling im Browser)

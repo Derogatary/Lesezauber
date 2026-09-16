@@ -69,6 +69,18 @@ Object.assign(app.utils, {
     // zurück. Sinnvoll für Fälle wie den Druck, wo der Original-Text
     // ohnehin persona-unabhängig sein sollte, aber vielleicht nur für eine
     // ANDERE Persona schon erzeugt wurde.
+    // NEU: liefert ein echtes Profil für ein NEU erstelltes Buch. Ist
+    // gerade der "Alle Profile"-Filter aktiv, würde das Buch sonst dem
+    // ungültigen Wert "__all__" zugeordnet und wäre danach in keinem
+    // echten Profil mehr sichtbar - fällt dann auf das erste echte Profil
+    // zurück.
+    resolveCreationProfileId() {
+        if (app.state.currentProfileId && app.state.currentProfileId !== '__all__') {
+            return app.state.currentProfileId;
+        }
+        return app.profiles[0]?.id || 'default';
+    },
+
     resolveAnyVariant(page, preferredPersonaId) {
         const preferred = this.resolvePageVariant(page, preferredPersonaId);
         if (preferred) return preferred;

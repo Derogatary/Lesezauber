@@ -37,7 +37,7 @@ Object.assign(app.actions, {
             const id = 'book_' + Date.now();
             const newBook = {
                 id, title: 'Neues Buch', author: 'Unbekannt', created: Date.now(),
-                profileId: app.state.currentProfileId, pages: []
+                profileId: app.utils.resolveCreationProfileId(), pages: []
             };
             app.library[id] = newBook;
             app.state.currentBookId = id;

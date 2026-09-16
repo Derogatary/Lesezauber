@@ -7,6 +7,11 @@ import { app } from './core.js';
 
 const PROFILES_KEY = 'lz_profiles';
 const ACTIVE_PROFILE_KEY = 'lz_active_profile';
+// NEU: Sonderwert für "alle Profile anzeigen" - löst den Fall, dass
+// Bücher eines anderen/verwaisten Profils sonst unsichtbar blieben,
+// obwohl sie z.B. beim Export mitgezählt wurden. Gleicher String-Wert
+// wird in render/library.js und den Buch-Erstellungs-Stellen genutzt.
+const ALL_PROFILES_ID = '__all__';
 
 function loadProfiles() {
     try {

@@ -7,7 +7,9 @@ Object.assign(app.settings, {
     voiceUri: localStorage.getItem('lz_voice') || '',
     backgroundPregenEnabled: localStorage.getItem('lz_bg_pregen') === '1',
     // NEU: einstellbare Vorlesegeschwindigkeit (0.5 = langsam, 1.5 = schnell)
-    speechRate: parseFloat(localStorage.getItem('lz_speech_rate') || '0.9')
+    speechRate: parseFloat(localStorage.getItem('lz_speech_rate') || '0.9'),
+    // NEU: einstellbare Farbe fuer die Wort-Hervorhebung beim Vorlesen
+    highlightColor: localStorage.getItem('lz_highlight_color') || '#fde047'
 });
 
 Object.assign(app.state, {

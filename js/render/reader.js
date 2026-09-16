@@ -42,7 +42,14 @@ Object.assign(app.render, {
         if (variant) {
             document.getElementById('readerOriginalText').innerText = variant.text || 'Kein Text extrahiert.';
             document.getElementById('readerErstleserText').innerText = variant.erstleserText || variant.text || 'Kein Text extrahiert.';
-            document.getElementById('readerImageDesc').innerText = variant.desc || 'Keine Beschreibung verfügbar.';
+
+            // FIX: bei reinen Textseiten (kein variant.desc) die ganze
+            // Bildbeschreibungs-Karte ausblenden, statt eine sinnlose
+            // "Keine Beschreibung verfügbar."-Meldung zu zeigen.
+            const descCard = document.getElementById('imageDescCard');
+            if (descCard) descCard.classList.toggle('hidden', !variant.desc);
+            document.getElementById('readerImageDesc').innerText = variant.desc || '';
+
             document.getElementById('readerQuizQ').innerText = variant.quizQ || 'Welches Tier siehst du?';
             document.getElementById('readerQuizA').innerText = variant.quizA || 'Schau genau hin!';
         } else if (page.status === 'pending' || page.status === 'error') {
@@ -51,6 +58,7 @@ Object.assign(app.render, {
             // hier nur ein Hinweis.
             document.getElementById('readerOriginalText').innerText = 'Diese Seite wurde noch nicht analysiert.';
             document.getElementById('readerErstleserText').innerText = 'Diese Seite wurde noch nicht analysiert.';
+            document.getElementById('imageDescCard')?.classList.add('hidden');
             document.getElementById('readerImageDesc').innerText = '';
             document.getElementById('readerQuizQ').innerText = '';
             document.getElementById('readerQuizA').innerText = '';
@@ -60,6 +68,7 @@ Object.assign(app.render, {
             const personaLabel = app.personas.find(p => p.id === app.state.readingPersonaId)?.label || '';
             document.getElementById('readerOriginalText').innerText = `Wird für "${personaLabel}" erstellt...`;
             document.getElementById('readerErstleserText').innerText = '...';
+            document.getElementById('imageDescCard')?.classList.add('hidden');
             document.getElementById('readerImageDesc').innerText = '';
             document.getElementById('readerQuizQ').innerText = '';
             document.getElementById('readerQuizA').innerText = '';

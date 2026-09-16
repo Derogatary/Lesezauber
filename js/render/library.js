@@ -30,19 +30,25 @@ Object.assign(app.render, {
             if (show) streakEl.innerText = `🔥 ${streakInfo.currentStreak} Tage in Folge`;
         }
 
-        // NEU: Profil-Dropdown befüllen
+        // Profil-Dropdown befüllen - inkl. "Alle Profile"-Option, damit
+        // Bücher aus einem anderen/verwaisten Profil nicht unsichtbar
+        // bleiben (z.B. wenn Export mehr Bücher zählt als sichtbar sind).
         const profileSelect = document.getElementById('profileSelect');
         if (profileSelect) {
             profileSelect.innerHTML = app.profiles.map(p =>
                 `<option value="${p.id}" ${p.id === app.state.currentProfileId ? 'selected' : ''}>${app.utils.sanitize(p.name)}</option>`
-            ).join('') + `<option value="__new__">+ Neues Profil</option>`;
+            ).join('')
+                + `<option value="__all__" ${app.state.currentProfileId === '__all__' ? 'selected' : ''}>🔍 Alle Profile</option>`
+                + `<option value="__new__">+ Neues Profil</option>`;
         }
 
         // NEU: "Weiterlesen"-Karte für das zuletzt gelesene Buch (im
         // aktuellen Profil), ganz oben in der Bibliothek.
         const continueBar = document.getElementById('continueReadingBar');
         if (continueBar) {
-            const profileBooks = Object.values(app.library).filter(b => (b.profileId || 'default') === app.state.currentProfileId);
+            const profileBooks = Object.values(app.library).filter(b =>
+                app.state.currentProfileId === '__all__' || (b.profileId || 'default') === app.state.currentProfileId
+            );
             const mostRecent = profileBooks
                 .filter(b => typeof b.lastReadIdx === 'number' && b.lastReadAt && b.lastReadIdx < b.pages.length - 1)
                 .sort((a, b) => (b.lastReadAt || 0) - (a.lastReadAt || 0))[0];
@@ -81,10 +87,12 @@ Object.assign(app.render, {
         const searchInput = document.getElementById('librarySearch');
         const query = (searchInput?.value || '').trim().toLowerCase();
 
-        // nur Bücher des aktuell gewählten Profils anzeigen. Bücher ohne
-        // profileId (aus der Zeit vor dieser Funktion) gelten automatisch
-        // als "default" - passend zum vorbelegten Profil.
+        // FIX: "Alle Profile" zeigt jetzt wirklich jedes Buch, unabhängig
+        // vom profileId - löst den Fall, dass Export mehr Bücher zählte
+        // als in der Bibliothek sichtbar waren (Bücher eines anderen/
+        // verwaisten Profils).
         let keys = Object.keys(app.library).filter(id => {
+            if (app.state.currentProfileId === '__all__') return true;
             const b = app.library[id];
             return (b.profileId || 'default') === app.state.currentProfileId;
         });

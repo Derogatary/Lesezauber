@@ -1,5 +1,14 @@
 import { app } from './core.js';
 
+// NEU: Abwechslung statt immer derselben Ansage vor der Bildbeschreibung
+const IMAGE_INTROS = [
+    'Schau mal, was hier zu sehen ist.',
+    'Auf diesem Bild passiert Folgendes.',
+    'Hier siehst du:',
+    'Das Bild zeigt:',
+    'Guck mal genau hin:'
+];
+
 Object.assign(app.tts, {
     synth: window.speechSynthesis,
     loadVoices() {
@@ -19,11 +28,6 @@ Object.assign(app.tts, {
         });
     },
 
-    // NEU: "highlightElementId" ist optional - wird sie mitgegeben, wird
-    // dort eine Wort-für-Wort-Hervorhebung angezeigt, synchron zum
-    // Vorlesen (per SpeechSynthesis-"boundary"-Ereignis, von den meisten
-    // Browsern unterstützt - ohne dieses Ereignis passiert einfach keine
-    // Hervorhebung, der Rest funktioniert trotzdem normal weiter).
     speak(text, onEnd, highlightElementId) {
         if (!this.synth || !text) return;
         this.synth.cancel();
@@ -39,7 +43,6 @@ Object.assign(app.tts, {
         }
 
         const utter = new SpeechSynthesisUtterance(cleanText);
-        // NEU: einstellbare Geschwindigkeit statt fest 0.9
         utter.rate = app.settings.speechRate || 0.9;
 
         if (app.settings.voiceUri) {
@@ -76,12 +79,15 @@ Object.assign(app.tts, {
         this.synth.speak(utter);
     },
 
-    // Ermittelt, welches Textfeld gerade sichtbar ist (Original oder
-    // Erstleser), für die Hervorhebung beim Vorlesen.
     _currentTextElementId() {
         return app.state.activeTab === 'erstleser' ? 'readerErstleserText' : 'readerOriginalText';
     },
 
+    // FIX: beim Vorlesen wird jetzt IMMER der Originaltext gesprochen,
+    // unabhängig vom gerade angezeigten Tab. Im Erstleser-Text wurden
+    // Nomen komplett durch Emojis ERSETZT (nicht ergänzt) - würde man den
+    // vorlesen, fehlten hörbar Wörter im Satz. Die Hervorhebung läuft
+    // trotzdem im gerade sichtbaren Textfeld mit.
     speakCurrentText() {
         if (app.state.autoReadActive) this.stopAutoRead();
 
@@ -93,11 +99,9 @@ Object.assign(app.tts, {
         const variant = app.utils.resolvePageVariant(page, app.state.readingPersonaId);
         if (!variant) return;
 
-        const text = app.state.activeTab === 'erstleser' ? (variant.erstleserText || variant.text) : variant.text;
-        this.speak(text, null, this._currentTextElementId());
+        this.speak(variant.text, null, this._currentTextElementId());
     },
 
-    // ================= Auto-Vorlese-Modus =================
     toggleAutoRead() {
         if (app.state.autoReadActive) {
             this.stopAutoRead();
@@ -120,9 +124,11 @@ Object.assign(app.tts, {
         if (focusBtn) focusBtn.innerText = '▶️';
     },
 
-    // Liest Seitenzahl an, dann den Text (mit Wort-Hervorhebung), dann die
-    // Bildbeschreibung, optional die Rätselfrage+Antwort (kombinierter
-    // Modus), bevor es zur nächsten Seite weitergeht.
+    // FIX: keine gesprochene Seitenzahl mehr (führte zu falscher Betonung
+    // wie "neunte" statt "neun", und App-Seite/Buch-Seite stimmen ohnehin
+    // nicht zwingend überein - der sichtbare Seitenzähler im Header bleibt
+    // unverändert). Liest jetzt IMMER den Originaltext (siehe
+    // speakCurrentText), dann Bildbeschreibung, optional Rätselfrage.
     _readCurrentThenAdvance() {
         if (!app.state.autoReadActive) return;
 
@@ -143,9 +149,6 @@ Object.assign(app.tts, {
         const focusBtn = document.getElementById('focusPlayBtn');
         if (focusBtn) focusBtn.innerText = '⏸️';
 
-        const text = app.state.activeTab === 'erstleser' ? (variant.erstleserText || variant.text) : variant.text;
-        const pageNum = app.state.currentPageIdx + 1;
-
         const advanceToNext = () => {
             const isLastPage = app.state.currentPageIdx >= book.pages.length - 1;
             if (isLastPage) {
@@ -159,17 +162,22 @@ Object.assign(app.tts, {
             setTimeout(() => this._readCurrentThenAdvance(), 600);
         };
 
-        // NEU: kombinierter Modus - nach der Bildbeschreibung zusätzlich
-        // Rätselfrage stellen, kurze Pause zum Raten, dann Antwort vorlesen.
+        // Kombinierter Modus: Rätselfrage sichtbar UND hörbar, mit Pause
+        // zum Raten, bevor die Antwort kommt.
         const maybeAskQuiz = () => {
             if (!app.state.autoReadActive) return;
             if (app.state.autoReadWithQuiz && variant.quizQ) {
+                // NEU: zum Quiz-Tab wechseln, damit Frage/Antwort auch
+                // sichtbar sind, nicht nur hörbar.
+                app.readerUI.setTab('quiz');
                 this.speak(variant.quizQ, () => {
                     if (!app.state.autoReadActive) return;
                     setTimeout(() => {
                         if (!app.state.autoReadActive) return;
+                        const answerEl = document.getElementById('readerQuizA');
+                        if (answerEl) answerEl.classList.remove('hidden');
                         this.speak(variant.quizA, advanceToNext);
-                    }, 4000); // Zeit zum Raten, bevor die Antwort kommt
+                    }, 4000);
                 });
             } else {
                 advanceToNext();
@@ -179,7 +187,8 @@ Object.assign(app.tts, {
         const describeImage = () => {
             if (!app.state.autoReadActive) return;
             if (variant.desc) {
-                this.speak('Ich beschreibe jetzt das Bild.', () => {
+                const intro = IMAGE_INTROS[Math.floor(Math.random() * IMAGE_INTROS.length)];
+                this.speak(intro, () => {
                     if (!app.state.autoReadActive) return;
                     this.speak(variant.desc, maybeAskQuiz);
                 });
@@ -188,9 +197,6 @@ Object.assign(app.tts, {
             }
         };
 
-        this.speak(`Seite ${pageNum}.`, () => {
-            if (!app.state.autoReadActive) return;
-            this.speak(text, describeImage, this._currentTextElementId());
-        });
+        this.speak(variant.text, describeImage, this._currentTextElementId());
     }
 });

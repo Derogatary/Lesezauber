@@ -48,6 +48,14 @@ app.init = async function () {
     await app.dbOps.init();
     app.ui.hideLoader();
 
+    // NEU: Online/Offline-Punkt gleich beim Start korrekt setzen (nicht
+    // erst beim nächsten Wechsel)
+    updateOnlineStatusDot();
+
+    // NEU: gespeicherte Hervorhebungsfarbe gleich anwenden, nicht erst
+    // nach dem ersten Öffnen der Einstellungen
+    document.documentElement.style.setProperty('--speech-highlight-color', app.settings.highlightColor);
+
     app.nav.go('lib');
 };
 
@@ -79,12 +87,28 @@ window.addEventListener('unhandledrejection', (e) => {
 });
 
 // NEU: Offline-Erkennung - klare Rückmeldung statt einer verwirrenden
-// "Verbindungsfehler"-Meldung mitten in der Analyse.
+// "Verbindungsfehler"-Meldung mitten in der Analyse. Aktualisiert
+// zusätzlich einen dauerhaft sichtbaren Punkt im Bibliotheks-Header
+// (Toast allein verschwindet nach ein paar Sekunden wieder).
+function updateOnlineStatusDot() {
+    const dot = document.getElementById('onlineStatusDot');
+    if (!dot) return;
+    if (navigator.onLine) {
+        dot.className = 'w-2.5 h-2.5 rounded-full bg-emerald-500 flex-shrink-0';
+        dot.title = 'Online';
+    } else {
+        dot.className = 'w-2.5 h-2.5 rounded-full bg-red-500 flex-shrink-0';
+        dot.title = 'Offline';
+    }
+}
+
 window.addEventListener('offline', () => {
     app.ui?.toast?.('Du bist offline - Scannen/Analysieren braucht wieder Internet.', '📡');
+    updateOnlineStatusDot();
 });
 window.addEventListener('online', () => {
     app.ui?.toast?.('Wieder online', '✅');
+    updateOnlineStatusDot();
 });
 
 document.addEventListener('DOMContentLoaded', () => {

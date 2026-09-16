@@ -37,7 +37,7 @@ Object.assign(app.actions, {
             return;
         }
         const id = 'book_' + Date.now();
-        const newBook = { id, title: 'Neues Buch', author: 'Unbekannt', created: Date.now(), profileId: app.state.currentProfileId, pages: [] };
+        const newBook = { id, title: 'Neues Buch', author: 'Unbekannt', created: Date.now(), profileId: app.utils.resolveCreationProfileId(), pages: [] };
         app.dbOps.saveBook(newBook);
         app.state.currentBookId = id;
         app.render.book(id);
@@ -56,7 +56,7 @@ Object.assign(app.actions, {
         }
 
         const id = 'book_' + Date.now();
-        const newBook = { id, title: 'Neues Buch', author: 'Unbekannt', created: Date.now(), profileId: app.state.currentProfileId, pages: [] };
+        const newBook = { id, title: 'Neues Buch', author: 'Unbekannt', created: Date.now(), profileId: app.utils.resolveCreationProfileId(), pages: [] };
         app.library[id] = newBook;
         app.state.currentBookId = id;
 
@@ -191,8 +191,11 @@ Object.assign(app.actions, {
                 // korrekt, keine OCR-Fehler möglich.
                 text: page.pdfSourceText || result.originalText || 'Kein Text.',
                 erstleserText: result.simplifiedText || page.pdfSourceText || result.originalText || 'Kein Text.',
-                desc: result.imageDescription || 'Keine Beschreibung.',
-                quizQ: result.quizQuestion || 'Was siehst du auf dem Bild?',
+                // FIX: bei reinen Textseiten (hasIllustration=false) keine
+                // erzwungene, sinnlose Bildbeschreibung mehr - bleibt leer,
+                // die Anzeige/das Vorlesen blendet das dann einfach aus.
+                desc: result.hasIllustration === false ? null : (result.imageDescription || null),
+                quizQ: result.quizQuestion || (result.hasIllustration === false ? 'Worum ging es auf dieser Seite?' : 'Was siehst du auf dem Bild?'),
                 quizA: result.quizAnswer || 'Schau genau hin!'
             };
             page.status = 'done';
@@ -229,8 +232,18 @@ Object.assign(app.actions, {
         const book = app.library[app.state.currentBookId];
         if (!book) return;
 
+        // FIX: vorher wurde nur der reine Seiten-Status geprüft - eine
+        // Seite, die für eine ANDERE Persona schon fertig war, wurde nie
+        // als "fehlt für die aktuelle Persona" erkannt.
+        const targetPersona = app.state.readingPersonaId || app.settings.persona;
         const pendingIndices = [];
-        book.pages.forEach((p, i) => { if (p.status === 'pending' || p.status === 'error') pendingIndices.push(i); });
+        book.pages.forEach((p, i) => {
+            if (p.status === 'pending' || p.status === 'error') {
+                pendingIndices.push(i);
+            } else if (p.status === 'done' && !app.utils.resolvePageVariant(p, targetPersona)) {
+                pendingIndices.push(i);
+            }
+        });
         if (pendingIndices.length === 0) return;
 
         app.state.cancelAnalysis = false;
@@ -248,7 +261,7 @@ Object.assign(app.actions, {
             if (sub) sub.innerText = `Lese Seite ${count} von ${pendingIndices.length}`;
 
             try {
-                await this.analyzePage(idx, true);
+                await this.analyzePage(idx, true, targetPersona);
             } catch (err) {
                 // NEU: ein 503 ("Service Unavailable") ist eine kurzzeitige
                 // Überlastung bei Google selbst, nicht euer Kontingent -
@@ -258,13 +271,15 @@ Object.assign(app.actions, {
                     if (sub) sub.innerText = 'Google-Server kurz überlastet, versuche erneut...';
                     await new Promise(r => setTimeout(r, 5000));
                     try {
-                        await this.analyzePage(idx, true);
+                        await this.analyzePage(idx, true, targetPersona);
                     } catch (retryErr) {
-                        app.ui.toast('Abbruch wegen Fehler', '⚠️');
+                        // FIX: zeigt jetzt den tatsächlichen Fehlergrund
+                        // statt einer nichtssagenden generischen Meldung.
+                        app.ui.toast(`Abbruch: ${retryErr.message}`, '⚠️');
                         break;
                     }
                 } else {
-                    app.ui.toast('Abbruch wegen Fehler', '⚠️');
+                    app.ui.toast(`Abbruch: ${err.message}`, '⚠️');
                     break;
                 }
             }
