@@ -16,6 +16,7 @@ function applyBookTypeLabels(isWorkbook) {
         set('readerOriginalHeading', 'Aufgabe auf dem Blatt');
         set('readerErstleserHeading', 'Was du tun sollst');
         set('readerErstleserSub', 'Kindgerecht erklärt');
+        set('chatCardHeading', '💬 Frag den Zauberer zu deiner Aufgabe');
     } else {
         set('tabOriginal', '📖 Original');
         set('tabErstleser', '🎈 Erstleser (5J)');
@@ -23,6 +24,7 @@ function applyBookTypeLabels(isWorkbook) {
         set('readerOriginalHeading', 'Gedruckter Text');
         set('readerErstleserHeading', 'Vereinfacht für Kinder');
         set('readerErstleserSub', 'Mit Emojis für schwierige Wörter');
+        set('chatCardHeading', '💬 Frag den Zauberer zum Bild');
     }
 
     // Rätselfragen beim Auto-Vorlesen gibt es nur bei Geschichten.
@@ -145,6 +147,10 @@ Object.assign(app.render, {
                 }
             }
         }
+
+        // NEU: Kontroll-Bereich (Foto des bearbeiteten Blattes). Braucht eine
+        // ausgelesene Seite - ohne Aufgabe/Lösung kann die KI nichts vergleichen.
+        app.render.checkWork(page, isWorkbook && !!variant);
 
         // NEU: Erledigt-Knopf und Belohnungs-Banner aktualisieren
         app.render.pageDone();

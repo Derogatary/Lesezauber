@@ -28,6 +28,20 @@ Object.assign(app.actions, {
         }
     },
 
+    // NEU: Frage sprechen statt tippen. Es gibt KEINE eigene Spracherkennung
+    // in der App - die Diktierfunktion steckt in der Bildschirmtastatur des
+    // Geräts (Gboard/iOS). Mehr als das Feld zu fokussieren (womit sich die
+    // Tastatur öffnet) und darauf hinzuweisen, kann Webcode nicht tun.
+    focusChatInput() {
+        const input = document.getElementById('chatInput');
+        if (!input) return;
+        // Der passende Tab muss sichtbar sein - ein ausgeblendetes Feld
+        // lässt sich nicht fokussieren, die Tastatur ginge dann nicht auf.
+        app.readerUI.setTab('quiz');
+        input.focus();
+        app.ui.toast('Tippe auf das 🎤 in deiner Tastatur und sprich die Frage', '🎤');
+    },
+
     // NEU: Persona nur für das gerade geöffnete Buch umschalten - ändert
     // NICHT die globale Standard-Persona für zukünftige Scans.
     // NEU: manuelle Vor/Zurück-Navigation im Reader - funktioniert immer,

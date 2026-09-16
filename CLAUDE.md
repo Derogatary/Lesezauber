@@ -6,7 +6,7 @@ Diese Datei gibt Claude Code Kontext für die Arbeit an diesem Projekt. Sie lieg
 
 **LeseZauber Pro** ist eine Web-App (PWA), mit der man Kinderbuch-Seiten fotografiert/importiert (Foto, Galerie, PDF, EPUB) und sich per KI (Gemini, optional Mistral-Fallback) automatisch vorlesen, vereinfachen ("Erstleser"-Modus mit Emojis) und erklären lässt (Bildbeschreibung, Quizfragen, Vokabeltrainer).
 
-Seit v0.10.0-beta gibt es zusätzlich den **Heft-Modus**: ein Buch kann statt einer Geschichte auch ein **Übungsheft** sein (Arbeitsblätter zur Schulvorbereitung). Dann wertet die KI die Seite als Aufgabe aus (Aufgabenstellung, kindgerechte Erklärung, Hilfeschritte, Lösung) statt als Erzähltext. Hintergrund und Planung dazu: `docs/uebungshefte-konzept.md`, offener Generator: `docs/todo-heft-generator.md`.
+Seit v0.10.0-beta gibt es zusätzlich den **Heft-Modus**: ein Buch kann statt einer Geschichte auch ein **Übungsheft** sein (Arbeitsblätter zur Schulvorbereitung). Dann wertet die KI die Seite als Aufgabe aus (Aufgabenstellung, kindgerechte Erklärung, Hilfeschritte, Lösung) statt als Erzähltext. Seit v0.11.0-beta kann das Kind sein bearbeitetes Blatt zusätzlich abfotografieren und bekommt eine vorgelesene Rückmeldung (`js/actions/checkWork.js`). Hintergrund und Planung dazu: `docs/uebungshefte-konzept.md`, offener Generator: `docs/todo-heft-generator.md`.
 
 **Zielgruppe:** Eine Familie nutzt die App privat für ihre Kinder. Der Betreiber ist technischer Laie ("kann ein bisschen HTML"), arbeitet aber regelmäßig mit Claude (Chat) und jetzt auch Claude Code an dem Projekt weiter.
 
@@ -86,6 +86,8 @@ import './actions/meineNeueDatei.js';
 | `js/actions/workbook.js` | Heft-Modus: Buchart umschalten (inkl. Neu-Auslesen), Lösung aufdecken |
 | `js/render/workbook.js` | Hilfe-/Lösungs-Karte im Reader, Art-Umschalter in Bibliothek/Buchansicht |
 | `js/actions/progress.js` | `app.progress`: Erledigt-Häkchen pro Profil, Sticker, Medaillen |
+| `js/actions/checkWork.js` | Kontrolle bearbeiteter Blätter (Foto → KI-Rückmeldung), nur im Heft-Modus |
+| `js/render/checkWork.js` | Ergebniskarte der Kontrolle (Lob, Rückmeldung, Tipps) |
 | `js/render/progress.js` | Fortschrittsbalken, Erledigt-Knopf, Belohnungs-Banner |
 | `js/vendor/` | PDF.js und JSZip - NIE direkt bearbeiten, nur austauschen/aktualisieren |
 | `sw.js` | Service Worker - **`CACHE_NAME`-Version bei jeder Datei-Änderung hochzählen**, neue Dateien zur `APP_SHELL`-Liste hinzufügen |
@@ -120,6 +122,11 @@ import './actions/meineNeueDatei.js';
   // NEU: Erledigt-Häkchen pro Kind-Profil (fehlt bei alten Büchern).
   // NIE direkt lesen, immer über app.progress.isPageDone(page).
   progress: { [profileId]: { done: true, doneAt, sticker } },
+  // NEU: letzte Kontrolle des bearbeiteten Blattes, ebenfalls pro Profil.
+  // Lesen über app.utils.resolvePageCheck(page). thumbUrl ist absichtlich
+  // nur die kleine Vorschau - das volle Kontroll-Foto wird NICHT gespeichert,
+  // sonst wächst jedes Heft mit jeder Kontrolle um ein großes Bild.
+  check: { [profileId]: { verdict, praise, feedback, hints: [], thumbUrl, checkedAt } },
   // Alte Bücher (vor der Variants-Architektur) haben stattdessen flache
   // Felder text/erstleserText/desc/quizQ/quizA direkt auf der Seite -
   // IMMER über app.utils.resolvePageVariant()/resolveAnyVariant() lesen,
@@ -190,6 +197,7 @@ Kein CI/CD - der Nutzer lädt den kompletten Ordnerinhalt manuell über die GitH
 ## Offene Punkte (Stand zuletzt besprochen)
 
 Größere, noch nicht begonnene Features (brauchen erst Abstimmung mit dem Nutzer, nicht einfach lospreschen):
+- Kontroll-Funktion im Alltag beobachten: wie zuverlässig beurteilt Gemini die Fotos wirklich? Falls sie zu oft "unklar" liefert, wäre eine Foto-Hilfe (Rahmen/Helligkeitshinweis) der nächste Schritt
 - Heft-Generator: Übungsblätter von der KI erstellen lassen - fertiger Entwurf inkl. offener Punkte in `docs/todo-heft-generator.md`
 - Vollbild-Modus: Text + Hervorhebung ergänzen
 - Zweiseitiges Buch-Layout für PC/Tablet
@@ -211,7 +219,9 @@ Bewusst zurückgestellt (bräuchten einen eigenen Server):
 - Immer `app.utils.sanitize()` verwenden, bevor Nutzer- oder KI-Text per `innerHTML` eingefügt wird (XSS-Schutz) - `.innerText`/`.textContent` brauchen das nicht
 - Fehler nie stumm verschlucken - mindestens `console.error()`, meist zusätzlich `app.ui.toast(...)`
 - Vor dem Vorlesen IMMER `app.utils.stripEmojiForSpeech()` bzw. `speak()` nutzen (nie rohen Text direkt an `SpeechSynthesisUtterance` geben) - sonst versucht der Browser, Emojis auszusprechen
+- **Rückmeldungen an Kinder nie hart formulieren.** Der Kontroll-Prompt in `js/api.js` verbietet der KI ausdrücklich das Wort "falsch", schreibt "im Zweifel lieber 'fast'" vor und verlangt `verdict: "unklar"` statt einer Vermutung, wenn das Foto unklar ist. Ein Kind, dem fälschlich gesagt wird, es habe sich vertan, verliert die Lust - das ist wichtiger als eine strenge Bewertung. Beim Anfassen dieses Prompts unbedingt beibehalten.
+- Die App hat **keine eigene Spracherkennung**. Gesprochene Eingabe läuft über die Mikrofon-Taste der Bildschirmtastatur (Gboard/iOS-Diktat), die ganz normal in das Textfeld schreibt - `app.actions.focusChatInput()` kann nur das Feld fokussieren und darauf hinweisen.
 
 ## Versionsstand
 
-Aktuell `v0.10.0-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Zähl die Version bei größeren Änderungen entsprechend hoch (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).
+Aktuell `v0.11.0-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Zähl die Version bei größeren Änderungen entsprechend hoch (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).

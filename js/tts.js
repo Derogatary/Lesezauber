@@ -159,6 +159,32 @@ Object.assign(app.tts, {
         });
     },
 
+    // NEU: Rückmeldung der Blatt-Kontrolle vorlesen - das Kind kann sie
+    // nicht selbst lesen, deshalb ist das der eigentliche Ausgabeweg und
+    // nicht nur eine Zusatzfunktion. Lob, Rückmeldung und Tipps kommen
+    // nacheinander mit kurzer Pause, damit es nicht wie ein Textblock klingt.
+    speakCheckResult(check) {
+        if (!check) return;
+        if (app.state.autoReadActive) this.stopAutoRead();
+        stepRunId++; // eine laufende Schritt-Kette hat jetzt Vorrang verloren
+
+        const parts = [check.praise, check.feedback].filter(Boolean);
+        const hints = Array.isArray(check.hints) ? check.hints : [];
+
+        const readHints = () => {
+            if (hints.length > 0) this._speakSteps(hints, 0);
+        };
+
+        if (parts.length === 0) { readHints(); return; }
+        this.speak(parts[0], () => {
+            if (parts.length > 1) {
+                this.speak(parts[1], readHints);
+            } else {
+                readHints();
+            }
+        });
+    },
+
     toggleAutoRead() {
         if (app.state.autoReadActive) {
             this.stopAutoRead();

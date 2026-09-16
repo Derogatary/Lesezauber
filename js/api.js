@@ -74,6 +74,40 @@ Nutze exakt dieses Schema:
 SEHR WICHTIG: Erfinde nichts dazu. Was du auf dem Blatt nicht sicher erkennst, darfst du nicht raten - schreibe bei "solution" dann "Das kann ich hier nicht sicher erkennen." Eine falsche Lösung verunsichert das Kind mehr, als gar keine zu haben.`;
 }
 
+// NEU: Prompt für die Kontrolle eines BEARBEITETEN Blattes. Die KI kennt
+// dabei die Aufgabe und die erwartete Lösung aus der vorherigen Analyse -
+// sie muss also nicht erraten, worum es geht, sondern nur noch vergleichen.
+// Die Regeln am Ende sind der wichtigste Teil: ein Kind, dem fälschlich
+// gesagt wird, es habe sich vertan, verliert die Lust an der Sache. Lieber
+// "unklar" als ein falscher Tadel.
+function buildCheckPrompt(variant, personaId) {
+    const solution = variant.solution || 'Keine Lösung hinterlegt - beurteile nur, ob die Aufgabe erkennbar bearbeitet wurde.';
+    const explained = variant.erstleserText || variant.text || '';
+
+    return `Rolle: ${personaInstruction(personaId)}
+
+Ein Kind (ca. 4-6 Jahre, kann noch NICHT lesen) hat ein Übungsblatt bearbeitet und zeigt es dir jetzt als Foto. Du siehst also das BEARBEITETE Blatt mit dem, was das Kind gemalt, verbunden, angekreuzt oder geschrieben hat.
+
+Die Aufgabe lautete: "${variant.text || ''}"
+So wurde sie dem Kind erklärt: "${explained}"
+Erwartete Lösung: "${solution}"
+
+Schau dir an, was das Kind gemacht hat, und antworte AUSSCHLIESSLICH in validem JSON-Format! Verwende keine Markdown-Blöcke.
+Nutze exakt dieses Schema:
+{
+  "verdict": "Genau EINER dieser Werte: richtig, fast, nochmal, unklar",
+  "praise": "Ein kurzer, warmer Satz an das Kind. Benenne IMMER zuerst etwas Gutes - auch dann, wenn noch etwas fehlt.",
+  "feedback": "1-2 kurze Sätze in Du-Form: was du auf dem Blatt siehst und was gegebenenfalls noch fehlt. Kindgerecht und freundlich. Das Wort 'falsch' benutzt du NICHT.",
+  "hints": ["1 bis 3 kurze Tipps, was das Kind als Nächstes tun kann. Bei verdict 'richtig' ein leeres Array. Verrate nicht einfach die ganze Lösung, gib nur einen Schubs in die richtige Richtung."]
+}
+
+Diese Regeln sind wichtiger als alles andere:
+- Kannst du auf dem Foto nicht sicher erkennen, was das Kind gemacht hat (unscharf, zu dunkel, abgeschnitten, Blatt nicht erkennbar, gar nichts bearbeitet)? Dann verdict "unklar" und sage im feedback freundlich, dass du das Bild nicht gut erkennen kannst. RATE NICHT.
+- Im Zweifel immer "fast" statt "nochmal".
+- Bei freien Aufgaben, bei denen es kein richtig oder falsch gibt (z.B. frei ausmalen), ist alles richtig, was bearbeitet wurde: verdict "richtig".
+- Sprich das Kind direkt an, nie über das Kind.`;
+}
+
 // Gemeinsame Aufräum-Logik für beide Anbieter: manche Modelle wrappen die
 // JSON-Antwort trotz Anweisung in ```json ... ``` Markdown-Blöcke.
 function parseModelJson(rawText) {
@@ -221,5 +255,27 @@ Antworte AUSSCHLIESSLICH als valides JSON-Array ohne Markdown-Blöcke, exakt in 
         const data = await res.json();
         const textResult = data.candidates?.[0]?.content?.parts?.[0]?.text || '[]';
         return parseModelJson(textResult);
+    },
+
+    // NEU: Kontrolle eines bearbeiteten Übungsblattes. Nutzt dieselben
+    // Anbieter-Funktionen wie analyze() (inkl. Mistral-Fallback), nur mit
+    // einem anderen Prompt und dem Foto des bearbeiteten Blattes.
+    async checkWorkedPage(base64Image, variant, personaId = app.settings.persona) {
+        const prompt = buildCheckPrompt(variant, personaId);
+
+        try {
+            return await callGeminiAnalyze(prompt, base64Image);
+        } catch (geminiError) {
+            if (!app.settings.mistralApiKey) throw geminiError;
+            console.warn('Gemini-Kontrolle fehlgeschlagen, versuche Mistral-Fallback:', geminiError.message);
+            try {
+                const result = await callMistralAnalyze(prompt, base64Image);
+                app.ui.toast('Gemini nicht erreichbar - Mistral eingesprungen', '🔄');
+                return result;
+            } catch (mistralError) {
+                console.error('Auch Mistral-Fallback fehlgeschlagen:', mistralError);
+                throw geminiError;
+            }
+        }
     }
 });

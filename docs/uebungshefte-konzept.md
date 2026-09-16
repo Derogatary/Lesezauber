@@ -1,6 +1,6 @@
 # Bibel-Übungshefte zur Schulvorbereitung – Konzept
 
-**Stand:** v0.10.0-beta · Grundlage für die Weiterarbeit, noch keine fertige Planung.
+**Stand:** v0.11.0-beta · Grundlage für die Weiterarbeit, noch keine fertige Planung.
 
 ## Idee
 
@@ -25,6 +25,8 @@ das Tablet steht daneben.
 | Nachfragen | „Frag den Zauberer" im Reader | Kind/Eltern können zum abfotografierten Blatt frei nachfragen |
 | Lösung | Hilfe-&-Lösung-Tab | absichtlich ein extra Tipp, klappt beim Seitenwechsel wieder zu |
 | Fortschritt | `js/actions/progress.js` | Häkchen + Sticker pro Aufgabe, **pro Kind-Profil**, Pokal für ein komplettes Heft |
+| Kontrolle | `js/actions/checkWork.js` | Kind fotografiert das bearbeitete Blatt, KI vergleicht mit Aufgabe + Lösung und gibt vorgelesene Rückmeldung; bei "richtig" wird automatisch abgehakt |
+| Fragen sprechen | 🎤 neben dem Frage-Feld | nutzt die Diktierfunktion der Bildschirmtastatur, keine eigene Spracherkennung |
 | Ausdrucken | 🖨️ in der Buchansicht | druckt bei Übungsheften auch Erklärung und Hilfeschritte mit |
 | Mehrere Kinder | Profile | jedes Kind hat seinen eigenen Stand im selben Heft |
 
@@ -32,11 +34,16 @@ das Tablet steht daneben.
 
 - **Hefte selbst erzeugen.** Blätter müssen vorhanden sein (selbst gestaltet, gekauft,
   ausgedruckt). Siehe `docs/todo-heft-generator.md`.
-- **Zuhören.** Die App spricht, hört aber nicht. „Kind antwortet mündlich, App prüft"
-  geht heute nicht (keine Spracherkennung im Projekt).
-- **Kontrollieren, was das Kind gemalt/geschrieben hat.** Ein abfotografiertes
-  bearbeitetes Blatt könnte die KI zwar beurteilen – dafür gibt es bisher keinen
-  Ablauf in der App.
+- **Selbst zuhören.** Die App hat keine eigene Spracherkennung. Gesprochene Fragen
+  laufen über die Mikrofon-Taste der Bildschirmtastatur (Gboard/iOS-Diktat), die ganz
+  normal Text ins Feld schreibt. Das funktioniert, ist aber kein freihändiges Zuhören:
+  das Kind muss die Taste selbst antippen, und Kinderstimmen werden schlechter erkannt
+  als Erwachsenenstimmen.
+- **Verlässlich bewerten.** Die Kontrolle (Foto des bearbeiteten Blattes) gibt es seit
+  v0.11.0-beta, sie ist aber eine Hilfe und kein Lehrer: Gemini erkennt dünne
+  Bleistiftlinien und Kinderschrift nicht immer. Der Prompt ist deshalb bewusst
+  vorsichtig eingestellt – im Zweifel „fast" statt „nochmal", und lieber „das sehe ich
+  nicht gut" als ein falscher Tadel. Ein Erwachsener sollte weiterhin mit draufschauen.
 - **Hefte weitergeben.** Nur über die Export-Datei (Einstellungen → Exportieren).
   Die enthält alle Seitenbilder als Base64, wird also schnell groß.
 

@@ -140,6 +140,14 @@ Object.assign(app.utils, {
         };
     },
 
+    // NEU: Kontroll-Ergebnis einer Seite für das aktuelle Kind-Profil.
+    // Wie überall gilt: nie page.check direkt lesen - Seiten aus der Zeit
+    // vor dieser Funktion haben das Feld gar nicht.
+    resolvePageCheck(page, profileId) {
+        const id = profileId || this.resolveCreationProfileId();
+        return (page && page.check && page.check[id]) || null;
+    },
+
     // NEU: zählt, wie viele Persona-Varianten in der gesamten Bibliothek
     // noch fehlen - für die Fortschrittsanzeige der Hintergrund-Vorbereitung.
     countMissingVariants() {

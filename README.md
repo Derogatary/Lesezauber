@@ -55,6 +55,8 @@ Eine Web-App, mit der du Kinderbuch-Seiten mit dem Handy fotografierst (oder aus
 - ⚡ Eigener Tailwind-Build statt CDN (schnelleres Laden, kein Live-Compiling im Browser)
 - 🌙 Optionale Hintergrund-Vorbereitung: erstellt fehlende Erzähler-Varianten und Buch-Quiz automatisch, wenn gerade nichts läuft (aus-/einschaltbar in den Einstellungen)
 - 📝 **Übungsheft-Modus:** Arbeitsblätter statt Geschichten - die KI liest die Aufgabenstellung aus, erklärt sie kindgerecht, gibt eine Schritt-für-Schritt-Hilfe und zeigt auf Wunsch die Lösung. Vorlesen bleibt danach stehen, statt weiterzublättern (das Kind hat ja zu tun). Gedacht für die Schulvorbereitung zu Hause, siehe `docs/uebungshefte-konzept.md`
+- 📷 **Blatt kontrollieren lassen:** das Kind fotografiert sein ausgefülltes Übungsblatt, die KI vergleicht es mit Aufgabe und Lösung und gibt eine vorgelesene Rückmeldung (Lob zuerst, dann Tipps - nie "falsch"). Ist alles richtig, wird die Aufgabe automatisch abgehakt; erkennt die KI das Foto nicht sicher, sagt sie das, statt zu raten
+- 🎤 **Fragen sprechen statt tippen:** der 🎤-Knopf öffnet die Tastatur, deren Mikrofon-Taste schreibt die gesprochene Frage ins Feld (keine eigene Spracherkennung nötig - funktioniert mit Gboard und iOS-Diktat)
 - ✅ **Fortschritt & Belohnung:** jede Seite bzw. Aufgabe abhaken, Sticker dazu, Pokal für ein komplett geschafftes Buch/Heft - getrennt pro Kind-Profil, wandert mit Export/Import mit
 
 ## 🚀 Live nutzen
@@ -129,6 +131,7 @@ js/
     pdfImport.js           PDF-Import (rendert Seiten als Bilder)
     workbook.js            Übungsheft-Modus (Buchart umschalten, Lösung aufdecken)
     progress.js            Erledigt-Häkchen, Sticker, Belohnungen (pro Profil)
+    checkWork.js           Bearbeitetes Blatt fotografieren und kontrollieren lassen
   render/
     library.js             Bibliotheks-Ansicht + Suche
     book.js                 Buch-Detail-Ansicht
@@ -136,6 +139,7 @@ js/
     settings.js               Einstellungen-Ansicht
     workbook.js               Hilfe-/Lösungs-Karte und Art-Umschalter
     progress.js               Fortschrittsbalken, Erledigt-Knopf, Belohnungen
+    checkWork.js              Ergebniskarte der Blatt-Kontrolle
   vendor/
     pdfjs/                  PDF.js (Mozilla) - wird nur bei PDF-Import nachgeladen
 main.js                  Bindet alle Module zusammen und startet die App

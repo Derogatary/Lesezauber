@@ -35,7 +35,7 @@
                     <p id="streakBadge" class="hidden text-xs font-bold text-amber-600 mt-0.5"></p>
                     <!-- NEU: Belohnung - Anzahl komplett geschaffter Bücher/Hefte -->
                     <p id="medalBadge" class="hidden text-xs font-bold text-emerald-600 mt-0.5"></p>
-                    <p class="text-[10px] text-slate-400 font-semibold mt-0.5">v0.10.0-beta</p>
+                    <p class="text-[10px] text-slate-400 font-semibold mt-0.5">v0.11.0-beta</p>
                 </div>
                 <div class="flex items-center gap-2 flex-shrink-0">
                     <button onclick="app.nav.go('help')" aria-label="Hilfe öffnen" title="Hilfe" class="w-10 h-10 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-600 hover:bg-slate-100 shadow-sm transition active:scale-95">
@@ -333,18 +333,39 @@
                     </div>
                 </div>
 
+                <!-- NEU: Kontrolle - das Kind fotografiert sein bearbeitetes
+                     Blatt, die KI schaut es sich an und gibt Rückmeldung.
+                     Nur im Heft-Modus sichtbar. -->
+                <div id="checkWorkSection" class="hidden space-y-3">
+                    <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-2">
+                        <h4 class="text-xs font-bold text-emerald-600 uppercase tracking-wider">📷 Fertig? Zeig es mir!</h4>
+                        <p class="text-[11px] text-slate-500 leading-relaxed">Fotografiere dein ausgefülltes Blatt - ich schaue es mir an und sage dir, wie es geworden ist.</p>
+                        <button onclick="app.actions.triggerCheckPhoto()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-sm transition active:scale-98">
+                            📷 Blatt fotografieren und kontrollieren
+                        </button>
+                    </div>
+                    <div id="checkWorkResult"></div>
+                </div>
+                <input id="checkPhotoInput" type="file" accept="image/*" capture="environment" onchange="app.actions.checkWorkedPage(event)" class="hidden">
+
                 <!-- Chat Box -->
                 <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-3">
-                    <h4 class="text-xs font-bold text-indigo-600 uppercase tracking-wider">💬 Frag den Zauberer zum Bild</h4>
+                    <h4 id="chatCardHeading" class="text-xs font-bold text-indigo-600 uppercase tracking-wider">💬 Frag den Zauberer zum Bild</h4>
                     <div id="chatHistory" class="space-y-2 max-h-36 overflow-y-auto text-xs">
                         <!-- Chat messages injected here -->
                     </div>
                     <div class="flex gap-2">
                         <input id="chatInput" type="text" placeholder="Z.B. Was macht der Bär?" class="flex-grow text-xs bg-slate-100 border border-slate-300 rounded-xl px-3 py-2 focus:outline-none focus:border-indigo-500">
+                        <!-- NEU: öffnet nur die Tastatur - gesprochen wird über deren
+                             eigene Mikrofon-Taste, die App hört selbst nicht zu -->
+                        <button onclick="app.actions.focusChatInput()" aria-label="Frage sprechen statt tippen" title="Frage sprechen statt tippen" class="bg-slate-100 border border-slate-300 text-slate-700 font-bold text-sm px-3 py-2 rounded-xl hover:bg-slate-200 transition flex-shrink-0">
+                            🎤
+                        </button>
                         <button onclick="app.actions.askWizard()" class="bg-indigo-600 text-white font-bold text-xs px-4 py-2 rounded-xl hover:bg-indigo-700 transition">
                             Fragen
                         </button>
                     </div>
+                    <p class="text-[10px] text-slate-400 leading-relaxed">🎤 öffnet die Tastatur - dort auf das Mikrofon tippen, dann kann dein Kind die Frage einfach sprechen.</p>
                 </div>
 
                 <!-- NEU: Verständnisfragen zum GESAMTEN Buch - nur auf der letzten Seite sichtbar -->
@@ -433,6 +454,14 @@
                 <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
                     <h2 class="text-sm font-bold text-indigo-900 mb-1">✅ Fortschritt & Belohnung</h2>
                     <p class="text-xs text-slate-600 leading-relaxed">Unten im Reader jede fertige Seite bzw. Aufgabe abhaken - es gibt einen Sticker dazu. Die Häkchen gelten pro Profil, jedes Kind hat also seinen eigenen Stand. Ist alles abgehakt, gibt es einen Pokal, der in der Bibliothek mitgezählt wird. Nochmal tippen nimmt ein Häkchen wieder zurück.</p>
+                </div>
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                    <h2 class="text-sm font-bold text-indigo-900 mb-1">📷 Blatt kontrollieren lassen</h2>
+                    <p class="text-xs text-slate-600 leading-relaxed">Im Übungsheft unter "Hilfe &amp; Lösung": das ausgefüllte Blatt fotografieren, die KI schaut es sich an und sagt vorgelesen, was gut ist und was noch fehlt. Ist alles richtig, wird die Aufgabe automatisch abgehakt. Erkennt die KI das Foto nicht sicher, sagt sie das ehrlich, statt zu raten - dann einfach heller und näher nochmal fotografieren. Bitte trotzdem selbst mit draufschauen: die Kontrolle ist eine Hilfe, kein Lehrer.</p>
+                </div>
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                    <h2 class="text-sm font-bold text-indigo-900 mb-1">🎤 Fragen sprechen statt tippen</h2>
+                    <p class="text-xs text-slate-600 leading-relaxed">Der 🎤-Knopf neben dem Frage-Feld öffnet die Tastatur. Dort auf die Mikrofon-Taste tippen (Android: Gboard, iPhone/iPad: Diktierfunktion) - das Kind kann die Frage dann einfach sprechen, sie erscheint als Text im Feld. Die App selbst hört nicht mit; es ist die eingebaute Funktion des Geräts.</p>
                 </div>
                 <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
                     <h2 class="text-sm font-bold text-red-700 mb-1">⚠️ Fehler bei der Analyse?</h2>
