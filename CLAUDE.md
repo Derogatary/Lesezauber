@@ -176,6 +176,7 @@ Größere, noch nicht begonnene Features (brauchen erst Abstimmung mit dem Nutze
 - "Mitmachmodus": Sprechpause vor jedem durch Emoji ersetzten Wort
 - Strukturierte Metadaten-Ansage (Titel/Autor/Verlag/Kapitel vom Erzähler angekündigt)
 - KI-generierte Illustrationen (Comic-Stil) für Text-only-EPUB-Kapitel via Gemini-Bildgenerierung
+- "SchreibZauber": eigener Schreib-/Generierungs-Bereich für selbst erstellte Bilderbücher, Comics/Hefte und Arbeitshefte - Konzept liegt fertig unter `docs/KONZEPT-SchreibZauber.md` (inkl. Entscheidung Tab vs. eigene App, Datenmodell, Ausbaustufen, offene Fragen)
 - Native Android-App via Capacitor (Play Store, ggf. Samsung/Amazon Store)
 - Diagnose: Scroll-Verhalten am Bildschirmrand (Desktop), Zoom/Unschärfe im Fenstermodus - noch nicht reproduziert, braucht ggf. Screenshot vom Nutzer
 
