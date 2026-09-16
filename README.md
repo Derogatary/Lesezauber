@@ -150,6 +150,7 @@ main.js                  Bindet alle Module zusammen und startet die App
 - 🎨 KI-generierte Illustrationen für textlastige EPUB-Kapitel ohne eigenes Bild, optional im Comic-Stil (Gemini kann mittlerweile auch Bilder erzeugen, gleicher Key wie bisher) - Cover-Bild-Sonderfall erstmal nicht nötig
 - 📱 Native App / Android-Store-Verpackung (Capacitor) - verpackt den bestehenden Code weitgehend unverändert
 - 🎬 Video-Export (Seite + KI-Stimme als Videodatei) - der aufwändigste offene Punkt, braucht eine Sprach-API mit echter Audiodatei-Ausgabe (z.B. ElevenLabs)
+- 📓 Ausführliches Konzept dazu (Sprach-API, Video/MP4, Hörbuch, Comic - was, wie und warum): [`docs/konzept-video-und-multiformat.md`](docs/konzept-video-und-multiformat.md)
 
 **Bräuchte einen eigenen Server** (aktuell bewusst zurückgestellt):
 - API-Key über ein Backend absichern

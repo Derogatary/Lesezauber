@@ -176,6 +176,10 @@ Größere, noch nicht begonnene Features (brauchen erst Abstimmung mit dem Nutze
 - "Mitmachmodus": Sprechpause vor jedem durch Emoji ersetzten Wort
 - Strukturierte Metadaten-Ansage (Titel/Autor/Verlag/Kapitel vom Erzähler angekündigt)
 - KI-generierte Illustrationen (Comic-Stil) für Text-only-EPUB-Kapitel via Gemini-Bildgenerierung
+- Sprach-API mit echter Audiodatei, Video-Export (MP4), Hörbuch, Comic, selbst geschriebene Bücher -
+  ausgearbeitetes Konzept inkl. Begründungen und bekannter Sackgassen in
+  `docs/konzept-video-und-multiformat.md`. **Vor jeder Arbeit an einem dieser Themen dort reinschauen**,
+  sonst werden Entscheidungen neu diskutiert, die schon gefallen sind.
 - Native Android-App via Capacitor (Play Store, ggf. Samsung/Amazon Store)
 - Diagnose: Scroll-Verhalten am Bildschirmrand (Desktop), Zoom/Unschärfe im Fenstermodus - noch nicht reproduziert, braucht ggf. Screenshot vom Nutzer
 
