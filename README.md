@@ -32,7 +32,7 @@ Eine Web-App, mit der du Kinderbuch-Seiten mit dem Handy fotografierst (oder aus
 - ♿ aria-live für Toasts, reduzierte Bewegung respektiert (prefers-reduced-motion), kontrastreicherer Text
 - 🔧 Kompaktes "⋮"-Menü statt vieler Icons pro Seiten-Karte, Suche mit Debounce
 - 📱 Responsive: nutzt auf Tablet/Desktop mehr Spalten und Breite statt nur im Handy-Format
-- 🌙 Vollbild-Vorlese-Modus (nur Bild + Play/Pause, ideal fürs Bett)
+- 🌙 Vollbild-Vorlese-Modus (Bild, Text mit Wort-Hervorhebung + Play/Pause, ideal fürs Bett)
 - 🖨️ Buch drucken (einfache Druckansicht mit Bild + Text pro Seite)
 - 🔥 Lese-Serie pro Profil, 👋 persönliche Begrüßung mit "Weiterlesen"-Karte
 - 💾 Sanfte Erinnerung, wenn lange kein Backup mehr gemacht wurde

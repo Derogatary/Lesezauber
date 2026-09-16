@@ -165,13 +165,11 @@ Kein CI/CD - der Nutzer lädt den kompletten Ordnerinhalt manuell über die GitH
 
 - Kein Server, keine Accounts, keine automatische Cloud-Synchronisierung - bewusst so, siehe README "Mögliche nächste Schritte"
 - API-Keys im Klartext im Browser - bekannte Grenze der reinen Client-Architektur
-- Vollbild-Vorlese-Modus zeigt aktuell nur das Bild, keinen Text (offener Punkt, kein Bug)
 - Zweiseitiges Desktop-Layout (Bild links/Text rechts) noch nicht umgesetzt
 
 ## Offene Punkte (Stand zuletzt besprochen)
 
 Größere, noch nicht begonnene Features (brauchen erst Abstimmung mit dem Nutzer, nicht einfach lospreschen):
-- Vollbild-Modus: Text + Hervorhebung ergänzen
 - Zweiseitiges Buch-Layout für PC/Tablet
 - "Mitmachmodus": Sprechpause vor jedem durch Emoji ersetzten Wort
 - Strukturierte Metadaten-Ansage (Titel/Autor/Verlag/Kapitel vom Erzähler angekündigt)
@@ -194,4 +192,4 @@ Bewusst zurückgestellt (bräuchten einen eigenen Server):
 
 ## Versionsstand
 
-Aktuell `v0.9.0-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Zähl die Version bei größeren Änderungen entsprechend hoch (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).
+Aktuell `v0.9.1-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Zähl die Version bei größeren Änderungen entsprechend hoch (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).

@@ -79,7 +79,12 @@ Object.assign(app.tts, {
         this.synth.speak(utter);
     },
 
+    // FIX: im Vollbild-Modus liegt der überlagernde Text im eigenen
+    // "focusText"-Element (siehe viewFocus in index.html), nicht in den
+    // (dahinter verdeckten) normalen Reader-Textfeldern - sonst würde die
+    // Wort-Hervorhebung unsichtbar im Hintergrund laufen.
     _currentTextElementId() {
+        if (app.state.focusMode) return 'focusText';
         return app.state.activeTab === 'erstleser' ? 'readerErstleserText' : 'readerOriginalText';
     },
 
