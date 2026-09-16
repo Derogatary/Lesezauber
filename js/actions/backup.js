@@ -1,10 +1,11 @@
 import { app } from '../core.js';
 
 Object.assign(app.actions, {
-    // NEU: einzelnes Buch herunterladen. Gleiches Format wie der
-    // Bibliotheks-Export - die Datei lässt sich später über
-    // "Importieren" wieder einlesen und ist dann genauso bearbeitbar
-    // wie jedes andere Buch (Seiten löschen/verschieben, Cover ändern usw.).
+    // NEU: einzelnes Buch herunterladen - die Datei enthält nur dieses eine
+    // Buch-Objekt (der Bibliotheks-Export dagegen eine Sammlung). "Importieren"
+    // erkennt beide Formate, die Datei lässt sich also wieder einlesen und ist
+    // dann genauso bearbeitbar wie jedes andere Buch (Seiten löschen/
+    // verschieben, Cover ändern usw.).
     downloadBook(bookId) {
         const book = app.library[bookId];
         if (!book) return;
@@ -110,11 +111,30 @@ Object.assign(app.actions, {
                 throw new Error('Ungültiges Format');
             }
 
+            // FIX: "Buch herunterladen" liefert ein einzelnes Buch-Objekt, der
+            // Bibliotheks-Export dagegen eine Sammlung {id: buch}. Ohne diese
+            // Unterscheidung wurde eine Einzelbuch-Datei beim Reimport durch
+            // Object.values() in ihre Felder zerlegt statt geladen - und das
+            // mit einer Erfolgsmeldung. Jetzt werden beide Formate erkannt.
+            const isSingleBook = typeof imported.id === 'string' && Array.isArray(imported.pages);
+            const candidates = isSingleBook ? [imported] : Object.values(imported);
+
+            // FIX: nur speichern, was wirklich ein Buch ist - sonst scheitert
+            // das Schreiben in IndexedDB still (der Store braucht ein Objekt
+            // mit 'id'), während die Meldung Erfolg behauptet.
+            const importedBooks = candidates.filter(book =>
+                book && typeof book === 'object' &&
+                typeof book.id === 'string' && Array.isArray(book.pages)
+            );
+
+            if (importedBooks.length === 0) {
+                throw new Error('Keine Bücher in der Datei gefunden');
+            }
+
             // NEU: jedes importierte Buch einzeln über dbOps.saveBook
             // speichern - das übernimmt automatisch die richtige
             // Speicher-Engine (IndexedDB), ohne dass diese Datei wissen
             // muss, wie/wo genau gespeichert wird.
-            const importedBooks = Object.values(imported);
             importedBooks.forEach(book => app.dbOps.saveBook(book));
 
             app.ui.toast(`${importedBooks.length} Buch/Bücher importiert.`, '📥');
