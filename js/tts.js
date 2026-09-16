@@ -301,15 +301,67 @@ Object.assign(app.tts, {
             }
         };
 
-        // NEU: im Mitmachmodus den Erstleser-Text mit Rate-Pausen vorlesen,
-        // aber nur wenn er auch existiert - sonst wie gewohnt Originaltext.
-        // Wechselt auch sichtbar zum Erstleser-Tab, damit die Emoji-Pausen
-        // dort zu sehen sind, wo sie inhaltlich hingehören.
-        if (app.state.mitmachModus && variant.erstleserText) {
-            app.readerUI.setTab('erstleser');
-            this.speakMitmach(variant.erstleserText, describeImage, this._currentTextElementId());
+        const startPageText = () => {
+            // NEU: im Mitmachmodus den Erstleser-Text mit Rate-Pausen
+            // vorlesen, aber nur wenn er auch existiert - sonst wie gewohnt
+            // Originaltext. Wechselt auch sichtbar zum Erstleser-Tab, damit
+            // die Emoji-Pausen dort zu sehen sind, wo sie hingehören.
+            if (app.state.mitmachModus && variant.erstleserText) {
+                app.readerUI.setTab('erstleser');
+                this.speakMitmach(variant.erstleserText, describeImage, this._currentTextElementId());
+            } else {
+                this.speak(variant.text, describeImage, this._currentTextElementId());
+            }
+        };
+
+        // NEU: Metadaten-Ansage (Buchtitel/Autor/Verlag/Reihe auf der ersten
+        // Seite, neue Kapitelüberschrift, Inhaltsverzeichnis) VOR dem
+        // eigentlichen Seitentext, mit kurzer Pause danach.
+        const announcements = this._buildMetadataAnnouncements(book, page, app.state.currentPageIdx);
+        if (announcements.length === 0) {
+            startPageText();
         } else {
-            this.speak(variant.text, describeImage, this._currentTextElementId());
+            const announceNext = (i) => {
+                if (!app.state.autoReadActive) return;
+                if (i >= announcements.length) { startPageText(); return; }
+                this.speak(announcements[i], () => {
+                    if (!app.state.autoReadActive) return;
+                    setTimeout(() => announceNext(i + 1), 500);
+                });
+            };
+            announceNext(0);
         }
+    },
+
+    // NEU: baut die Ansage-Sätze für Buch-/Kapitel-Metadaten, die die KI
+    // beim Analysieren erkannt hat (siehe js/api.js Schema-Felder
+    // "title"/"author"/"publisher"/"series"/"chapterTitle"/"tocEntries").
+    // Nur für den automatischen Vorlesemodus gedacht - beim einzelnen
+    // 🔊-Button wäre die Wiederholung bei jedem erneuten Antippen nervig.
+    _buildMetadataAnnouncements(book, page, pageIdx) {
+        const announcements = [];
+
+        // Buchvorstellung nur auf der allerersten Seite, und nur, wenn
+        // überhaupt ein erkannter Titel vorliegt (kein "Neues Buch" mehr).
+        if (pageIdx === 0 && book.title && book.title !== 'Neues Buch') {
+            let intro = `Der Titel des Buchs ist ${book.title}.`;
+            if (book.author && book.author !== 'Unbekannt') intro += ` Geschrieben von ${book.author}.`;
+            if (book.publisher) intro += ` Aus dem ${book.publisher}-Verlag.`;
+            if (book.series) intro += ` Gehört zur ${book.series}-Reihe.`;
+            announcements.push(intro);
+        }
+
+        if (page.chapterTitle) {
+            announcements.push(pageIdx === 0
+                ? `Das Kapitel heißt: ${page.chapterTitle}.`
+                : `Das nächste Kapitel heißt: ${page.chapterTitle}.`);
+        }
+
+        if (Array.isArray(page.tocEntries) && page.tocEntries.length > 0) {
+            const parts = page.tocEntries.map((entry, i) => `das ${app.utils.germanOrdinal(i + 1)} Kapitel ist ${entry}`);
+            announcements.push(parts.join(', ') + '.');
+        }
+
+        return announcements;
     }
 });

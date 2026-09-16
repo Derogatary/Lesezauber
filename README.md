@@ -35,6 +35,7 @@ Eine Web-App, mit der du Kinderbuch-Seiten mit dem Handy fotografierst (oder aus
 - 🌙 Vollbild-Vorlese-Modus (Bild, Text mit Wort-Hervorhebung + Play/Pause, ideal fürs Bett)
 - 🙌 Mitmachmodus: liest den Erstleser-Text vor und pausiert vor jedem durch ein Emoji ersetzten Wort zum Mitraten
 - 📖 Zweiseitiges Layout (Option in den Einstellungen): Bild links, Text rechts wie ein aufgeschlagenes Buch - ab Tablet-Breite, auf dem Handy bleibt es immer untereinander
+- 📢 Metadaten-Ansage beim automatischen Vorlesen: erkennt Titel/Autor/Verlag/Reihe, Kapitelüberschriften und Inhaltsverzeichnisse (ohne Seitenzahlen) und sagt sie mit kurzer Pause an
 - 🖨️ Buch drucken (einfache Druckansicht mit Bild + Text pro Seite)
 - 🔥 Lese-Serie pro Profil, 👋 persönliche Begrüßung mit "Weiterlesen"-Karte
 - 💾 Sanfte Erinnerung, wenn lange kein Backup mehr gemacht wurde

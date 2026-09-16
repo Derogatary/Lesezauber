@@ -206,7 +206,16 @@ Object.assign(app.actions, {
             if (isCover && result.title && result.title !== 'null') {
                 book.title = result.title;
                 book.author = result.author && result.author !== 'null' ? result.author : 'Unbekannt';
+                if (result.publisher && result.publisher !== 'null') book.publisher = result.publisher;
+                if (result.series && result.series !== 'null') book.series = result.series;
             }
+
+            // NEU: Kapitelüberschrift bzw. Inhaltsverzeichnis für die
+            // Metadaten-Ansage beim automatischen Vorlesen (siehe
+            // app.tts._buildMetadataAnnouncements) - persona-unabhängig,
+            // deshalb direkt auf der Seite statt in page.variants.
+            page.chapterTitle = (result.chapterTitle && result.chapterTitle !== 'null') ? result.chapterTitle : null;
+            page.tocEntries = Array.isArray(result.tocEntries) && result.tocEntries.length > 0 ? result.tocEntries : null;
         } catch (e) {
             page.status = 'error';
             app.ui.toast(e.message, '❌');

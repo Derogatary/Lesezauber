@@ -7,6 +7,11 @@ Object.assign(app.render, {
 
         const coverImg = app.utils.resolveCoverUrl(book);
         const header = document.getElementById('bookDetailHeader');
+        // NEU: Verlag/Reihe anzeigen, falls die KI sie auf der Titelseite
+        // erkannt hat (siehe app.actions.analyzePage) - sonst einfach weg.
+        const publisherLine = (book.publisher || book.series)
+            ? `<p class="text-[10px] text-slate-400">${[book.publisher ? `${app.utils.sanitize(book.publisher)}-Verlag` : null, book.series ? `${app.utils.sanitize(book.series)}-Reihe` : null].filter(Boolean).join(' · ')}</p>`
+            : '';
         header.innerHTML = `
             <div class="w-16 h-20 bg-slate-100 rounded-lg overflow-hidden flex-shrink-0 border border-slate-200">
                 ${coverImg ? `<img src="${coverImg}" class="w-full h-full object-cover">` : `<div class="flex items-center justify-center h-full">📚</div>`}
@@ -14,6 +19,7 @@ Object.assign(app.render, {
             <div>
                 <h2 class="text-base font-extrabold text-slate-900">${app.utils.sanitize(book.title)}</h2>
                 <p class="text-xs text-slate-500 font-medium">Autor: ${app.utils.sanitize(book.author)}</p>
+                ${publisherLine}
                 <p class="text-[10px] text-slate-500 mt-1">${book.pages.length} Seiten gespeichert</p>
             </div>`;
 
@@ -49,6 +55,7 @@ Object.assign(app.render, {
                         <div class="absolute top-2 left-2">${statusBadge}</div>
                         ${isCover ? '<div class="absolute top-2 right-2 text-amber-400 text-sm drop-shadow">⭐</div>' : ''}
                     </div>
+                    ${p.chapterTitle ? `<div class="px-2 py-1 bg-indigo-50 border-t border-indigo-100 text-[10px] font-bold text-indigo-700 truncate" title="${app.utils.sanitize(p.chapterTitle)}">📑 ${app.utils.sanitize(p.chapterTitle)}</div>` : ''}
                     <div class="p-2 flex justify-between items-center bg-slate-50 border-t border-slate-100 rounded-b-xl gap-1">
                         <span class="text-[11px] font-bold text-slate-600 flex-shrink-0">S. ${i + 1}</span>
                         <div class="flex items-center">

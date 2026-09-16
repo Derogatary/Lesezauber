@@ -91,6 +91,7 @@ import './actions/meineNeueDatei.js';
 {
   id, title, author, created, profileId, lastReadIdx, lastReadAt,
   coverPageId,       // Seiten-ID (nicht Index!) des gewählten Covers
+  publisher, series, // optional: von der KI auf der Titelseite erkannt (siehe analyzePage)
   bookQuiz: { questions: [{question, answer}] },  // optional, gecacht
   pages: [ ... ]
 }
@@ -102,6 +103,8 @@ import './actions/meineNeueDatei.js';
   id, imgUrl, thumbUrl,  // WebP, zwei Größen
   status: 'pending' | 'processing' | 'done' | 'error',  // persona-UNABHÄNGIG
   pdfSourceText,   // optional: garantiert korrekter Text aus PDF/EPUB-Textebene, kein OCR nötig
+  chapterTitle,    // optional: von der KI erkannte Kapitelüberschrift, falls diese Seite ein Kapitel beginnt
+  tocEntries,      // optional: Array von Kapitelüberschriften, falls diese Seite ein Inhaltsverzeichnis ist (ohne Seitenzahlen)
   variants: {
     [personaId]: { text, erstleserText, desc, quizQ, quizA }
   },
@@ -111,6 +114,8 @@ import './actions/meineNeueDatei.js';
   // nie page.variants direkt, sonst bricht Rückwärtskompatibilität.
 }
 ```
+
+**Metadaten-Ansage:** `chapterTitle`/`tocEntries`/`publisher`/`series` sind persona-UNABHÄNGIG (wie `pdfSourceText`), da sie strukturelle Fakten sind, keine erzählte Vorlese-Variante. `app.tts._buildMetadataAnnouncements()` baut daraus die Ansage-Sätze - nur im automatischen Vorlesemodus (`_readCurrentThenAdvance`), NICHT beim einzelnen 🔊-Button (sonst nervt die Wiederholung bei jedem erneuten Antippen).
 
 **Zwei Hilfsfunktionen sind der einzig sichere Weg, Seitentext zu lesen:**
 - `app.utils.resolvePageVariant(page, personaId)` - exakt diese Persona, sonst `null`
@@ -169,7 +174,6 @@ Kein CI/CD - der Nutzer lädt den kompletten Ordnerinhalt manuell über die GitH
 ## Offene Punkte (Stand zuletzt besprochen)
 
 Größere, noch nicht begonnene Features (brauchen erst Abstimmung mit dem Nutzer, nicht einfach lospreschen):
-- Strukturierte Metadaten-Ansage (Titel/Autor/Verlag/Kapitel vom Erzähler angekündigt)
 - KI-generierte Illustrationen (Comic-Stil) für Text-only-EPUB-Kapitel via Gemini-Bildgenerierung
 - Native Android-App via Capacitor (Play Store, ggf. Samsung/Amazon Store)
 - Diagnose: Scroll-Verhalten am Bildschirmrand (Desktop), Zoom/Unschärfe im Fenstermodus - noch nicht reproduziert, braucht ggf. Screenshot vom Nutzer
@@ -189,4 +193,4 @@ Bewusst zurückgestellt (bräuchten einen eigenen Server):
 
 ## Versionsstand
 
-Aktuell `v0.9.3-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Zähl die Version bei größeren Änderungen entsprechend hoch (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).
+Aktuell `v0.9.4-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Zähl die Version bei größeren Änderungen entsprechend hoch (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).

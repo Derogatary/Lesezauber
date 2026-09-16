@@ -191,6 +191,14 @@ Object.assign(app.utils, {
         return parts;
     },
 
+    // NEU: deutsches Ordnungswort für die Inhaltsverzeichnis-Ansage
+    // ("das erste Kapitel ist...", "das zweite..."). Reicht für die in
+    // Kinderbüchern üblichen Kapitelzahlen, danach numerischer Fallback.
+    germanOrdinal(n) {
+        const words = ['nullte', 'erste', 'zweite', 'dritte', 'vierte', 'fünfte', 'sechste', 'siebte', 'achte', 'neunte', 'zehnte', 'elfte', 'zwölfte', 'dreizehnte', 'vierzehnte', 'fünfzehnte', 'sechzehnte', 'siebzehnte', 'achtzehnte', 'neunzehnte', 'zwanzigste'];
+        return words[n] || `${n}.`;
+    },
+
     sanitize(str) {
         if (!str) return '';
         const temp = document.createElement('div');
