@@ -18,7 +18,13 @@ const TTS_STORE_NAME = 'ttsCache';
 // Obergrenze für zwischengespeicherte Sprachaufnahmen. Beim Überschreiten
 // werden die ältesten gelöscht - sonst wächst der Speicher bei einer
 // vielgenutzten Bibliothek unbegrenzt.
+// FIX: Anzahl allein reicht als Grenze nicht. Gemini liefert
+// unkomprimiertes WAV (ca. 1 MB je Buchseite), die anderen Anbieter MP3
+// (ca. 40 KB) - 600 Gemini-Aufnahmen wären mehrere hundert MB gewesen und
+// hätten auf dem Handy den Platz für die Bücher selbst verdrängt. Deshalb
+// zusätzlich eine Größengrenze, die in der Praxis zuerst greift.
 const TTS_CACHE_MAX_ENTRIES = 600;
+const TTS_CACHE_MAX_BYTES = 100 * 1024 * 1024;
 
 // Key, unter dem die Bibliothek in der alten (localStorage-basierten)
 // Version dieser App gespeichert wurde - nur für die einmalige Migration
@@ -128,25 +134,34 @@ async function putTtsInDB(entry) {
     });
 }
 
-// Älteste Einträge löschen, sobald die Obergrenze überschritten ist.
+// Älteste Einträge löschen, sobald Anzahl ODER Gesamtgröße die Grenze
+// überschreiten. Läuft von der neuesten zur ältesten Aufnahme und behält,
+// was ins Budget passt - alles dahinter fliegt raus.
 async function pruneTtsCache() {
     const db = await openDatabase();
     return new Promise((resolve, reject) => {
         const tx = db.transaction(TTS_STORE_NAME, 'readwrite');
         const store = tx.objectStore(TTS_STORE_NAME);
-        const countRequest = store.count();
-        countRequest.onsuccess = () => {
-            let toDelete = countRequest.result - TTS_CACHE_MAX_ENTRIES;
-            if (toDelete <= 0) return;
-            const cursorRequest = store.index('created').openCursor();
-            cursorRequest.onsuccess = (event) => {
-                const cursor = event.target.result;
-                if (!cursor || toDelete <= 0) return;
+
+        let keptCount = 0;
+        let keptBytes = 0;
+
+        // 'prev' = neueste zuerst
+        const cursorRequest = store.index('created').openCursor(null, 'prev');
+        cursorRequest.onsuccess = (event) => {
+            const cursor = event.target.result;
+            if (!cursor) return;
+
+            const bytes = cursor.value.bytes || 0;
+            if (keptCount + 1 > TTS_CACHE_MAX_ENTRIES || keptBytes + bytes > TTS_CACHE_MAX_BYTES) {
                 cursor.delete();
-                toDelete--;
-                cursor.continue();
-            };
+            } else {
+                keptCount++;
+                keptBytes += bytes;
+            }
+            cursor.continue();
         };
+
         tx.oncomplete = () => resolve();
         tx.onerror = () => reject(tx.error);
     });
@@ -249,15 +264,21 @@ Object.assign(app.dbOps, {
             const db = await openDatabase();
             return await new Promise((resolve, reject) => {
                 const tx = db.transaction(TTS_STORE_NAME, 'readonly');
-                const request = tx.objectStore(TTS_STORE_NAME).getAll();
-                request.onsuccess = () => {
-                    const entries = request.result || [];
-                    resolve({
-                        count: entries.length,
-                        bytes: entries.reduce((sum, e) => sum + (e.bytes || 0), 0)
-                    });
+                // FIX: per Cursor zählen statt getAll() - sonst würden zum
+                // reinen Anzeigen der Belegung alle Audiodateien auf einmal
+                // geladen.
+                const cursorRequest = tx.objectStore(TTS_STORE_NAME).openCursor();
+                let count = 0;
+                let bytes = 0;
+                cursorRequest.onsuccess = (event) => {
+                    const cursor = event.target.result;
+                    if (!cursor) return;
+                    count++;
+                    bytes += cursor.value.bytes || 0;
+                    cursor.continue();
                 };
-                request.onerror = () => reject(request.error);
+                tx.oncomplete = () => resolve({ count, bytes });
+                tx.onerror = () => reject(tx.error);
             });
         } catch (e) {
             console.error('Stimmen-Speicher konnte nicht gelesen werden:', e);
