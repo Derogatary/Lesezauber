@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SchreibZauber – Platzhalter-Vorschau</title>
+<style>
+    :root { color-scheme: light dark; }
+    body { font-family: system-ui, sans-serif; margin: 0; padding: 1.5rem; background: #f8fafc; color: #0f172a; }
+    @media (prefers-color-scheme: dark) { body { background: #0f172a; color: #e2e8f0; } .card { background: #1e293b !important; border-color: #334155 !important; } }
+    h1 { font-size: 1.4rem; margin: 0 0 .25rem; }
+    p.lead { margin: 0 0 1.5rem; opacity: .75; max-width: 46rem; line-height: 1.5; }
+    .grid { display: grid; gap: 1.25rem; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+    .card { background: #fff; border: 1px solid #e2e8f0; border-radius: .75rem; padding: 1rem; }
+    .card img { width: 100%; height: auto; border-radius: .4rem; display: block; background: #e2e8f0; }
+    .card h2 { font-size: .95rem; margin: .75rem 0 .25rem; }
+    .card dl { margin: 0; font-size: .8rem; opacity: .8; display: grid; grid-template-columns: auto 1fr; gap: .15rem .5rem; }
+    .card dt { font-weight: 600; }
+    .card dd { margin: 0; }
+    details { margin-top: .6rem; font-size: .78rem; }
+    pre { white-space: pre-wrap; word-break: break-word; background: rgba(127,127,127,.12); padding: .5rem; border-radius: .35rem; margin: .4rem 0 0; }
+    #err { color: #b91c1c; font-weight: 600; }
+</style>
+</head>
+<body>
+    <h1>🪄 SchreibZauber – Platzhalter-Vorschau</h1>
+    <p class="lead">
+        Zeigt jedes Bildformat aus <code>js/studio/imageFormats.js</code> in seiner echten Zielgröße.
+        Genau diese Maße hat später auch das fertige Bild – deshalb springt beim Austausch nichts.
+        Aufklappen zeigt den Prompt, der beim Platzhalter schon mitgespeichert wird.
+    </p>
+    <p id="err"></p>
+    <div class="grid" id="grid"></div>
+
+<script type="module">
+    import { app } from '../js/core.js';
+    import '../js/utils.js';
+    import '../js/studio/imageSource.js';
+
+    const BEISPIEL = {
+        cover: 'Ein Fuchs mit roter Mütze schaut über eine Hügelkuppe in den Sonnenaufgang.',
+        spreadLandscape: 'Der Fuchs rennt durch hohes Gras, Schmetterlinge stieben auf.',
+        pagePortrait: 'Der Fuchs sitzt vor einer riesigen Eiche und schaut nach oben.',
+        characterSheet: 'Fuchs Fips: rotbraun, weiße Brust, immer eine rote Strickmütze.',
+        comicPage: 'Fips entdeckt eine Höhle, drei Szenen untereinander.',
+        comicPanel: 'Nahaufnahme: Fips staunt mit großen Augen.',
+        worksheetIllu: 'Ausmalbild: Fuchs neben fünf Äpfeln.',
+        worksheetBanner: 'Schmaler Streifen mit Blättern und kleinen Zahlen.'
+    };
+
+    try {
+        const grid = document.getElementById('grid');
+
+        app.studio.formats.all().forEach((fmt, i) => {
+            const sketch = BEISPIEL[fmt.id] || fmt.label;
+            const bild = app.studio.placeholder.create(fmt.id, { note: sketch, index: i });
+            if (!bild) return;
+
+            const prompt = app.studio.imageSource.buildPrompt({
+                formatId: fmt.id,
+                sketch,
+                style: 'weiches Aquarell, warme Farben, runde Formen',
+                characters: [{ name: 'Fips', sheetText: 'junger Fuchs, rotbraun, weiße Brust, rote Strickmütze' }]
+            });
+
+            // textContent statt innerHTML: kein Sanitizing nötig, kein XSS-Risiko.
+            const card = document.createElement('div');
+            card.className = 'card';
+
+            const img = document.createElement('img');
+            img.src = bild.full;
+            img.alt = `Platzhalter: ${fmt.label}`;
+            card.appendChild(img);
+
+            const h2 = document.createElement('h2');
+            h2.textContent = fmt.label;
+            card.appendChild(h2);
+
+            const dl = document.createElement('dl');
+            [['ID', fmt.id], ['Zielgröße', `${fmt.genW} × ${fmt.genH} px`], ['Verhältnis', fmt.aspect],
+             ['Textzone', fmt.textZone], ['Hinweis', fmt.note]].forEach(([k, v]) => {
+                const dt = document.createElement('dt'); dt.textContent = k;
+                const dd = document.createElement('dd'); dd.textContent = v;
+                dl.append(dt, dd);
+            });
+            card.appendChild(dl);
+
+            const det = document.createElement('details');
+            const sum = document.createElement('summary');
+            sum.textContent = 'Gespeicherter Bild-Prompt';
+            const pre = document.createElement('pre');
+            pre.textContent = prompt;
+            det.append(sum, pre);
+            card.appendChild(det);
+
+            grid.appendChild(card);
+        });
+    } catch (e) {
+        console.error(e);
+        document.getElementById('err').textContent =
+            'Fehler: ' + e.message + ' – diese Seite braucht einen lokalen Server (python3 -m http.server), sie funktioniert nicht per Doppelklick.';
+    }
+</script>
+</body>
+</html>

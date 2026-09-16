@@ -1,6 +1,10 @@
 # 🪄 Konzept: SchreibZauber – Schreib- und Generierungs-Tab für LeseZauber Pro
 
-**Stand:** 16.09.2026 · **Status:** Konzept, noch nicht umgesetzt · **Bezug:** `CLAUDE.md`, `README.md`
+**Stand:** 16.09.2026 · **Status:** Konzept · **Bezug:** `CLAUDE.md`, `README.md`
+
+> **Ergänzendes Dokument:** [`KONZEPT-Bildquellen.md`](KONZEPT-Bildquellen.md) bewertet die
+> kostenlosen und kostenpflichtigen Wege, an die Bilder zu kommen, und beschreibt das
+> bereits gebaute Platzhalter-Fundament (`js/studio/`) samt Austausch-Mechanik.
 
 Dieses Dokument beschreibt, wie LeseZauber Pro um einen Bereich erweitert wird, in dem
 eigene Werke **geschrieben und illustriert** werden: Bilderbücher, Erstlesebücher,
@@ -427,10 +431,32 @@ Reihenfolge der Maßnahmen, von wichtig nach ergänzend:
 - **Kein Auto-Generieren.** Die bestehende Hintergrund-Vorbereitung (`backgroundPregen.js`)
   wird **nicht** auf Bilder ausgeweitet – Textvarianten sind billig, Bilder nicht.
 - **Notbetrieb ohne Bild-API:** Jede Doppelseite funktioniert auch mit
-  (a) einem selbst fotografierten/gemalten und hochgeladenen Bild – das Kind malt, das Handy
+  (a) einem **Platzhalter** in exakt der späteren Zielgröße (bereits gebaut, siehe D.6a),
+  (b) einem selbst fotografierten/gemalten und hochgeladenen Bild – das Kind malt, das Handy
   fotografiert, die App setzt es ein (pädagogisch sogar die schönere Variante), oder
-  (b) einer reinen Textseite mit Hintergrundfarbe.
+  (c) dem **Prompt-Export**: die App baut den Prompt, erzeugt wird kostenlos im AI Studio,
+  das Ergebnis kommt per Upload zurück.
   So ist die Werkstatt ab Tag eins nutzbar, auch wenn die Bildgenerierung noch nicht freigeschaltet ist.
+
+## D.6a Bildquellen-Schicht (bereits gebaut)
+
+Damit die Frage „welcher Bildanbieter?" die Werkstatt nicht blockiert, liegt zwischen
+„ich brauche ein Bild" und „woher kommt es" eine Adapter-Schicht. Der übrige Code kennt
+nur `app.studio.imageSource.request(quelle, spec)` und bekommt immer dieselbe Form
+`{ full, thumb, meta }` zurück.
+
+Vorhanden unter `js/studio/` (noch nicht in `main.js` verdrahtet):
+
+- `imageFormats.js` – Formatkatalog: acht Bildformate mit fester Zielgröße, Seitenverhältnis
+  und Textzone. Der einzige Ort, an dem Maße stehen.
+- `placeholder.js` – Platzhalter in exakt der Zielgröße, mit eingezeichneter Textzone und
+  mitgeführter Bildidee.
+- `imageSource.js` – einheitlicher Prompt-Bauplan plus die Quellen `placeholder` und `upload`.
+
+Weil `meta.prompt` **auch beim Platzhalter** gespeichert wird, ist „alle Platzhalter ersetzen"
+später ein einfacher Durchlauf über alle Seiten mit `meta.source === 'placeholder'` – der
+Prompt muss nie neu erdacht werden. Anbietervergleich und Austausch-Mechanik im Detail:
+[`KONZEPT-Bildquellen.md`](KONZEPT-Bildquellen.md).
 
 ## D.7 Druck und Export
 
@@ -452,7 +478,7 @@ Reihenfolge der Maßnahmen, von wichtig nach ergänzend:
 
 | Stufe | Inhalt | Ergebnis für die Familie |
 |---|---|---|
-| **1 – Fundament** | Projekt-Datenmodell, DB v3, Werkstatt-Übersicht, Stufen 1–3 (Idee, Bauplan, Geschichte), Export „ins Regal“ mit Textseiten | Man kann eine eigene Geschichte schreiben lassen, aufteilen, vorlesen lassen. **Ohne einen einzigen Bildaufruf.** |
+| **1 – Fundament** | Projekt-Datenmodell, DB v3, Werkstatt-Übersicht, Stufen 1–3 (Idee, Bauplan, Geschichte), Platzhalter-Bilder, Prompt-Kopier-Knopf, Export „ins Regal“ mit Textseiten | Man kann eine eigene Geschichte schreiben lassen, aufteilen, vorlesen lassen. **Ohne einen einzigen Bildaufruf.** |
 | **2 – Bilder** | Stilkarte, Figuren-Bibel, Figurenblatt, Storyboard, Bildgenerierung pro Doppelseite, Kostenzähler | Das erste richtige, selbst gemachte Bilderbuch |
 | **3 – Layout & Druck** | Textplatzierung, Silbenfarben, Erstleser-Regelprofil, Doppelseiten-Druck | Ein Buch, das man ausdrucken und verschenken kann |
 | **4 – Arbeitsheft** | Lernziel, Progression, Aufgabenbaukasten, Differenzierung, Lösungsteil, s/w-Druck | Übungshefte passend zum aktuellen Schulstoff |

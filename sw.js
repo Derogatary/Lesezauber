@@ -1,7 +1,13 @@
 // Bei jeder inhaltlichen Änderung an einer dieser Dateien diese Nummer
 // erhöhen - sonst bekommen wiederkehrende Besucher weiter die alte
 // zwischengespeicherte Version ausgeliefert.
-const CACHE_NAME = 'lesezauber-shell-v13';
+const CACHE_NAME = 'lesezauber-shell-v14';
+
+// Hinweis: js/studio/* (SchreibZauber) steht bewusst noch NICHT in der
+// Liste - die Dateien werden von main.js noch nicht importiert. Sie
+// kommen hier rein, sobald der Bereich verdrahtet wird. Bis dahin
+// landen sie über die Fallback-Regel unten im Cache, sobald sie das
+// erste Mal geladen werden.
 
 // Nur die eigenen, lokalen Dateien werden zwischengespeichert (die
 // "App-Hülle"). Die Gemini-/Mistral-APIs werden absichtlich NICHT
