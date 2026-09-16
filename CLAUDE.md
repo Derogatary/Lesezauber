@@ -92,9 +92,13 @@ import './actions/meineNeueDatei.js';
   id, title, author, created, profileId, lastReadIdx, lastReadAt,
   coverPageId,       // Seiten-ID (nicht Index!) des gewählten Covers (nur Anzeige, Bibliotheks-Thumbnail)
   publisher, series, // optional: von der KI auf der Titelseite erkannt (siehe analyzePage)
-  titlePageId, backCoverPageId, tocPageId,  // optional: Seiten-IDs, manuell per "Seiten-Rollen" markiert
-                     // (siehe app.actions.setPageRole) - ersetzen die automatischen Annahmen
-                     // (Titelseite = Seite 1) unabhängig von der Scan-Reihenfolge; leer = ignorieren
+  titlePageId, backCoverPageId, tocPageId, authorBioPageId,  // optional: Seiten-IDs, manuell
+                     // per "Seiten-Rollen" markiert (siehe app.actions.setPageRole) - ersetzen die
+                     // automatischen Annahmen (Titelseite = Seite 1) unabhängig von der
+                     // Scan-Reihenfolge; leer = ignorieren
+  readAuthorBioAloud, // optional bool (Default: true/undefined = vorlesen) - ob die
+                     // "Über den Autor"-Seite beim automatischen Vorlesen mit angesagt wird
+                     // (siehe app.actions.toggleReadAuthorBioAloud)
   bookQuiz: { questions: [{question, answer}] },  // optional, gecacht
   pages: [ ... ]
 }
@@ -108,6 +112,9 @@ import './actions/meineNeueDatei.js';
   pdfSourceText,   // optional: garantiert korrekter Text aus PDF/EPUB-Textebene, kein OCR nötig
   chapterTitle,    // optional: von der KI erkannte Kapitelüberschrift, falls diese Seite ein Kapitel beginnt
   tocEntries,      // optional: Array von Kapitelüberschriften, falls diese Seite ein Inhaltsverzeichnis ist (ohne Seitenzahlen)
+  excluded,        // optional bool - Seite komplett von Analyse UND automatischem Vorlesen
+                   // ausgeschlossen (Leerseiten, Impressum etc., siehe app.actions.togglePageExcluded)
+                   // - manuelles Ansehen/Durchblättern bleibt trotzdem möglich
   variants: {
     [personaId]: { text, erstleserText, desc, quizQ, quizA }
   },
@@ -118,7 +125,7 @@ import './actions/meineNeueDatei.js';
 }
 ```
 
-**Metadaten-Ansage:** `chapterTitle`/`tocEntries`/`publisher`/`series` sind persona-UNABHÄNGIG (wie `pdfSourceText`), da sie strukturelle Fakten sind, keine erzählte Vorlese-Variante. `app.tts._buildMetadataAnnouncements()` baut daraus die Ansage-Sätze - nur im automatischen Vorlesemodus (`_readCurrentThenAdvance`), NICHT beim einzelnen 🔊-Button (sonst nervt die Wiederholung bei jedem erneuten Antippen). Für `backCoverPageId` gibt es KEIN eigenes KI-Feld - die Ansage ist nur eine kurze Einleitung ("Darum geht's:"), der eigentliche Klappentext wird direkt danach ganz normal als Seitentext vorgelesen.
+**Metadaten-Ansage:** `chapterTitle`/`tocEntries`/`publisher`/`series` sind persona-UNABHÄNGIG (wie `pdfSourceText`), da sie strukturelle Fakten sind, keine erzählte Vorlese-Variante. `app.tts._buildMetadataAnnouncements()` baut daraus die Ansage-Sätze - nur im automatischen Vorlesemodus (`_readCurrentThenAdvance`), NICHT beim einzelnen 🔊-Button (sonst nervt die Wiederholung bei jedem erneuten Antippen). Für `backCoverPageId`/`authorBioPageId` gibt es KEIN eigenes KI-Feld - die Ansage ist nur eine kurze Einleitung ("Darum geht's:"/"Über den Autor:"), der eigentliche Text wird direkt danach ganz normal als Seitentext vorgelesen. Nur `titlePageId`/`tocPageId` beeinflussen tatsächlich die KI-Anfrage (siehe `js/api.js`), deshalb löst nur deren Zuweisung in `setPageRole()` eine erneute Analyse aus.
 
 **Zwei Hilfsfunktionen sind der einzig sichere Weg, Seitentext zu lesen:**
 - `app.utils.resolvePageVariant(page, personaId)` - exakt diese Persona, sonst `null`
@@ -196,4 +203,4 @@ Bewusst zurückgestellt (bräuchten einen eigenen Server):
 
 ## Versionsstand
 
-Aktuell `v0.9.5-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Zähl die Version bei größeren Änderungen entsprechend hoch (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).
+Aktuell `v0.9.6-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Zähl die Version bei größeren Änderungen entsprechend hoch (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).

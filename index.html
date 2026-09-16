@@ -33,7 +33,7 @@
                     </h1>
                     <p id="libraryGreeting" class="text-sm text-slate-500 font-semibold">Deine interaktive Kinderbuch-Welt</p>
                     <p id="streakBadge" class="hidden text-xs font-bold text-amber-600 mt-0.5"></p>
-                    <p class="text-[10px] text-slate-400 font-semibold mt-0.5">v0.9.5-beta</p>
+                    <p class="text-[10px] text-slate-400 font-semibold mt-0.5">v0.9.6-beta</p>
                 </div>
                 <div class="flex items-center gap-2 flex-shrink-0">
                     <button onclick="app.nav.go('help')" aria-label="Hilfe öffnen" title="Hilfe" class="w-10 h-10 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-600 hover:bg-slate-100 shadow-sm transition active:scale-95">
@@ -169,6 +169,17 @@
                 <label class="flex items-center gap-2 text-xs">
                     <span class="w-40 flex-shrink-0 text-slate-600">📑 Inhaltsverzeichnis</span>
                     <select id="roleTocPage" onchange="app.actions.setPageRole('tocPageId', this.value)" class="flex-grow bg-slate-50 border border-slate-300 rounded-lg px-2 py-1.5 focus:outline-none focus:border-indigo-500"></select>
+                </label>
+                <label class="flex items-center gap-2 text-xs">
+                    <span class="w-40 flex-shrink-0 text-slate-600">🧑‍💼 Über den Autor</span>
+                    <select id="roleAuthorBioPage" onchange="app.actions.setPageRole('authorBioPageId', this.value)" class="flex-grow bg-slate-50 border border-slate-300 rounded-lg px-2 py-1.5 focus:outline-none focus:border-indigo-500"></select>
+                </label>
+                <!-- NEU: eigener Schalter, ob die "Über den Autor"-Seite beim
+                     automatischen Vorlesen mit angesagt/vorgelesen wird -
+                     kann für Kinder auch einfach zu viel/langweilig sein -->
+                <label class="flex items-center gap-2 text-xs pl-1">
+                    <input type="checkbox" id="toggleReadAuthorBio" onchange="app.actions.toggleReadAuthorBioAloud(this.checked)" class="accent-indigo-600">
+                    <span class="text-slate-500">🔊 "Über den Autor" beim automatischen Vorlesen mit ansagen</span>
                 </label>
                 <p class="text-[10px] text-slate-400">Leer lassen, wenn nicht zutreffend - ohne Markierung gilt wie bisher Seite 1 als Titelseite.</p>
             </div>

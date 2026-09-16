@@ -170,6 +170,14 @@ Object.assign(app.actions, {
         const page = book.pages[pageIdx];
         if (!page || page.status === 'processing') return;
 
+        // NEU: ausgeschlossene Seiten (siehe app.actions.togglePageExcluded)
+        // werden nie analysiert - spart API-Kosten für Leerseiten/Impressum
+        // etc. ohne Story-Inhalt.
+        if (page.excluded) {
+            if (!isBatch) app.ui.toast('Diese Seite ist ausgeschlossen und wird nicht analysiert.', '🚫');
+            return;
+        }
+
         page.status = 'processing';
         if (!isBatch) {
             app.state.apiBusy = true;
@@ -253,6 +261,9 @@ Object.assign(app.actions, {
         const targetPersona = app.state.readingPersonaId || app.settings.persona;
         const pendingIndices = [];
         book.pages.forEach((p, i) => {
+            // NEU: ausgeschlossene Seiten (siehe app.actions.togglePageExcluded)
+            // nie automatisch mit-analysieren.
+            if (p.excluded) return;
             if (p.status === 'pending' || p.status === 'error') {
                 pendingIndices.push(i);
             } else if (p.status === 'done' && !app.utils.resolvePageVariant(p, targetPersona)) {

@@ -45,14 +45,22 @@ Object.assign(app.render, {
             if (backCoverSelect) backCoverSelect.innerHTML = roleOptions(book.backCoverPageId);
             const tocSelect = document.getElementById('roleTocPage');
             if (tocSelect) tocSelect.innerHTML = roleOptions(book.tocPageId);
+            const authorBioSelect = document.getElementById('roleAuthorBioPage');
+            if (authorBioSelect) authorBioSelect.innerHTML = roleOptions(book.authorBioPageId);
+            // NEU: Schalterstellung fürs Vorlesen der Autor-Seite anzeigen -
+            // ohne explizite Einstellung (undefined) gilt "ja, vorlesen".
+            const readAuthorBioToggle = document.getElementById('toggleReadAuthorBio');
+            if (readAuthorBioToggle) readAuthorBioToggle.checked = book.readAuthorBioAloud !== false;
         }
 
-        // Check if pending pages exist to toggle batch action bar
+        // Check if pending pages exist to toggle batch action bar - NEU:
+        // ausgeschlossene Seiten (siehe app.actions.togglePageExcluded)
+        // zählen dabei nicht mit, die werden nie automatisch analysiert.
         const targetPersona = app.state.readingPersonaId || app.settings.persona;
-        const hasPending = book.pages.some(p =>
+        const hasPending = book.pages.some(p => !p.excluded && (
             p.status === 'pending' || p.status === 'error' ||
             (p.status === 'done' && !app.utils.resolvePageVariant(p, targetPersona))
-        );
+        ));
         document.getElementById('batchActionBar').classList.toggle('hidden', !hasPending);
 
         const grid = document.getElementById('pagesGrid');
@@ -61,6 +69,10 @@ Object.assign(app.render, {
             if (p.status === 'pending') statusBadge = `<span class="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded-full">Offen</span>`;
             if (p.status === 'processing') statusBadge = `<span class="bg-indigo-100 text-indigo-800 text-[10px] font-bold px-2 py-0.5 rounded-full animate-pulse">Liest...</span>`;
             if (p.status === 'error') statusBadge = `<span class="bg-red-100 text-red-800 text-[10px] font-bold px-2 py-0.5 rounded-full">Fehler</span>`;
+            // NEU: überschreibt den Status-Badge - ausgeschlossene Seiten
+            // (Leerseiten, Impressum etc.) werden nie analysiert, der
+            // normale "Offen"-Badge wäre hier irreführend.
+            if (p.excluded) statusBadge = `<span class="bg-slate-300 text-slate-700 text-[10px] font-bold px-2 py-0.5 rounded-full">🚫 Ausgeschlossen</span>`;
 
             const isCover = book.coverPageId ? book.coverPageId === p.id : i === 0;
 
@@ -81,7 +93,8 @@ Object.assign(app.render, {
                                 <button onclick="app.actions.toggleCardMenu(${p.id})" title="Mehr Optionen" aria-label="Mehr Optionen" class="text-sm px-1.5 py-1 text-slate-500 hover:text-slate-800">⋮</button>
                                 <div id="cardMenu-${p.id}" data-card-menu="${p.id}" class="hidden absolute right-0 bottom-full mb-1 bg-white border border-slate-200 rounded-lg shadow-lg py-1 z-10 min-w-[150px]">
                                     <button onclick="app.actions.setCover(${p.id}); app.actions.toggleCardMenu(${p.id})" class="w-full text-left px-3 py-2 text-xs hover:bg-slate-50 ${isCover ? 'text-amber-600 font-bold' : 'text-slate-700'}">${isCover ? '⭐ Ist Cover' : '☆ Als Cover festlegen'}</button>
-                                    ${(p.status === 'error' || p.status === 'pending') ? `<button onclick="app.actions.retryPage(${i}); app.actions.toggleCardMenu(${p.id})" class="w-full text-left px-3 py-2 text-xs hover:bg-slate-50 text-indigo-600">${p.status === 'error' ? '🔄 Erneut versuchen' : '▶️ Analysieren'}</button>` : ''}
+                                    ${(!p.excluded && (p.status === 'error' || p.status === 'pending')) ? `<button onclick="app.actions.retryPage(${i}); app.actions.toggleCardMenu(${p.id})" class="w-full text-left px-3 py-2 text-xs hover:bg-slate-50 text-indigo-600">${p.status === 'error' ? '🔄 Erneut versuchen' : '▶️ Analysieren'}</button>` : ''}
+                                    <button onclick="app.actions.togglePageExcluded(${p.id}); app.actions.toggleCardMenu(${p.id})" class="w-full text-left px-3 py-2 text-xs hover:bg-slate-50 ${p.excluded ? 'text-emerald-600 font-bold' : 'text-slate-700'}">${p.excluded ? '✅ Wieder einschließen' : '🚫 Von Analyse/Vorlesen ausschließen'}</button>
                                     <button onclick="app.actions.deletePage(${i})" class="w-full text-left px-3 py-2 text-xs hover:bg-red-50 text-red-500">🗑️ Entfernen</button>
                                 </div>
                             </div>

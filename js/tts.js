@@ -241,18 +241,6 @@ Object.assign(app.tts, {
         const page = book.pages[app.state.currentPageIdx];
         if (!page) { this.stopAutoRead(); return; }
 
-        const variant = app.utils.resolvePageVariant(page, app.state.readingPersonaId);
-        if (!variant) {
-            this.stopAutoRead();
-            app.ui.toast('Seite noch nicht bereit zum Vorlesen.', 'ℹ️');
-            return;
-        }
-
-        const btn = document.getElementById('btnAutoRead');
-        if (btn) btn.innerHTML = '⏸ Vorlesen stoppen';
-        const focusBtn = document.getElementById('focusPlayBtn');
-        if (focusBtn) focusBtn.innerText = '⏸️';
-
         const advanceToNext = () => {
             const isLastPage = app.state.currentPageIdx >= book.pages.length - 1;
             if (isLastPage) {
@@ -265,6 +253,31 @@ Object.assign(app.tts, {
             if (app.state.focusMode) app.render.focusMode();
             setTimeout(() => this._readCurrentThenAdvance(), 600);
         };
+
+        // NEU: ausgeschlossene Seiten (siehe app.actions.togglePageExcluded,
+        // z.B. Leerseiten/Impressum) werden übersprungen statt mit einer
+        // Fehlermeldung abzubrechen.
+        if (page.excluded) { advanceToNext(); return; }
+
+        // NEU: die "Über den Autor"-Seite lässt sich vom Vorlesen ausnehmen
+        // (siehe app.actions.toggleReadAuthorBioAloud), OHNE sie von der
+        // Analyse auszuschließen - manuelles Ansehen bleibt möglich.
+        if (book.authorBioPageId && page.id === book.authorBioPageId && book.readAuthorBioAloud === false) {
+            advanceToNext();
+            return;
+        }
+
+        const variant = app.utils.resolvePageVariant(page, app.state.readingPersonaId);
+        if (!variant) {
+            this.stopAutoRead();
+            app.ui.toast('Seite noch nicht bereit zum Vorlesen.', 'ℹ️');
+            return;
+        }
+
+        const btn = document.getElementById('btnAutoRead');
+        if (btn) btn.innerHTML = '⏸ Vorlesen stoppen';
+        const focusBtn = document.getElementById('focusPlayBtn');
+        if (focusBtn) focusBtn.innerText = '⏸️';
 
         // Kombinierter Modus: Rätselfrage sichtbar UND hörbar, mit Pause
         // zum Raten, bevor die Antwort kommt.
@@ -358,6 +371,15 @@ Object.assign(app.tts, {
         // Spannung ohne separates KI-Feld).
         if (book.backCoverPageId && page.id === book.backCoverPageId) {
             announcements.push("Darum geht's:");
+        }
+
+        // NEU: als "Über den Autor"-Seite markiert (siehe app.actions.setPageRole)
+        // - genau wie bei der Rückseite nur eine kurze Einleitung, der Text
+        // selbst wird danach ganz normal als Seitentext vorgelesen. Wird
+        // hier schon nicht erreicht, wenn app.actions.toggleReadAuthorBioAloud
+        // auf "nicht vorlesen" steht (siehe _readCurrentThenAdvance).
+        if (book.authorBioPageId && page.id === book.authorBioPageId) {
+            announcements.push('Über den Autor:');
         }
 
         if (page.chapterTitle) {
