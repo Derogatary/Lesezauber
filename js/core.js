@@ -17,6 +17,8 @@ export const app = {
     ui: {},
     actions: {},
     render: {},
+    // NEU: Lernfortschritt + Belohnungen (Heft-/Seiten-Häkchen pro Kind-Profil)
+    progress: {},
     readerUI: {},
     settingsConfig: {},
     utils: {}

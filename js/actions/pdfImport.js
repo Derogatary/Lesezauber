@@ -37,7 +37,9 @@ Object.assign(app.actions, {
             const id = 'book_' + Date.now();
             const newBook = {
                 id, title: 'Neues Buch', author: 'Unbekannt', created: Date.now(),
-                profileId: app.utils.resolveCreationProfileId(), pages: []
+                // NEU: ein als Übungsheft importiertes PDF wird auch als
+                // Übungsheft ausgewertet (Aufgabe/Hilfe/Lösung statt Erzähltext).
+                profileId: app.utils.resolveCreationProfileId(), bookType: app.state.newBookType, pages: []
             };
             app.library[id] = newBook;
             app.state.currentBookId = id;

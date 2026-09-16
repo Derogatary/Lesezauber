@@ -37,7 +37,10 @@ Object.assign(app.actions, {
             return;
         }
         const id = 'book_' + Date.now();
-        const newBook = { id, title: 'Neues Buch', author: 'Unbekannt', created: Date.now(), profileId: app.utils.resolveCreationProfileId(), pages: [] };
+        // NEU: bookType entscheidet, ob die KI die Seiten als Erzähltext
+        // oder als Übungsaufgabe auswertet - muss deshalb schon beim
+        // Anlegen feststehen, nicht erst beim Lesen.
+        const newBook = { id, title: 'Neues Buch', author: 'Unbekannt', created: Date.now(), profileId: app.utils.resolveCreationProfileId(), bookType: app.state.newBookType, pages: [] };
         app.dbOps.saveBook(newBook);
         app.state.currentBookId = id;
         app.render.book(id);
@@ -56,7 +59,10 @@ Object.assign(app.actions, {
         }
 
         const id = 'book_' + Date.now();
-        const newBook = { id, title: 'Neues Buch', author: 'Unbekannt', created: Date.now(), profileId: app.utils.resolveCreationProfileId(), pages: [] };
+        // NEU: bookType entscheidet, ob die KI die Seiten als Erzähltext
+        // oder als Übungsaufgabe auswertet - muss deshalb schon beim
+        // Anlegen feststehen, nicht erst beim Lesen.
+        const newBook = { id, title: 'Neues Buch', author: 'Unbekannt', created: Date.now(), profileId: app.utils.resolveCreationProfileId(), bookType: app.state.newBookType, pages: [] };
         app.library[id] = newBook;
         app.state.currentBookId = id;
 
@@ -179,25 +185,17 @@ Object.assign(app.actions, {
         try {
             const b64 = page.imgUrl.split(',')[1];
             const isCover = (pageIdx === 0 && (!book.title || book.title === 'Neues Buch'));
-            const result = await app.api.analyze(b64, isCover, personaId, page.pdfSourceText || null);
+            // NEU: bei einem Übungsheft wird ein anderer Prompt genutzt -
+            // die KI soll die Aufgabe erklären, nicht eine Geschichte
+            // vereinfachen.
+            const bookType = app.utils.resolveBookType(book);
+            const result = await app.api.analyze(b64, isCover, personaId, page.pdfSourceText || null, bookType);
 
             // NEU: Ergebnis landet unter der jeweiligen Persona, statt die
             // alten Felder zu überschreiben - so bleiben bereits erzeugte
             // Versionen anderer Personas erhalten.
             if (!page.variants) page.variants = {};
-            page.variants[personaId] = {
-                // Ist der Text aus einer PDF-Textebene bekannt, wird GENAU
-                // dieser statt der KI-Erkennung verwendet - garantiert
-                // korrekt, keine OCR-Fehler möglich.
-                text: page.pdfSourceText || result.originalText || 'Kein Text.',
-                erstleserText: result.simplifiedText || page.pdfSourceText || result.originalText || 'Kein Text.',
-                // FIX: bei reinen Textseiten (hasIllustration=false) keine
-                // erzwungene, sinnlose Bildbeschreibung mehr - bleibt leer,
-                // die Anzeige/das Vorlesen blendet das dann einfach aus.
-                desc: result.hasIllustration === false ? null : (result.imageDescription || null),
-                quizQ: result.quizQuestion || (result.hasIllustration === false ? 'Worum ging es auf dieser Seite?' : 'Was siehst du auf dem Bild?'),
-                quizA: result.quizAnswer || 'Schau genau hin!'
-            };
+            page.variants[personaId] = app.utils.buildPageVariant(result, page, bookType);
             page.status = 'done';
 
             // NEU: gefundene Nomen+Emoji-Paare in den Vokabeltrainer übernehmen

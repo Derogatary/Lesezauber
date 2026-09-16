@@ -44,6 +44,36 @@ Nutze exakt dieses Schema:
 Das Feld "vocabulary" listet GENAU die Nomen (in Grundform, z.B. "Baum" statt "Bäume"), die du in "simplifiedText" durch ein Emoji ersetzt hast, zusammen mit dem jeweils verwendeten Emoji.`;
 }
 
+// NEU: eigener Prompt für Übungshefte (bookType 'workbook'). Der normale
+// Analyse-Prompt oben ist auf eine ERZÄHL-Seite zugeschnitten und ersetzt
+// Nomen durch Emojis - bei einer Arbeitsanweisung ("Male alle Dreiecke an")
+// wäre genau das schädlich, das Kind soll die Anweisung ja verstehen.
+// Deshalb hier ein komplett eigenes Schema: Aufgabe, kindgerechte
+// Erklärung, Hilfeschritte, Lösung.
+function buildWorkbookPrompt(isCover, personaId, knownText) {
+    const knownTextBlock = knownText
+        ? `\nDer exakte Text dieser Seite ist bereits bekannt (aus der Textebene, NICHT per Bilderkennung raten):\n"${knownText}"\nNutze GENAU diesen Wortlaut UNVERÄNDERT nur für "taskText". "taskExplained" MUSS trotzdem eine eigene, kindgerechte Erklärung sein.\n`
+        : '';
+
+    return `Rolle: ${personaInstruction(personaId)}
+${knownTextBlock}
+Du hilfst einem Vorschulkind (ca. 4-6 Jahre), das noch NICHT lesen kann, bei einem Übungsblatt/Arbeitsblatt. Ein Erwachsener oder die App liest dem Kind alles vor.
+Analysiere das abgebildete Übungsblatt. Antworte AUSSCHLIESSLICH in validem JSON-Format! Verwende keine Markdown-Blöcke.
+Nutze exakt dieses Schema:
+{
+  "taskText": "Die Aufgabenstellung EXAKT so, wie sie auf dem Blatt gedruckt steht (wenn keine gedruckt ist: 'Keine Aufgabe gedruckt.')",
+  "taskExplained": "Erkläre dem Kind in 1-2 sehr kurzen, einfachen Sätzen, was es tun soll. Sprich das Kind direkt an ('Male ...', 'Suche ...'). WICHTIG: ersetze KEINE Wörter durch Emojis - das Kind muss die Anweisung verstehen. Höchstens 1-2 Emojis am Satzende.",
+  "taskType": "Genau EINER dieser Werte: ausmalen, verbinden, zaehlen, nachspuren, ankreuzen, schreiben, zuordnen, suchen, sonstiges",
+  "materials": "Was das Kind dafür braucht, sehr kurz (z.B. 'Buntstifte') - oder null",
+  "pageDescription": "Was auf dem Blatt zu sehen ist (Bilder, Formen, Linien, Kästchen) in 1-2 Sätzen, so dass sich ein Kind, das das Blatt vor sich hat, wiederfindet. Falls nichts Bildhaftes zu sehen ist: null",
+  "helpSteps": ["3 bis 5 kurze Schritte in Du-Form, EIN einzelner Handgriff pro Schritt, in der Reihenfolge des Bearbeitens"],
+  "solution": "Die Lösung bzw. woran man erkennt, dass es richtig ist. Bei freien Aufgaben (z.B. frei ausmalen): 'Hier gibt es kein richtig oder falsch.'",
+  "vocabulary": [{"word": "Dreieck", "emoji": "🔺"}]${isCover ? ',\n  "title": "Der auf dieser Seite gedruckte Titel des Hefts - nur null, falls wirklich keiner zu sehen ist", "author": "Der gedruckte Autor/Herausgeber - nur null, falls wirklich keiner zu sehen ist"' : ''}
+}
+"vocabulary" enthält höchstens 4 Lernwörter (Nomen in Grundform) vom Blatt mit passendem Emoji, für den Vokabeltrainer. Keine gefunden: leeres Array.
+SEHR WICHTIG: Erfinde nichts dazu. Was du auf dem Blatt nicht sicher erkennst, darfst du nicht raten - schreibe bei "solution" dann "Das kann ich hier nicht sicher erkennen." Eine falsche Lösung verunsichert das Kind mehr, als gar keine zu haben.`;
+}
+
 // Gemeinsame Aufräum-Logik für beide Anbieter: manche Modelle wrappen die
 // JSON-Antwort trotz Anweisung in ```json ... ``` Markdown-Blöcke.
 function parseModelJson(rawText) {
@@ -107,8 +137,13 @@ Object.assign(app.api, {
     // personaId ist jetzt optional - ohne Angabe wird wie bisher die
     // globale Standard-Persona genutzt (bestehende Aufrufe funktionieren
     // unverändert weiter).
-    async analyze(base64Image, isCover, personaId = app.settings.persona, knownText = null) {
-        const prompt = buildAnalyzePrompt(isCover, personaId, knownText);
+    // NEU: bookType entscheidet, welcher Prompt genutzt wird. Ohne Angabe
+    // bleibt es beim bisherigen Geschichten-Prompt - alle alten Aufrufe
+    // verhalten sich dadurch unverändert.
+    async analyze(base64Image, isCover, personaId = app.settings.persona, knownText = null, bookType = 'story') {
+        const prompt = bookType === 'workbook'
+            ? buildWorkbookPrompt(isCover, personaId, knownText)
+            : buildAnalyzePrompt(isCover, personaId, knownText);
 
         try {
             return await callGeminiAnalyze(prompt, base64Image);

@@ -54,6 +54,8 @@ Eine Web-App, mit der du Kinderbuch-Seiten mit dem Handy fotografierst (oder aus
 - 🎉 Verständnisfragen zum gesamten Buch am Ende (nicht nur pro Seite)
 - ⚡ Eigener Tailwind-Build statt CDN (schnelleres Laden, kein Live-Compiling im Browser)
 - 🌙 Optionale Hintergrund-Vorbereitung: erstellt fehlende Erzähler-Varianten und Buch-Quiz automatisch, wenn gerade nichts läuft (aus-/einschaltbar in den Einstellungen)
+- 📝 **Übungsheft-Modus:** Arbeitsblätter statt Geschichten - die KI liest die Aufgabenstellung aus, erklärt sie kindgerecht, gibt eine Schritt-für-Schritt-Hilfe und zeigt auf Wunsch die Lösung. Vorlesen bleibt danach stehen, statt weiterzublättern (das Kind hat ja zu tun). Gedacht für die Schulvorbereitung zu Hause, siehe `docs/uebungshefte-konzept.md`
+- ✅ **Fortschritt & Belohnung:** jede Seite bzw. Aufgabe abhaken, Sticker dazu, Pokal für ein komplett geschafftes Buch/Heft - getrennt pro Kind-Profil, wandert mit Export/Import mit
 
 ## 🚀 Live nutzen
 
@@ -106,7 +108,7 @@ index.html              Grundgerüst & Markup aller Ansichten
 css/style.css           Eigene Styles (Tailwind kommt per CDN)
 js/
   core.js               Zentrales app-Objekt, an das sich alle Module hängen
-  config.js              Erzähler-Personas (hier neue Persona ergänzen)
+  config.js              Erzähler-Personas (hier neue Persona ergänzen) + Bucharten
   state.js               Laufzeit-Zustand & Einstellungen
   db.js                   Speichern/Laden (IndexedDB)
   profiles.js             Lokale Profile (kein Login/Server nötig)
@@ -125,14 +127,21 @@ js/
     bookQuiz.js            Verständnisfragen zum ganzen Buch
     focusMode.js           Vollbild-Vorlese-Modus, Backup-Erinnerung
     pdfImport.js           PDF-Import (rendert Seiten als Bilder)
+    workbook.js            Übungsheft-Modus (Buchart umschalten, Lösung aufdecken)
+    progress.js            Erledigt-Häkchen, Sticker, Belohnungen (pro Profil)
   render/
     library.js             Bibliotheks-Ansicht + Suche
     book.js                 Buch-Detail-Ansicht
     reader.js                Lese-Ansicht
     settings.js               Einstellungen-Ansicht
+    workbook.js               Hilfe-/Lösungs-Karte und Art-Umschalter
+    progress.js               Fortschrittsbalken, Erledigt-Knopf, Belohnungen
   vendor/
     pdfjs/                  PDF.js (Mozilla) - wird nur bei PDF-Import nachgeladen
 main.js                  Bindet alle Module zusammen und startet die App
+docs/
+  uebungshefte-konzept.md  Konzept: Bibel-Übungshefte zur Schulvorbereitung
+  todo-heft-generator.md   Offenes To-Do: Übungsblätter von der KI erstellen lassen
 ```
 
 **Neue Funktion hinzufügen?** In der Regel reicht eine neue Datei unter `js/actions/` oder `js/render/`, die in `js/main.js` importiert wird – der Rest des Codes muss dafür nicht angefasst werden.
@@ -149,6 +158,7 @@ main.js                  Bindet alle Module zusammen und startet die App
 **Bleibt komplett im Browser (kein Server nötig):**
 - 🎨 KI-generierte Illustrationen für textlastige EPUB-Kapitel ohne eigenes Bild, optional im Comic-Stil (Gemini kann mittlerweile auch Bilder erzeugen, gleicher Key wie bisher) - Cover-Bild-Sonderfall erstmal nicht nötig
 - 📱 Native App / Android-Store-Verpackung (Capacitor) - verpackt den bestehenden Code weitgehend unverändert
+- 📝 Heft-Generator: Übungsblätter von der KI erstellen lassen (Geschichte + Lernziel auswählen) - Entwurf und offene Punkte in `docs/todo-heft-generator.md`
 - 🎬 Video-Export (Seite + KI-Stimme als Videodatei) - der aufwändigste offene Punkt, braucht eine Sprach-API mit echter Audiodatei-Ausgabe (z.B. ElevenLabs)
 
 **Bräuchte einen eigenen Server** (aktuell bewusst zurückgestellt):

@@ -91,6 +91,55 @@ Object.assign(app.utils, {
         return null;
     },
 
+    // NEU: Buchart eines Buches sicher lesen. Bücher aus der Zeit vor dem
+    // Heft-Modus haben gar kein bookType-Feld - die sind selbstverständlich
+    // Geschichten, sonst würden sie plötzlich als Übungsheft angezeigt.
+    resolveBookType(book) {
+        const type = book && book.bookType;
+        return app.bookTypes.some(t => t.id === type) ? type : 'story';
+    },
+
+    // NEU: baut aus einer KI-Antwort den Varianten-Datensatz einer Seite.
+    // Liegt bewusst hier und nicht im Scanner: die Hintergrund-Vorbereitung
+    // (backgroundPregen.js) braucht exakt dieselbe Umrechnung, und zwei
+    // Kopien davon würden beim nächsten Feld garantiert auseinanderlaufen.
+    buildPageVariant(result, page, bookType) {
+        if (bookType === 'workbook') {
+            // Übungsheft: gedruckte Aufgabenstellung, kindgerechte Erklärung,
+            // Hilfeschritte, Lösung. text/erstleserText/desc bleiben absichtlich
+            // die gleichen Feldnamen wie bei Geschichten - so funktionieren
+            // Vorlesen, Druck und Anzeige ohne Sonderfälle weiter.
+            return {
+                text: page.pdfSourceText || result.taskText || 'Keine Aufgabe erkannt.',
+                erstleserText: result.taskExplained || result.taskText || 'Keine Aufgabe erkannt.',
+                desc: result.pageDescription || null,
+                // Übungshefte bekommen KEINE Rätselfrage - die Seite stellt
+                // ja selbst schon eine Aufgabe. Bleibt leer, damit der
+                // Auto-Vorlese-Modus sie überspringt.
+                quizQ: null,
+                quizA: null,
+                taskType: result.taskType || 'sonstiges',
+                materials: result.materials || null,
+                helpSteps: Array.isArray(result.helpSteps) ? result.helpSteps.filter(Boolean) : [],
+                solution: result.solution || null
+            };
+        }
+
+        return {
+            // Ist der Text aus einer PDF-Textebene bekannt, wird GENAU
+            // dieser statt der KI-Erkennung verwendet - garantiert
+            // korrekt, keine OCR-Fehler möglich.
+            text: page.pdfSourceText || result.originalText || 'Kein Text.',
+            erstleserText: result.simplifiedText || page.pdfSourceText || result.originalText || 'Kein Text.',
+            // Bei reinen Textseiten (hasIllustration=false) keine erzwungene,
+            // sinnlose Bildbeschreibung - bleibt leer, die Anzeige/das
+            // Vorlesen blendet das dann einfach aus.
+            desc: result.hasIllustration === false ? null : (result.imageDescription || null),
+            quizQ: result.quizQuestion || (result.hasIllustration === false ? 'Worum ging es auf dieser Seite?' : 'Was siehst du auf dem Bild?'),
+            quizA: result.quizAnswer || 'Schau genau hin!'
+        };
+    },
+
     // NEU: zählt, wie viele Persona-Varianten in der gesamten Bibliothek
     // noch fehlen - für die Fortschrittsanzeige der Hintergrund-Vorbereitung.
     countMissingVariants() {

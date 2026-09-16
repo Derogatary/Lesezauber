@@ -31,5 +31,9 @@ Object.assign(app.state, {
     vocabDeck: [],
     vocabIndex: 0,
     // NEU: kombinierter Modus - beim Auto-Vorlesen auch Raetselfragen stellen
-    autoReadWithQuiz: false
+    autoReadWithQuiz: false,
+    // NEU: Art des NAECHSTEN neu angelegten Buches ('story' oder 'workbook').
+    // Bewusst nur zur Laufzeit und nicht in localStorage: sonst legt man
+    // Wochen spaeter unbemerkt weiter Uebungshefte statt Geschichten an.
+    newBookType: 'story'
 });

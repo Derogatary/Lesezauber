@@ -6,6 +6,8 @@ Diese Datei gibt Claude Code Kontext für die Arbeit an diesem Projekt. Sie lieg
 
 **LeseZauber Pro** ist eine Web-App (PWA), mit der man Kinderbuch-Seiten fotografiert/importiert (Foto, Galerie, PDF, EPUB) und sich per KI (Gemini, optional Mistral-Fallback) automatisch vorlesen, vereinfachen ("Erstleser"-Modus mit Emojis) und erklären lässt (Bildbeschreibung, Quizfragen, Vokabeltrainer).
 
+Seit v0.10.0-beta gibt es zusätzlich den **Heft-Modus**: ein Buch kann statt einer Geschichte auch ein **Übungsheft** sein (Arbeitsblätter zur Schulvorbereitung). Dann wertet die KI die Seite als Aufgabe aus (Aufgabenstellung, kindgerechte Erklärung, Hilfeschritte, Lösung) statt als Erzähltext. Hintergrund und Planung dazu: `docs/uebungshefte-konzept.md`, offener Generator: `docs/todo-heft-generator.md`.
+
 **Zielgruppe:** Eine Familie nutzt die App privat für ihre Kinder. Der Betreiber ist technischer Laie ("kann ein bisschen HTML"), arbeitet aber regelmäßig mit Claude (Chat) und jetzt auch Claude Code an dem Projekt weiter.
 
 **Architektur-Grundprinzip: komplett client-seitig, kein eigener Server.**
@@ -81,6 +83,10 @@ import './actions/meineNeueDatei.js';
 | `js/keyboard.js`, `js/gestures.js` | Desktop-Tastatur bzw. Touch-Wisch-Navigation im Reader |
 | `js/actions/scanner.js` | Kamera, Foto-Aufnahme, Galerie-Import, **die zentrale `analyzePage()`-Funktion** |
 | `js/actions/pdfImport.js`, `epubImport.js` | Datei-Import, beide nutzen lazy-geladene Vendor-Libs |
+| `js/actions/workbook.js` | Heft-Modus: Buchart umschalten (inkl. Neu-Auslesen), Lösung aufdecken |
+| `js/render/workbook.js` | Hilfe-/Lösungs-Karte im Reader, Art-Umschalter in Bibliothek/Buchansicht |
+| `js/actions/progress.js` | `app.progress`: Erledigt-Häkchen pro Profil, Sticker, Medaillen |
+| `js/render/progress.js` | Fortschrittsbalken, Erledigt-Knopf, Belohnungs-Banner |
 | `js/vendor/` | PDF.js und JSZip - NIE direkt bearbeiten, nur austauschen/aktualisieren |
 | `sw.js` | Service Worker - **`CACHE_NAME`-Version bei jeder Datei-Änderung hochzählen**, neue Dateien zur `APP_SHELL`-Liste hinzufügen |
 
@@ -91,7 +97,9 @@ import './actions/meineNeueDatei.js';
 {
   id, title, author, created, profileId, lastReadIdx, lastReadAt,
   coverPageId,       // Seiten-ID (nicht Index!) des gewählten Covers
-  bookQuiz: { questions: [{question, answer}] },  // optional, gecacht
+  bookType,          // 'story' (Standard) | 'workbook' - fehlt bei alten Büchern,
+                     // IMMER über app.utils.resolveBookType(book) lesen
+  bookQuiz: { questions: [{question, answer}] },  // optional, gecacht, nur bei 'story'
   pages: [ ... ]
 }
 ```
@@ -103,14 +111,23 @@ import './actions/meineNeueDatei.js';
   status: 'pending' | 'processing' | 'done' | 'error',  // persona-UNABHÄNGIG
   pdfSourceText,   // optional: garantiert korrekter Text aus PDF/EPUB-Textebene, kein OCR nötig
   variants: {
+    // bei bookType 'story':
     [personaId]: { text, erstleserText, desc, quizQ, quizA }
+    // bei bookType 'workbook' zusätzlich (quizQ/quizA sind dort null):
+    //   { text: Aufgabenstellung, erstleserText: kindgerechte Erklärung,
+    //     desc: Blatt-Beschreibung, taskType, materials, helpSteps: [], solution }
   },
+  // NEU: Erledigt-Häkchen pro Kind-Profil (fehlt bei alten Büchern).
+  // NIE direkt lesen, immer über app.progress.isPageDone(page).
+  progress: { [profileId]: { done: true, doneAt, sticker } },
   // Alte Bücher (vor der Variants-Architektur) haben stattdessen flache
   // Felder text/erstleserText/desc/quizQ/quizA direkt auf der Seite -
   // IMMER über app.utils.resolvePageVariant()/resolveAnyVariant() lesen,
   // nie page.variants direkt, sonst bricht Rückwärtskompatibilität.
 }
 ```
+
+**Die Varianten-Umrechnung liegt an EINER Stelle:** `app.utils.buildPageVariant(result, page, bookType)` baut aus der KI-Antwort den Varianten-Datensatz - genutzt von `actions/scanner.js` UND `backgroundPregen.js`. Ein neues Feld also nur dort ergänzen, nicht an beiden Aufrufstellen.
 
 **Zwei Hilfsfunktionen sind der einzig sichere Weg, Seitentext zu lesen:**
 - `app.utils.resolvePageVariant(page, personaId)` - exakt diese Persona, sonst `null`
@@ -121,6 +138,8 @@ import './actions/meineNeueDatei.js';
 ## Persona-System
 
 `js/config.js` definiert `app.personas` (Array von `{id, label, instruction}`). Neue Persona = neuer Eintrag dort, taucht automatisch überall auf (Settings-Dropdown, Reader-Dropdown), keine weiteren Code-Änderungen nötig.
+
+`js/config.js` definiert außerdem `app.bookTypes` (Geschichte/Übungsheft). Anders als bei den Personas reicht dort ein neuer Eintrag NICHT: eine neue Buchart braucht auch einen eigenen Prompt in `js/api.js` und eine Behandlung in `js/utils.js` (`buildPageVariant`).
 
 Zwei getrennte Persona-Konzepte, nicht verwechseln:
 - `app.settings.persona` - globale Standard-Persona für neue Scans
@@ -171,6 +190,7 @@ Kein CI/CD - der Nutzer lädt den kompletten Ordnerinhalt manuell über die GitH
 ## Offene Punkte (Stand zuletzt besprochen)
 
 Größere, noch nicht begonnene Features (brauchen erst Abstimmung mit dem Nutzer, nicht einfach lospreschen):
+- Heft-Generator: Übungsblätter von der KI erstellen lassen - fertiger Entwurf inkl. offener Punkte in `docs/todo-heft-generator.md`
 - Vollbild-Modus: Text + Hervorhebung ergänzen
 - Zweiseitiges Buch-Layout für PC/Tablet
 - "Mitmachmodus": Sprechpause vor jedem durch Emoji ersetzten Wort
@@ -194,4 +214,4 @@ Bewusst zurückgestellt (bräuchten einen eigenen Server):
 
 ## Versionsstand
 
-Aktuell `v0.9.0-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Zähl die Version bei größeren Änderungen entsprechend hoch (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).
+Aktuell `v0.10.0-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Zähl die Version bei größeren Änderungen entsprechend hoch (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).

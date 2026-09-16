@@ -37,14 +37,27 @@ Object.assign(app.actions, {
         if (!book) return;
 
         const personaId = app.state.readingPersonaId || app.settings.persona;
+        // NEU: bei einem Übungsheft kommen unter das Blatt zusätzlich die
+        // kindgerechte Erklärung und die Hilfeschritte - so kann man das
+        // Heft ausdrucken und ohne Tablet damit arbeiten.
+        const isWorkbook = app.utils.resolveBookType(book) === 'workbook';
         const pagesHtml = book.pages.map((p, i) => {
             const variant = app.utils.resolveAnyVariant(p, personaId);
             const text = variant?.text || '';
+            const steps = (isWorkbook && Array.isArray(variant?.helpSteps)) ? variant.helpSteps : [];
+            const stepsHtml = steps.length > 0
+                ? `<ol style="font-size:13px; text-align:left; max-width:520px; margin:12px auto 0; color:#444; line-height:1.6;">${steps.map(step => `<li>${app.utils.sanitize(step)}</li>`).join('')}</ol>`
+                : '';
+            const explainedHtml = (isWorkbook && variant?.erstleserText && variant.erstleserText !== text)
+                ? `<p style="font-size:14px; margin-top:8px; color:#444;">${app.utils.sanitize(variant.erstleserText)}</p>`
+                : '';
             return `
                 <div style="page-break-after: always; text-align:center; padding: 24px 16px;">
                     <img src="${p.imgUrl}" style="max-width:100%; max-height:65vh; object-fit:contain;">
                     <p style="font-size:16px; margin-top:16px; line-height:1.5;">${app.utils.sanitize(text)}</p>
-                    <p style="font-size:11px; color:#999; margin-top:8px;">Seite ${i + 1}</p>
+                    ${explainedHtml}
+                    ${stepsHtml}
+                    <p style="font-size:11px; color:#999; margin-top:8px;">${isWorkbook ? 'Blatt' : 'Seite'} ${i + 1}</p>
                 </div>`;
         }).join('');
 

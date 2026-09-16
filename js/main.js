@@ -23,12 +23,16 @@ import './actions/focusMode.js';
 import './actions/pdfImport.js';
 import './actions/epubImport.js';
 import './actions/vocabTrainer.js';
+import './actions/workbook.js';
+import './actions/progress.js';
 
 import './render/library.js';
 import './render/book.js';
 import './render/reader.js';
 import './render/settings.js';
 import './render/vocab.js';
+import './render/workbook.js';
+import './render/progress.js';
 
 import './readerUI.js';
 import './settingsConfig.js';

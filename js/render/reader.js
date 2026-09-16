@@ -1,5 +1,35 @@
 import { app } from '../core.js';
 
+// NEU: der Reader zeigt je nach Buchart andere Beschriftungen. Bei einem
+// Übungsheft liest man keine "Geschichte vereinfacht", sondern bekommt
+// eine Aufgabe erklärt - dieselben drei Tabs, andere Bedeutung.
+function applyBookTypeLabels(isWorkbook) {
+    const set = (id, html) => {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = html;
+    };
+
+    if (isWorkbook) {
+        set('tabOriginal', '📋 Aufgabe');
+        set('tabErstleser', '🎈 Einfach erklärt');
+        set('tabQuiz', '🧩 Hilfe & Lösung');
+        set('readerOriginalHeading', 'Aufgabe auf dem Blatt');
+        set('readerErstleserHeading', 'Was du tun sollst');
+        set('readerErstleserSub', 'Kindgerecht erklärt');
+    } else {
+        set('tabOriginal', '📖 Original');
+        set('tabErstleser', '🎈 Erstleser (5J)');
+        set('tabQuiz', '🧙‍♂️ Frag KI');
+        set('readerOriginalHeading', 'Gedruckter Text');
+        set('readerErstleserHeading', 'Vereinfacht für Kinder');
+        set('readerErstleserSub', 'Mit Emojis für schwierige Wörter');
+    }
+
+    // Rätselfragen beim Auto-Vorlesen gibt es nur bei Geschichten.
+    document.getElementById('autoQuizToggleRow')?.classList.toggle('hidden', isWorkbook);
+    document.getElementById('pageQuizCard')?.classList.toggle('hidden', isWorkbook);
+}
+
 Object.assign(app.render, {
     reader(pageIdx) {
         const book = app.library[app.state.currentBookId];
@@ -16,7 +46,11 @@ Object.assign(app.render, {
         // NEU: Lese-Serie (Streak) für das aktuelle Profil aktualisieren
         app.utils.recordReadToday();
 
-        document.getElementById('readerPageCounter').innerText = `Seite ${pageIdx + 1} / ${book.pages.length}`;
+        // NEU: Buchart bestimmt Beschriftungen, Hilfe-Karte und Vorlese-Verhalten
+        const isWorkbook = app.utils.resolveBookType(book) === 'workbook';
+        applyBookTypeLabels(isWorkbook);
+
+        document.getElementById('readerPageCounter').innerText = `${isWorkbook ? 'Blatt' : 'Seite'} ${pageIdx + 1} / ${book.pages.length}`;
         document.getElementById('readerImg').src = page.imgUrl;
 
         // NEU: Vor/Zurück-Buttons an den Buchgrenzen deaktivieren
@@ -52,16 +86,21 @@ Object.assign(app.render, {
 
             document.getElementById('readerQuizQ').innerText = variant.quizQ || 'Welches Tier siehst du?';
             document.getElementById('readerQuizA').innerText = variant.quizA || 'Schau genau hin!';
+
+            // NEU: Schritt-für-Schritt-Hilfe und Lösung (nur im Heft-Modus)
+            app.render.workbookHelp(isWorkbook ? variant : null);
         } else if (page.status === 'pending' || page.status === 'error') {
             // Seite wurde noch nie analysiert - das übernimmt der
             // bestehende "Alle analysieren"-Button in der Buchansicht,
             // hier nur ein Hinweis.
-            document.getElementById('readerOriginalText').innerText = 'Diese Seite wurde noch nicht analysiert.';
-            document.getElementById('readerErstleserText').innerText = 'Diese Seite wurde noch nicht analysiert.';
+            const notYet = isWorkbook ? 'Dieses Blatt wurde noch nicht ausgelesen.' : 'Diese Seite wurde noch nicht analysiert.';
+            document.getElementById('readerOriginalText').innerText = notYet;
+            document.getElementById('readerErstleserText').innerText = notYet;
             document.getElementById('imageDescCard')?.classList.add('hidden');
             document.getElementById('readerImageDesc').innerText = '';
             document.getElementById('readerQuizQ').innerText = '';
             document.getElementById('readerQuizA').innerText = '';
+            app.render.workbookHelp(null);
         } else {
             // Seite ist für eine ANDERE Persona schon fertig, aber noch
             // nicht für die gerade gewählte - jetzt gezielt nachholen.
@@ -72,6 +111,7 @@ Object.assign(app.render, {
             document.getElementById('readerImageDesc').innerText = '';
             document.getElementById('readerQuizQ').innerText = '';
             document.getElementById('readerQuizA').innerText = '';
+            app.render.workbookHelp(null);
             app.actions.analyzePage(pageIdx, false, app.state.readingPersonaId).catch(() => {});
         }
 
@@ -83,11 +123,13 @@ Object.assign(app.render, {
 
         const autoBtn = document.getElementById('btnAutoRead');
         if (autoBtn) {
-            autoBtn.innerHTML = app.state.autoReadActive ? '⏸ Vorlesen stoppen' : '▶️ Buch automatisch vorlesen';
+            autoBtn.innerHTML = app.state.autoReadActive ? '⏸ Vorlesen stoppen' : app.tts.autoReadLabel();
         }
 
-        // NEU: Verständnisfragen-Bereich nur auf der letzten Seite zeigen
-        const isLastPage = pageIdx === book.pages.length - 1;
+        // NEU: Verständnisfragen-Bereich nur auf der letzten Seite zeigen -
+        // und nur bei Geschichten: "Fragen zur Geschichte" passen nicht zu
+        // einem Heft voller Einzelaufgaben.
+        const isLastPage = pageIdx === book.pages.length - 1 && !isWorkbook;
         const quizSection = document.getElementById('bookQuizSection');
         if (quizSection) {
             quizSection.classList.toggle('hidden', !isLastPage);
@@ -103,6 +145,9 @@ Object.assign(app.render, {
                 }
             }
         }
+
+        // NEU: Erledigt-Knopf und Belohnungs-Banner aktualisieren
+        app.render.pageDone();
     },
 
     // NEU: aktualisiert die Vollbild-Vorlese-Ansicht (Bild, Seitenzähler,
