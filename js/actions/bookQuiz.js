@@ -35,6 +35,11 @@ Object.assign(app.actions, {
             book.bookQuiz = { questions };
             app.dbOps.saveBook(book);
             app.render.bookQuiz();
+            // FIX: der "Fragen erstellen"-Knopf blieb nach dem Erzeugen
+            // stehen (erst ein Seitenwechsel blendete ihn aus) - ein zweiter
+            // Klick sah dann aus, als passiere nichts, weil das fertige Quiz
+            // ja schon aus dem Zwischenspeicher kam.
+            document.getElementById('bookQuizGenerateBtn')?.classList.add('hidden');
         } catch (e) {
             console.error('Buch-Quiz fehlgeschlagen:', e);
             app.ui.toast('Quiz konnte nicht erstellt werden.', '❌');
