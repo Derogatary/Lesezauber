@@ -181,6 +181,7 @@ Größere, noch nicht begonnene Features (brauchen erst Abstimmung mit dem Nutze
 - "Mitmachmodus": Sprechpause vor jedem durch Emoji ersetzten Wort
 - Strukturierte Metadaten-Ansage (Titel/Autor/Verlag/Kapitel vom Erzähler angekündigt)
 - KI-generierte Illustrationen (Comic-Stil) für Text-only-EPUB-Kapitel via Gemini-Bildgenerierung
+- Video-Export: Vorarbeit steht (siehe "KI-Stimmen"), offen ist nur das Zusammensetzen per Canvas + `MediaRecorder` und die Frage "ein Video pro Seite oder pro Buch"
 - Native Android-App via Capacitor (Play Store, ggf. Samsung/Amazon Store)
 - Diagnose: Scroll-Verhalten am Bildschirmrand (Desktop), Zoom/Unschärfe im Fenstermodus - noch nicht reproduziert, braucht ggf. Screenshot vom Nutzer
 
@@ -207,6 +208,13 @@ Feste Regeln dabei:
 - **`_token`-Zähler beachten:** `stop()` erhöht ihn; jede asynchrone Fortsetzung muss vorher prüfen, ob sie noch aktuell ist - sonst spricht eine abgebrochene Seite verspätet doch noch los.
 - Ein einziges `<audio>`-Element für die ganze App (iOS erlaubt Wiedergabe nur bei einem Element, das schon per Fingertipp gestartet wurde).
 
+**Bausteine für den Video-Export** (bewusst getrennt vom Abspielen):
+- `app.ttsNeural.renderAudio(text, {personaId})` → `{ text, blob, mime, durationSec, words: [{word, start, end}], exact }`
+- `app.ttsNeural.renderPageSegments(bookId, pageIdx, {includeDescription, includeQuiz, onProgress})` → `{ imgUrl, totalDurationSec, segments: [...] }` (Reihenfolge: Text → Bildbeschreibung → Quiz)
+- Beide gehen zuerst in den `ttsCache`; Cache-Einträge tragen seit v0.10.1 `mime` und `durationSec`. Ältere Einträge messen ihre Länge beim ersten Export einmalig nach.
+- Die Wort-Zeitpunkte kommen aus derselben `_wordStartTimes()`-Berechnung wie die Hervorhebung im Reader (exakt bei ElevenLabs, sonst über die Textlänge geschätzt) - nicht duplizieren.
+- **Mit der Gerätestimme unmöglich:** SpeechSynthesis gibt keine Datei heraus. `renderAudio()` wirft deshalb bei `ttsProvider === 'device'` einen verständlichen Fehler.
+
 ## Versionsstand
 
-Aktuell `v0.10.0-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Zähl die Version bei größeren Änderungen entsprechend hoch (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).
+Aktuell `v0.10.1-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Zähl die Version bei größeren Änderungen entsprechend hoch (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).

@@ -60,32 +60,69 @@ Object.assign(app.ttsNeural, {
         return `${provider.id}|${voice}|${styleKey}|${rateKey}|${text.length}|${hashText(text)}`;
     },
 
+    // NEU: Länge einer Audiodatei bestimmen, ohne sie abzuspielen. Für den
+    // Video-Export unverzichtbar (wie lange steht diese Seite im Bild?),
+    // beim normalen Vorlesen dagegen unnötig - deshalb nur auf Anforderung.
+    _measureDuration(blob) {
+        return new Promise(resolve => {
+            const url = URL.createObjectURL(blob);
+            const probe = new Audio();
+            const finish = (value) => {
+                URL.revokeObjectURL(url);
+                resolve(isFinite(value) && value > 0 ? value : 0);
+            };
+            probe.onloadedmetadata = () => finish(probe.duration);
+            probe.onerror = () => {
+                console.error('Länge der Sprachaufnahme konnte nicht ermittelt werden.');
+                finish(0);
+            };
+            probe.src = url;
+        });
+    },
+
     // Holt die Sprachaufnahme - erst aus dem Zwischenspeicher, sonst vom
     // Anbieter (und legt sie dann ab).
-    async _getAudio(text, { provider, voice, rate, personaId }) {
+    async _getAudio(text, { provider, voice, rate, personaId, needDuration = false }) {
         const key = this._cacheKey(text, provider, voice, rate, personaId);
         const useCache = app.settings.ttsCacheEnabled !== false;
 
         if (useCache) {
             const cached = await app.dbOps.getTtsAudio(key);
             if (cached && cached.blob) {
-                return { blob: cached.blob, alignment: cached.alignment || null, fromCache: true };
+                let durationSec = cached.durationSec || 0;
+                // Ältere Einträge (vor dem Video-Export) kennen ihre Länge
+                // noch nicht - dann einmalig nachmessen und ergänzen.
+                if (needDuration && !durationSec) {
+                    durationSec = await this._measureDuration(cached.blob);
+                    await app.dbOps.saveTtsAudio({ ...cached, durationSec });
+                }
+                return {
+                    blob: cached.blob,
+                    alignment: cached.alignment || null,
+                    durationSec,
+                    fromCache: true
+                };
             }
         }
 
         const styleHint = provider.supportsStyle ? app.ttsProviders.styleHintFor(personaId) : null;
         const result = await provider.synthesize(text, { voice, rate, styleHint });
+        const durationSec = needDuration ? await this._measureDuration(result.blob) : 0;
 
         if (useCache) {
             await app.dbOps.saveTtsAudio({
                 key,
                 blob: result.blob,
                 alignment: result.alignment || null,
+                // NEU: MIME-Typ und Länge mitspeichern - der Video-Export
+                // braucht beides, ohne die Datei erneut zu erzeugen.
+                mime: result.blob.type,
+                durationSec,
                 bytes: result.blob.size,
                 created: Date.now()
             });
         }
-        return { ...result, fromCache: false };
+        return { ...result, durationSec, fromCache: false };
     },
 
     // Startpunkt (in Sekunden) je hervorgehobenem Wort.
@@ -93,16 +130,17 @@ Object.assign(app.ttsNeural, {
     // - Alle anderen: gleichmäßig über die Gesamtdauer verteilt, gewichtet
     //   nach der Zeichenposition im Text. Das ist eine Schätzung, reicht
     //   aber, damit das Kind der Hervorhebung folgen kann.
-    _wordStartTimes(spans, duration, alignment, cleanText) {
-        const starts = Array.from(spans).map(span => parseInt(span.dataset.start, 10) || 0);
-
+    // FIX: nimmt jetzt reine Zeichenpositionen statt DOM-Elemente entgegen -
+    // so nutzen Reader-Hervorhebung und der geplante Video-Export
+    // (Untertitel) exakt dieselbe Berechnung.
+    _wordStartTimes(charStarts, duration, alignment, cleanText) {
         if (alignment && alignment.starts && alignment.characters
             && alignment.characters.length === cleanText.length) {
-            return starts.map(charIndex => alignment.starts[Math.min(charIndex, alignment.starts.length - 1)] || 0);
+            return charStarts.map(charIndex => alignment.starts[Math.min(charIndex, alignment.starts.length - 1)] || 0);
         }
 
         const total = cleanText.length || 1;
-        return starts.map(charIndex => duration * (charIndex / total));
+        return charStarts.map(charIndex => duration * (charIndex / total));
     },
 
     _startHighlighting(containerId, alignment, cleanText, token) {
@@ -116,7 +154,8 @@ Object.assign(app.ttsNeural, {
         const duration = isFinite(audio.duration) && audio.duration > 0 ? audio.duration : 0;
         if (!duration) return;
 
-        const times = this._wordStartTimes(spans, duration, alignment, cleanText);
+        const charStarts = Array.from(spans).map(span => parseInt(span.dataset.start, 10) || 0);
+        const times = this._wordStartTimes(charStarts, duration, alignment, cleanText);
         let lastIndex = -1;
 
         const tick = () => {
@@ -237,6 +276,94 @@ Object.assign(app.ttsNeural, {
             app.ui.toast('Wiedergabe braucht einen Fingertipp - Gerätestimme springt ein.', '👆');
             app.tts.speakWithDevice(text, onEnd, containerId);
         }
+    },
+
+    // ============ Bausteine für den geplanten Video-Export ============
+    // Der Video-Export (siehe README "Mögliche nächste Schritte") braucht
+    // pro Seite dreierlei: das Bild (liegt schon als page.imgUrl vor), die
+    // Sprachaufnahme als Datei und die Wort-Zeitpunkte für mitlaufende
+    // Untertitel. Die beiden letzten liefern die folgenden Funktionen -
+    // bewusst getrennt vom Abspielen, damit der Export später nichts
+    // duplizieren muss.
+    //
+    // WICHTIG: Mit der Gerätestimme geht das NICHT. SpeechSynthesis spricht
+    // direkt über die Lautsprecher und gibt keine Datei heraus, die sich
+    // in ein Video packen ließe - ein Video-Export setzt zwingend eine
+    // KI-Stimme voraus.
+
+    // Erzeugt (oder holt aus dem Zwischenspeicher) die Audiodatei zu einem
+    // Text und liefert sie zusammen mit Länge und Wort-Zeitpunkten zurück.
+    async renderAudio(rawText, { personaId } = {}) {
+        const provider = app.ttsProviders.current();
+        if (!provider.neural || !provider.synthesize) {
+            throw new TtsError('Dafür muss in den Einstellungen eine KI-Stimme gewählt sein (die Gerätestimme liefert keine Audiodatei).', { fatal: true, code: 'NO_NEURAL' });
+        }
+
+        const text = app.utils.stripEmojiForSpeech(rawText);
+        if (!text) throw new TtsError('Kein Text zum Vorlesen vorhanden.', { code: 'EMPTY' });
+        if (text.length > MAX_NEURAL_CHARS) {
+            throw new TtsError(`Text ist mit ${text.length} Zeichen zu lang (Grenze: ${MAX_NEURAL_CHARS}).`, { code: 'TOO_LONG' });
+        }
+
+        const usedPersona = personaId || app.state.readingPersonaId || app.settings.persona;
+        const { blob, alignment, durationSec } = await this._getAudio(text, {
+            provider,
+            voice: app.ttsProviders.voiceFor(provider),
+            rate: app.settings.speechRate || 0.9,
+            personaId: usedPersona,
+            needDuration: true
+        });
+
+        // Wort-Zeitpunkte: bei ElevenLabs exakt, sonst über die Textlänge
+        // geschätzt - dieselbe Berechnung wie die Hervorhebung im Reader.
+        const offsets = app.utils.speechWordOffsets(text);
+        const starts = this._wordStartTimes(offsets.map(o => o.start), durationSec, alignment, text);
+        const words = offsets.map((entry, i) => ({
+            word: entry.word,
+            start: starts[i],
+            end: i + 1 < starts.length ? starts[i + 1] : durationSec
+        }));
+
+        return { text, blob, mime: blob.type, durationSec, words, exact: !!alignment };
+    },
+
+    // Alle Sprach-Bausteine einer Seite in Vorlese-Reihenfolge, fertig für
+    // eine Videospur. Erzeugt nur, was noch nicht im Zwischenspeicher liegt
+    // - trotzdem kostet ein kompletter Buch-Export Kontingent, deshalb
+    // nichts davon automatisch aufrufen.
+    async renderPageSegments(bookId, pageIdx, { includeDescription = true, includeQuiz = false, personaId, onProgress } = {}) {
+        const book = app.library[bookId];
+        if (!book) throw new TtsError('Buch nicht gefunden.', { code: 'NO_BOOK' });
+
+        const page = book.pages[pageIdx];
+        if (!page) throw new TtsError('Seite nicht gefunden.', { code: 'NO_PAGE' });
+
+        const usedPersona = personaId || app.state.readingPersonaId || app.settings.persona;
+        const variant = app.utils.resolveAnyVariant(page, usedPersona);
+        if (!variant) throw new TtsError('Diese Seite ist noch nicht analysiert.', { code: 'NO_VARIANT' });
+
+        const planned = [{ kind: 'text', text: variant.text }];
+        if (includeDescription && variant.desc) planned.push({ kind: 'desc', text: variant.desc });
+        if (includeQuiz && variant.quizQ) {
+            planned.push({ kind: 'quizQ', text: variant.quizQ });
+            if (variant.quizA) planned.push({ kind: 'quizA', text: variant.quizA });
+        }
+
+        const segments = [];
+        // Bewusst nacheinander statt parallel: die Anbieter haben Limits
+        // pro Minute, parallele Anfragen laufen sofort in einen 429er.
+        for (let i = 0; i < planned.length; i++) {
+            const part = planned[i];
+            if (onProgress) onProgress(i + 1, planned.length, part.kind);
+            const rendered = await this.renderAudio(part.text, { personaId: usedPersona });
+            segments.push({ kind: part.kind, ...rendered });
+        }
+
+        return {
+            imgUrl: page.imgUrl,
+            totalDurationSec: segments.reduce((sum, seg) => sum + seg.durationSec, 0),
+            segments
+        };
     },
 
     // NEU: Text schon mal im Hintergrund erzeugen lassen (z.B. die nächste

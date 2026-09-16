@@ -81,6 +81,7 @@ Faustregel: **Gemini** zum kostenlosen Reinschnuppern, **Google Cloud Chirp 3 HD
 - **Rückfall:** Kein Internet, Tageslimit erreicht oder Key falsch? Dann springt automatisch die Gerätestimme ein, mit einem kurzen Hinweis - das Vorlesen bricht nie einfach ab.
 - **Wort-Hervorhebung:** Läuft auch bei KI-Stimmen mit. Bei ElevenLabs zeichengenau, bei den übrigen Anbietern anhand der Audiolänge geschätzt.
 - **Persona-Stimmlage:** Bei Gemini und OpenAI wird die gewählte Erzähler-Persona als Sprechanweisung mitgeschickt - die "Gute-Nacht-Fee" klingt dann tatsächlich sanfter als der "Weise Professor".
+- **Vorbereitet für den Video-Export:** Die Aufnahmen liegen als echte Dateien inklusive Länge und Wort-Zeitpunkten vor (`app.ttsNeural.renderAudio()` / `renderPageSegments()`). Damit lässt sich später ein Video aus Buchseite + Stimme + mitlaufenden Untertiteln bauen, ohne dass dafür noch einmal Kontingent verbraucht wird. Mit der Gerätestimme geht das nicht - die spricht direkt über den Lautsprecher und gibt keine Datei heraus.
 
 ### Einrichten
 
@@ -188,7 +189,7 @@ main.js                  Bindet alle Module zusammen und startet die App
 **Bleibt komplett im Browser (kein Server nötig):**
 - 🎨 KI-generierte Illustrationen für textlastige EPUB-Kapitel ohne eigenes Bild, optional im Comic-Stil (Gemini kann mittlerweile auch Bilder erzeugen, gleicher Key wie bisher) - Cover-Bild-Sonderfall erstmal nicht nötig
 - 📱 Native App / Android-Store-Verpackung (Capacitor) - verpackt den bestehenden Code weitgehend unverändert
-- 🎬 Video-Export (Seite + KI-Stimme als Videodatei) - der aufwändigste offene Punkt; die dafür nötige Sprach-API mit echter Audiodatei-Ausgabe ist seit den KI-Stimmen vorhanden
+- 🎬 **Video-Export** (Seite + KI-Stimme als Videodatei). Vorarbeit ist erledigt: Audiodatei, Länge und Wort-Zeitpunkte je Seite liefert `app.ttsNeural.renderPageSegments()`, das Seitenbild liegt ohnehin vor. Offen ist nur noch das Zusammensetzen im Browser (Bild auf ein Canvas zeichnen, Untertitel einblenden, mit `MediaRecorder` aufnehmen) - und die Entscheidung, ob pro Seite oder ein Video fürs ganze Buch. Setzt eine KI-Stimme voraus.
 
 **Bräuchte einen eigenen Server** (aktuell bewusst zurückgestellt):
 - API-Key über ein Backend absichern
