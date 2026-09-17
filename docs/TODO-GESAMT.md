@@ -74,8 +74,8 @@ Details: [`docs/ROADMAP.md`](ROADMAP.md)
 | **Stimme pro Profil** | **S** | `app.settings.ttsVoices` müsste pro Profil statt global gespeichert werden |
 | ~~**Kosten-Anzeige**~~ | **S** | ✅ **erledigt (v0.13.0-beta)** - Rein lokal geschätzt mitgezählt, wie viele Zeichen im Monat an den Anbieter gingen (`js/costMeter.js`), zusätzlich getrennt die Gemini-Textaufrufe. Zählt nur echte Synthesen, keine Cache-Treffer |
 | ~~**Tarif-Lock**~~ | **S** | ✅ **erledigt (Sept. 2026)** - `costTier`-Feld je Anbieter in `js/ttsProviders.js`, Bestätigungsdialog in `app.settingsConfig.changeTtsProvider()` vor einem Wechsel auf eine teurere Stufe. Betrag bleibt beim Anbieter gedeckelt, nicht in der App |
-| **Mitmachmodus mit KI-Stimme** | **M** | Läuft heute bewusst immer über die Gerätestimme. Über Pausen-Tags lösbar (Gemini `[pause]`, Chirp 3 über `markup`) - eine Aufnahme, keine Mehrkosten. Text stückeln wäre die teure Alternative |
-| **Lange Texte stückeln** | **M** | Über `MAX_NEURAL_CHARS = 4000` (praktisch nur EPUB-Kapitel) fällt es auf die Gerätestimme zurück. An Satzenden in ~800-Zeichen-Stücke zerlegen, Wort-Offsets verschieben |
+| ~~**Mitmachmodus mit KI-Stimme**~~ | **M** | ✅ **erledigt (Sept. 2026)** - `app.ttsNeural.speakMitmach()` ersetzt die Emoji-Stellen durch eine `[pause]`-Sprechanweisung und spricht den ganzen Text in EINEM Aufruf (keine Mehrkosten). Nur bei Anbietern mit `supportsTags` (Gemini, ElevenLabs) - Chirp 3/OpenAI/Speechify fallen weiterhin auf die Gerätestimme zurück |
+| ~~**Lange Texte stückeln**~~ | **M** | ✅ **erledigt (Sept. 2026)** - `app.utils.splitTextIntoChunks()` zerlegt an Satzenden in ~800-Zeichen-Stücke, `app.ttsNeural._speakChunked()` spielt sie nacheinander ab (Cache pro Stück), Hervorhebung über `_startHighlightingRange()`. Ab `MAX_CHUNKED_CHARS = 20000` bleibt es beim Rückfall auf die Gerätestimme |
 | **Emotionen / Audio-Tags** | **M** | ✅ entschieden, Weg klar: `speechText`-Feld immer mitgenerieren (kein Zusatz-Call), `supportsTags`-Flag je Anbieter. Bei ElevenLabs Modell auf `eleven_v3` umstellen - **kostet seit GA nicht mehr als v2** |
 
 **Geprüft und verworfen (fürs Erste):** Audiodateien im Bibliotheks-Export mit sichern.
@@ -153,7 +153,7 @@ Schritt davor: Blätter **erzeugen**.
 | Punkt | Aufwand | Anmerkung |
 |---|---|---|
 | **Kontroll-Funktion im Alltag beobachten** | **S** | Wie zuverlässig beurteilt Gemini die Fotos bearbeiteter Blätter? Bei zu vielen „unklar" wäre eine Foto-Hilfe (Rahmen, Helligkeitshinweis) der nächste Schritt |
-| **Heft-Generator: API-Aufruf + Prompt** | **S** | Muster vorhanden (`generateBookQuiz`). Ein Heft = **ein** Aufruf, nicht einer pro Blatt |
+| ~~**Heft-Generator: API-Aufruf + Prompt**~~ | **erledigt** | `app.api.generateWorksheets()` in `js/api.js` - ein Heft = **ein** Aufruf, nicht einer pro Blatt. Nur Aufgabenarten ohne Bildmaterial (zaehlen, ankreuzen, nachspuren, schreiben) |
 | **Heft-Generator: Auswahl-Ansicht** | **M** | Neue Ansicht inkl. Router-Eintrag in `js/nav.js` |
 | **Heft-Generator: Blätter auf Canvas zeichnen** | **M** | Vorlage vorhanden: `renderTextAsImageCanvas()` in `epubImport.js` |
 | **Heft-Generator: eigene Druckansicht** | **M** | Optional. Ein Canvas-Bild druckt schlechter als echter Text - dafür gäbe es dann zwei Wege zum selben Inhalt |

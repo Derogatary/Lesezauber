@@ -338,6 +338,95 @@ Object.assign(app.utils, {
         return parts;
     },
 
+    // NEU: zerlegt einen langen (bereits geglätteten, einzeiligen) Text in
+    // Stücke von jeweils höchstens maxChars Zeichen, IMMER an einem
+    // Satzende getrennt (siehe docs/ROADMAP.md "Lange Texte stückeln") -
+    // eine KI-Stimme mitten im Satz abzuschneiden würde hörbar komisch
+    // klingen. "start" ist die Zeichenposition jedes Stücks im
+    // ORIGINAL-Text, damit sich die schon gebauten Hervorhebungs-Spans
+    // (siehe buildSpeechHighlightHtml) trotz der Zerlegung noch dem
+    // richtigen Stück zuordnen lassen. Aneinandergehängt ergeben die
+    // Stücke wieder exakt den Original-Text (keine Lücken/Überlappungen).
+    splitTextIntoChunks(text, maxChars = 800) {
+        if (!text) return [];
+        if (text.length <= maxChars) return [{ text, start: 0 }];
+
+        // Satzenden: . ! ? (ggf. gefolgt von Anführungszeichen/Klammer)
+        // gefolgt von Leerraum - der Text ist an dieser Stelle schon
+        // einzeilig (siehe prepareTextForSpeech).
+        const SENTENCE_END = /[.!?]+["')\]]?\s+/g;
+        const boundaries = [0];
+        let match;
+        while ((match = SENTENCE_END.exec(text)) !== null) {
+            boundaries.push(match.index + match[0].length);
+        }
+        if (boundaries[boundaries.length - 1] !== text.length) boundaries.push(text.length);
+
+        const chunks = [];
+        let chunkStart = 0;
+        let lastBoundary = 0;
+
+        for (let i = 1; i < boundaries.length; i++) {
+            const boundary = boundaries[i];
+
+            // Das nächste Satzende würde das Stück über maxChars hinaus
+            // sprengen - dann lieber beim VORHERIGEN Satzende abschneiden.
+            if (boundary - chunkStart > maxChars && lastBoundary > chunkStart) {
+                chunks.push({ text: text.slice(chunkStart, lastBoundary), start: chunkStart });
+                chunkStart = lastBoundary;
+            }
+
+            // Ein einzelner Satz, der schon für sich allein länger als
+            // maxChars ist (selten, z.B. eine lange Aufzählung ohne Punkt) -
+            // hart an der letzten Wortgrenze vor der Grenze trennen, sonst
+            // bliebe dieses eine "Stück" beliebig lang.
+            if (boundary - chunkStart > maxChars) {
+                let cut = chunkStart + maxChars;
+                const lastSpace = text.lastIndexOf(' ', cut);
+                if (lastSpace > chunkStart) cut = lastSpace + 1;
+                chunks.push({ text: text.slice(chunkStart, cut), start: chunkStart });
+                chunkStart = cut;
+            }
+
+            lastBoundary = boundary;
+        }
+
+        if (chunkStart < text.length) {
+            chunks.push({ text: text.slice(chunkStart), start: chunkStart });
+        }
+        return chunks;
+    },
+
+    // NEU: für den Mitmachmodus mit KI-Stimme (siehe app.ttsNeural.speakMitmach).
+    // Anders als beim Gerätestimme-Weg (app.tts.speakMitmach) entsteht hier
+    // NUR EINE zusammenhängende Aufnahme für den ganzen Text (Emoji-Stellen
+    // werden dafür durch eine Pausen-Anweisung ersetzt, siehe dort) - die
+    // Wort-Spans zählen ihre Zeichenposition deshalb bewusst GLOBAL über den
+    // ganzen gesprochenen Text durch (nicht wie dort je Häppchen bei 0 neu),
+    // weil das zu einer einzigen durchgehenden Zeitachse passen muss.
+    // "plain" ist der Text ohne Emojis (mit ihren Umgebungs-Leerzeichen) -
+    // exakt das, was tatsächlich vorgelesen wird und wozu die
+    // Zeichenpositionen passen.
+    buildMitmachSpeechText(parts) {
+        let idx = 0;
+        let html = '';
+        let plain = '';
+        parts.forEach((part, i) => {
+            if (part.type === 'emoji') {
+                html += `<span class="mitmach-emoji" data-emoji-idx="${i}">${part.value}</span>`;
+                return;
+            }
+            part.value.split(/(\s+)/).forEach(token => {
+                const start = idx;
+                idx += token.length;
+                plain += token;
+                if (token === '' || /^\s+$/.test(token)) { html += token; return; }
+                html += `<span class="speech-word" data-start="${start}">${this.sanitize(token)}</span>`;
+            });
+        });
+        return { html, plain };
+    },
+
     // NEU: deutsches Ordnungswort für die Inhaltsverzeichnis-Ansage
     // ("das erste Kapitel ist...", "das zweite..."). Reicht für die in
     // Kinderbüchern üblichen Kapitelzahlen, danach numerischer Fallback.

@@ -119,6 +119,94 @@ Diese Regeln sind wichtiger als alles andere:
 - Sprich das Kind direkt an, nie über das Kind.`;
 }
 
+// NEU (Heft-Generator): Aufgabenarten, die ein erzeugtes Blatt OHNE
+// Bildmaterial hinbekommt. Ein erzeugtes Blatt ist zunächst nur Text auf
+// Papier (gezeichnet wie in renderTextAsImageCanvas(), js/actions/epubImport.js) -
+// "Male den Löwen an" wäre damit wertlos, weil der Löwe fehlt. Deshalb sind
+// hier bewusst nur die vier Arten gelistet, die mit gedruckten Zeichen
+// auskommen. Kommt später KI-Bildgenerierung dazu (docs/KONZEPT-Comic.md),
+// wird diese Liste erweitert - die Werte selbst sind dieselben taskType-Werte
+// wie beim Auslesen (siehe buildWorkbookPrompt) und brauchen eine Überschrift
+// in js/render/workbook.js.
+const GENERATOR_TASK_TYPES = [
+    {
+        id: 'zaehlen',
+        hint: 'Mengen zum Zählen aus wiederholten Emojis/Zeichen aufbauen (z.B. eine Zeile "🐑 🐑 🐑 🐑 🐑"), darunter ein Kästchen für die Zahl.'
+    },
+    {
+        id: 'ankreuzen',
+        hint: 'Wahlmöglichkeiten je in einer eigenen Zeile, jede beginnt mit einem leeren Kästchen "☐ ". Das Kind kreuzt an.'
+    },
+    {
+        id: 'nachspuren',
+        hint: 'Nachspur-/Schwungübung: Linien aus wiederholten Zeichen, die das Kind mit dem Stift nachfährt (z.B. "· · · · · · · ·", "∿∿∿∿∿∿∿∿", "○—○—○—○—○").'
+    },
+    {
+        id: 'schreiben',
+        hint: 'Einzelne Buchstaben oder Ziffern vorgeben und daneben Platz zum Selberschreiben lassen (z.B. "N  N  N  ____  ____").'
+    }
+];
+
+// NEU (Heft-Generator): erzeugt EIN komplettes Übungsheft in EINEM Aufruf
+// (nicht ein Aufruf pro Blatt) - ein Heft mit 12 Blättern kostet damit
+// einen Aufruf statt zwölf. Die Feldnamen pro Blatt sind mit Absicht exakt
+// dieselben wie im Auslese-Schema von buildWorkbookPrompt(): so lässt sich
+// ein erzeugtes Blatt später ohne Sonderfall durch
+// app.utils.buildPageVariant(blatt, page, 'workbook') schicken.
+function buildGeneratorPrompt({ story, learningGoal, count, personaId, ownText }) {
+    const typeList = GENERATOR_TASK_TYPES.map(t => `- "${t.id}": ${t.hint}`).join('\n');
+    const allowed = GENERATOR_TASK_TYPES.map(t => t.id).join(', ');
+
+    // Bei Bibelinhalten erfindet die KI Namen, Zahlen und Abläufe gerne
+    // "plausibel" dazu (siehe docs/KONZEPT-Uebungshefte.md, "Verlässlichkeit").
+    // Gibt der Nutzer einen eigenen Text vor, ist der gesetzt; sonst wird die
+    // KI ausdrücklich auf das Allgemeinbekannte begrenzt.
+    const sourceBlock = ownText
+        ? `\nDer Erwachsene hat den Text zur Geschichte selbst vorgegeben. Er ist verbindlich - halte dich inhaltlich GENAU daran und erfinde nichts dazu:\n"""\n${ownText}\n"""\n`
+        : `\nEs ist KEIN Quelltext vorgegeben. Nutze deshalb nur das, was an dieser Geschichte allgemein bekannt ist, und erfinde keine Namen, Zahlen, Orte oder Abläufe dazu. Im Zweifel bleibst du allgemein, statt etwas zu behaupten.\n`;
+
+    return `Rolle: ${personaInstruction(personaId)}
+
+Du erstellst ein Übungsheft zur Schulvorbereitung für ein Kind von etwa 4 bis 6 Jahren, das noch NICHT lesen kann. Ein Erwachsener oder die App liest dem Kind alles vor; das Kind bearbeitet die Blätter mit dem Stift auf Papier.
+
+Thema/Geschichte: "${story}"
+Lernziel: "${learningGoal}"
+Anzahl der Übungsblätter: GENAU ${count}
+${sourceBlock}
+GANZ WICHTIG - was auf ein Blatt darf:
+Die Blätter werden als reiner Text gedruckt. Es gibt KEINE Zeichnungen, KEINE Fotos und KEINE Ausmalbilder. Alles, was das Kind zum Bearbeiten braucht, musst du aus gedruckten Zeichen und Emojis selbst aufbauen. Erlaubt sind daher NUR diese Aufgabenarten:
+${typeList}
+
+Regeln für jedes Blatt:
+- GENAU EINE Aufgabe pro Blatt, nie mehrere.
+- Das Blatt muss ohne jedes zusätzliche Material lösbar sein - ein Stift genügt.
+- Verweise nie auf etwas, das gar nicht auf dem Blatt steht ("schau dir das Bild an" ist verboten).
+- Die Aufgaben werden über die Blätter hinweg etwas schwerer, das erste ist das leichteste.
+- Der Bezug zur Geschichte steckt in den Wörtern und Emojis der Aufgabe, nicht in einem Bild.
+- Schreibe kindgerecht und freundlich. Formuliere nie hart oder schulmeisterlich.
+
+Antworte AUSSCHLIESSLICH in validem JSON! Verwende keine Markdown-Blöcke.
+Nutze exakt dieses Schema:
+{
+  "title": "Kurzer, kindgerechter Titel des Hefts (z.B. 'Mit Noah zählen lernen')",
+  "sheets": [
+    {
+      "heading": "Kurze Überschrift des Blatts, höchstens 4 Wörter",
+      "taskText": "Die Aufgabenstellung, wie sie auf dem Blatt gedruckt wird - EIN kurzer Satz in Du-Form",
+      "taskExplained": "Dieselbe Aufgabe noch einmal in 1-2 sehr einfachen Sätzen fürs Vorlesen. Ersetze KEINE Wörter durch Emojis, das Kind muss die Anweisung verstehen.",
+      "taskType": "Genau EINER dieser Werte: ${allowed}",
+      "materials": "Was das Kind braucht, sehr kurz (z.B. 'Ein Stift') - oder null",
+      "body": ["Die Zeilen, die auf das Blatt gedruckt werden - das eigentliche Übungsfeld. Jede Zeile höchstens 40 Zeichen, 2 bis 10 Zeilen. Eine komplett leere Zeile ist als Abstand erlaubt. KEIN Markdown, keine Tabellen, keine Überschrift und keine Wiederholung der Aufgabenstellung."],
+      "pageDescription": "In 1-2 Sätzen, was auf dem Blatt zu sehen ist - so, dass sich ein Kind mit dem Blatt vor sich wiederfindet.",
+      "helpSteps": ["3 bis 5 kurze Schritte in Du-Form, EIN einzelner Handgriff pro Schritt, in der Reihenfolge des Bearbeitens"],
+      "solution": "Die Lösung bzw. woran man erkennt, dass es richtig ist. Bei freien Übungen (z.B. Schwungübungen): 'Hier gibt es kein richtig oder falsch - Hauptsache, du hast geübt.'"
+    }
+  ]
+}
+"sheets" enthält GENAU ${count} Blätter in der Reihenfolge, in der das Kind sie bearbeiten soll.
+Die Lösung muss wirklich zu dem passen, was in "body" steht - zähle selbst nach, bevor du sie hinschreibst. Eine falsche Lösung verunsichert das Kind mehr, als gar keine zu haben.`;
+}
+
 // Gemeinsame Aufräum-Logik für beide Anbieter: manche Modelle wrappen die
 // JSON-Antwort trotz Anweisung in ```json ... ``` Markdown-Blöcke.
 function parseModelJson(rawText) {
@@ -182,8 +270,8 @@ async function callMistralAnalyze(prompt, base64Image) {
     return parseModelJson(textResult);
 }
 
-// NEU: reiner Text-Aufruf (kein Bild) fürs Buch-Quiz, genutzt vom
-// Gemini/Mistral-Fallback-Paar unten.
+// NEU: reiner Text-Aufruf (kein Bild) fürs Buch-Quiz und den Heft-Generator,
+// genutzt vom Gemini/Mistral-Fallback-Paar unten.
 async function callMistralText(prompt) {
     if (!app.settings.mistralApiKey) throw new Error('MISTRAL_KEY_MISSING');
 
@@ -204,6 +292,101 @@ async function callMistralText(prompt) {
     const data = await res.json();
     const textResult = data.choices?.[0]?.message?.content || '[]';
     return parseModelJson(textResult);
+}
+
+// NEU: reiner Text-Aufruf an Gemini. War bisher zweimal ausgeschrieben
+// (Buch-Quiz und, beim Hinzufügen des Heft-Generators, beinahe ein drittes
+// Mal) - jetzt an einer Stelle, damit Modellwechsel und Verbrauchszählung
+// nicht auseinanderlaufen.
+async function callGeminiText(prompt, generationConfig = {}) {
+    if (!app.settings.apiKey) throw new Error('API_KEY_MISSING');
+
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${app.settings.apiKey}`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig })
+    });
+
+    if (!res.ok) throw new Error(`Gemini-Fehler ${res.status}`);
+
+    const data = await res.json();
+    const textResult = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    app.costMeter.trackGeminiText(prompt.length);
+
+    // Bei sehr langen Antworten (z.B. ein Heft mit 12 Blättern) kann das
+    // Modell mitten im JSON abbrechen. Das als eigenen, verständlichen
+    // Fehler melden statt als kryptischen JSON-Parse-Fehler.
+    if (data.candidates?.[0]?.finishReason === 'MAX_TOKENS') {
+        throw new Error('Antwort der KI war zu lang und wurde abgeschnitten');
+    }
+
+    return parseModelJson(textResult || '{}');
+}
+
+// NEU: Text-Aufruf mit demselben Mistral-Fallback wie analyze() - erst
+// Gemini, bei jedem Fehler (auch fehlendem Gemini-Key) Mistral, sofern dort
+// ein Key hinterlegt ist.
+async function runTextPrompt(prompt, generationConfig = {}) {
+    try {
+        return await callGeminiText(prompt, generationConfig);
+    } catch (geminiError) {
+        if (!app.settings.mistralApiKey) throw geminiError;
+
+        console.warn('Gemini fehlgeschlagen, versuche Mistral-Fallback:', geminiError.message);
+        try {
+            const result = await callMistralText(prompt);
+            app.ui.toast('Gemini nicht erreichbar - Mistral eingesprungen', '🔄');
+            return result;
+        } catch (mistralError) {
+            console.error('Auch Mistral-Fallback fehlgeschlagen:', mistralError);
+            throw geminiError;
+        }
+    }
+}
+
+// NEU (Heft-Generator): Ein Heft mit mehr Blättern macht die JSON-Antwort
+// sehr lang - und je länger sie wird, desto eher bricht das Modell mitten
+// im JSON ab. 12 Blätter sind laut Konzept ohnehin eine gute Heftgröße.
+const GENERATOR_MAX_SHEETS = 12;
+
+// NEU (Heft-Generator): Die KI-Antwort einmal geradeziehen, bevor sie
+// irgendwo weiterverarbeitet wird. Drei Dinge machen ein Blatt unbrauchbar,
+// da wird es lieber weggelassen als halb gebaut ins Heft gestellt:
+// - keine Aufgabenstellung,
+// - kein "body", also nichts zum Bearbeiten auf dem Blatt,
+// - eine Aufgabenart außerhalb von GENERATOR_TASK_TYPES: hält sich das
+//   Modell nicht an die Liste (z.B. "ausmalen"), hat es sich ein Blatt mit
+//   Bildmaterial ausgedacht, das der Generator gar nicht zeichnen kann.
+// Rest fehlt: auffüllen statt verwerfen.
+function normalizeGeneratedSheet(raw) {
+    if (!raw || typeof raw !== 'object') return null;
+
+    const text = (value) => (typeof value === 'string' && value.trim()) ? value.trim() : null;
+    const taskText = text(raw.taskText);
+    if (!taskText) return null;
+    if (!GENERATOR_TASK_TYPES.some(t => t.id === raw.taskType)) return null;
+
+    const body = Array.isArray(raw.body)
+        ? raw.body.filter(line => typeof line === 'string').map(line => line.trimEnd())
+        : [];
+    if (!body.some(line => line.trim())) return null;
+
+    return {
+        heading: text(raw.heading) || taskText,
+        taskText,
+        // Fällt die Erklärung aus, wird die Aufgabenstellung vorgelesen -
+        // besser als eine leere Vorlese-Variante.
+        taskExplained: text(raw.taskExplained) || taskText,
+        taskType: raw.taskType,
+        materials: text(raw.materials),
+        body,
+        pageDescription: text(raw.pageDescription),
+        helpSteps: Array.isArray(raw.helpSteps)
+            ? raw.helpSteps.filter(s => typeof s === 'string' && s.trim()).map(s => s.trim())
+            : [],
+        // Lieber ehrlich offen lassen als etwas Ausgedachtes behaupten -
+        // dieselbe Haltung wie beim Auslesen (siehe buildWorkbookPrompt).
+        solution: text(raw.solution) || 'Das kann ich hier nicht sicher sagen - schaut am besten gemeinsam drauf.'
+    };
 }
 
 Object.assign(app.api, {
@@ -273,8 +456,6 @@ Object.assign(app.api, {
     // Bild) - fasst den Text aller Seiten zusammen und lässt die KI daraus
     // ein paar Fragen zur Geschichte als Ganzes erstellen.
     async generateBookQuiz(compiledText, personaId) {
-        if (!app.settings.apiKey) throw new Error('API_KEY_MISSING');
-
         const prompt = `Rolle: ${personaInstruction(personaId)}
 Hier ist der komplette Text eines Kinderbuchs, Seite für Seite:
 
@@ -287,33 +468,86 @@ Antworte AUSSCHLIESSLICH als valides JSON-Array ohne Markdown-Blöcke, exakt in 
   {"question": "...", "answer": "..."}
 ]`;
 
-        // FIX: bisher als einziger API-Aufruf ohne Mistral-Fallback - fiel
-        // Gemini aus, ging das Buch-Quiz gar nicht, obwohl das README den
-        // Fallback allgemein verspricht. Jetzt wie analyze() gehandhabt.
-        try {
-            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${app.settings.apiKey}`, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.3 } })
-            });
+        // FIX: der Key-Check lag früher VOR dem try - ohne Gemini-Key gab es
+        // deshalb gar kein Buch-Quiz, obwohl ein Mistral-Key hinterlegt sein
+        // konnte. runTextPrompt() behandelt das jetzt wie analyze().
+        const questions = await runTextPrompt(prompt, { temperature: 0.3 });
+        // Die Aufrufer speichern das Ergebnis direkt als
+        // book.bookQuiz.questions und gehen von einem Array aus - eine leere
+        // oder verunglückte Antwort darf dort kein Objekt hinterlassen.
+        return Array.isArray(questions) ? questions : [];
+    },
 
-            if (!res.ok) throw new Error(`Gemini-Fehler ${res.status}`);
-            const data = await res.json();
-            const textResult = data.candidates?.[0]?.content?.parts?.[0]?.text || '[]';
-            app.costMeter.trackGeminiText(prompt.length);
-            return parseModelJson(textResult);
-        } catch (geminiError) {
-            if (!app.settings.mistralApiKey) throw geminiError;
+    // NEU (Heft-Generator): erzeugt ein komplettes Übungsheft in EINEM
+    // Aufruf - nicht einen pro Blatt. Reiner Text-Aufruf ohne Bild, nach dem
+    // Muster von generateBookQuiz() oben.
+    //
+    //   app.api.generateWorksheets({
+    //       story: 'Arche Noah', learningGoal: 'Mengen bis 10',
+    //       count: 6, personaId: 'standard', ownText: '...optional...'
+    //   })
+    //   -> { title, skipped, sheets: [{ heading, taskText, taskExplained,
+    //                                    taskType, materials, body,
+    //                                    pageDescription, helpSteps,
+    //                                    solution }] }
+    //
+    // Die Feldnamen pro Blatt sind absichtlich dieselben wie im
+    // Auslese-Schema für Übungshefte: ein erzeugtes Blatt kann damit direkt
+    // durch app.utils.buildPageVariant(sheet, page, 'workbook') laufen und
+    // braucht KEINEN zweiten KI-Aufruf zum "Auslesen". "body" ist das, was
+    // auf das Blatt gedruckt wird - dafür gibt es beim Auslesen kein
+    // Gegenstück, weil dort das Blatt ja schon existiert.
+    //
+    // Das Konzept nannte die Signatur ursprünglich mit Einzelparametern
+    // (story, learningGoal, count, personaId, ownBibleText). Ein Objekt ist
+    // hier sicherer: die beiden optionalen Textfelder lassen sich sonst
+    // leicht vertauschen.
+    async generateWorksheets({ story, learningGoal, count = 6, personaId = app.settings.persona, ownText = null } = {}) {
+        const thema = (story || '').trim();
+        const ziel = (learningGoal || '').trim();
+        if (!thema || !ziel) throw new Error('Thema und Lernziel werden gebraucht');
 
-            console.warn('Gemini fehlgeschlagen, versuche Mistral-Fallback:', geminiError.message);
-            try {
-                const result = await callMistralText(prompt);
-                app.ui.toast('Gemini nicht erreichbar - Mistral eingesprungen', '🔄');
-                return result;
-            } catch (mistralError) {
-                console.error('Auch Mistral-Fallback fehlgeschlagen:', mistralError);
-                throw geminiError;
-            }
+        const wanted = Math.min(Math.max(parseInt(count, 10) || 1, 1), GENERATOR_MAX_SHEETS);
+        const prompt = buildGeneratorPrompt({
+            story: thema,
+            learningGoal: ziel,
+            count: wanted,
+            personaId,
+            ownText: (ownText || '').trim() || null
+        });
+
+        // Etwas mehr Temperatur als beim Buch-Quiz, damit die Blätter eines
+        // Hefts sich voneinander unterscheiden - aber deutlich unter 1, weil
+        // Aufgabe und Lösung zusammenpassen müssen. maxOutputTokens hoch
+        // genug für ein ganzes Heft, sonst bricht die Antwort mittendrin ab.
+        const result = await runTextPrompt(prompt, { temperature: 0.5, maxOutputTokens: 8192 });
+
+        const raw = Array.isArray(result?.sheets) ? result.sheets : [];
+        const usable = raw.map(normalizeGeneratedSheet).filter(Boolean);
+        const sheets = usable.slice(0, wanted);
+
+        if (!sheets.length) {
+            console.error('Heft-Generator: unbrauchbare KI-Antwort', result);
+            throw new Error('Die KI hat kein brauchbares Heft geliefert');
         }
+
+        // Weniger Blätter als bestellt ist kein Abbruchgrund - ein kürzeres
+        // Heft ist besser als gar keins. Damit das aber nicht stumm passiert,
+        // kommt die Zahl der aussortierten Blätter mit zurück; der Aufrufer
+        // kann sie dem Nutzer zeigen ("2 Blätter waren unbrauchbar").
+        // Bewusst gegen "usable" gerechnet, nicht gegen "sheets": liefert das
+        // Modell mehr Blätter als bestellt, sind die überzähligen ja nicht
+        // unbrauchbar, sondern nur zu viel.
+        const skipped = raw.length - usable.length;
+        if (skipped) console.warn(`Heft-Generator: ${skipped} unbrauchbare(s) Blatt/Blätter aussortiert`);
+
+        return {
+            title: (typeof result?.title === 'string' && result.title.trim())
+                ? result.title.trim()
+                : `${thema} - ${ziel}`,
+            sheets,
+            skipped
+        };
     },
 
     // NEU: Kontrolle eines bearbeiteten Übungsblattes. Nutzt dieselben

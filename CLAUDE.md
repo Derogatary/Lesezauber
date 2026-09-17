@@ -231,7 +231,7 @@ Nutzer, nicht einfach lospreschen):
 |---|---|
 | 🎬 Video-Export (Seite UND Buch, Schwerpunkt Buch - entschieden) - Vorarbeit steht (siehe "KI-Stimmen"), offen ist nur Canvas + `WebCodecs` | [`docs/KONZEPT-Video.md`](docs/KONZEPT-Video.md) |
 | 🪄 "SchreibZauber" - eigener Schreib-/Generierungs-Bereich für eigene Werke | [`docs/KONZEPT-SchreibZauber.md`](docs/KONZEPT-SchreibZauber.md), [`docs/KONZEPT-Bildquellen.md`](docs/KONZEPT-Bildquellen.md) |
-| 📝 Heft-Generator - Übungsblätter von der KI erstellen lassen | [`docs/KONZEPT-Uebungshefte.md`](docs/KONZEPT-Uebungshefte.md) |
+| 📝 Heft-Generator - Übungsblätter von der KI erstellen lassen - **angefangen:** der KI-Aufruf `app.api.generateWorksheets()` steht (ein Aufruf pro Heft, nur Aufgabenarten ohne Bildmaterial), offen sind Auswahl-Ansicht und das Zeichnen der Blätter | [`docs/KONZEPT-Uebungshefte.md`](docs/KONZEPT-Uebungshefte.md) |
 | 🎨 KI-generierte Illustrationen (Comic-Stil), für Text-only-EPUB-Kapitel UND als SchreibZauber-Werktyp | [`docs/KONZEPT-Comic.md`](docs/KONZEPT-Comic.md) |
 | 🎭 Emotionen/Sprech-Anweisungen mitten im Satz (Audio-Tags) | [`docs/ROADMAP.md`](docs/ROADMAP.md) |
 | 🔐 Kinder-/Elternbereich (Profil-Rollen), 📱 Native Android-App via Capacitor | [`docs/TODO-GESAMT.md`](docs/TODO-GESAMT.md), Bereich "App & Plattform" |
@@ -276,6 +276,8 @@ Feste Regeln dabei:
 
 ## Versionsstand
 
-Aktuell `v0.14.0-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Zähl die Version bei größeren Änderungen entsprechend hoch (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).
+Aktuell `v0.15.0-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Zähl die Version bei größeren Änderungen entsprechend hoch (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).
+
+Seit v0.15.0-beta werden auch sehr lange Texte (v.a. EPUB-Kapitel) mit KI-Stimme vorgelesen: ab `MAX_NEURAL_CHARS` (`js/ttsNeural.js`) wird an Satzenden in ~800-Zeichen-Stücke zerlegt (`app.utils.splitTextIntoChunks()`) und nacheinander abgespielt, statt wie vorher auf die Gerätestimme umzuschalten. Der Mitmachmodus (Emoji-Ratepausen) funktioniert jetzt auch mit KI-Stimme, über eine `[pause]`-Sprechanweisung statt vieler Kleinst-Aufrufe (`app.ttsNeural.speakMitmach()`) - nur bei Anbietern mit `supportsTags`, sonst weiterhin Gerätestimme.
 
 Seit v0.14.0-beta gibt es zusätzlich den **SchreibZauber**-Bereich (`js/studio/*`, `js/render/studio*.js`, eigener `app.studio`-Namespace, Object Store `projects` in `js/db.js`): eine Werkstatt, um eigene Kinderbuch-Werke von der KI schreiben zu lassen und als normales Buch "ins Regal zu stellen". Stufe 1 (Fundament: Idee → Bauplan → Geschichte, nur Platzhalter-Bilder, kein einziger Bildaufruf) ist gebaut - Hintergrund, Datenmodell und wo die nächsten Ausbaustufen andocken: `docs/KONZEPT-SchreibZauber.md`.

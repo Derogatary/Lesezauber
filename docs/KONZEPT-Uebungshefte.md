@@ -1,14 +1,16 @@
 # 📝 Konzept: Übungshefte – Stand und Heft-Generator
 
-**Stand:** v0.11.0-beta (Teil 1), noch nicht begonnen (Teil 2) · **Zusammengeführt aus**
-`uebungshefte-konzept.md` und `todo-heft-generator.md`, September 2026.
+**Stand:** v0.11.0-beta (Teil 1), begonnen (Teil 2: der KI-Aufruf steht) · **Zusammengeführt
+aus** `uebungshefte-konzept.md` und `todo-heft-generator.md`, September 2026.
 
 Dieses Dokument hat zwei Teile, die zusammengehören, aber unterschiedlich weit sind:
 
 - **Teil 1 – Was die App heute kann:** der Heft-Modus (auslesen, erklären, kontrollieren)
   ist **gebaut und im Einsatz**.
 - **Teil 2 – Heft-Generator:** Übungsblätter von der KI **erstellen** lassen, statt nur
-  vorhandene auszulesen, ist **Konzept, noch nicht begonnen**.
+  vorhandene auszulesen. Der **KI-Aufruf ist gebaut**
+  (`app.api.generateWorksheets()`), die Auswahl-Ansicht und das Zeichnen der
+  Blätter fehlen noch.
 
 ---
 
@@ -139,8 +141,8 @@ für den Privatgebrauch:
 
 # TEIL 2 – Heft-Generator (Übungsblätter von der KI erstellen lassen)
 
-**Status:** noch nicht begonnen – braucht vorher eine Entscheidung des Betreibers.
-**Voraussetzung:** Teil 1 (der Heft-Modus) läuft bereits.
+**Status:** angefangen – der KI-Aufruf samt Prompt steht (siehe „Der API-Aufruf" unten),
+alles andere fehlt noch. **Voraussetzung:** Teil 1 (der Heft-Modus) läuft bereits.
 
 ## Ziel
 
@@ -165,13 +167,47 @@ fertiges Übungsblatt machen, das man ausdrucken oder direkt am Tablet bearbeite
 - `js/render/heftGenerator.js` – die Auswahl-Ansicht
 - beide in `js/main.js` importieren und in `sw.js` zur `APP_SHELL` hinzufügen
 
-**Neuer API-Aufruf** in `js/api.js`, nach dem Muster von `generateBookQuiz()`
-(reiner Text-Aufruf ohne Bild):
+**Der API-Aufruf (gebaut).** In `js/api.js`, nach dem Muster von `generateBookQuiz()` –
+ein reiner Text-Aufruf ohne Bild, **ein Aufruf für das ganze Heft**:
 
 ```js
-app.api.generateWorksheets(story, learningGoal, count, personaId, ownBibleText)
-// -> [{ heading, taskText, taskExplained, taskType, materials, helpSteps, solution }]
+await app.api.generateWorksheets({
+    story:        'Arche Noah',      // Thema/Geschichte (Pflicht)
+    learningGoal: 'Mengen bis 10',   // Lernziel (Pflicht)
+    count:        6,                 // Anzahl Blätter, 1-12 (Standard 6)
+    personaId:    'standard',        // optional, sonst die eingestellte Persona
+    ownText:      null               // optional: eigener Quelltext, den die KI
+                                     // inhaltlich übernehmen muss
+});
+// -> {
+//   title,     // Titel des Hefts
+//   skipped,   // Anzahl aussortierter, unbrauchbarer Blätter
+//   sheets: [{ heading, taskText, taskExplained, taskType, materials,
+//              body, pageDescription, helpSteps, solution }]
+// }
 ```
+
+Abweichungen vom ursprünglichen Entwurf oben, bewusst so gebaut:
+
+- **Ein Objekt statt fünf Einzelparameter.** Zwei optionale Textfelder
+  hintereinander (`personaId`, `ownBibleText`) verwechselt man sonst zu leicht.
+- **Neues Feld `body`** – die Zeilen, die tatsächlich auf das Blatt gedruckt
+  werden (Reihen von Emojis zum Zählen, Kästchen zum Ankreuzen, Punktlinien zum
+  Nachspuren). Beim Auslesen gibt es dafür kein Gegenstück, weil das Blatt dort
+  ja schon existiert. Genau dieses Feld zeichnet später der Canvas-Schritt.
+- **Die übrigen Feldnamen sind absichtlich identisch** mit dem Auslese-Schema
+  (`buildWorkbookPrompt()`): ein erzeugtes Blatt läuft damit unverändert durch
+  `app.utils.buildPageVariant(sheet, page, 'workbook')`.
+- **Nur Aufgabenarten ohne Bildmaterial.** Der Prompt lässt ausschließlich
+  `zaehlen`, `ankreuzen`, `nachspuren` und `schreiben` zu (Liste
+  `GENERATOR_TASK_TYPES` in `js/api.js`, dort mit je einem Hinweis, wie so ein
+  Blatt aus reinen Zeichen aufgebaut wird). Antwortet das Modell trotzdem mit
+  einer anderen Art, hat es sich ein Blatt mit Bild ausgedacht – so ein Blatt
+  wird verworfen und in `skipped` mitgezählt, statt leer im Heft zu landen.
+  Kommt die Bildgenerierung dazu, wird diese Liste erweitert.
+- **Bibeltreue:** ohne `ownText` weist der Prompt die KI ausdrücklich an, keine
+  Namen, Zahlen, Orte oder Abläufe dazuzuerfinden; mit `ownText` ist dieser Text
+  inhaltlich verbindlich.
 
 **Das Kernproblem: eine Seite braucht ein Bild.** Das gesamte Datenmodell ist
 „eine Seite = ein Bild + Text" (`page.imgUrl`). Ein erzeugtes Blatt hat aber kein Foto.
@@ -189,11 +225,12 @@ kostet damit **einen** Aufruf statt zwölf.
 
 ## Offene Punkte vor dem Start
 
-1. **Wie sehen die Blätter aus?** Ein auf Canvas gezeichnetes Textblatt ist für
-   „Male die Tiere an" nutzlos – da fehlen die Tiere. Realistisch sind zuerst
-   Aufgabentypen, die ohne Bild auskommen: Zählen, Ankreuzen, Nachspuren von
-   Buchstaben, Schwungübungen (als Linien aufs Canvas gezeichnet). Ausmalbilder
-   bräuchten KI-Bildgenerierung – siehe
+1. **Wie sehen die Blätter aus?** *(für den KI-Aufruf entschieden, siehe oben:
+   nur `zaehlen`, `ankreuzen`, `nachspuren`, `schreiben`)* Ein auf Canvas
+   gezeichnetes Textblatt ist für „Male die Tiere an" nutzlos – da fehlen die
+   Tiere. Realistisch sind zuerst Aufgabentypen, die ohne Bild auskommen: Zählen,
+   Ankreuzen, Nachspuren von Buchstaben, Schwungübungen (als Linien aufs Canvas
+   gezeichnet). Ausmalbilder bräuchten KI-Bildgenerierung – siehe
    [`docs/KONZEPT-Comic.md`](KONZEPT-Comic.md) und
    [`docs/KONZEPT-Bildquellen.md`](KONZEPT-Bildquellen.md) für den aktuellen Stand
    dazu, wäre der nächste Schritt danach.
@@ -220,7 +257,7 @@ kostet damit **einen** Aufruf statt zwölf.
 
 | Schritt | Umfang |
 |---|---|
-| API-Aufruf + Prompt | klein, Muster vorhanden (`generateBookQuiz`) |
+| ~~API-Aufruf + Prompt~~ | **erledigt** – `app.api.generateWorksheets()` |
 | Auswahl-Ansicht | mittel, neue Ansicht inkl. Router-Eintrag in `js/nav.js` |
 | Blätter auf Canvas zeichnen | mittel, Vorlage in `epubImport.js` vorhanden |
 | Eigene Druckansicht (Punkt 3) | mittel, optional |
@@ -228,3 +265,9 @@ kostet damit **einen** Aufruf statt zwölf.
 
 **Empfohlene Reihenfolge:** erst Aufgabentypen ohne Bild (Punkt 1), damit der Ablauf
 komplett steht und benutzt werden kann. Bildgenerierung danach als eigener Schritt.
+
+**Nächster Schritt:** Der KI-Aufruf lässt sich heute schon in der Browser-Konsole
+ausprobieren (`await app.api.generateWorksheets({ story: '…', learningGoal: '…' })`).
+Was fehlt, damit daraus ein benutzbares Heft wird, ist das Zeichnen der Blätter
+(`body` → Canvas, Vorlage `renderTextAsImageCanvas()` in `js/actions/epubImport.js`)
+und die Auswahl-Ansicht davor.
