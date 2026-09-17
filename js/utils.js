@@ -112,8 +112,12 @@ Object.assign(app.utils, {
         return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     },
 
+    // FIX: nutzt wie resolveCreationProfileId() nie "__all__" als Schlüssel -
+    // sonst würde die Serie beim Umschalten auf ein echtes Profil unter
+    // einem anderen Speicherplatz "verschwinden" (kein Absturz, nur falsch
+    // zugeordnet).
     getStreakInfo() {
-        const key = `lz_streak_${app.state.currentProfileId}`;
+        const key = `lz_streak_${this.resolveCreationProfileId()}`;
         try {
             return JSON.parse(localStorage.getItem(key) || 'null') || { lastReadDate: null, currentStreak: 0 };
         } catch (e) {
@@ -124,7 +128,7 @@ Object.assign(app.utils, {
     // Wird bei jedem Öffnen einer Lese-Seite aufgerufen. Zählt nur einmal
     // pro Kalendertag, egal wie viele Seiten an dem Tag gelesen werden.
     recordReadToday() {
-        const key = `lz_streak_${app.state.currentProfileId}`;
+        const key = `lz_streak_${this.resolveCreationProfileId()}`;
         const today = new Date();
         const todayStr = this._dateStr(today);
 
