@@ -49,10 +49,10 @@ Quelle am Ende benutzt wird. Daraus wird ein Mini-Workflow:
 3. Bild herunterladen
 4. In der App auf „🖼️ Bild einsetzen" tippen und die Datei wählen
 
-Der App-seitige Aufwand ist minimal – der Upload-Weg **ist bereits implementiert**
-(`providers.upload` in `js/studio/imageSource.js`), es fehlt nur der Kopier-Knopf.
-Kosten: 0 €. Nachteil: vier Handgriffe pro Bild, also ~50 Handgriffe pro Bilderbuch.
-Für ein Buch pro Monat völlig in Ordnung, für Serienproduktion nicht.
+Beide Enden sind jetzt fertig: der Kopier-Teil (`app.studio.imageSource.copyPrompt()`)
+und der Rückweg (`providers.upload` in `js/studio/imageSource.js`). Kosten: 0 €. Nachteil:
+vier Handgriffe pro Bild, also ~50 Handgriffe pro Bilderbuch. Für ein Buch pro Monat völlig
+in Ordnung, für Serienproduktion nicht.
 
 ### 1.2 Pollinations.ai – attraktiv, aber nicht mehr das, was im Netz steht
 
@@ -135,7 +135,7 @@ sind das Fundament, auf dem die Werkstatt aufsetzt, und laufen einzeln testbar.
 |---|---|
 | `imageFormats.js` | Der **Formatkatalog**: acht Bildformate mit fester Zielgröße, Seitenverhältnis, Textzone und Zweck. Der einzige Ort, an dem Maße stehen. |
 | `placeholder.js` | Erzeugt aus einem Format ein **Platzhalter-Bild in exakt der Zielgröße** – mit Schraffur, Maßangabe, Bildidee und eingezeichneter Textzone. |
-| `imageSource.js` | Die **Austausch-Schicht**: einheitlicher Prompt-Bauplan plus Quellen `placeholder` und `upload`. Hier docken später `gemini` und `pollinations` an. |
+| `imageSource.js` | Die **Austausch-Schicht**: einheitlicher Prompt-Bauplan plus Quellen `placeholder` und `upload`, dazu `copyPrompt()` für den Prompt-Export-Weg. Hier docken später `gemini` und `pollinations` an. |
 
 **Der Formatkatalog:**
 
@@ -193,10 +193,19 @@ Seitenverhältnis, gleiche Textzone.
 ## 5. Offene Punkte
 
 1. **Gemini-Bild-API abrechnungsfähig?** Der einzige echte Blocker für den Vollautomatik-Weg.
+   Braucht eine Antwort vom Betreiber, siehe `KONZEPT-SchreibZauber.md` TEIL G.
 2. **Pollinations im Browser testen** – funktioniert der schlüssellose Aufruf noch, und wenn
-   ja, in welchem Umfang? Hier nicht prüfbar gewesen.
-3. **Kopier-Knopf für den Prompt-Export** – kleiner Baustein, macht den kostenlosen Weg
-   sofort benutzbar. Sollte in Ausbaustufe 1 mit rein.
+   ja, in welchem Umfang? **Weiterhin nicht prüfbar** – der Netzwerk-Proxy dieser
+   Entwicklungsumgebung blockiert `image.pollinations.ai`/`gen.pollinations.ai` durchgehend
+   (403, zweimal bestätigt: per `curl` und per echtem Headless-Chrome-Aufruf). Das ist eine
+   Beschränkung dieser Umgebung, keine Aussage über den Dienst selbst – der Test muss auf
+   einem Gerät ohne diesen Proxy passieren (z.B. im normalen Familien-Browser).
+3. ~~**Kopier-Knopf für den Prompt-Export**~~ **✅ erledigt.** `app.studio.imageSource
+   .copyPrompt(prompt)` kopiert über die Clipboard-API mit `execCommand`-Rückfall für
+   Kontexte ohne `navigator.clipboard` (z.B. reines `http://`). Fehler werden wie überall
+   in der App per `console.error()` + Toast gemeldet, nie stumm verschluckt. Live zu sehen
+   in [`docs/platzhalter-vorschau.html`](platzhalter-vorschau.html) – dort hat jede Karte
+   jetzt einen „📋 Prompt kopieren"-Knopf.
 4. **Clipart-Quelle fürs Arbeitsheft** – lohnt eine eigene kleine Recherche, sobald
    Ausbaustufe 4 drankommt.
 

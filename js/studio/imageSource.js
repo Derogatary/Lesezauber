@@ -75,9 +75,49 @@ const providers = {
     //    Bewertung der Optionen: docs/KONZEPT-Bildquellen.md
 };
 
+// NEU: Kopier-Knopf für den kostenlosen "Prompt-Export"-Weg (siehe
+// docs/KONZEPT-Bildquellen.md, Abschnitt 1.1). Solange keine Bild-API
+// angebunden ist, ist das der einzige Weg, aus einem Storyboard-Eintrag
+// ein echtes KI-Bild zu bekommen: Prompt kopieren, im Google AI Studio
+// oder der Gemini-App einfügen, Ergebnis über providers.upload zurück in
+// die App holen. Beide Enden dieses Workflows existieren jetzt - hier der
+// Kopier-Teil, providers.upload oben der Rückweg.
+async function copyPrompt(prompt) {
+    if (!prompt) {
+        app.ui?.toast?.('Kein Prompt zum Kopieren vorhanden.', '⚠️');
+        return false;
+    }
+    try {
+        // Clipboard API braucht einen sicheren Kontext (https/localhost) -
+        // auf file:// oder http:// gibt es navigator.clipboard nicht, daher
+        // der Rückfall auf execCommand statt eines stillen Fehlers.
+        if (navigator.clipboard?.writeText) {
+            await navigator.clipboard.writeText(prompt);
+        } else {
+            const textarea = document.createElement('textarea');
+            textarea.value = prompt;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.focus();
+            textarea.select();
+            const ok = document.execCommand('copy');
+            textarea.remove();
+            if (!ok) throw new Error('execCommand copy fehlgeschlagen');
+        }
+        app.ui?.toast?.('Prompt kopiert - jetzt im AI Studio oder der Gemini-App einfügen.', '📋');
+        return true;
+    } catch (e) {
+        console.error('Prompt konnte nicht kopiert werden:', e);
+        app.ui?.toast?.('Kopieren nicht möglich - bitte Text von Hand markieren.', '⚠️');
+        return false;
+    }
+}
+
 app.studio = app.studio || {};
 app.studio.imageSource = {
     buildPrompt,
+    copyPrompt,
 
     // Welche Quellen stehen gerade zur Verfügung?
     available() {

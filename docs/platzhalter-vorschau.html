@@ -20,6 +20,10 @@
     details { margin-top: .6rem; font-size: .78rem; }
     pre { white-space: pre-wrap; word-break: break-word; background: rgba(127,127,127,.12); padding: .5rem; border-radius: .35rem; margin: .4rem 0 0; }
     #err { color: #b91c1c; font-weight: 600; }
+    .copyBtn { margin-top: .6rem; font: inherit; font-size: .78rem; font-weight: 600; padding: .4rem .7rem; border-radius: .4rem; border: 1px solid #c7d2fe; background: #eef2ff; color: #3730a3; cursor: pointer; }
+    .copyBtn:hover { background: #e0e7ff; }
+    .copyBtn.ok { background: #dcfce7; border-color: #86efac; color: #166534; }
+    @media (prefers-color-scheme: dark) { .copyBtn { background: #312e81; border-color: #4338ca; color: #e0e7ff; } .copyBtn.ok { background: #14532d; border-color: #22c55e; color: #dcfce7; } }
 </style>
 </head>
 <body>
@@ -28,6 +32,9 @@
         Zeigt jedes Bildformat aus <code>js/studio/imageFormats.js</code> in seiner echten Zielgröße.
         Genau diese Maße hat später auch das fertige Bild – deshalb springt beim Austausch nichts.
         Aufklappen zeigt den Prompt, der beim Platzhalter schon mitgespeichert wird.
+        „📋 Prompt kopieren" zeigt den kostenlosen Weg aus <a href="KONZEPT-Bildquellen.md">KONZEPT-Bildquellen.md</a>,
+        Abschnitt 1.1: Prompt hier kopieren, im Google AI Studio oder der Gemini-App einfügen,
+        das Ergebnis später über den Upload-Weg (<code>providers.upload</code>) zurück in die App holen.
     </p>
     <p id="err"></p>
     <div class="grid" id="grid"></div>
@@ -92,6 +99,24 @@
             pre.textContent = prompt;
             det.append(sum, pre);
             card.appendChild(det);
+
+            // NEU: Kopier-Knopf - ruft dieselbe Funktion auf, die später auch
+            // die echte Werkstatt-Ansicht benutzen wird (app.studio.imageSource
+            // .copyPrompt). Diese Vorschauseite bindet js/ui.js nicht ein
+            // (kein Toast-Element im DOM), daher die eigene, sichtbare
+            // Rückmeldung direkt am Knopf statt über app.ui.toast().
+            const copyBtn = document.createElement('button');
+            copyBtn.type = 'button';
+            copyBtn.className = 'copyBtn';
+            copyBtn.textContent = '📋 Prompt kopieren';
+            copyBtn.addEventListener('click', async () => {
+                const original = copyBtn.textContent;
+                const ok = await app.studio.imageSource.copyPrompt(prompt);
+                copyBtn.textContent = ok ? '✅ Kopiert' : '⚠️ Kopieren fehlgeschlagen';
+                copyBtn.classList.toggle('ok', ok);
+                setTimeout(() => { copyBtn.textContent = original; copyBtn.classList.remove('ok'); }, 2000);
+            });
+            card.appendChild(copyBtn);
 
             grid.appendChild(card);
         });
