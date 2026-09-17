@@ -36,9 +36,18 @@ Object.assign(app.settings, {
             return [];
         }
     })(),
+    // NEU: dasselbe für Speechify (5. Anbieter, siehe ttsProviders.js)
+    speechifyVoices: (() => {
+        try {
+            return JSON.parse(localStorage.getItem('lz_speechify_voices') || '[]');
+        } catch (e) {
+            return [];
+        }
+    })(),
     googleTtsKey: localStorage.getItem('lz_google_tts_key') || '',
     elevenLabsKey: localStorage.getItem('lz_eleven_key') || '',
     openAiKey: localStorage.getItem('lz_openai_key') || '',
+    speechifyKey: localStorage.getItem('lz_speechify_key') || '',
     // Erzeugte Sprachaufnahmen behalten: dieselbe Seite ein zweites Mal
     // vorlesen kostet dann kein Kontingent mehr. Standard: an.
     ttsCacheEnabled: localStorage.getItem('lz_tts_cache') !== '0',

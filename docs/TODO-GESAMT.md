@@ -47,13 +47,13 @@ hat, fängt hier an - nichts davon fasst das Datenmodell an.
 | 1 | Vorlese-Aufbereitung des erkannten Texts (Trennstriche, Abkürzungen) | Vorlesen | **S** |
 | 2 | Kino-Modus vollenden: Ken-Burns-Zoom + Kreuzblende | Video | **S** |
 | 3 | Stimmen-Speicher auf 300 MB erhöhen (eine Konstante) | Vorlesen | **S** |
-| 4 | Speechify als 5. Anbieter ergänzen (günstiger als ElevenLabs, exakte Zeitstempel) | Vorlesen | **S** |
-| 5 | Mehr Stimmen freischalten (je eine Zeile in `ttsProviders.js`) | Vorlesen | **S** |
+| ~~4~~ | ~~Speechify als 5. Anbieter ergänzen (günstiger als ElevenLabs, exakte Zeitstempel)~~ **erledigt (Sept. 2026)** | Vorlesen | **S** |
+| ~~5~~ | ~~Mehr Stimmen freischalten (je eine Zeile in `ttsProviders.js`)~~ **erledigt (Sept. 2026)** | Vorlesen | **S** |
 | 6 | „Buch hörfertig machen" - alle Seiten vorab in den Stimmen-Speicher | Vorlesen | **S** |
 | 7 | Stimme pro Profil statt global | Vorlesen | **S** |
 | 8 | Kosten-Anzeige (lokal gezählte Zeichen pro Monat) | Vorlesen | **S** |
 | 9 | Zweiter Comic-Testlauf mit korrigiertem Prompt | Eigene Werke | **S** |
-| 10 | Tarif-Lock: Warnung vor Wechsel in teurere Preisstufe | Vorlesen | **S** |
+| ~~10~~ | ~~Tarif-Lock: Warnung vor Wechsel in teurere Preisstufe~~ **erledigt (Sept. 2026)** | Vorlesen | **S** |
 
 **Nummer 1 ist der beste Einstieg:** Sie verbessert *jede* Stimme, Geräte- wie KI-Stimme,
 lässt die Anzeige unangetastet und kann nichts kaputt machen.
@@ -67,13 +67,13 @@ Details: [`docs/ROADMAP.md`](ROADMAP.md)
 | Punkt | Aufwand | Anmerkung |
 |---|---|---|
 | **Stimmen-Speicher auf 300 MB erhöhen** | **S** | ✅ entschieden - eine Konstante in `js/db.js` (`TTS_CACHE_MAX_BYTES`). Eviction-Logik existiert bereits |
-| **Speechify als 5. Anbieter ergänzen** | **S** | ✅ entschieden - $6-10/Mio. Zeichen statt ElevenLabs' ~$100/Mio., ebenfalls exakte Wort-Zeitstempel, Deutsch unterstützt. Neuer Eintrag in `js/ttsProviders.js` |
+| ~~**Speechify als 5. Anbieter ergänzen**~~ | **S** | ✅ **erledigt (Sept. 2026)** - `speechifySynthesize`/`fetchSpeechifyVoices` in `js/ttsProviders.js`, Modell `simba-3.2` |
 | **Vorlese-Aufbereitung des erkannten Texts** | **S** | Eigene Funktion neben `app.utils.stripEmojiForSpeech()`; Trennstrich + Zeilenumbruch zusammenziehen, Abkürzungen ausschreiben. Nur fürs Ohr, Anzeige bleibt |
-| **Mehr Stimmen freischalten** | **S** | In `js/ttsProviders.js` ist nur eine Vorauswahl eingetragen (Gemini hat 30, OpenAI 11+) |
+| ~~**Mehr Stimmen freischalten**~~ | **S** | ✅ **erledigt (Sept. 2026)** - `js/ttsProviders.js` hat jetzt alle 30 Gemini- und alle 13 OpenAI-Stimmen |
 | **„Buch hörfertig machen"** | **S** | Knopf, der alle Seiten vorab in den `ttsCache` legt - danach ohne Wartezeit und offline |
 | **Stimme pro Profil** | **S** | `app.settings.ttsVoices` müsste pro Profil statt global gespeichert werden |
 | **Kosten-Anzeige** | **S** | Rein lokal geschätzt mitzählen, wie viele Zeichen im Monat an den Anbieter gingen |
-| **Tarif-Lock** | **S** | Neu, aus der SchreibZauber-Budget-Diskussion. `costTier`-Flag je Stimme/Modell, Bestätigungsdialog vor einem Wechsel auf eine teurere Option - schützt vor Versehen, nicht vor Absicht. Betrag bleibt beim Anbieter gedeckelt, nicht in der App |
+| ~~**Tarif-Lock**~~ | **S** | ✅ **erledigt (Sept. 2026)** - `costTier`-Feld je Anbieter in `js/ttsProviders.js`, Bestätigungsdialog in `app.settingsConfig.changeTtsProvider()` vor einem Wechsel auf eine teurere Stufe. Betrag bleibt beim Anbieter gedeckelt, nicht in der App |
 | **Mitmachmodus mit KI-Stimme** | **M** | Läuft heute bewusst immer über die Gerätestimme. Über Pausen-Tags lösbar (Gemini `[pause]`, Chirp 3 über `markup`) - eine Aufnahme, keine Mehrkosten. Text stückeln wäre die teure Alternative |
 | **Lange Texte stückeln** | **M** | Über `MAX_NEURAL_CHARS = 4000` (praktisch nur EPUB-Kapitel) fällt es auf die Gerätestimme zurück. An Satzenden in ~800-Zeichen-Stücke zerlegen, Wort-Offsets verschieben |
 | **Emotionen / Audio-Tags** | **M** | ✅ entschieden, Weg klar: `speechText`-Feld immer mitgenerieren (kein Zusatz-Call), `supportsTags`-Flag je Anbieter. Bei ElevenLabs Modell auf `eleven_v3` umstellen - **kostet seit GA nicht mehr als v2** |
@@ -202,7 +202,7 @@ Alle sechs sind inzwischen entschieden (Sept. 2026) - Details in `KONZEPT-Video.
 | ~~1~~ | ~~Video-Export: pro Seite oder pro Buch?~~ | **beides, Schwerpunkt pro Buch** (siehe Video-Bereich) |
 | ~~2~~ | ~~ElevenLabs v3 (bezahlt) für Emotions-Tags?~~ | **kein Bezahltarif nötig** - v3 ist seit GA (März 2026) zum Preis von v2. Tags automatisch je Anbieter (`supportsTags`) |
 | ~~3~~ | ~~Reicht der Stimmen-Speicher mit 100 MB?~~ | **auf 300 MB erhöht**, eine Konstante in `js/db.js` |
-| ~~4~~ | ~~Welcher Anbieter wird der Familien-Standard?~~ | **kein fester Standard** - bleibt wählbar, Default Gerätestimme. Speechify als 5. Anbieter vorgemerkt (günstiger als ElevenLabs, ebenfalls exakte Zeitstempel) |
+| ~~4~~ | ~~Welcher Anbieter wird der Familien-Standard?~~ | **kein fester Standard** - bleibt wählbar, Default Gerätestimme. Speechify als 5. Anbieter eingebaut (günstiger als ElevenLabs, ebenfalls exakte Zeitstempel) |
 | ~~5~~ | ~~SchreibZauber: eigener Tab oder eigene App?~~ | **beides, als Stufen** - Stufe 1-5 als Tab, Stufe 6 optional zweites Icon (Vorschlag: magischer Stift), gleiche Code-Basis |
 | ~~6~~ | ~~Weitergabe erzeugter Hefte/Werke~~ | **ja, auf Veröffentlichung auslegen** (z.B. Amazon KDP) - verschärft Stufe 1 (Prompt-Leitplanken) und Stufe 3 (druckfertiger Export) von Anfang an |
 
