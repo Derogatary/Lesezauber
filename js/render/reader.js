@@ -106,7 +106,10 @@ Object.assign(app.render, {
     },
 
     // NEU: aktualisiert die Vollbild-Vorlese-Ansicht (Bild, Seitenzähler,
-    // Play/Pause-Symbol)
+    // Play/Pause-Symbol, Text). Der Text wird hier nur als schlichter Text
+    // gesetzt - die Wort-Hervorhebung übernimmt app.tts.speak() über das
+    // gleiche "focusText"-Element, sobald vorgelesen wird (siehe
+    // app.tts._currentTextElementId()).
     focusMode() {
         const book = app.library[app.state.currentBookId];
         const page = book?.pages[app.state.currentPageIdx];
@@ -120,6 +123,14 @@ Object.assign(app.render, {
 
         const btn = document.getElementById('focusPlayBtn');
         if (btn) btn.innerText = app.state.autoReadActive ? '⏸️' : '▶️';
+
+        const textEl = document.getElementById('focusText');
+        if (textEl) {
+            const variant = app.utils.resolvePageVariant(page, app.state.readingPersonaId);
+            textEl.innerText = variant?.text || (page.status === 'pending' || page.status === 'error'
+                ? 'Diese Seite wurde noch nicht analysiert.'
+                : 'Wird vorbereitet...');
+        }
     },
 
     // NEU: rendert die gecachten Verständnisfragen zum gesamten Buch

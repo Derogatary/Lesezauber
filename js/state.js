@@ -9,7 +9,10 @@ Object.assign(app.settings, {
     // NEU: einstellbare Vorlesegeschwindigkeit (0.5 = langsam, 1.5 = schnell)
     speechRate: parseFloat(localStorage.getItem('lz_speech_rate') || '0.9'),
     // NEU: einstellbare Farbe fuer die Wort-Hervorhebung beim Vorlesen
-    highlightColor: localStorage.getItem('lz_highlight_color') || '#fde047'
+    highlightColor: localStorage.getItem('lz_highlight_color') || '#fde047',
+    // NEU: zweiseitiges Layout (Bild links, Text rechts) - nur Option,
+    // wirkt sich per CSS ohnehin erst ab Tablet-Breite aus (siehe style.css)
+    twoPageLayout: localStorage.getItem('lz_two_page_layout') === '1'
 });
 
 Object.assign(app.state, {
@@ -31,5 +34,9 @@ Object.assign(app.state, {
     vocabDeck: [],
     vocabIndex: 0,
     // NEU: kombinierter Modus - beim Auto-Vorlesen auch Raetselfragen stellen
-    autoReadWithQuiz: false
+    autoReadWithQuiz: false,
+    // NEU: Mitmachmodus - liest den Erstleser-Text statt des Originaltexts
+    // vor und pausiert bei jedem durch ein Emoji ersetzten Wort, damit das
+    // Kind es selbst raten/mitsprechen kann
+    mitmachModus: false
 });

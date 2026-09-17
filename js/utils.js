@@ -175,6 +175,34 @@ Object.assign(app.utils, {
         return { clean, html };
     },
 
+    // NEU: teilt Text in Text-/Emoji-Häppchen auf - Basis für den
+    // Mitmachmodus, der vor jedem emoji-ersetzten Wort eine Sprechpause
+    // zum Mitraten einlegt (siehe app.tts.speakMitmach). Gleiche
+    // Emoji-Zeichenbereiche wie stripEmojiForSpeech, damit beide Stellen
+    // konsistent erkennen, was ein "Emoji-Wort" ist.
+    splitBySpeechEmoji(text) {
+        if (!text) return [];
+        const EMOJI_RE = /[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{1F1E6}-\u{1F1FF}\u{2B00}-\u{2BFF}]/gu;
+        const parts = [];
+        let lastIndex = 0;
+        let match;
+        while ((match = EMOJI_RE.exec(text)) !== null) {
+            if (match.index > lastIndex) parts.push({ type: 'text', value: text.slice(lastIndex, match.index) });
+            parts.push({ type: 'emoji', value: match[0] });
+            lastIndex = EMOJI_RE.lastIndex;
+        }
+        if (lastIndex < text.length) parts.push({ type: 'text', value: text.slice(lastIndex) });
+        return parts;
+    },
+
+    // NEU: deutsches Ordnungswort für die Inhaltsverzeichnis-Ansage
+    // ("das erste Kapitel ist...", "das zweite..."). Reicht für die in
+    // Kinderbüchern üblichen Kapitelzahlen, danach numerischer Fallback.
+    germanOrdinal(n) {
+        const words = ['nullte', 'erste', 'zweite', 'dritte', 'vierte', 'fünfte', 'sechste', 'siebte', 'achte', 'neunte', 'zehnte', 'elfte', 'zwölfte', 'dreizehnte', 'vierzehnte', 'fünfzehnte', 'sechzehnte', 'siebzehnte', 'achtzehnte', 'neunzehnte', 'zwanzigste'];
+        return words[n] || `${n}.`;
+    },
+
     sanitize(str) {
         if (!str) return '';
         const temp = document.createElement('div');

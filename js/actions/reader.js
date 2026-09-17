@@ -84,5 +84,64 @@ Object.assign(app.actions, {
         app.dbOps.saveBook(book);
         app.render.book(book.id);
         app.ui.toast('Cover festgelegt', '⭐');
+    },
+
+    // NEU: eine Seite als Titelseite/Rückseite-Klappentext/Inhaltsverzeichnis/
+    // Über-den-Autor markieren (siehe "Seiten-Rollen"-Auswahl in der
+    // Buchansicht) - unabhängig von der Scan-Reihenfolge, erleichtert der
+    // KI die richtigen Metadaten-Felder zu füllen und
+    // app.tts._buildMetadataAnnouncements() die passenden Ansagen.
+    // role: 'titlePageId' | 'backCoverPageId' | 'tocPageId' | 'authorBioPageId'.
+    // pageIdValue kommt als String aus dem <select> - Seiten-IDs sind
+    // Zahlen, deshalb über die Seite selbst statt den rohen String speichern.
+    setPageRole(role, pageIdValue) {
+        const book = app.library[app.state.currentBookId];
+        if (!book) return;
+        const page = book.pages.find(p => String(p.id) === pageIdValue);
+        book[role] = page ? page.id : null;
+        app.dbOps.saveBook(book);
+
+        const labels = { titlePageId: 'Titelseite', backCoverPageId: 'Rückseite/Klappentext', tocPageId: 'Inhaltsverzeichnis', authorBioPageId: 'Über den Autor' };
+        app.ui.toast(page ? `${labels[role]} festgelegt` : `${labels[role]}-Markierung entfernt`, '🏷️');
+
+        // FIX: nur Titelseite/Inhaltsverzeichnis beeinflussen tatsächlich,
+        // WELCHE Felder die KI extrahiert (siehe js/api.js) - Rückseite und
+        // Über-den-Autor lösen nur eine Vorlese-Ansage aus, brauchen also
+        // keine erneute (kostenpflichtige) Analyse.
+        const needsReanalysis = role === 'titlePageId' || role === 'tocPageId';
+        if (page && page.status === 'done' && needsReanalysis) {
+            app.actions.retryPage(book.pages.indexOf(page));
+        } else {
+            app.render.book(book.id);
+        }
+    },
+
+    // NEU: steuert, ob die "Über den Autor"-Seite beim automatischen
+    // Vorlesen mit angesagt/vorgelesen wird - manchen Familien ist die
+    // Autor-Biografie für Kinder zu lang/uninteressant.
+    toggleReadAuthorBioAloud(enabled) {
+        const book = app.library[app.state.currentBookId];
+        if (!book) return;
+        book.readAuthorBioAloud = enabled;
+        app.dbOps.saveBook(book);
+        app.ui.toast(enabled ? 'Wird beim Vorlesen mit angesagt' : 'Wird beim automatischen Vorlesen übersprungen', '🔊');
+    },
+
+    // NEU: eine Seite komplett von Analyse UND automatischem Vorlesen
+    // ausschließen - für Leerseiten, Impressum/Vorsatzseiten etc. ohne
+    // Story-Inhalt, die weder API-Kosten noch eine Vorlese-Pause wert sind.
+    // Manuelles Ansehen/Durchblättern der Seite bleibt trotzdem möglich.
+    togglePageExcluded(pageId) {
+        const book = app.library[app.state.currentBookId];
+        if (!book) return;
+        const page = book.pages.find(p => p.id === pageId);
+        if (!page) return;
+        page.excluded = !page.excluded;
+        app.dbOps.saveBook(book);
+        app.render.book(book.id);
+        app.ui.toast(
+            page.excluded ? 'Seite ausgeschlossen (keine Analyse, kein Vorlesen)' : 'Seite wieder eingeschlossen',
+            page.excluded ? '🚫' : '✅'
+        );
     }
 });

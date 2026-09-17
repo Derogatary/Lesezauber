@@ -32,6 +32,10 @@ Object.assign(app.render, {
         // NEU: Hintergrund-Vorbereitung - Status + Fortschritt anzeigen
         const bgToggle = document.getElementById('toggleBackgroundPregen');
         if (bgToggle) bgToggle.checked = app.settings.backgroundPregenEnabled;
+
+        // NEU: zweiseitiges Layout - Schalterstellung anzeigen
+        const twoPageToggle = document.getElementById('toggleTwoPageLayout');
+        if (twoPageToggle) twoPageToggle.checked = app.settings.twoPageLayout;
         const bgStatus = document.getElementById('pregenStatus');
         if (bgStatus) {
             const missing = app.utils.countMissingVariants();

@@ -8,6 +8,16 @@ Object.assign(app.settingsConfig, {
         app.ui.toast(enabled ? 'Hintergrund-Vorbereitung aktiviert' : 'Hintergrund-Vorbereitung deaktiviert', enabled ? '🔄' : '⏸️');
     },
 
+    // NEU: zweiseitiges Layout (Bild links, Text rechts) ein-/ausschalten -
+    // wirkt sich per CSS-Media-Query ohnehin erst ab Tablet-Breite aus,
+    // auf dem Handy bleibt es immer wie gewohnt untereinander.
+    toggleTwoPageLayout(enabled) {
+        app.settings.twoPageLayout = enabled;
+        localStorage.setItem('lz_two_page_layout', enabled ? '1' : '0');
+        document.getElementById('viewReader')?.classList.toggle('two-page-layout', enabled);
+        app.ui.toast(enabled ? 'Zweiseitiges Layout aktiviert' : 'Zweiseitiges Layout deaktiviert', '📖');
+    },
+
     save() {
         const key = document.getElementById('inputApiKey').value.trim();
         const mistralKey = document.getElementById('inputMistralKey').value.trim();

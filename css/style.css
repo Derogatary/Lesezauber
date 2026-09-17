@@ -110,6 +110,43 @@
 }
 .view-transition { transition: opacity 0.25s ease-in-out, transform 0.25s ease-in-out; }
 
+/* NEU: Mitmachmodus - Emoji pulsiert während der Sprechpause, damit klar
+   ist, dass jetzt das Kind an der Reihe ist zu raten/mitzusprechen. */
+.mitmach-emoji.mitmach-active {
+    display: inline-block;
+    animation: mitmachPulse 0.7s ease-in-out infinite;
+}
+@keyframes mitmachPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.35); }
+}
+
+/* NEU: Zweiseitiges Layout (Option, siehe Einstellungen) - Bild links,
+   Text rechts wie ein aufgeschlagenes Buch. Greift bewusst erst ab
+   Tablet-Breite (768px, entspricht Tailwinds "md"-Breakpoint) - auf dem
+   Handy ist nebeneinander schlicht zu schmal, da bleibt es untereinander. */
+@media (min-width: 768px) {
+    #viewReader.two-page-layout {
+        max-width: 64rem;
+    }
+    #viewReader.two-page-layout #readerLayoutGrid {
+        display: flex;
+        align-items: flex-start;
+        gap: 1.5rem;
+    }
+    #viewReader.two-page-layout #readerImageContainer {
+        flex: 0 0 45%;
+        max-height: none;
+        margin-bottom: 0;
+        position: sticky;
+        top: 5rem;
+    }
+    #viewReader.two-page-layout #readerTabArea {
+        flex: 1;
+        min-width: 0;
+    }
+}
+
 /* Custom scrollbar for clean mobile experience */
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
@@ -128,4 +165,5 @@
 @media (prefers-reduced-motion: reduce) {
     .magic-glow { animation: none; box-shadow: 0 0 15px rgba(99, 102, 241, 0.4); }
     .animate-pulse { animation: none; }
+    .mitmach-emoji.mitmach-active { animation: none; }
 }

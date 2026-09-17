@@ -170,6 +170,14 @@ Object.assign(app.actions, {
         const page = book.pages[pageIdx];
         if (!page || page.status === 'processing') return;
 
+        // NEU: ausgeschlossene Seiten (siehe app.actions.togglePageExcluded)
+        // werden nie analysiert - spart API-Kosten für Leerseiten/Impressum
+        // etc. ohne Story-Inhalt.
+        if (page.excluded) {
+            if (!isBatch) app.ui.toast('Diese Seite ist ausgeschlossen und wird nicht analysiert.', '🚫');
+            return;
+        }
+
         page.status = 'processing';
         if (!isBatch) {
             app.state.apiBusy = true;
@@ -178,8 +186,14 @@ Object.assign(app.actions, {
 
         try {
             const b64 = page.imgUrl.split(',')[1];
-            const isCover = (pageIdx === 0 && (!book.title || book.title === 'Neues Buch'));
-            const result = await app.api.analyze(b64, isCover, personaId, page.pdfSourceText || null);
+            // NEU: explizite Titelseiten-Markierung (siehe app.actions.setPageRole)
+            // hat Vorrang vor der bisherigen Standard-Annahme "Seite 1 ist die
+            // Titelseite" - ohne Markierung bleibt das alte Verhalten unverändert.
+            const isCover = book.titlePageId
+                ? page.id === book.titlePageId
+                : (pageIdx === 0 && (!book.title || book.title === 'Neues Buch'));
+            const forceToc = !!book.tocPageId && page.id === book.tocPageId;
+            const result = await app.api.analyze(b64, isCover, personaId, page.pdfSourceText || null, forceToc);
 
             // NEU: Ergebnis landet unter der jeweiligen Persona, statt die
             // alten Felder zu überschreiben - so bleiben bereits erzeugte
@@ -206,7 +220,16 @@ Object.assign(app.actions, {
             if (isCover && result.title && result.title !== 'null') {
                 book.title = result.title;
                 book.author = result.author && result.author !== 'null' ? result.author : 'Unbekannt';
+                if (result.publisher && result.publisher !== 'null') book.publisher = result.publisher;
+                if (result.series && result.series !== 'null') book.series = result.series;
             }
+
+            // NEU: Kapitelüberschrift bzw. Inhaltsverzeichnis für die
+            // Metadaten-Ansage beim automatischen Vorlesen (siehe
+            // app.tts._buildMetadataAnnouncements) - persona-unabhängig,
+            // deshalb direkt auf der Seite statt in page.variants.
+            page.chapterTitle = (result.chapterTitle && result.chapterTitle !== 'null') ? result.chapterTitle : null;
+            page.tocEntries = Array.isArray(result.tocEntries) && result.tocEntries.length > 0 ? result.tocEntries : null;
         } catch (e) {
             page.status = 'error';
             app.ui.toast(e.message, '❌');
@@ -238,6 +261,9 @@ Object.assign(app.actions, {
         const targetPersona = app.state.readingPersonaId || app.settings.persona;
         const pendingIndices = [];
         book.pages.forEach((p, i) => {
+            // NEU: ausgeschlossene Seiten (siehe app.actions.togglePageExcluded)
+            // nie automatisch mit-analysieren.
+            if (p.excluded) return;
             if (p.status === 'pending' || p.status === 'error') {
                 pendingIndices.push(i);
             } else if (p.status === 'done' && !app.utils.resolvePageVariant(p, targetPersona)) {
