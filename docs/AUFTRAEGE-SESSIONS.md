@@ -18,52 +18,87 @@ diese Datei ist nur die Aufteilung in Arbeitspakete.
 
 ## Stand (Oktober 2026)
 
-Die erste Welle ist gebaut. Was wo steht:
+**Welle 0 ist gebaut und zusammengeführt.** Der vereinte Stand liegt auf
+`claude/merge-branches-main-gzs6qt`: die fünf Einzelbranches, Auftrag 7 (Hörbuch-Export,
+kam über `claude/tasks-7-12-qli5ns`), der Integrations-Pass und v0.13.0-beta.
 
-| # | Auftrag | Stand | Branch |
-|---|---|---|---|
-| 1 | Vorlese-Aufbereitung | ✅ gebaut, im Merge | `claude/tts-textaufbereitung-k8u7ny` |
-| 2 | Stimmen-Speicher + „Buch hörfertig machen" | ✅ gebaut, im Merge | `claude/tts-cache-und-hoerfertig-mz2wh4` |
-| 3 | TTS-Anbieter-Paket | ✅ gebaut, im Merge | `claude/tts-anbieter-paket-jv1fa2` |
-| 4 | Stimme pro Profil + Kinder-/Elternbereich | ⚠️ **noch offen - kein Branch vorhanden** | - |
-| 5 | Kosten-Anzeige | ✅ gebaut, im Merge | `claude/kosten-anzeige-wocbcc` |
-| 6 | Kino-Modus vollenden | ✅ gebaut, im Merge | `claude/kino-modus-vollenden-laf4fs` |
-| 7 | Hörbuch-Export | 🔄 läuft | `claude/hoerbuch-export-*` |
-| 8-15 | siehe Reihenfolge unten | ⬜ offen | - |
+| # | Auftrag | Stand |
+|---|---|---|
+| 1 | Vorlese-Aufbereitung | ✅ gebaut, in Welle 0 zusammengeführt |
+| 2 | Stimmen-Speicher + „Buch hörfertig machen" | ✅ gebaut, in Welle 0 zusammengeführt |
+| 3 | TTS-Anbieter-Paket | ✅ gebaut, in Welle 0 zusammengeführt |
+| 4 | Stimme pro Profil + Kinder-/Elternbereich | ⚠️ **noch offen - kein Branch vorhanden** |
+| 5 | Kosten-Anzeige | ✅ gebaut, in Welle 0 zusammengeführt |
+| 6 | Kino-Modus vollenden | ✅ gebaut, in Welle 0 zusammengeführt |
+| 7 | Hörbuch-Export | ✅ gebaut, in Welle 0 zusammengeführt |
+| 13 | Integrations-Pass + v0.13.0-beta | ✅ gelaufen, Teil von Welle 0 |
+| 8-12, 14, 15 | siehe Reihenfolge unten | ⬜ offen |
+
+Der zusammengeführte Stand wurde geprüft: alle vier Sanity-Checks aus `CLAUDE.md` sauber,
+`CACHE_NAME` auf `v23` (höher als in jedem Einzelbranch), alle neuen Dateien
+(`prepareAudio.js`, `costMeter.js`, `audiobookExport.js`) sowohl in `js/main.js` importiert
+als auch in `APP_SHELL` eingetragen, und `css/tailwind.css` bytegleich mit einem frischen
+Build - der Build wurde also wirklich gemacht.
 
 > **Nr. 4 ist durchgerutscht.** Für „Stimme pro Profil + Kinder-/Elternbereich" liegt kein
 > Branch auf dem Server. Der Auftragstext unten ist unverändert gültig - die Sitzung muss
 > nur noch gestartet werden.
 
-## Merge-Reihenfolge der fertigen Branches
+---
 
-Die fünf fertigen Branches fassen teils dieselben Dateien an. In dieser Reihenfolge
-gemerged gibt es die wenigsten Konflikte - jeweils von der kleinsten zur größten
-Berührungsfläche:
+## Der Merge-Rhythmus
 
-| Schritt | Branch | Berührt zusätzlich |
-|---|---|---|
-| 1 | `tts-textaufbereitung` | nur `js/utils.js`, `js/tts.js`, `js/ttsNeural.js` - keine Oberfläche |
-| 2 | `tts-cache-und-hoerfertig` | `js/db.js`, `js/render/book.js` - fasst niemand sonst an |
-| 3 | `tts-anbieter-paket` | `js/render/settings.js` (oberer Teil), `js/state.js`, `js/settingsConfig.js` |
-| 4 | `kino-modus-vollenden` | `js/render/settings.js` (Zeile ~123), `js/state.js`, `js/settingsConfig.js`, `css/style.css` |
-| 5 | `kosten-anzeige` | `js/render/settings.js` (Zeile ~88-130), `js/api.js`, `js/core.js`, `js/ttsNeural.js` |
-| 6 | `hoerbuch-export`, sobald fertig | - |
+**Die Welle ist die Einheit fürs Starten, nicht fürs Mergen.** Das Verwechseln der beiden
+hat Welle 0 teuer gemacht: fünf Branches lagen nebeneinander, drei haben unabhängig
+voneinander in `js/render/settings.js` geschrieben, und keine Sitzung hat den
+zusammengeführten Stand je gesehen - genau dafür musste Auftrag 13 nachträglich erfunden
+werden.
 
-Drei Dinge, die bei **jedem** dieser Merges auftauchen werden:
+Der Gewinn beim frühen Mergen liegt nicht bei der laufenden Welle - deren Sitzungen sind
+ohnehin schon von der alten `main` abgezweigt. Er liegt bei der **nächsten**: die startet
+dann von einer `main`, die alles Vorherige enthält.
+
+Die fünf Regeln:
+
+1. **Branch fertig → geprüft → sofort nach `main`.** In der Reihenfolge „kleinste
+   Berührungsfläche zuerst" (siehe unten), aber **ohne auf Geschwister zu warten**.
+2. **Am Ende jeder Welle ein Integrations-Pass** über den zusammengeführten Stand:
+   Sanity-Checks, die Oberfläche einmal als Ganzes ansehen, Version hochzählen. Auftrag 13
+   ist dafür die Vorlage - **kein einmaliger Job, sondern das Wellen-Ende-Ritual**. Beim
+   nächsten Mal derselbe Text, nur die Liste der gemergten Branches austauschen.
+3. **Die nächste Welle erst starten, wenn `main` alles aus der vorherigen enthält.** Sonst
+   bauen die Sitzungen auf unterschiedlichen Grundlagen auf - exakt die Warnung aus TEIL G
+   von `KONZEPT-SchreibZauber.md`.
+4. **`main` muss jederzeit auslieferbar bleiben.** Das Deployment ist manuelles Hochladen
+   des Ordnerinhalts - ein halb gemergter Stand wird sonst versehentlich zu GitHub Pages.
+   Der Moment zum Hochladen ist das Wellen-Ende nach dem Integrations-Pass, nicht mittendrin.
+5. **Langläufer holen sich `main` regelmäßig herein**, nicht umgekehrt: im Feature-Branch
+   `git merge origin/main`, etwa einmal pro gemergtem Geschwister-Branch. Betrifft vor
+   allem Auftrag 12 (SchreibZauber Stufe 1, Aufwand **L**) - sonst wird der Merge nach drei
+   Wochen zum Abenteuer.
+
+**Warum das gerade für Welle 1 zählt:** Auftrag 12 läuft Wochen, 4 und 8 sind in Tagen
+fertig. Auf die ganze Welle zu warten hieße, zwei fertige Funktionen wochenlang ungenutzt
+liegen zu lassen - und alles danach verschiebt sich mit.
+
+### Merge-Reihenfolge innerhalb einer Welle
+
+Wenn doch mehrere Branches gleichzeitig fertig sind: von der kleinsten zur größten
+Berührungsfläche. Zuerst, was nur eigene Dateien anfasst; zuletzt, was in gemeinsame
+Dateien wie `js/render/settings.js`, `js/state.js` oder `js/settingsConfig.js` schreibt.
+In Welle 0 war das `tts-textaufbereitung` → `tts-cache-und-hoerfertig` →
+`tts-anbieter-paket` → `kino-modus-vollenden` → `kosten-anzeige`.
+
+Drei Dinge tauchen bei **jedem** Merge auf:
 
 - **`css/tailwind.css`** ist eine Bauartefakt-Datei. Konflikte dort **nicht von Hand lösen** -
   irgendeine Seite nehmen und nach dem letzten Merge einmal neu bauen:
   `npx @tailwindcss/cli -i ./css/tailwind-input.css -o ./css/tailwind.css --minify`
 - **`sw.js` (`CACHE_NAME`)** - immer die höhere Nummer nehmen, am Ende einmal auf einen
   Wert über allen gemergten setzen. Und prüfen, dass **alle** neuen Dateien in `APP_SHELL`
-  stehen (`js/actions/prepareAudio.js`, `js/costMeter.js`).
-- **`docs/TODO-GESAMT.md`** - jede Sitzung hat ihren Punkt abgehakt. Konflikte hier sind
-  harmlos, aber die Datei sollte am Ende einmal ganz gelesen werden.
-
-Nach dem letzten Merge gehören die vier Sanity-Checks aus `CLAUDE.md` einmal über den
-zusammengeführten Stand gelaufen - **nicht nur über die einzelnen Branches.** Genau dafür
-ist Auftrag 13 da.
+  stehen *und* in `js/main.js` importiert werden; ohne Import lädt eine Datei nie.
+- **`docs/TODO-GESAMT.md`** - jede Sitzung hakt ihren Punkt ab. Konflikte hier sind harmlos,
+  aber die Datei sollte am Wellen-Ende einmal ganz gelesen werden.
 
 ---
 
@@ -71,10 +106,10 @@ ist Auftrag 13 da.
 
 | Welle | Aufträge | Parallel? | Bedingung |
 |---|---|---|---|
-| **0 - jetzt** | Branches 1,2,3,5,6 mergen, dann **13** (Integrations-Pass + v0.13.0-beta) | nein, allein | - |
-| **1** | **4** (Profil-Rollen) · **8** (Audio-Tags) · **12** (SchreibZauber Stufe 1) | ✅ drei Sitzungen gleichzeitig | nach Welle 0 |
+| ~~**0**~~ | ~~Branches 1,2,3,5,6,7 mergen, dann **13** (Integrations-Pass + v0.13.0-beta)~~ | - | ✅ **erledigt** - liegt auf `claude/merge-branches-main-gzs6qt`, wartet auf den Merge nach `main` |
+| **1 - jetzt** | **4** (Profil-Rollen) · **8** (Audio-Tags) · **12** (SchreibZauber Stufe 1) | ✅ drei Sitzungen gleichzeitig | sobald Welle 0 in `main` ist |
 | **2** | **9** (Texte stückeln + Mitmachmodus) · **10** (Heft-Generator API) | ✅ zwei gleichzeitig | beide nach **8** |
-| **3** | **11** (Heft-Generator Ansicht) · **14** (Video-Renderer, Einzelseite) | ✅ zwei gleichzeitig | 11 nach 10 · 14 nach **7** |
+| **3** | **11** (Heft-Generator Ansicht) · **14** (Video-Renderer, Einzelseite) | ✅ zwei gleichzeitig | 11 nach 10 · 14 ist durch Welle 0 bereits frei |
 | **4** | **15** (Video-Export fürs ganze Buch) | allein | nach **14** |
 | **5** | SchreibZauber Stufe 2+3 (Bilderbuch) ∥ Stufe 4 (Arbeitsheft) | ✅ zwei gleichzeitig | erst wenn **12** gemerged ist |
 
@@ -103,13 +138,13 @@ Kindern direkt und ist Voraussetzung für SchreibZauber Stufe 6.
 | 4 | Stimme pro Profil + Kinder-/Elternbereich | Plattform | **S+M** | `claude/profil-rollen-und-stimme` |
 | 5 | Kosten-Anzeige | Vorlesen | **S** | ✅ `claude/kosten-anzeige` |
 | 6 | Kino-Modus vollenden (Ken-Burns + Kreuzblende) | Video | **S** | ✅ `claude/kino-modus-vollenden` |
-| 7 | Hörbuch-Export | Video | **M** | 🔄 `claude/hoerbuch-export` |
+| 7 | Hörbuch-Export | Video | **M** | ✅ in Welle 0 |
 | 8 | Emotionen / Audio-Tags | Vorlesen | **M** | `claude/audio-tags` |
 | 9 | Lange Texte stückeln + Mitmachmodus mit KI-Stimme | Vorlesen | **M** | `claude/tts-stueckeln-mitmachmodus` |
 | 10 | Heft-Generator: API-Aufruf + Prompt | Übungshefte | **S** | `claude/heft-generator-api` |
 | 11 | Heft-Generator: Auswahl-Ansicht + Canvas | Übungshefte | **M** | `claude/heft-generator-ansicht` |
 | 12 | SchreibZauber Stufe 1 - Fundament | Eigene Werke | **L** | `claude/schreibzauber-stufe1` |
-| 13 | Integrations-Pass nach dem Merge + v0.13.0-beta | Plattform | **S** | `claude/integration-v0130` |
+| 13 | Integrations-Pass nach dem Merge + v0.13.0-beta | Plattform | **S** | ✅ in Welle 0 gelaufen - **Vorlage für jedes Wellen-Ende** |
 | 14 | Video-Export Weg B, Teil 1: Renderer-Kern | Video | **M** | `claude/video-renderer-kern` |
 | 15 | Video-Export Weg B, Teil 2: ganzes Buch + Regie | Video | **M** | `claude/video-buch-export` |
 
@@ -580,6 +615,11 @@ Stufe 2+3, Arbeitsheft Stufe 4), die danach parallel entwickelt werden sollen.
 Halte die Schnittstellen deshalb bewusst so, dass beide Pfade darauf aufbauen
 können, ohne aufeinander zu warten. Schreib am Ende in docs/KONZEPT-SchreibZauber.md
 kurz auf, welche Bausteine jetzt stehen und wo die beiden Pfade andocken.
+
+Weil dieser Auftrag Wochen läuft, während andere Sitzungen nach main mergen:
+hol dir main regelmäßig in deinen Branch herein (git merge origin/main), etwa
+immer dann, wenn ein anderer Branch gemerged wurde. Nicht umgekehrt - und nicht
+erst am Ende, sonst wird der Merge zum Abenteuer.
 
 Wenn der Umfang größer wird als erwartet: lieber einen sauber lieferbaren
 Teilstand melden und nachfragen, als Stufe 2 anzufangen.
