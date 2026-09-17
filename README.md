@@ -185,13 +185,22 @@ js/
     workbook.js               Hilfe-/Lösungs-Karte und Art-Umschalter
     progress.js               Fortschrittsbalken, Erledigt-Knopf, Belohnungen
     checkWork.js              Ergebniskarte der Blatt-Kontrolle
+  studio/                 SchreibZauber-Fundament (noch nicht verdrahtet, s. Konzept)
+    imageFormats.js         Seitenformate für selbst erstellte Werke
+    imageSource.js          Woher ein Bild kommt (Foto, Upload, KI)
+    placeholder.js          Platzhalter-Bilder, solange kein echtes Bild da ist
   vendor/
     pdfjs/                  PDF.js (Mozilla) - wird nur bei PDF-Import nachgeladen
 main.js                  Bindet alle Module zusammen und startet die App
 docs/
+  TODO-GESAMT.md           Alle offenen Punkte auf einen Blick (Einstieg)
   ROADMAP.md               Konzepte & offene Entscheidungen für die nächsten Schritte
+  konzept-video-und-multiformat.md  Sprach-API, Video/MP4, Hörbuch, Comic
+  KONZEPT-SchreibZauber.md Eigener Schreib-/Generierungs-Bereich für eigene Werke
+  KONZEPT-Bildquellen.md   Woher Bilder für selbst erstellte Werke kommen
   uebungshefte-konzept.md  Konzept: Bibel-Übungshefte zur Schulvorbereitung
   todo-heft-generator.md   Offenes To-Do: Übungsblätter von der KI erstellen lassen
+COMIC-ADAPTION-TODO.md     Comic-Adaption: Diskussionsstand, Kosten, lokale GPU-Option
 ```
 
 **Neue Funktion hinzufügen?** In der Regel reicht eine neue Datei unter `js/actions/` oder `js/render/`, die in `js/main.js` importiert wird – der Rest des Codes muss dafür nicht angefasst werden.
@@ -206,15 +215,16 @@ docs/
 
 ## 🗺 Mögliche nächste Schritte
 
-> **Ausführliche Konzepte, offene Entscheidungen und eine Kostenübersicht stehen in [`docs/ROADMAP.md`](docs/ROADMAP.md).** Die Liste hier ist nur die Kurzfassung.
+> **Die vollständige, zusammengeführte To-Do-Liste steht in [`docs/TODO-GESAMT.md`](docs/TODO-GESAMT.md)**
+> - inklusive der Punkte, die mit v0.12.0 bereits erledigt sind. Ausführliche Konzepte, offene
+> Entscheidungen und eine Kostenübersicht: [`docs/ROADMAP.md`](docs/ROADMAP.md). Die Liste hier ist nur die Kurzfassung.
 
 **Bleibt komplett im Browser (kein Server nötig):**
 - 🪄 **SchreibZauber** - eigener Bereich zum Schreiben und Illustrieren eigener Bilderbücher, Comics/Hefte und Kinder-Arbeitshefte. Ausführliches Konzept: [`docs/KONZEPT-SchreibZauber.md`](docs/KONZEPT-SchreibZauber.md)
 - 🎨 KI-generierte Illustrationen für textlastige EPUB-Kapitel ohne eigenes Bild, optional im Comic-Stil (Gemini kann mittlerweile auch Bilder erzeugen, gleicher Key wie bisher) - Cover-Bild-Sonderfall erstmal nicht nötig
 - 📱 Native App / Android-Store-Verpackung (Capacitor) - verpackt den bestehenden Code weitgehend unverändert
 - 📝 **Heft-Generator**: Übungsblätter von der KI erstellen lassen (Geschichte + Lernziel auswählen) - Entwurf und offene Punkte in `docs/todo-heft-generator.md`
-- 🎬 **Video-Export** (Seite + KI-Stimme als Videodatei). Vorarbeit ist erledigt: Audiodatei, Länge und Wort-Zeitpunkte je Seite liefert `app.ttsNeural.renderPageSegments()`, das Seitenbild liegt ohnehin vor. Offen ist nur noch das Zusammensetzen im Browser (Bild auf ein Canvas zeichnen, Untertitel einblenden, mit `MediaRecorder` aufnehmen) - und die Entscheidung, ob pro Seite oder ein Video fürs ganze Buch. Setzt eine KI-Stimme voraus.
-- 📓 Ausführliches Konzept dazu (Sprach-API, Video/MP4, Hörbuch, Comic - was, wie und warum): [`docs/konzept-video-und-multiformat.md`](docs/konzept-video-und-multiformat.md)
+- 🎬 **Video-Export** (Seite + KI-Stimme als Videodatei). Vorarbeit ist erledigt: Audiodatei, Länge und Wort-Zeitpunkte je Seite liefert `app.ttsNeural.renderPageSegments()`, das Seitenbild liegt ohnehin vor. Offen ist nur noch das Zusammensetzen im Browser (Bild auf ein Canvas zeichnen, Untertitel einblenden, mit `MediaRecorder` aufnehmen) - und die Entscheidung, ob pro Seite oder ein Video fürs ganze Buch. Setzt eine KI-Stimme voraus. Ausführliches Konzept dazu (Sprach-API, Video/MP4, Hörbuch, Comic - was, wie und warum): [`docs/konzept-video-und-multiformat.md`](docs/konzept-video-und-multiformat.md)
 
 **Bräuchte einen eigenen Server** (aktuell bewusst zurückgestellt):
 - API-Key über ein Backend absichern

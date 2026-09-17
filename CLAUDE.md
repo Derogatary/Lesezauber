@@ -214,18 +214,27 @@ Kein CI/CD - der Nutzer lädt den kompletten Ordnerinhalt manuell über die GitH
 
 ## Offene Punkte (Stand zuletzt besprochen)
 
-**Ausführliche Konzepte, offene Entscheidungen und Kostenübersicht: [`docs/ROADMAP.md`](docs/ROADMAP.md).** Diese Datei bei größeren Änderungen mitpflegen - sie ist der Einstieg für eine neue Sitzung.
+**Die vollständige, zusammengeführte Liste steht in [`docs/TODO-GESAMT.md`](docs/TODO-GESAMT.md).**
+Dort ist auch aufgeführt, welche Punkte mit v0.12.0 bereits erledigt sind - vor dem Einplanen
+eines Features dort nachsehen, sonst wird Fertiges doppelt gebaut.
 
-Größere, noch nicht begonnene Features (brauchen erst Abstimmung mit dem Nutzer, nicht einfach lospreschen):
-- KI-generierte Illustrationen (Comic-Stil) für Text-only-EPUB-Kapitel via Gemini-Bildgenerierung
-- Video-Export: Vorarbeit steht (siehe "KI-Stimmen"), offen ist nur das Zusammensetzen per Canvas + `MediaRecorder` und die Frage "ein Video pro Seite oder pro Buch"
-- "SchreibZauber": eigener Schreib-/Generierungs-Bereich für selbst erstellte Bilderbücher, Comics/Hefte und Arbeitshefte - Konzept liegt fertig unter `docs/KONZEPT-SchreibZauber.md` (inkl. Entscheidung Tab vs. eigene App, Datenmodell, Ausbaustufen, offene Fragen)
-- Sprach-API mit echter Audiodatei, Video-Export (MP4), Hörbuch, Comic, selbst geschriebene Bücher -
-  ausgearbeitetes Konzept inkl. Begründungen und bekannter Sackgassen in
-  `docs/konzept-video-und-multiformat.md`. **Vor jeder Arbeit an einem dieser Themen dort reinschauen**,
-  sonst werden Entscheidungen neu diskutiert, die schon gefallen sind.
-- Native Android-App via Capacitor (Play Store, ggf. Samsung/Amazon Store)
-- Diagnose: Scroll-Verhalten am Bildschirmrand (Desktop), Zoom/Unschärfe im Fenstermodus - noch nicht reproduziert, braucht ggf. Screenshot vom Nutzer
+Kurzfassung der größeren, noch nicht begonnenen Features (brauchen erst Abstimmung mit dem
+Nutzer, nicht einfach lospreschen):
+
+| Vorhaben | Konzept |
+|---|---|
+| 🎬 Video-Export - Vorarbeit steht (siehe "KI-Stimmen"), offen ist nur Canvas + `MediaRecorder` | [`docs/ROADMAP.md`](docs/ROADMAP.md), [`docs/konzept-video-und-multiformat.md`](docs/konzept-video-und-multiformat.md) |
+| 🪄 "SchreibZauber" - eigener Schreib-/Generierungs-Bereich für eigene Werke | [`docs/KONZEPT-SchreibZauber.md`](docs/KONZEPT-SchreibZauber.md), [`docs/KONZEPT-Bildquellen.md`](docs/KONZEPT-Bildquellen.md) |
+| 📝 Heft-Generator - Übungsblätter von der KI erstellen lassen | [`docs/todo-heft-generator.md`](docs/todo-heft-generator.md) |
+| 🎨 KI-generierte Illustrationen (Comic-Stil) für Text-only-EPUB-Kapitel | [`COMIC-ADAPTION-TODO.md`](COMIC-ADAPTION-TODO.md) |
+| 🎭 Emotionen/Sprech-Anweisungen mitten im Satz (Audio-Tags) | [`docs/ROADMAP.md`](docs/ROADMAP.md) |
+| 📱 Native Android-App via Capacitor (Play Store, ggf. Samsung/Amazon Store) | [`docs/ROADMAP.md`](docs/ROADMAP.md) |
+
+**Vor jeder Arbeit an einem dieser Themen erst das verlinkte Dokument lesen** - sonst werden
+Entscheidungen neu diskutiert, die schon gefallen sind, und bereits verworfene Wege erneut probiert.
+
+Diagnose, noch nicht reproduziert: Scroll-Verhalten am Bildschirmrand (Desktop),
+Zoom/Unschärfe im Fenstermodus - braucht ggf. einen Screenshot vom Nutzer.
 
 Bewusst zurückgestellt (bräuchten einen eigenen Server):
 - API-Key-Absicherung über Backend
@@ -261,4 +270,4 @@ Feste Regeln dabei:
 
 ## Versionsstand
 
-Aktuell `v0.11.0-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Zähl die Version bei größeren Änderungen entsprechend hoch (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).
+Aktuell `v0.12.0-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Zähl die Version bei größeren Änderungen entsprechend hoch (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).

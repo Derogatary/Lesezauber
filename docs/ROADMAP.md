@@ -1,6 +1,6 @@
 # 🗺 Roadmap & Konzepte
 
-**Stand: v0.10.2-beta, September 2026**
+**Stand: v0.12.0-beta, September 2026**
 
 Diese Datei ist der Einstiegspunkt für die nächsten größeren Schritte - sowohl für den Betreiber als auch für eine **neue Claude-Sitzung**, die hier weitermacht. Die Arbeitsteilung:
 
@@ -15,6 +15,18 @@ Diese Datei ist der Einstiegspunkt für die nächsten größeren Schritte - sowo
 ---
 
 ## Zuletzt fertig geworden
+
+**Zusammenführung aller Entwicklungszweige (v0.12.0).** In dieser Version sind die bis dahin
+getrennt entwickelten Stränge in einem Stand vereint. Damit sind mehrere Punkte erledigt,
+die weiter unten früher noch als offen standen:
+
+| Früher offen | Jetzt |
+|---|---|
+| Vollbild-Modus mit Text + Hervorhebung | ✅ erledigt |
+| Zweiseitiges Layout für PC/Tablet | ✅ erledigt (Option in den Einstellungen) |
+| Mitmachmodus (Sprechpause vor Emoji-Wörtern) | ✅ erledigt (Gerätestimme; KI-Stimmen-Weg s.u.) |
+| Strukturierte Metadaten-Ansage | ✅ erledigt (Titel/Autor/Verlag/Reihe, Kapitel, Inhaltsverzeichnis) |
+| Heft-Modus für Übungshefte | ✅ erledigt, inkl. Kontrolle bearbeiteter Blätter |
 
 **KI-Stimmen (v0.10.0 - v0.10.2).** Statt der maschinellen Gerätestimme lassen sich vier neuronale Anbieter wählen (Gemini, Google Cloud Chirp 3 HD, ElevenLabs, OpenAI). Details im README-Abschnitt "Echte KI-Stimmen statt Roboterstimme", technische Regeln in `CLAUDE.md` unter "KI-Stimmen".
 
@@ -89,11 +101,16 @@ Bild, Ton, Länge und Wortzeiten liegen damit vollständig vor - ohne erneute AP
 
 ---
 
-### 3. 🙋 Mitmachmodus (Sprechpause vor Emoji-Wörtern)
+### 3. 🙋 Mitmachmodus mit KI-Stimme (Rest-Aufgabe)
 
-Stand schon länger auf der Liste; mit KI-Stimmen ändert sich der Weg dorthin:
-- **Gerätestimme:** Text an den Emoji-Stellen zerlegen und mit `setTimeout` dazwischen sprechen.
-- **KI-Stimme:** Entweder Pausen-Tags mitschicken (Gemini `[pause]`, Chirp 3 über `markup`) - eine Aufnahme, keine Mehrkosten. Oder den Text in Stücke zerlegen - klingt gleichmäßiger, kostet aber je Stück einen Aufruf. **Tags bevorzugen.**
+**Die Gerätestimme kann das seit v0.12.0** - `app.tts.speakMitmach()` zerlegt den Erstleser-Text
+an den Emoji-Stellen und legt über `setTimeout` echte Rate-Pausen ein (das Emoji wird währenddessen
+optisch hervorgehoben).
+
+Offen ist nur noch der Weg für die **KI-Stimme**: Entweder Pausen-Tags mitschicken
+(Gemini `[pause]`, Chirp 3 über `markup`) - eine Aufnahme, keine Mehrkosten. Oder den Text in Stücke
+zerlegen - klingt gleichmäßiger, kostet aber je Stück einen Aufruf. **Tags bevorzugen.**
+Aktuell läuft der Mitmachmodus bewusst immer über die Gerätestimme.
 
 ---
 
@@ -109,12 +126,14 @@ Der Analyse-Prompt liefert bewusst den "exakten gedruckten Text" - richtig für 
 
 ---
 
-### 6. 🌙 Vollbild-Modus mit Text und Hervorhebung
+### 6. 🌙 Vollbild-Modus mit Text und Hervorhebung - ✅ erledigt (v0.12.0)
 
-Der Vollbild-Modus zeigt heute nur das Bild. Mit der neuen Weiche in `js/tts.js` genügt es, dort ein Textfeld einzublenden und dessen ID als `highlightElementId` durchzureichen - die Hervorhebung läuft bei Geräte- wie KI-Stimme automatisch mit.
+Der Vollbild-Modus blendet Bild, Text **und** die mitlaufende Wort-Hervorhebung ein
+(`app.tts._currentTextElementId()` reicht dafür die ID des Vollbild-Textfelds durch).
 
-### 7. 📖 Zweiseitiges Layout für PC/Tablet
-Bild links, Text rechts. Reine Layout-Arbeit in `render/reader.js` + `index.html`, keine Daten-Änderung.
+### 7. 📖 Zweiseitiges Layout für PC/Tablet - ✅ erledigt (v0.12.0)
+Bild links, Text rechts, als Option in den Einstellungen (`app.settings.twoPageLayout`).
+Greift per CSS-Media-Query erst ab Tablet-Breite; auf dem Handy bleibt alles untereinander.
 
 ### 8. 🎨 KI-generierte Illustrationen
 Für textlastige EPUB-Kapitel ohne eigenes Bild, Comic-Stil, über die Bildgenerierung von Gemini (gleicher Key). Zusammen mit dem Video-Export besonders interessant: Kapitel ohne Bild hätten sonst nichts zu zeigen.
