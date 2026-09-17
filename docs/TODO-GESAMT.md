@@ -51,7 +51,7 @@ hat, fängt hier an - nichts davon fasst das Datenmodell an.
 | ~~5~~ | ~~Mehr Stimmen freischalten (je eine Zeile in `ttsProviders.js`)~~ **erledigt (Sept. 2026)** | Vorlesen | **S** |
 | ~~6~~ | ~~„Buch hörfertig machen" - alle Seiten vorab in den Stimmen-Speicher~~ **erledigt (Sept. 2026)** | Vorlesen | **S** |
 | 7 | Stimme pro Profil statt global | Vorlesen | **S** |
-| 8 | Kosten-Anzeige (lokal gezählte Zeichen pro Monat) | Vorlesen | **S** |
+| ~~8~~ | ~~Kosten-Anzeige (lokal gezählte Zeichen pro Monat)~~ **erledigt (v0.13.0-beta)** | Vorlesen | **S** |
 | 9 | Zweiter Comic-Testlauf mit korrigiertem Prompt | Eigene Werke | **S** |
 | ~~10~~ | ~~Tarif-Lock: Warnung vor Wechsel in teurere Preisstufe~~ **erledigt (Sept. 2026)** | Vorlesen | **S** |
 
@@ -72,7 +72,7 @@ Details: [`docs/ROADMAP.md`](ROADMAP.md)
 | ~~**Mehr Stimmen freischalten**~~ | **S** | ✅ **erledigt (Sept. 2026)** - `js/ttsProviders.js` hat jetzt alle 30 Gemini- und alle 13 OpenAI-Stimmen |
 | ~~**„Buch hörfertig machen"**~~ | **S** | ✅ **erledigt (Sept. 2026)** - Knopf in der Buchansicht legt alle Seiten vorab in den `ttsCache` (`js/actions/prepareAudio.js`) |
 | **Stimme pro Profil** | **S** | `app.settings.ttsVoices` müsste pro Profil statt global gespeichert werden |
-| **Kosten-Anzeige** | **S** | Rein lokal geschätzt mitzählen, wie viele Zeichen im Monat an den Anbieter gingen |
+| ~~**Kosten-Anzeige**~~ | **S** | ✅ **erledigt (v0.13.0-beta)** - Rein lokal geschätzt mitgezählt, wie viele Zeichen im Monat an den Anbieter gingen (`js/costMeter.js`), zusätzlich getrennt die Gemini-Textaufrufe. Zählt nur echte Synthesen, keine Cache-Treffer |
 | ~~**Tarif-Lock**~~ | **S** | ✅ **erledigt (Sept. 2026)** - `costTier`-Feld je Anbieter in `js/ttsProviders.js`, Bestätigungsdialog in `app.settingsConfig.changeTtsProvider()` vor einem Wechsel auf eine teurere Stufe. Betrag bleibt beim Anbieter gedeckelt, nicht in der App |
 | **Mitmachmodus mit KI-Stimme** | **M** | Läuft heute bewusst immer über die Gerätestimme. Über Pausen-Tags lösbar (Gemini `[pause]`, Chirp 3 über `markup`) - eine Aufnahme, keine Mehrkosten. Text stückeln wäre die teure Alternative |
 | **Lange Texte stückeln** | **M** | Über `MAX_NEURAL_CHARS = 4000` (praktisch nur EPUB-Kapitel) fällt es auf die Gerätestimme zurück. An Satzenden in ~800-Zeichen-Stücke zerlegen, Wort-Offsets verschieben |

@@ -107,6 +107,10 @@ Object.assign(app.ttsNeural, {
 
         const styleHint = provider.supportsStyle ? app.ttsProviders.styleHintFor(personaId) : null;
         const result = await provider.synthesize(text, { voice, rate, styleHint });
+        // NEU: Kosten-/Verbrauchsanzeige - zaehlt nur hier, NACH einem
+        // Cache-Fehlschlag, weil erst ab hier wirklich synthetisiert (und
+        // damit bezahlt) wird. Ein Cache-Treffer weiter oben kostet nichts.
+        app.costMeter.trackTts(provider.id, text.length);
         const durationSec = needDuration ? await this._measureDuration(result.blob) : 0;
 
         if (useCache) {

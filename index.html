@@ -41,7 +41,7 @@
                     <p id="streakBadge" class="hidden text-xs font-bold text-amber-600 mt-0.5"></p>
                     <!-- NEU: Belohnung - Anzahl komplett geschaffter Bücher/Hefte -->
                     <p id="medalBadge" class="hidden text-xs font-bold text-emerald-600 mt-0.5"></p>
-                    <p class="text-[10px] text-slate-400 font-semibold mt-0.5">v0.12.0-beta</p>
+                    <p class="text-[10px] text-slate-400 font-semibold mt-0.5">v0.13.0-beta</p>
                 </div>
                 <div class="flex items-center gap-2 flex-shrink-0">
                     <button onclick="app.nav.go('help')" aria-label="Hilfe öffnen" title="Hilfe" class="w-10 h-10 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-600 hover:bg-slate-100 shadow-sm transition active:scale-95">
@@ -704,6 +704,24 @@
                             </button>
                         </div>
                     </div>
+                </div>
+
+                <!-- NEU: rein lokale Kosten-/Verbrauchsanzeige (js/costMeter.js).
+                     Zaehlt nur tatsaechlich synthetisierte Zeichen (kein
+                     Cache-Treffer) und schaetzt daraus einen ungefaehren
+                     Betrag - keine Abrechnungs-API, kein Limit/Sperre. -->
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-500">
+                        Geschätzter Verbrauch diesen Monat
+                    </label>
+                    <div id="costMeterList" class="space-y-1.5 text-[11px] text-slate-600">
+                        Wird ermittelt...
+                    </div>
+                    <p id="costMeterTotal" class="text-[11px] font-semibold text-slate-700"></p>
+                    <p class="text-[10px] text-slate-400">Ungefähre Schätzung anhand öffentlicher Preislisten, ohne Gewähr - verbindlich ist immer die Abrechnung des jeweiligen Anbieters. Zählt nur echte Sprachausgaben, keine Treffer aus dem Stimmen-Speicher.</p>
+                    <button onclick="app.costMeter.reset()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 rounded-xl text-sm transition">
+                        🗑️ Zähler zurücksetzen
+                    </button>
                 </div>
 
                 <!-- System TTS Voice Selection -->

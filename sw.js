@@ -28,6 +28,7 @@ const APP_SHELL = [
     './js/tts.js',
     './js/ttsProviders.js',
     './js/ttsNeural.js',
+    './js/costMeter.js',
     './js/ui.js',
     './js/utils.js',
     './js/readerUI.js',

@@ -13,6 +13,7 @@ import './api.js';
 import './tts.js';
 import './ttsProviders.js';
 import './ttsNeural.js';
+import './costMeter.js';
 import './ui.js';
 import './utils.js';
 
