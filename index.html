@@ -468,7 +468,12 @@
             </div>
             <div id="focusImageContainer" class="flex-grow flex items-center justify-center overflow-hidden relative">
                 <button onclick="app.actions.goToPage(-1)" aria-label="Vorherige Seite" class="absolute left-2 z-10 w-11 h-11 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center text-white text-xl active:scale-90 transition">‹</button>
-                <img id="focusImg" class="max-w-full max-h-full object-contain" src="" alt="Buchseite">
+                <!-- NEU: zwei übereinanderliegende Bilder für die Kreuzblende beim
+                     Seitenwechsel + Ken-Burns-Zoom (siehe app.render.focusMode()
+                     in js/render/reader.js und css/style.css) - abschaltbar in den
+                     Einstellungen, respektiert außerdem prefers-reduced-motion. -->
+                <img id="focusImg" class="focus-kenburns-img max-w-full max-h-full object-contain" src="" alt="Buchseite">
+                <img id="focusImgB" class="focus-kenburns-img max-w-full max-h-full object-contain" src="" alt="" aria-hidden="true">
                 <button onclick="app.actions.goToPage(1)" aria-label="Nächste Seite" class="absolute right-2 z-10 w-11 h-11 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center text-white text-xl active:scale-90 transition">›</button>
             </div>
             <!-- NEU: Text mit Wort-Hervorhebung im Vollbild-Modus (vorher nur Bild) -->
@@ -613,6 +618,17 @@
                         <input id="toggleTwoPageLayout" type="checkbox" onchange="app.settingsConfig.toggleTwoPageLayout(this.checked)" class="w-5 h-5 accent-indigo-600">
                     </div>
                     <p class="text-[11px] text-slate-500">Zeigt Bild und Text beim Lesen auf größeren Bildschirmen nebeneinander wie ein aufgeschlagenes Buch. Auf dem Handy bleibt es immer wie gewohnt untereinander.</p>
+                </div>
+
+                <!-- NEU: Kino-Modus-Effekte (Ken-Burns + Kreuzblende) im Vollbild -->
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-2">
+                    <div class="flex items-center justify-between">
+                        <label for="toggleFocusEffects" class="text-xs font-bold uppercase tracking-wider text-slate-500">
+                            Kino-Effekte im Vollbild
+                        </label>
+                        <input id="toggleFocusEffects" type="checkbox" onchange="app.settingsConfig.toggleFocusEffects(this.checked)" class="w-5 h-5 accent-indigo-600">
+                    </div>
+                    <p class="text-[11px] text-slate-500">Langsamer Zoom übers Bild und weiche Überblendung beim Seitenwechsel im Vollbild-Vorlese-Modus. Wer reduzierte Bewegung eingestellt hat, bekommt ohnehin einen harten Schnitt ohne Zoom.</p>
                 </div>
 
                 <!-- Mistral als optionaler Fallback -->

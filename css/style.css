@@ -147,6 +147,33 @@
     }
 }
 
+/* NEU: Kino-Modus im Vollbild-Vorlese-Modus (siehe docs/KONZEPT-Video.md,
+   Abschnitt 3, Stufe 1) - Ken-Burns-Zoom übers Seitenbild + Kreuzblende beim
+   Seitenwechsel. Zwei übereinanderliegende <img> (#focusImg/#focusImgB)
+   wechseln sich per Opacity/z-index ab, gesteuert von app.render.focusMode()
+   in js/render/reader.js. Reine CSS-Animation, rührt die Wort-Hervorhebung
+   im Untertitel-Bereich (eigenes Element, eigenes rAF/boundary-Event) nicht an. */
+.focus-kenburns-img {
+    position: absolute;
+    inset: 0;
+    margin: auto;
+    opacity: 0;
+    z-index: 1;
+    transform-origin: center center;
+}
+/* Vier leicht unterschiedliche Zoom-Richtungen, zyklisch nach Seitenindex
+   gewählt (siehe app.render.focusMode()) - sonst wirkt der immer gleiche
+   Schwenk über mehrere Seiten hinweg schnell mechanisch. */
+.focus-kenburns-img.focus-kb-0 { animation: focusKenBurns0 20s ease-in-out forwards; }
+.focus-kenburns-img.focus-kb-1 { animation: focusKenBurns1 20s ease-in-out forwards; }
+.focus-kenburns-img.focus-kb-2 { animation: focusKenBurns2 20s ease-in-out forwards; }
+.focus-kenburns-img.focus-kb-3 { animation: focusKenBurns3 20s ease-in-out forwards; }
+
+@keyframes focusKenBurns0 { from { transform: scale(1) translate(0, 0); } to { transform: scale(1.12) translate(-2%, -1.5%); } }
+@keyframes focusKenBurns1 { from { transform: scale(1) translate(0, 0); } to { transform: scale(1.12) translate(2%, -1.5%); } }
+@keyframes focusKenBurns2 { from { transform: scale(1) translate(0, 0); } to { transform: scale(1.12) translate(-2%, 1.5%); } }
+@keyframes focusKenBurns3 { from { transform: scale(1) translate(0, 0); } to { transform: scale(1.12) translate(2%, 1.5%); } }
+
 /* Custom scrollbar for clean mobile experience */
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
@@ -166,4 +193,10 @@
     .magic-glow { animation: none; box-shadow: 0 0 15px rgba(99, 102, 241, 0.4); }
     .animate-pulse { animation: none; }
     .mitmach-emoji.mitmach-active { animation: none; }
+    /* NEU: Kino-Modus - kein Ken-Burns-Zoom und keine Überblendungs-Animation,
+       harter Schnitt statt Bewegung. app.render.focusMode() prüft dasselbe
+       Betriebssystem-Merkmal zusätzlich per JS (siehe js/render/reader.js),
+       diese Regel ist die Absicherung, falls irgendwo trotzdem eine
+       Übergangs-Dauer per Inline-Style gesetzt würde. */
+    .focus-kenburns-img { transition: none !important; animation: none !important; transform: none !important; }
 }

@@ -45,6 +45,14 @@ Object.assign(app.settingsConfig, {
         app.ui.toast(enabled ? 'Zweiseitiges Layout aktiviert' : 'Zweiseitiges Layout deaktiviert', '📖');
     },
 
+    // NEU: Ken-Burns-Effekt/Kreuzblende im Kino-Modus (Vollbild-Vorlesen)
+    // ein-/ausschalten - unabhängig davon respektiert der Effekt weiterhin
+    // "prefers-reduced-motion" des Betriebssystems (siehe css/style.css).
+    toggleFocusEffects(enabled) {
+        app.settings.focusEffectsEnabled = enabled;
+        localStorage.setItem('lz_focus_effects', enabled ? '1' : '0');
+    },
+
     // NEU: Anbieter der Vorlese-Stimme wechseln (Gerätestimme <-> KI-Stimme).
     // Wirkt sofort, ohne "Speichern" - so kann man direkt den Test-Knopf
     // benutzen.

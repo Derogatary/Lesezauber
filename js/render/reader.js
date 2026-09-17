@@ -32,6 +32,49 @@ function applyBookTypeLabels(isWorkbook) {
     document.getElementById('pageQuizCard')?.classList.toggle('hidden', isWorkbook);
 }
 
+// NEU: "Kino-Modus" (siehe docs/KONZEPT-Video.md, Abschnitt 3, Stufe 1) -
+// Kreuzblende beim Seitenwechsel plus Ken-Burns-Zoom im Vollbild-Vorlese-
+// Modus. Zwei übereinanderliegende <img> (#focusImg/#focusImgB) wechseln
+// sich als "vorne"/"hinten" ab: das neue Bild bekommt eine neu gestartete
+// Zoom-Animation und wird per Opacity über das alte (unverändert stehen
+// bleibende) Bild geblendet - reines CSS, keine neue Abhängigkeit. Wird nur
+// bei einem tatsächlichen Seitenwechsel bzw. beim Öffnen des Kino-Modus
+// aufgerufen (siehe app.render.focusMode()), nicht bei jedem Play/Pause.
+function updateFocusImage(page, pageIdx) {
+    const imgA = document.getElementById('focusImg');
+    const imgB = document.getElementById('focusImgB');
+    if (!imgA || !imgB) return;
+
+    // FIX: respektiert sowohl die Einstellung als auch die
+    // Betriebssystem-Vorgabe "reduzierte Bewegung" - dann harter Schnitt
+    // ohne Zoom/Überblendung statt der CSS-Animation (siehe css/style.css).
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const effectsOn = app.settings.focusEffectsEnabled && !reduceMotion;
+
+    if (!app.state._focusFrontImg) app.state._focusFrontImg = imgA;
+    const front = app.state._focusFrontImg;
+    const back = front === imgA ? imgB : imgA;
+
+    // Kein tatsächlicher Wechsel (z.B. erneuter Aufruf ohne Seitenwechsel) -
+    // nichts zu tun, sonst würde bei jedem Aufruf unnötig neu geblendet.
+    if (front.src === page.imgUrl) return;
+
+    back.src = page.imgUrl;
+    back.style.zIndex = '2';
+    front.style.zIndex = '1';
+
+    back.classList.remove('focus-kb-0', 'focus-kb-1', 'focus-kb-2', 'focus-kb-3');
+    void back.offsetWidth; // Reflow erzwingen, damit die Animation neu startet
+    if (effectsOn) back.classList.add(`focus-kb-${pageIdx % 4}`);
+
+    back.style.transition = effectsOn ? 'opacity 1.1s ease-in-out' : 'none';
+    back.style.opacity = '0';
+    void back.offsetWidth;
+    back.style.opacity = '1';
+
+    app.state._focusFrontImg = back;
+}
+
 Object.assign(app.render, {
     reader(pageIdx) {
         const book = app.library[app.state.currentBookId];
@@ -166,8 +209,7 @@ Object.assign(app.render, {
         const page = book?.pages[app.state.currentPageIdx];
         if (!page) return;
 
-        const img = document.getElementById('focusImg');
-        if (img) img.src = page.imgUrl;
+        updateFocusImage(page, app.state.currentPageIdx);
 
         const counter = document.getElementById('focusPageCounter');
         if (counter) counter.innerText = `${app.state.currentPageIdx + 1} / ${book.pages.length}`;

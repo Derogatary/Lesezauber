@@ -168,6 +168,10 @@ Object.assign(app.render, {
         // NEU: zweiseitiges Layout - Schalterstellung anzeigen
         const twoPageToggle = document.getElementById('toggleTwoPageLayout');
         if (twoPageToggle) twoPageToggle.checked = app.settings.twoPageLayout;
+
+        // NEU: Kino-Effekte (Ken-Burns + Kreuzblende) - Schalterstellung anzeigen
+        const focusEffectsToggle = document.getElementById('toggleFocusEffects');
+        if (focusEffectsToggle) focusEffectsToggle.checked = app.settings.focusEffectsEnabled;
         const bgStatus = document.getElementById('pregenStatus');
         if (bgStatus) {
             const missing = app.utils.countMissingVariants();

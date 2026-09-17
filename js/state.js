@@ -13,6 +13,10 @@ Object.assign(app.settings, {
     // NEU: zweiseitiges Layout (Bild links, Text rechts) - nur Option,
     // wirkt sich per CSS ohnehin erst ab Tablet-Breite aus (siehe style.css)
     twoPageLayout: localStorage.getItem('lz_two_page_layout') === '1',
+    // NEU: Ken-Burns-Effekt + Kreuzblende im Vollbild-Vorlese-Modus
+    // ("Kino-Modus", siehe docs/KONZEPT-Video.md Abschnitt 3, Stufe 1).
+    // Standardmäßig an, abschaltbar (z.B. auf schwächeren Geräten).
+    focusEffectsEnabled: localStorage.getItem('lz_focus_effects') !== '0',
 
     // NEU: KI-Stimmen statt der maschinellen Gerätestimme.
     // 'device' = wie bisher die eingebaute Stimme (Standard, damit sich für
@@ -68,6 +72,10 @@ Object.assign(app.state, {
     apiBusy: false,
     // NEU: Vollbild-Vorlese-Modus aktiv?
     focusMode: false,
+    // NEU: welches der beiden übereinanderliegenden <img>-Elemente im
+    // Kino-Modus gerade sichtbar ist (Kreuzblende, siehe app.render.focusMode()
+    // in js/render/reader.js) - hält die DOM-Referenz, nicht nur eine ID.
+    _focusFrontImg: null,
     // NEU: Backup-Erinnerung für diese Sitzung weggeklickt?
     backupReminderDismissed: false,
     // NEU: Zustand für den Vokabeltrainer (aktuelles Karten-Deck + Position)
