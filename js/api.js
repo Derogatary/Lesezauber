@@ -54,6 +54,70 @@ Nutze exakt dieses Schema:
 Das Feld "vocabulary" listet GENAU die Nomen (in Grundform, z.B. "Baum" statt "Bäume"), die du in "simplifiedText" durch ein Emoji ersetzt hast, zusammen mit dem jeweils verwendeten Emoji.`;
 }
 
+// NEU: eigener Prompt für Übungshefte (bookType 'workbook'). Der normale
+// Analyse-Prompt oben ist auf eine ERZÄHL-Seite zugeschnitten und ersetzt
+// Nomen durch Emojis - bei einer Arbeitsanweisung ("Male alle Dreiecke an")
+// wäre genau das schädlich, das Kind soll die Anweisung ja verstehen.
+// Deshalb hier ein komplett eigenes Schema: Aufgabe, kindgerechte
+// Erklärung, Hilfeschritte, Lösung.
+function buildWorkbookPrompt(isCover, personaId, knownText) {
+    const knownTextBlock = knownText
+        ? `\nDer exakte Text dieser Seite ist bereits bekannt (aus der Textebene, NICHT per Bilderkennung raten):\n"${knownText}"\nNutze GENAU diesen Wortlaut UNVERÄNDERT nur für "taskText". "taskExplained" MUSS trotzdem eine eigene, kindgerechte Erklärung sein.\n`
+        : '';
+
+    return `Rolle: ${personaInstruction(personaId)}
+${knownTextBlock}
+Du hilfst einem Vorschulkind (ca. 4-6 Jahre), das noch NICHT lesen kann, bei einem Übungsblatt/Arbeitsblatt. Ein Erwachsener oder die App liest dem Kind alles vor.
+Analysiere das abgebildete Übungsblatt. Antworte AUSSCHLIESSLICH in validem JSON-Format! Verwende keine Markdown-Blöcke.
+Nutze exakt dieses Schema:
+{
+  "taskText": "Die Aufgabenstellung EXAKT so, wie sie auf dem Blatt gedruckt steht (wenn keine gedruckt ist: 'Keine Aufgabe gedruckt.')",
+  "taskExplained": "Erkläre dem Kind in 1-2 sehr kurzen, einfachen Sätzen, was es tun soll. Sprich das Kind direkt an ('Male ...', 'Suche ...'). WICHTIG: ersetze KEINE Wörter durch Emojis - das Kind muss die Anweisung verstehen. Höchstens 1-2 Emojis am Satzende.",
+  "taskType": "Genau EINER dieser Werte: ausmalen, verbinden, zaehlen, nachspuren, ankreuzen, schreiben, zuordnen, suchen, sonstiges",
+  "materials": "Was das Kind dafür braucht, sehr kurz (z.B. 'Buntstifte') - oder null",
+  "pageDescription": "Was auf dem Blatt zu sehen ist (Bilder, Formen, Linien, Kästchen) in 1-2 Sätzen, so dass sich ein Kind, das das Blatt vor sich hat, wiederfindet. Falls nichts Bildhaftes zu sehen ist: null",
+  "helpSteps": ["3 bis 5 kurze Schritte in Du-Form, EIN einzelner Handgriff pro Schritt, in der Reihenfolge des Bearbeitens"],
+  "solution": "Die Lösung bzw. woran man erkennt, dass es richtig ist. Bei freien Aufgaben (z.B. frei ausmalen): 'Hier gibt es kein richtig oder falsch.'",
+  "vocabulary": [{"word": "Dreieck", "emoji": "🔺"}]${isCover ? ',\n  "title": "Der auf dieser Seite gedruckte Titel des Hefts - nur null, falls wirklich keiner zu sehen ist", "author": "Der gedruckte Autor/Herausgeber - nur null, falls wirklich keiner zu sehen ist"' : ''}
+}
+"vocabulary" enthält höchstens 4 Lernwörter (Nomen in Grundform) vom Blatt mit passendem Emoji, für den Vokabeltrainer. Keine gefunden: leeres Array.
+SEHR WICHTIG: Erfinde nichts dazu. Was du auf dem Blatt nicht sicher erkennst, darfst du nicht raten - schreibe bei "solution" dann "Das kann ich hier nicht sicher erkennen." Eine falsche Lösung verunsichert das Kind mehr, als gar keine zu haben.`;
+}
+
+// NEU: Prompt für die Kontrolle eines BEARBEITETEN Blattes. Die KI kennt
+// dabei die Aufgabe und die erwartete Lösung aus der vorherigen Analyse -
+// sie muss also nicht erraten, worum es geht, sondern nur noch vergleichen.
+// Die Regeln am Ende sind der wichtigste Teil: ein Kind, dem fälschlich
+// gesagt wird, es habe sich vertan, verliert die Lust an der Sache. Lieber
+// "unklar" als ein falscher Tadel.
+function buildCheckPrompt(variant, personaId) {
+    const solution = variant.solution || 'Keine Lösung hinterlegt - beurteile nur, ob die Aufgabe erkennbar bearbeitet wurde.';
+    const explained = variant.erstleserText || variant.text || '';
+
+    return `Rolle: ${personaInstruction(personaId)}
+
+Ein Kind (ca. 4-6 Jahre, kann noch NICHT lesen) hat ein Übungsblatt bearbeitet und zeigt es dir jetzt als Foto. Du siehst also das BEARBEITETE Blatt mit dem, was das Kind gemalt, verbunden, angekreuzt oder geschrieben hat.
+
+Die Aufgabe lautete: "${variant.text || ''}"
+So wurde sie dem Kind erklärt: "${explained}"
+Erwartete Lösung: "${solution}"
+
+Schau dir an, was das Kind gemacht hat, und antworte AUSSCHLIESSLICH in validem JSON-Format! Verwende keine Markdown-Blöcke.
+Nutze exakt dieses Schema:
+{
+  "verdict": "Genau EINER dieser Werte: richtig, fast, nochmal, unklar",
+  "praise": "Ein kurzer, warmer Satz an das Kind. Benenne IMMER zuerst etwas Gutes - auch dann, wenn noch etwas fehlt.",
+  "feedback": "1-2 kurze Sätze in Du-Form: was du auf dem Blatt siehst und was gegebenenfalls noch fehlt. Kindgerecht und freundlich. Das Wort 'falsch' benutzt du NICHT.",
+  "hints": ["1 bis 3 kurze Tipps, was das Kind als Nächstes tun kann. Bei verdict 'richtig' ein leeres Array. Verrate nicht einfach die ganze Lösung, gib nur einen Schubs in die richtige Richtung."]
+}
+
+Diese Regeln sind wichtiger als alles andere:
+- Kannst du auf dem Foto nicht sicher erkennen, was das Kind gemacht hat (unscharf, zu dunkel, abgeschnitten, Blatt nicht erkennbar, gar nichts bearbeitet)? Dann verdict "unklar" und sage im feedback freundlich, dass du das Bild nicht gut erkennen kannst. RATE NICHT.
+- Im Zweifel immer "fast" statt "nochmal".
+- Bei freien Aufgaben, bei denen es kein richtig oder falsch gibt (z.B. frei ausmalen), ist alles richtig, was bearbeitet wurde: verdict "richtig".
+- Sprich das Kind direkt an, nie über das Kind.`;
+}
+
 // Gemeinsame Aufräum-Logik für beide Anbieter: manche Modelle wrappen die
 // JSON-Antwort trotz Anweisung in ```json ... ``` Markdown-Blöcke.
 function parseModelJson(rawText) {
@@ -142,8 +206,13 @@ Object.assign(app.api, {
     // globale Standard-Persona genutzt (bestehende Aufrufe funktionieren
     // unverändert weiter). forceToc ebenfalls optional - siehe
     // app.actions.setPageRole('tocPageId', ...).
-    async analyze(base64Image, isCover, personaId = app.settings.persona, knownText = null, forceToc = false) {
-        const prompt = buildAnalyzePrompt(isCover, personaId, knownText, forceToc);
+    // NEU: bookType entscheidet zusätzlich, welcher Prompt genutzt wird. Ohne
+    // Angabe bleibt es beim bisherigen Geschichten-Prompt - alle alten Aufrufe
+    // verhalten sich dadurch unverändert.
+    async analyze(base64Image, isCover, personaId = app.settings.persona, knownText = null, forceToc = false, bookType = 'story') {
+        const prompt = bookType === 'workbook'
+            ? buildWorkbookPrompt(isCover, personaId, knownText)
+            : buildAnalyzePrompt(isCover, personaId, knownText, forceToc);
 
         try {
             return await callGeminiAnalyze(prompt, base64Image);
@@ -231,6 +300,28 @@ Antworte AUSSCHLIESSLICH als valides JSON-Array ohne Markdown-Blöcke, exakt in 
             console.warn('Gemini fehlgeschlagen, versuche Mistral-Fallback:', geminiError.message);
             try {
                 const result = await callMistralText(prompt);
+                app.ui.toast('Gemini nicht erreichbar - Mistral eingesprungen', '🔄');
+                return result;
+            } catch (mistralError) {
+                console.error('Auch Mistral-Fallback fehlgeschlagen:', mistralError);
+                throw geminiError;
+            }
+        }
+    },
+
+    // NEU: Kontrolle eines bearbeiteten Übungsblattes. Nutzt dieselben
+    // Anbieter-Funktionen wie analyze() (inkl. Mistral-Fallback), nur mit
+    // einem anderen Prompt und dem Foto des bearbeiteten Blattes.
+    async checkWorkedPage(base64Image, variant, personaId = app.settings.persona) {
+        const prompt = buildCheckPrompt(variant, personaId);
+
+        try {
+            return await callGeminiAnalyze(prompt, base64Image);
+        } catch (geminiError) {
+            if (!app.settings.mistralApiKey) throw geminiError;
+            console.warn('Gemini-Kontrolle fehlgeschlagen, versuche Mistral-Fallback:', geminiError.message);
+            try {
+                const result = await callMistralAnalyze(prompt, base64Image);
                 app.ui.toast('Gemini nicht erreichbar - Mistral eingesprungen', '🔄');
                 return result;
             } catch (mistralError) {

@@ -39,3 +39,14 @@ app.personas = [
         ttsStyle: 'Sprich sehr sanft, leise und langsam, fast flüsternd, mit langen ruhigen Pausen - zum Einschlafen.'
     }
 ];
+
+// NEU: Buchart. "Geschichte" ist das klassische Vorlesebuch (unverändertes
+// Verhalten), "Übungsheft" sind Arbeitsblätter zum Mitmachen - dort fragt
+// die KI nach Aufgabenstellung/Hilfe/Lösung statt nach Erzähltext und
+// Rätselfrage. Eine neue Art hier zu ergänzen reicht NICHT aus, sie
+// braucht auch einen eigenen Prompt in js/api.js - anders als bei den
+// Personas ist das also kein reiner Konfigurations-Eintrag.
+app.bookTypes = [
+    { id: 'story',    label: 'Geschichte', icon: '📖', hint: 'Bilderbuch zum Vorlesen' },
+    { id: 'workbook', label: 'Übungsheft', icon: '📝', hint: 'Arbeitsblätter zum Mitmachen' }
+];

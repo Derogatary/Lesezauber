@@ -28,8 +28,11 @@ function findNextMissingTask() {
 
         // Buch-Quiz erst vorschlagen, wenn wirklich JEDE Seite mindestens
         // eine Version hat (Buch vollständig gescannt).
+        // NEU: Übungshefte übersprungen - Verständnisfragen "zur Geschichte"
+        // ergeben bei Arbeitsblättern keinen Sinn und würden nur API-Aufrufe
+        // verbrennen.
         const allDone = book.pages.length > 0 && book.pages.every(p => p.status === 'done');
-        if (allDone && !book.bookQuiz) {
+        if (allDone && !book.bookQuiz && app.utils.resolveBookType(book) !== 'workbook') {
             return { type: 'bookQuiz', bookId };
         }
     }
@@ -45,16 +48,15 @@ async function generatePersonaVariantForPage(book, pageIdx, personaId) {
     const page = book.pages[pageIdx];
     const b64 = page.imgUrl.split(',')[1];
     const isCover = (pageIdx === 0 && (!book.title || book.title === 'Neues Buch'));
-    const result = await app.api.analyze(b64, isCover, personaId, page.pdfSourceText || null);
+    // NEU: auch im Hintergrund gilt die Buchart - ein Übungsheft bekommt
+    // sonst plötzlich Erzähltext-Varianten, sobald man die Persona wechselt.
+    const bookType = app.utils.resolveBookType(book);
+    const result = await app.api.analyze(b64, isCover, personaId, page.pdfSourceText || null, bookType);
 
     if (!page.variants) page.variants = {};
-    page.variants[personaId] = {
-        text: page.pdfSourceText || result.originalText || 'Kein Text.',
-        erstleserText: result.simplifiedText || page.pdfSourceText || result.originalText || 'Kein Text.',
-        desc: result.hasIllustration === false ? null : (result.imageDescription || null),
-        quizQ: result.quizQuestion || (result.hasIllustration === false ? 'Worum ging es auf dieser Seite?' : 'Was siehst du auf dem Bild?'),
-        quizA: result.quizAnswer || 'Schau genau hin!'
-    };
+    // Gemeinsame Umrechnung mit dem Scanner (js/utils.js) - hier lag vorher
+    // eine zweite Kopie derselben Felder-Zuordnung.
+    page.variants[personaId] = app.utils.buildPageVariant(result, page, bookType);
     // NEU: auch bei im Hintergrund vorbereiteten Varianten Vokabeln sammeln
     app.actions.recordVocabulary(result.vocabulary);
     app.dbOps.saveBook(book);

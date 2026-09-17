@@ -69,5 +69,9 @@ Object.assign(app.state, {
     // NEU: Mitmachmodus - liest den Erstleser-Text statt des Originaltexts
     // vor und pausiert bei jedem durch ein Emoji ersetzten Wort, damit das
     // Kind es selbst raten/mitsprechen kann
-    mitmachModus: false
+    mitmachModus: false,
+    // NEU: Art des NAECHSTEN neu angelegten Buches ('story' oder 'workbook').
+    // Bewusst nur zur Laufzeit und nicht in localStorage: sonst legt man
+    // Wochen spaeter unbemerkt weiter Uebungshefte statt Geschichten an.
+    newBookType: 'story'
 });

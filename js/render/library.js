@@ -21,6 +21,10 @@ Object.assign(app.render, {
         const greetingEl = document.getElementById('libraryGreeting');
         if (greetingEl) greetingEl.innerText = profile ? `Hallo, ${profile.name}!` : 'Deine interaktive Kinderbuch-Welt';
 
+        // NEU: Auswahl "als was wird das nächste Buch angelegt" + Belohnungs-Zähler
+        app.render.newBookTypeButtons();
+        app.render.medalBadge();
+
         // NEU: Lese-Serie (Streak) anzeigen, wenn mindestens 2 Tage in Folge
         const streakInfo = app.utils.getStreakInfo();
         const streakEl = document.getElementById('streakBadge');
@@ -141,13 +145,15 @@ Object.assign(app.render, {
                     <div class="h-36 bg-slate-100 relative">
                         ${coverImg ? `<img src="${coverImg}" loading="lazy" class="w-full h-full object-cover">` : `<div class="flex items-center justify-center h-full text-2xl">📚</div>`}
                         <span class="absolute bottom-2 right-2 bg-black/60 backdrop-blur-md text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
-                            ${book.pages.length} Seiten
+                            ${book.pages.length} ${app.utils.resolveBookType(book) === 'workbook' ? 'Blätter' : 'Seiten'}
                         </span>
+                        ${app.utils.resolveBookType(book) === 'workbook' ? '<span class="absolute top-2 left-2 bg-white/90 text-[10px] font-bold px-2 py-0.5 rounded-full text-indigo-700">📝 Übungsheft</span>' : ''}
                     </div>
                     <div class="p-3 flex-grow flex flex-col justify-between">
                         <div>
                             <h3 class="font-bold text-slate-900 text-xs line-clamp-1">${app.utils.sanitize(book.title)}</h3>
                             <p class="text-[10px] text-slate-500 font-semibold">${app.utils.sanitize(book.author)}</p>
+                            ${app.render.progressBadgeHtml(book)}
                         </div>
                     </div>
                 </div>`;

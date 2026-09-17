@@ -1,5 +1,16 @@
 import { app } from './core.js';
 
+// NEU: Pause zwischen zwei Hilfeschritten im Heft-Modus. Das Kind soll
+// den Schritt tatsächlich ausführen können, bevor der nächste kommt -
+// ohne Pause rasselt die App die ganze Anleitung am Stück herunter.
+const WORKBOOK_STEP_PAUSE_MS = 3500;
+
+// Laufende Nummer der aktuellen Schritt-Kette. Zwischen zwei Schritten
+// liegt ein setTimeout - ohne diese Nummer würde ein bereits gestoppter
+// Ablauf nach der Pause einfach weitersprechen (synth.cancel() beendet
+// nur das, was GERADE gesprochen wird, nicht den wartenden Timer).
+let stepRunId = 0;
+
 // NEU: Abwechslung statt immer derselben Ansage vor der Bildbeschreibung
 const IMAGE_INTROS = [
     'Schau mal, was hier zu sehen ist.',
@@ -252,6 +263,7 @@ Object.assign(app.tts, {
     // trotzdem im gerade sichtbaren Textfeld mit.
     speakCurrentText() {
         if (app.state.autoReadActive) this.stopAutoRead();
+        stepRunId++; // auch eine per Hand gestartete Schritt-Kette abbrechen
 
         const book = app.library[app.state.currentBookId];
         if (!book) return;
@@ -273,6 +285,77 @@ Object.assign(app.tts, {
         }
     },
 
+    // NEU: Beschriftung des großen Vorlese-Knopfes. Bei einem Übungsheft
+    // wird NICHT das ganze Heft durchgelesen, sondern die aktuelle Aufgabe
+    // erklärt - der Knopf muss das auch versprechen.
+    autoReadLabel() {
+        const book = app.library[app.state.currentBookId];
+        return (book && app.utils.resolveBookType(book) === 'workbook')
+            ? '▶️ Aufgabe vorlesen & helfen'
+            : '▶️ Buch automatisch vorlesen';
+    },
+
+    // NEU: nur die Hilfeschritte vorlesen (🔊-Knopf an der Hilfe-Karte),
+    // ohne die Aufgabe davor noch einmal zu wiederholen.
+    speakWorkbookSteps() {
+        if (app.state.autoReadActive) this.stopAutoRead();
+
+        const book = app.library[app.state.currentBookId];
+        const page = book?.pages[app.state.currentPageIdx];
+        if (!page) return;
+
+        const variant = app.utils.resolvePageVariant(page, app.state.readingPersonaId);
+        const steps = (variant && Array.isArray(variant.helpSteps)) ? variant.helpSteps : [];
+        if (steps.length === 0) {
+            app.ui.toast('Für dieses Blatt gibt es noch keine Hilfeschritte.', 'ℹ️');
+            return;
+        }
+        this._speakSteps(steps, 0);
+    },
+
+    // Spricht die Schritte nacheinander mit Pause dazwischen. Läuft über
+    // einen Index statt über eine Schleife, weil jeder Schritt erst nach
+    // dem Ende des vorherigen starten darf (onEnd-Kette).
+    _speakSteps(steps, index, onFinished, runId) {
+        if (runId === undefined) runId = ++stepRunId; // neue Kette startet
+        if (runId !== stepRunId) return;              // eine neuere Kette hat übernommen
+
+        if (index >= steps.length) {
+            if (onFinished) onFinished();
+            return;
+        }
+        this.speak(steps[index], () => {
+            if (runId !== stepRunId) return;
+            setTimeout(() => this._speakSteps(steps, index + 1, onFinished, runId), WORKBOOK_STEP_PAUSE_MS);
+        });
+    },
+
+    // NEU: Rückmeldung der Blatt-Kontrolle vorlesen - das Kind kann sie
+    // nicht selbst lesen, deshalb ist das der eigentliche Ausgabeweg und
+    // nicht nur eine Zusatzfunktion. Lob, Rückmeldung und Tipps kommen
+    // nacheinander mit kurzer Pause, damit es nicht wie ein Textblock klingt.
+    speakCheckResult(check) {
+        if (!check) return;
+        if (app.state.autoReadActive) this.stopAutoRead();
+        stepRunId++; // eine laufende Schritt-Kette hat jetzt Vorrang verloren
+
+        const parts = [check.praise, check.feedback].filter(Boolean);
+        const hints = Array.isArray(check.hints) ? check.hints : [];
+
+        const readHints = () => {
+            if (hints.length > 0) this._speakSteps(hints, 0);
+        };
+
+        if (parts.length === 0) { readHints(); return; }
+        this.speak(parts[0], () => {
+            if (parts.length > 1) {
+                this.speak(parts[1], readHints);
+            } else {
+                readHints();
+            }
+        });
+    },
+
     toggleAutoRead() {
         if (app.state.autoReadActive) {
             this.stopAutoRead();
@@ -288,9 +371,12 @@ Object.assign(app.tts, {
 
     stopAutoRead() {
         app.state.autoReadActive = false;
+        // NEU: auch eine wartende Übungsheft-Schritt-Kette verfällt damit
+        // (ihre Pausen laufen über setTimeout, nicht über die Sprachausgabe).
+        stepRunId++;
         this.stop();
         const btn = document.getElementById('btnAutoRead');
-        if (btn) btn.innerHTML = '▶️ Buch automatisch vorlesen';
+        if (btn) btn.innerHTML = this.autoReadLabel();
         const focusBtn = document.getElementById('focusPlayBtn');
         if (focusBtn) focusBtn.innerText = '▶️';
     },
@@ -345,6 +431,15 @@ Object.assign(app.tts, {
         if (btn) btn.innerHTML = '⏸ Vorlesen stoppen';
         const focusBtn = document.getElementById('focusPlayBtn');
         if (focusBtn) focusBtn.innerText = '⏸️';
+
+        // NEU: Übungsheft - Aufgabe erklären und bei der Bearbeitung helfen,
+        // statt wie bei einer Geschichte automatisch weiterzublättern. Das
+        // Kind braucht die Zeit ja zum Malen/Zählen/Verbinden. Steht bewusst
+        // VOR dem Vorwärmen: es wird keine nächste Seite vorgelesen.
+        if (app.utils.resolveBookType(book) === 'workbook') {
+            this._readWorkbookTask(variant);
+            return;
+        }
 
         // NEU: Bei einer KI-Stimme dauert das Erzeugen der Audiodatei ein
         // paar Sekunden. Während diese Seite vorgelesen wird, entsteht die
@@ -471,5 +566,40 @@ Object.assign(app.tts, {
         }
 
         return announcements;
+    },
+
+    // NEU: Ablauf im Heft-Modus - gedruckte Aufgabe, dann die kindgerechte
+    // Erklärung (nur falls sie sich wirklich unterscheidet), dann die
+    // Hilfeschritte mit Pausen. Danach ist Schluss: kein automatisches
+    // Weiterblättern.
+    _readWorkbookTask(variant) {
+        const steps = Array.isArray(variant.helpSteps) ? variant.helpSteps : [];
+
+        const finish = () => {
+            if (!app.state.autoReadActive) return;
+            this.stopAutoRead();
+            app.ui.toast('Jetzt bist du dran!', '🖍️');
+        };
+
+        const readSteps = () => {
+            if (!app.state.autoReadActive) return;
+            if (steps.length === 0) { finish(); return; }
+            this.speak('Und so geht es Schritt für Schritt:', () => {
+                if (!app.state.autoReadActive) return;
+                this._speakSteps(steps, 0, finish);
+            });
+        };
+
+        const readExplanation = () => {
+            if (!app.state.autoReadActive) return;
+            const explained = variant.erstleserText;
+            if (explained && explained !== variant.text) {
+                this.speak(explained, readSteps);
+            } else {
+                readSteps();
+            }
+        };
+
+        this.speak(variant.text, readExplanation, this._currentTextElementId());
     }
 });

@@ -6,6 +6,12 @@ Object.assign(app.render, {
         if (!book) { app.nav.go('lib'); return; }
 
         const coverImg = app.utils.resolveCoverUrl(book);
+        // NEU: Übungshefte werden überall anders benannt ("Blätter"/"Aufgaben"
+        // statt "Seiten"), damit im Heft-Modus nichts nach Bilderbuch klingt.
+        const bookTypeId = app.utils.resolveBookType(book);
+        const bookTypeInfo = app.bookTypes.find(t => t.id === bookTypeId);
+        const isWorkbook = bookTypeId === 'workbook';
+        const unit = isWorkbook ? 'Blätter' : 'Seiten';
         const header = document.getElementById('bookDetailHeader');
         // NEU: Verlag/Reihe anzeigen, falls die KI sie auf der Titelseite
         // erkannt hat (siehe app.actions.analyzePage) - sonst einfach weg.
@@ -20,15 +26,19 @@ Object.assign(app.render, {
                 <h2 class="text-base font-extrabold text-slate-900">${app.utils.sanitize(book.title)}</h2>
                 <p class="text-xs text-slate-500 font-medium">Autor: ${app.utils.sanitize(book.author)}</p>
                 ${publisherLine}
-                <p class="text-[10px] text-slate-500 mt-1">${book.pages.length} Seiten gespeichert</p>
+                <p class="text-[10px] text-slate-500 mt-1">${bookTypeInfo ? bookTypeInfo.icon + ' ' + app.utils.sanitize(bookTypeInfo.label) + ' · ' : ''}${book.pages.length} ${unit} gespeichert</p>
             </div>`;
+
+        // NEU: Art-Umschalter (Geschichte/Übungsheft) und Fortschrittsbalken
+        app.render.bookTypeBar(book);
+        app.render.progressBar(book);
 
         // NEU: "Weiterlesen"-Leiste, falls schon mal eine Seite geöffnet wurde
         const resumeBar = document.getElementById('resumeBar');
         const resumeIdx = (typeof book.lastReadIdx === 'number' && book.lastReadIdx >= 0 && book.lastReadIdx < book.pages.length)
             ? book.lastReadIdx : null;
         resumeBar.innerHTML = resumeIdx !== null
-            ? `<button onclick="app.state.currentPageIdx=${resumeIdx}; app.nav.go('reader');" class="w-full bg-indigo-50 text-indigo-700 font-bold py-2.5 rounded-xl text-sm hover:bg-indigo-100 transition">▶ Weiterlesen (Seite ${resumeIdx + 1})</button>`
+            ? `<button onclick="app.state.currentPageIdx=${resumeIdx}; app.nav.go('reader');" class="w-full bg-indigo-50 text-indigo-700 font-bold py-2.5 rounded-xl text-sm hover:bg-indigo-100 transition">▶ ${isWorkbook ? 'Weitermachen' : 'Weiterlesen'} (${isWorkbook ? 'Blatt' : 'Seite'} ${resumeIdx + 1})</button>`
             : '';
 
         // NEU: Seiten-Rollen-Auswahl (Titelseite/Rückseite/Inhaltsverzeichnis)
@@ -75,6 +85,8 @@ Object.assign(app.render, {
             if (p.excluded) statusBadge = `<span class="bg-slate-300 text-slate-700 text-[10px] font-bold px-2 py-0.5 rounded-full">🚫 Ausgeschlossen</span>`;
 
             const isCover = book.coverPageId ? book.coverPageId === p.id : i === 0;
+            // NEU: erledigte Seiten/Aufgaben sichtbar machen (pro Profil)
+            const done = app.progress.isPageDone(p);
 
             return `
                 <div class="bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
@@ -82,10 +94,11 @@ Object.assign(app.render, {
                         <img src="${p.thumbUrl || p.imgUrl}" loading="lazy" class="w-full h-full object-cover">
                         <div class="absolute top-2 left-2">${statusBadge}</div>
                         ${isCover ? '<div class="absolute top-2 right-2 text-amber-400 text-sm drop-shadow">⭐</div>' : ''}
+                        ${done ? `<div class="absolute inset-0 bg-emerald-500/20 flex items-end justify-end p-1.5 pointer-events-none"><span class="bg-white/90 rounded-full w-6 h-6 flex items-center justify-center text-sm shadow">${app.progress.pageSticker(p)}</span></div>` : ''}
                     </div>
                     ${p.chapterTitle ? `<div class="px-2 py-1 bg-indigo-50 border-t border-indigo-100 text-[10px] font-bold text-indigo-700 truncate" title="${app.utils.sanitize(p.chapterTitle)}">📑 ${app.utils.sanitize(p.chapterTitle)}</div>` : ''}
                     <div class="p-2 flex justify-between items-center bg-slate-50 border-t border-slate-100 rounded-b-xl gap-1">
-                        <span class="text-[11px] font-bold text-slate-600 flex-shrink-0">S. ${i + 1}</span>
+                        <span class="text-[11px] font-bold text-slate-600 flex-shrink-0">${isWorkbook ? 'Bl.' : 'S.'} ${i + 1}</span>
                         <div class="flex items-center">
                             <button onclick="app.actions.movePage(${i}, -1)" ${i === 0 ? 'disabled' : ''} title="Nach oben verschieben" aria-label="Seite nach oben verschieben" class="text-xs p-1 ${i === 0 ? 'text-slate-300' : 'text-slate-500 hover:text-slate-800'}">⬆️</button>
                             <button onclick="app.actions.movePage(${i}, 1)" ${i === book.pages.length - 1 ? 'disabled' : ''} title="Nach unten verschieben" aria-label="Seite nach unten verschieben" class="text-xs p-1 ${i === book.pages.length - 1 ? 'text-slate-300' : 'text-slate-500 hover:text-slate-800'}">⬇️</button>
