@@ -231,7 +231,7 @@ Nutzer, nicht einfach lospreschen):
 |---|---|
 | 🎬 Video-Export (Seite UND Buch, Schwerpunkt Buch - entschieden) - Vorarbeit steht (siehe "KI-Stimmen"), offen ist nur Canvas + `WebCodecs` | [`docs/KONZEPT-Video.md`](docs/KONZEPT-Video.md) |
 | 🪄 "SchreibZauber" - eigener Schreib-/Generierungs-Bereich für eigene Werke | [`docs/KONZEPT-SchreibZauber.md`](docs/KONZEPT-SchreibZauber.md), [`docs/KONZEPT-Bildquellen.md`](docs/KONZEPT-Bildquellen.md) |
-| 📝 Heft-Generator - Übungsblätter von der KI erstellen lassen | [`docs/KONZEPT-Uebungshefte.md`](docs/KONZEPT-Uebungshefte.md) |
+| 📝 Heft-Generator - Übungsblätter von der KI erstellen lassen - **angefangen:** der KI-Aufruf `app.api.generateWorksheets()` steht (ein Aufruf pro Heft, nur Aufgabenarten ohne Bildmaterial), offen sind Auswahl-Ansicht und das Zeichnen der Blätter | [`docs/KONZEPT-Uebungshefte.md`](docs/KONZEPT-Uebungshefte.md) |
 | 🎨 KI-generierte Illustrationen (Comic-Stil), für Text-only-EPUB-Kapitel UND als SchreibZauber-Werktyp | [`docs/KONZEPT-Comic.md`](docs/KONZEPT-Comic.md) |
 | 🎭 Emotionen/Sprech-Anweisungen mitten im Satz (Audio-Tags) | [`docs/ROADMAP.md`](docs/ROADMAP.md) |
 | 🔐 Kinder-/Elternbereich (Profil-Rollen), 📱 Native Android-App via Capacitor | [`docs/TODO-GESAMT.md`](docs/TODO-GESAMT.md), Bereich "App & Plattform" |

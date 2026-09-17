@@ -153,7 +153,7 @@ Schritt davor: Blätter **erzeugen**.
 | Punkt | Aufwand | Anmerkung |
 |---|---|---|
 | **Kontroll-Funktion im Alltag beobachten** | **S** | Wie zuverlässig beurteilt Gemini die Fotos bearbeiteter Blätter? Bei zu vielen „unklar" wäre eine Foto-Hilfe (Rahmen, Helligkeitshinweis) der nächste Schritt |
-| **Heft-Generator: API-Aufruf + Prompt** | **S** | Muster vorhanden (`generateBookQuiz`). Ein Heft = **ein** Aufruf, nicht einer pro Blatt |
+| ~~**Heft-Generator: API-Aufruf + Prompt**~~ | **erledigt** | `app.api.generateWorksheets()` in `js/api.js` - ein Heft = **ein** Aufruf, nicht einer pro Blatt. Nur Aufgabenarten ohne Bildmaterial (zaehlen, ankreuzen, nachspuren, schreiben) |
 | **Heft-Generator: Auswahl-Ansicht** | **M** | Neue Ansicht inkl. Router-Eintrag in `js/nav.js` |
 | **Heft-Generator: Blätter auf Canvas zeichnen** | **M** | Vorlage vorhanden: `renderTextAsImageCanvas()` in `epubImport.js` |
 | **Heft-Generator: eigene Druckansicht** | **M** | Optional. Ein Canvas-Bild druckt schlechter als echter Text - dafür gäbe es dann zwei Wege zum selben Inhalt |
