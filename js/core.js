@@ -24,5 +24,10 @@ export const app = {
     progress: {},
     readerUI: {},
     settingsConfig: {},
-    utils: {}
+    utils: {},
+    // NEU: reserviert für den Schreib-/Generierungs-Bereich "SchreibZauber"
+    // (js/studio/*). Steht hier, damit die Studio-Module denselben
+    // Namespace-Regeln folgen wie alles andere - siehe
+    // docs/KONZEPT-SchreibZauber.md.
+    studio: {}
 };

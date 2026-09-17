@@ -209,6 +209,7 @@ docs/
 > **Ausführliche Konzepte, offene Entscheidungen und eine Kostenübersicht stehen in [`docs/ROADMAP.md`](docs/ROADMAP.md).** Die Liste hier ist nur die Kurzfassung.
 
 **Bleibt komplett im Browser (kein Server nötig):**
+- 🪄 **SchreibZauber** - eigener Bereich zum Schreiben und Illustrieren eigener Bilderbücher, Comics/Hefte und Kinder-Arbeitshefte. Ausführliches Konzept: [`docs/KONZEPT-SchreibZauber.md`](docs/KONZEPT-SchreibZauber.md)
 - 🎨 KI-generierte Illustrationen für textlastige EPUB-Kapitel ohne eigenes Bild, optional im Comic-Stil (Gemini kann mittlerweile auch Bilder erzeugen, gleicher Key wie bisher) - Cover-Bild-Sonderfall erstmal nicht nötig
 - 📱 Native App / Android-Store-Verpackung (Capacitor) - verpackt den bestehenden Code weitgehend unverändert
 - 📝 **Heft-Generator**: Übungsblätter von der KI erstellen lassen (Geschichte + Lernziel auswählen) - Entwurf und offene Punkte in `docs/todo-heft-generator.md`
