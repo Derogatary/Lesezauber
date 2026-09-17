@@ -214,6 +214,7 @@ docs/
 - 📱 Native App / Android-Store-Verpackung (Capacitor) - verpackt den bestehenden Code weitgehend unverändert
 - 📝 **Heft-Generator**: Übungsblätter von der KI erstellen lassen (Geschichte + Lernziel auswählen) - Entwurf und offene Punkte in `docs/todo-heft-generator.md`
 - 🎬 **Video-Export** (Seite + KI-Stimme als Videodatei). Vorarbeit ist erledigt: Audiodatei, Länge und Wort-Zeitpunkte je Seite liefert `app.ttsNeural.renderPageSegments()`, das Seitenbild liegt ohnehin vor. Offen ist nur noch das Zusammensetzen im Browser (Bild auf ein Canvas zeichnen, Untertitel einblenden, mit `MediaRecorder` aufnehmen) - und die Entscheidung, ob pro Seite oder ein Video fürs ganze Buch. Setzt eine KI-Stimme voraus.
+- 📓 Ausführliches Konzept dazu (Sprach-API, Video/MP4, Hörbuch, Comic - was, wie und warum): [`docs/konzept-video-und-multiformat.md`](docs/konzept-video-und-multiformat.md)
 
 **Bräuchte einen eigenen Server** (aktuell bewusst zurückgestellt):
 - API-Key über ein Backend absichern

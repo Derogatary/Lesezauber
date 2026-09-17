@@ -220,6 +220,10 @@ Größere, noch nicht begonnene Features (brauchen erst Abstimmung mit dem Nutze
 - KI-generierte Illustrationen (Comic-Stil) für Text-only-EPUB-Kapitel via Gemini-Bildgenerierung
 - Video-Export: Vorarbeit steht (siehe "KI-Stimmen"), offen ist nur das Zusammensetzen per Canvas + `MediaRecorder` und die Frage "ein Video pro Seite oder pro Buch"
 - "SchreibZauber": eigener Schreib-/Generierungs-Bereich für selbst erstellte Bilderbücher, Comics/Hefte und Arbeitshefte - Konzept liegt fertig unter `docs/KONZEPT-SchreibZauber.md` (inkl. Entscheidung Tab vs. eigene App, Datenmodell, Ausbaustufen, offene Fragen)
+- Sprach-API mit echter Audiodatei, Video-Export (MP4), Hörbuch, Comic, selbst geschriebene Bücher -
+  ausgearbeitetes Konzept inkl. Begründungen und bekannter Sackgassen in
+  `docs/konzept-video-und-multiformat.md`. **Vor jeder Arbeit an einem dieser Themen dort reinschauen**,
+  sonst werden Entscheidungen neu diskutiert, die schon gefallen sind.
 - Native Android-App via Capacitor (Play Store, ggf. Samsung/Amazon Store)
 - Diagnose: Scroll-Verhalten am Bildschirmrand (Desktop), Zoom/Unschärfe im Fenstermodus - noch nicht reproduziert, braucht ggf. Screenshot vom Nutzer
 
