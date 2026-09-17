@@ -28,6 +28,7 @@ import './actions/vocabTrainer.js';
 import './actions/workbook.js';
 import './actions/progress.js';
 import './actions/checkWork.js';
+import './actions/prepareAudio.js';
 
 import './render/library.js';
 import './render/book.js';

@@ -173,6 +173,17 @@
                 </button>
             </div>
 
+            <!-- NEU: legt alle Seiten vorab in den KI-Stimmen-Zwischenspeicher
+                 (ttsCache), damit später ohne Wartezeit und offline vorgelesen
+                 werden kann - nur bei einer KI-Stimme sichtbar (siehe
+                 app.actions.prepareBookAudio / render.book) -->
+            <div id="prepareAudioBar" class="mb-6 hidden">
+                <button onclick="app.actions.prepareBookAudio()" class="w-full bg-white border border-indigo-200 text-indigo-700 font-bold py-2.5 px-4 rounded-xl shadow-sm hover:bg-indigo-50 active:scale-98 transition flex items-center justify-center gap-2">
+                    <span>🎧</span>
+                    <span>Buch hörfertig machen</span>
+                </button>
+            </div>
+
             <!-- NEU: Seiten-Rollen (optional) - macht der KI unabhängig von
                  der Scan-Reihenfolge klar, welche Seite Titelseite,
                  Rückseite/Klappentext bzw. Inhaltsverzeichnis ist, für die

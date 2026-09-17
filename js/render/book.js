@@ -73,6 +73,13 @@ Object.assign(app.render, {
         ));
         document.getElementById('batchActionBar').classList.toggle('hidden', !hasPending);
 
+        // NEU: "Buch hörfertig machen" nur mit einer KI-Stimme sinnvoll -
+        // die Gerätestimme erzeugt keine Datei zum Zwischenspeichern.
+        const prepareAudioBar = document.getElementById('prepareAudioBar');
+        if (prepareAudioBar) {
+            prepareAudioBar.classList.toggle('hidden', app.settings.ttsProvider === 'device' || book.pages.length === 0);
+        }
+
         const grid = document.getElementById('pagesGrid');
         grid.innerHTML = book.pages.map((p, i) => {
             let statusBadge = `<span class="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full">Bereit</span>`;
