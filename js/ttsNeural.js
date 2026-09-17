@@ -107,6 +107,10 @@ Object.assign(app.ttsNeural, {
 
         const styleHint = provider.supportsStyle ? app.ttsProviders.styleHintFor(personaId) : null;
         const result = await provider.synthesize(text, { voice, rate, styleHint });
+        // NEU: Kosten-/Verbrauchsanzeige - zaehlt nur hier, NACH einem
+        // Cache-Fehlschlag, weil erst ab hier wirklich synthetisiert (und
+        // damit bezahlt) wird. Ein Cache-Treffer weiter oben kostet nichts.
+        app.costMeter.trackTts(provider.id, text.length);
         const durationSec = needDuration ? await this._measureDuration(result.blob) : 0;
 
         if (useCache) {
@@ -299,7 +303,12 @@ Object.assign(app.ttsNeural, {
             throw new TtsError('Dafür muss in den Einstellungen eine KI-Stimme gewählt sein (die Gerätestimme liefert keine Audiodatei).', { fatal: true, code: 'NO_NEURAL' });
         }
 
-        const text = app.utils.stripEmojiForSpeech(rawText);
+        // NEU: erst Trennstriche/Zeilenumbrüche/Abkürzungen glätten (klingt
+        // für die exportierte Audiodatei genauso sauber wie beim normalen
+        // Vorlesen), dann Emojis raus - gleiche Reihenfolge wie in
+        // app.tts._prepare(), damit Wort-Zeitpunkte unten zum tatsächlich
+        // synthetisierten Text passen.
+        const text = app.utils.stripEmojiForSpeech(app.utils.prepareTextForSpeech(rawText));
         if (!text) throw new TtsError('Kein Text zum Vorlesen vorhanden.', { code: 'EMPTY' });
         if (text.length > MAX_NEURAL_CHARS) {
             throw new TtsError(`Text ist mit ${text.length} Zeichen zu lang (Grenze: ${MAX_NEURAL_CHARS}).`, { code: 'TOO_LONG' });
@@ -371,7 +380,11 @@ Object.assign(app.ttsNeural, {
     // Fehler werden hier absichtlich verschluckt - es ist nur Vorarbeit.
     async warmUp(text) {
         if (!this.isActive() || !text) return;
-        const clean = app.utils.stripEmojiForSpeech(text);
+        // NEU: dieselbe Glättung wie beim eigentlichen Vorlesen (siehe
+        // app.tts._prepare()) - sonst würde der Zwischenspeicher unter dem
+        // rohen Text abgelegt, aber beim tatsächlichen Vorlesen unter dem
+        // geglätteten gesucht, und der Cache-Treffer bliebe aus.
+        const clean = app.utils.stripEmojiForSpeech(app.utils.prepareTextForSpeech(text));
         if (!clean || clean.length > MAX_NEURAL_CHARS) return;
         if (app.settings.ttsCacheEnabled === false) return;
 

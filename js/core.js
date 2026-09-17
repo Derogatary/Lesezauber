@@ -25,6 +25,9 @@ export const app = {
     readerUI: {},
     settingsConfig: {},
     utils: {},
+    // NEU: rein lokale Kosten-/Verbrauchsanzeige (js/costMeter.js) - zaehlt
+    // tatsaechlich synthetisierte TTS-Zeichen und Gemini-Textaufrufe mit.
+    costMeter: {},
     // NEU: reserviert für den Schreib-/Generierungs-Bereich "SchreibZauber"
     // (js/studio/*). Steht hier, damit die Studio-Module denselben
     // Namespace-Regeln folgen wie alles andere - siehe

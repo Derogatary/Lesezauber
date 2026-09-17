@@ -21,7 +21,7 @@ Läuft rein im Browser, gehostet auf GitHub Pages (statisches Hosting). Alle Dat
 - **JSZip** (vendored, lazy-geladen als klassisches Script, kein ESM-Build verfügbar) für EPUB-Import
 - **Google Gemini API** (aktuell `gemini-3.6-flash`, siehe `js/api.js`) für Bildanalyse/Text
 - **Mistral API** als optionaler Fallback bei Gemini-Fehlern
-- **Neuronale TTS-Anbieter** (optional, opt-in): Gemini TTS, Google Cloud Chirp 3 HD, ElevenLabs, OpenAI - siehe `js/ttsProviders.js`
+- **Neuronale TTS-Anbieter** (optional, opt-in): Gemini TTS, Google Cloud Chirp 3 HD, ElevenLabs, OpenAI, Speechify - siehe `js/ttsProviders.js`
 - Service Worker für PWA/Offline-Fähigkeit der App-Hülle
 - Kein Build-Tool für JS nötig (reine ES-Module, kein Bundler) - NUR Tailwind braucht einen Build-Schritt
 
@@ -270,4 +270,4 @@ Feste Regeln dabei:
 
 ## Versionsstand
 
-Aktuell `v0.12.0-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Zähl die Version bei größeren Änderungen entsprechend hoch (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).
+Aktuell `v0.13.0-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Zähl die Version bei größeren Änderungen entsprechend hoch (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).

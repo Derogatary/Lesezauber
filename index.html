@@ -41,7 +41,7 @@
                     <p id="streakBadge" class="hidden text-xs font-bold text-amber-600 mt-0.5"></p>
                     <!-- NEU: Belohnung - Anzahl komplett geschaffter Bücher/Hefte -->
                     <p id="medalBadge" class="hidden text-xs font-bold text-emerald-600 mt-0.5"></p>
-                    <p class="text-[10px] text-slate-400 font-semibold mt-0.5">v0.12.0-beta</p>
+                    <p class="text-[10px] text-slate-400 font-semibold mt-0.5">v0.13.0-beta</p>
                 </div>
                 <div class="flex items-center gap-2 flex-shrink-0">
                     <button onclick="app.nav.go('help')" aria-label="Hilfe öffnen" title="Hilfe" class="w-10 h-10 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-600 hover:bg-slate-100 shadow-sm transition active:scale-95">
@@ -145,6 +145,10 @@
                     <button onclick="app.actions.downloadBook(app.state.currentBookId)" class="text-xs text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1.5 rounded-lg font-bold transition">
                         📥 Download
                     </button>
+                    <!-- NEU: Hörbuch-Export - braucht eine KI-Stimme, siehe app.actions.exportAudiobook() -->
+                    <button onclick="app.actions.exportAudiobook(app.state.currentBookId)" aria-label="Als Hörbuch exportieren" title="Als Hörbuch exportieren (braucht eine KI-Stimme)" class="text-xs text-amber-700 hover:text-amber-900 bg-amber-50 hover:bg-amber-100 px-2.5 py-1.5 rounded-lg font-bold transition">
+                        🎧 Hörbuch
+                    </button>
                     <button onclick="app.actions.confirmDeleteBook(app.state.currentBookId)" class="text-xs text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 px-2.5 py-1.5 rounded-lg font-bold transition">
                         Löschen
                     </button>
@@ -170,6 +174,17 @@
                 <button onclick="app.actions.analyzeAllPending()" class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold py-3 px-4 rounded-xl shadow-lg hover:opacity-95 active:scale-98 transition flex items-center justify-center gap-2 magic-glow">
                     <span>✨</span>
                     <span>Alle unanalysierten Seiten auslesen</span>
+                </button>
+            </div>
+
+            <!-- NEU: legt alle Seiten vorab in den KI-Stimmen-Zwischenspeicher
+                 (ttsCache), damit später ohne Wartezeit und offline vorgelesen
+                 werden kann - nur bei einer KI-Stimme sichtbar (siehe
+                 app.actions.prepareBookAudio / render.book) -->
+            <div id="prepareAudioBar" class="mb-6 hidden">
+                <button onclick="app.actions.prepareBookAudio()" class="w-full bg-white border border-indigo-200 text-indigo-700 font-bold py-2.5 px-4 rounded-xl shadow-sm hover:bg-indigo-50 active:scale-98 transition flex items-center justify-center gap-2">
+                    <span>🎧</span>
+                    <span>Buch hörfertig machen</span>
                 </button>
             </div>
 
@@ -457,7 +472,12 @@
             </div>
             <div id="focusImageContainer" class="flex-grow flex items-center justify-center overflow-hidden relative">
                 <button onclick="app.actions.goToPage(-1)" aria-label="Vorherige Seite" class="absolute left-2 z-10 w-11 h-11 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center text-white text-xl active:scale-90 transition">‹</button>
-                <img id="focusImg" class="max-w-full max-h-full object-contain" src="" alt="Buchseite">
+                <!-- NEU: zwei übereinanderliegende Bilder für die Kreuzblende beim
+                     Seitenwechsel + Ken-Burns-Zoom (siehe app.render.focusMode()
+                     in js/render/reader.js und css/style.css) - abschaltbar in den
+                     Einstellungen, respektiert außerdem prefers-reduced-motion. -->
+                <img id="focusImg" class="focus-kenburns-img max-w-full max-h-full object-contain" src="" alt="Buchseite">
+                <img id="focusImgB" class="focus-kenburns-img max-w-full max-h-full object-contain" src="" alt="" aria-hidden="true">
                 <button onclick="app.actions.goToPage(1)" aria-label="Nächste Seite" class="absolute right-2 z-10 w-11 h-11 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center text-white text-xl active:scale-90 transition">›</button>
             </div>
             <!-- NEU: Text mit Wort-Hervorhebung im Vollbild-Modus (vorher nur Bild) -->
@@ -604,6 +624,17 @@
                     <p class="text-[11px] text-slate-500">Zeigt Bild und Text beim Lesen auf größeren Bildschirmen nebeneinander wie ein aufgeschlagenes Buch. Auf dem Handy bleibt es immer wie gewohnt untereinander.</p>
                 </div>
 
+                <!-- NEU: Kino-Modus-Effekte (Ken-Burns + Kreuzblende) im Vollbild -->
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-2">
+                    <div class="flex items-center justify-between">
+                        <label for="toggleFocusEffects" class="text-xs font-bold uppercase tracking-wider text-slate-500">
+                            Kino-Effekte im Vollbild
+                        </label>
+                        <input id="toggleFocusEffects" type="checkbox" onchange="app.settingsConfig.toggleFocusEffects(this.checked)" class="w-5 h-5 accent-indigo-600">
+                    </div>
+                    <p class="text-[11px] text-slate-500">Langsamer Zoom übers Bild und weiche Überblendung beim Seitenwechsel im Vollbild-Vorlese-Modus. Wer reduzierte Bewegung eingestellt hat, bekommt ohnehin einen harten Schnitt ohne Zoom.</p>
+                </div>
+
                 <!-- Mistral als optionaler Fallback -->
                 <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-3">
                     <label class="block text-xs font-bold uppercase tracking-wider text-slate-500">
@@ -667,6 +698,9 @@
                             <button id="btnLoadElevenVoices" onclick="app.settingsConfig.loadElevenVoices()" class="hidden flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 rounded-xl text-sm transition">
                                 🎙️ Eigene Stimmen laden
                             </button>
+                            <button id="btnLoadSpeechifyVoices" onclick="app.settingsConfig.loadSpeechifyVoices()" class="hidden flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 rounded-xl text-sm transition">
+                                🎙️ Eigene Stimmen laden
+                            </button>
                         </div>
                     </div>
 
@@ -690,6 +724,24 @@
                             </button>
                         </div>
                     </div>
+                </div>
+
+                <!-- NEU: rein lokale Kosten-/Verbrauchsanzeige (js/costMeter.js).
+                     Zaehlt nur tatsaechlich synthetisierte Zeichen (kein
+                     Cache-Treffer) und schaetzt daraus einen ungefaehren
+                     Betrag - keine Abrechnungs-API, kein Limit/Sperre. -->
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-500">
+                        Geschätzter Verbrauch diesen Monat
+                    </label>
+                    <div id="costMeterList" class="space-y-1.5 text-[11px] text-slate-600">
+                        Wird ermittelt...
+                    </div>
+                    <p id="costMeterTotal" class="text-[11px] font-semibold text-slate-700"></p>
+                    <p class="text-[10px] text-slate-400">Ungefähre Schätzung anhand öffentlicher Preislisten, ohne Gewähr - verbindlich ist immer die Abrechnung des jeweiligen Anbieters. Zählt nur echte Sprachausgaben, keine Treffer aus dem Stimmen-Speicher.</p>
+                    <button onclick="app.costMeter.reset()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 rounded-xl text-sm transition">
+                        🗑️ Zähler zurücksetzen
+                    </button>
                 </div>
 
                 <!-- System TTS Voice Selection -->

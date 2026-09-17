@@ -13,6 +13,7 @@ import './api.js';
 import './tts.js';
 import './ttsProviders.js';
 import './ttsNeural.js';
+import './costMeter.js';
 import './ui.js';
 import './utils.js';
 
@@ -28,6 +29,8 @@ import './actions/vocabTrainer.js';
 import './actions/workbook.js';
 import './actions/progress.js';
 import './actions/checkWork.js';
+import './actions/prepareAudio.js';
+import './actions/audiobookExport.js';
 
 import './render/library.js';
 import './render/book.js';

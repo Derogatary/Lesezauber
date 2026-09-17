@@ -27,7 +27,9 @@ die weiter unten früher noch als offen standen: Vollbild-Modus mit Text + Hervo
 Zweiseitiges Layout für PC/Tablet, Mitmachmodus (Gerätestimme), strukturierte
 Metadaten-Ansage, Heft-Modus für Übungshefte. Details dazu: `docs/TODO-GESAMT.md`.
 
-**KI-Stimmen (v0.10.0 - v0.10.2).** Statt der maschinellen Gerätestimme lassen sich vier neuronale Anbieter wählen (Gemini, Google Cloud Chirp 3 HD, ElevenLabs, OpenAI). Details im README-Abschnitt "Echte KI-Stimmen statt Roboterstimme", technische Regeln in `CLAUDE.md` unter "KI-Stimmen".
+**KI-Stimmen (v0.10.0 - v0.10.2).** Statt der maschinellen Gerätestimme lassen sich neuronale Anbieter wählen (Gemini, Google Cloud Chirp 3 HD, ElevenLabs, OpenAI). Details im README-Abschnitt "Echte KI-Stimmen statt Roboterstimme", technische Regeln in `CLAUDE.md` unter "KI-Stimmen".
+
+**Speechify als 5. Anbieter, mehr Stimmen, Tarif-Lock (Sept. 2026, siehe unten).** `js/ttsProviders.js` hat jetzt fünf Anbieter, deutlich mehr Stimmen (Gemini alle 30, OpenAI alle 13) und ein `costTier`-Feld je Anbieter mit Bestätigungsdialog beim Wechsel in eine teurere Preisstufe.
 
 Wichtig für alles Folgende:
 - Jede Aufnahme liegt als Datei im `ttsCache` (IndexedDB), inkl. Länge und Wort-Zeitpunkten.
@@ -57,7 +59,7 @@ wird:
   erlaubt, ist nicht zu 100% verifiziert (keine gegenteiligen Hinweise gefunden) - im
   Praxistest bestätigen.
 
-**2. Stimmen-Speicher: 300 MB statt 100 MB.** (entschieden, Sept. 2026)
+**2. Stimmen-Speicher: 300 MB statt 100 MB.** (entschieden, Sept. 2026 - **umgesetzt**)
 
 Faktor 3 als Mittelweg: bei Gemini (~1 MB/Seite) wächst die Reichweite von ~100 auf
 ~300 Seiten, bei den MP3-Anbietern (~40 KB/Seite) greift das Limit ohnehin kaum. Moderne
@@ -81,13 +83,13 @@ Es wird kein Anbieter hart als "der" Standard festgelegt. `app.settings.ttsProvi
 bleibt `'device'` (kostenlos, offline) als Voreinstellung; jede Familie/jedes Profil kann
 in den Einstellungen weiterhin frei wechseln - das ist bereits heute so gebaut.
 
-**Speechify als fünfter Anbieter vorgemerkt:** bietet wortgenaue Zeitstempel
-("Speech Marks", technisch gleichwertig zu ElevenLabs), Deutsch unterstützt, aber zu
-**$6-10 je 1 Mio. Zeichen statt ElevenLabs' ~$100/Mio.** - grob Faktor 10-15 günstiger,
-dazu 50.000 Zeichen/Monat gratis (fünfmal mehr als ElevenLabs). Sobald an
-`js/ttsProviders.js` gearbeitet wird, dort ergänzen. Andere geprüfte Kandidaten (Inworld,
-Rime, Cartesia) zielen auf Echtzeit-Sprachassistenten - kein Zusatznutzen für vorab
-erzeugte Vorlese-Dateien, deshalb nicht aufgenommen.
+**Speechify als fünfter Anbieter eingebaut (Sept. 2026):** bietet wortgenaue Zeitstempel
+("Speech Marks", technisch gleichwertig zu ElevenLabs), Deutsch unterstützt (Modell
+`simba-3.2`), zu **$6-10 je 1 Mio. Zeichen statt ElevenLabs' ~$100/Mio.** - grob Faktor
+10-15 günstiger, dazu 50.000 Zeichen/Monat gratis (fünfmal mehr als ElevenLabs). Umgesetzt
+in `js/ttsProviders.js` (`speechifySynthesize`/`fetchSpeechifyVoices`). Andere geprüfte
+Kandidaten (Inworld, Rime, Cartesia) zielen auf Echtzeit-Sprachassistenten - kein
+Zusatznutzen für vorab erzeugte Vorlese-Dateien, deshalb nicht aufgenommen.
 
 ---
 
@@ -135,16 +137,16 @@ Der Analyse-Prompt liefert bewusst den "exakten gedruckten Text" - richtig für 
 
 ## Kleine Ideen (jeweils unter einer Stunde)
 
-- **Mehr Stimmen freischalten:** In `js/ttsProviders.js` ist nur eine Vorauswahl eingetragen (Gemini hat 30, OpenAI 11+). Eine Zeile je Stimme.
+- ~~**Mehr Stimmen freischalten**~~ **erledigt (Sept. 2026):** `js/ttsProviders.js` hat jetzt alle 30 Gemini- und alle 13 OpenAI-Stimmen, bewährte zuerst.
 - **Stimme pro Profil:** Jedes Kind bekommt seine eigene Vorlese-Stimme - `app.settings.ttsVoices` müsste dafür pro Profil gespeichert werden.
 - **"Buch hörfertig machen":** Ein Knopf, der alle Seiten eines Buches vorab in den Stimmen-Speicher legt - danach läuft das Vorlesen ohne Wartezeit und offline.
 - **Kosten-Anzeige:** Mitzählen, wie viele Zeichen im Monat an den Anbieter gingen (rein lokal geschätzt).
-- **Tarif-Lock (neu, Sept. 2026):** Aus der Budget-Diskussion zu SchreibZauber entstanden,
-  betrifft aber schon jetzt die TTS-Einstellungen. Jede Stimme/jedes Modell bekommt ein
-  `costTier`-Flag (`standard`/`premium`); beim Wechsel auf eine teurere Option als die
-  aktuell gewählte erscheint ein Bestätigungsdialog statt eines stillen Wechsels - schützt
-  vor versehentlichem Umschalten in eine teurere Preisstufe, nicht vor Absicht. Der Betrag
-  selbst wird weiterhin persönlich beim Anbieter gedeckelt, nicht in der App.
+- ~~**Tarif-Lock**~~ **erledigt (Sept. 2026):** Jeder Anbieter in `js/ttsProviders.js` hat jetzt
+  ein `costTier`-Feld (`free`/`cheap`/`expensive`); beim Wechsel auf eine teurere Stufe als die
+  aktuell gewählte erscheint ein Bestätigungsdialog (`app.ttsProviders.isCostUpgrade()` in
+  `js/settingsConfig.js`) statt eines stillen Wechsels - schützt vor versehentlichem
+  Umschalten in eine teurere Preisstufe, nicht vor Absicht. Der Betrag selbst wird
+  weiterhin persönlich beim Anbieter gedeckelt, nicht in der App.
 
 ---
 
@@ -157,7 +159,7 @@ Der Analyse-Prompt liefert bewusst den "exakten gedruckten Text" - richtig für 
 | Google Cloud Chirp 3 HD | 1 Mio. Zeichen/Monat | ~30 $/Mio. Zeichen | braucht Cloud-Projekt mit Zahlungsart |
 | ElevenLabs | 10.000 Zeichen/Monat (privat) ≈ 13-15 Min. Sprache | ~100 $/Mio. Zeichen | exakte Wort-Zeitstempel; seit v3 auch Emotions-Tags zum gleichen Preis |
 | OpenAI | – | ~1,3 ct/Minute Audio | Persona als Sprechanweisung |
-| Speechify *(vorgemerkt, noch nicht eingebaut)* | 50.000 Zeichen/Monat | 6-10 $/Mio. Zeichen | ebenfalls exakte Wort-Zeitstempel, **10-15× günstiger als ElevenLabs** - siehe Entscheidung 3 |
+| Speechify | 50.000 Zeichen/Monat | 6-10 $/Mio. Zeichen | ebenfalls exakte Wort-Zeitstempel, **10-15× günstiger als ElevenLabs** - siehe Entscheidung 3 |
 
 10.000 Zeichen (ElevenLabs-Gratistarif) entsprechen grob 6-10 neu vorgelesenen Bilderbüchern
 im Monat - danach ist alles gecacht und kostet beim erneuten Vorlesen nichts mehr.

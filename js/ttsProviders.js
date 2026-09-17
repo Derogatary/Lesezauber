@@ -22,6 +22,18 @@ const ELEVEN_MODEL = 'eleven_multilingual_v2';
 
 const OPENAI_TTS_MODEL = 'gpt-4o-mini-tts';
 
+// NEU: Speechify. simba-3.2 ist laut Anbieter-Doku (Stand Sept. 2026) das
+// aktuell empfohlene Modell - simba-multilingual (das alte Mehrsprachen-
+// Modell) wird zum 21.11.2026 abgeschaltet, simba-3.2 spricht Deutsch
+// direkt über das "language"-Feld.
+const SPEECHIFY_MODEL = 'simba-3.2';
+const SPEECHIFY_LANGUAGE = 'de-DE';
+
+// NEU: Tarif-Lock (siehe Entscheidung in docs/ROADMAP.md). Reihenfolge der
+// Preisstufen, um beim Anbieter-/Modellwechsel zu erkennen, ob es teurer
+// wird - nur dafür gedacht (keine echte Kostenberechnung).
+const COST_TIER_ORDER = { free: 0, cheap: 1, expensive: 2 };
+
 // Fehler mit Zusatzinfo: "fatal" bedeutet, dass ein erneuter Versuch in
 // dieser Sitzung sinnlos ist (falscher Key, Tageslimit erreicht) - die App
 // schaltet dann bis zum Neuladen auf die Gerätestimme zurück, statt bei
@@ -224,8 +236,8 @@ async function elevenSynthesize(text, { voice, signal }) {
 
     // "with-timestamps" liefert zusätzlich, wann welcher Buchstabe
     // gesprochen wird. Damit läuft die Wort-Hervorhebung exakt mit, statt
-    // nur geschätzt zu werden - das ist der einzige Anbieter hier, der das
-    // kann, deshalb bewusst dieser Endpunkt.
+    // nur geschätzt zu werden - das kann hier sonst nur noch Speechify,
+    // deshalb bewusst dieser Endpunkt.
     let res;
     try {
         res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(voiceId)}/with-timestamps?output_format=mp3_44100_128`, {
@@ -290,12 +302,78 @@ async function openaiSynthesize(text, { voice, rate, styleHint, signal }) {
     return { blob: new Blob([await res.arrayBuffer()], { type: 'audio/mpeg' }), alignment: null };
 }
 
+// -------------------------------------------------------------- Speechify
+// Speechify liefert Wort-Zeitstempel als "speech_marks" (Zeichen-Offset im
+// Text + Millisekunden), nicht Zeichen-für-Zeichen wie ElevenLabs. Hier auf
+// dasselbe { characters, starts }-Format umgerechnet, das
+// ttsNeural._wordStartTimes() bereits für ElevenLabs erwartet - so bleibt
+// die Hervorhebungs-Berechnung an einer einzigen Stelle.
+function alignmentFromSpeechMarks(marks, text) {
+    const chunks = marks && marks.chunks;
+    if (!Array.isArray(chunks) || !chunks.length) return null;
+
+    const startSecByCharIndex = new Map();
+    for (const chunk of chunks) {
+        if (chunk.type === 'word' && typeof chunk.start === 'number') {
+            startSecByCharIndex.set(chunk.start, (chunk.start_time || 0) / 1000);
+        }
+    }
+    if (!startSecByCharIndex.size) return null;
+
+    const characters = Array.from(text);
+    const starts = new Array(characters.length).fill(0);
+    let current = 0;
+    for (let i = 0; i < characters.length; i++) {
+        if (startSecByCharIndex.has(i)) current = startSecByCharIndex.get(i);
+        starts[i] = current;
+    }
+    return { characters, starts };
+}
+
+async function speechifySynthesize(text, { voice, signal }) {
+    const key = app.settings.speechifyKey;
+    if (!key) {
+        throw new TtsError('Kein Speechify-API-Key hinterlegt.', { fatal: true, code: 'NO_KEY' });
+    }
+
+    let res;
+    try {
+        res = await fetch('https://api.sws.speechify.com/v1/audio/speech', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+            body: JSON.stringify({
+                input: text,
+                voice_id: voice || 'beatrice_32',
+                model: SPEECHIFY_MODEL,
+                audio_format: 'mp3',
+                language: SPEECHIFY_LANGUAGE
+            }),
+            signal
+        });
+    } catch (e) {
+        throw wrapNetworkError(e, 'Speechify');
+    }
+
+    if (!res.ok) throw await describeHttpError(res, 'Speechify');
+
+    const data = await res.json();
+    if (!data.audio_data) {
+        throw new TtsError('Speechify hat keine Audiodaten zurückgeliefert.', { code: 'EMPTY' });
+    }
+
+    return {
+        blob: new Blob([base64ToBytes(data.audio_data)], { type: 'audio/mpeg' }),
+        alignment: alignmentFromSpeechMarks(data.speech_marks, text)
+    };
+}
+
 Object.assign(app.ttsProviders, {
     list: [
         {
             id: 'device',
             label: 'Gerätestimme (kostenlos, offline)',
             tier: 'Gratis',
+            costTier: 'free',
             neural: false,
             hint: 'Die eingebaute Stimme des Geräts. Kostet nichts, funktioniert offline - klingt aber maschinell.',
             keySetting: null,
@@ -306,12 +384,15 @@ Object.assign(app.ttsProviders, {
             id: 'gemini',
             label: 'Gemini KI-Stimme (Free Tier)',
             tier: 'Free Tier',
+            costTier: 'free',
             neural: true,
             hint: 'Nutzt denselben Gemini-Key wie die Seitenanalyse - kein zusätzliches Konto nötig. Im kostenlosen Tarif gibt es allerdings nur wenige Anfragen pro Tag; mit eingeschaltetem Stimmen-Speicher reicht das für ein paar Seiten täglich.',
             keySetting: 'apiKey',
             keyUrl: 'https://aistudio.google.com/app/apikey',
             pricingUrl: 'https://ai.google.dev/gemini-api/docs/pricing',
-            // 8 der 30 Gemini-Stimmen, alle sprechen Deutsch.
+            // NEU: alle 30 Gemini-Stimmen (vorher nur 8), alle sprechen
+            // Deutsch. Die ersten 8 bleiben bewusst oben (bewährte Auswahl),
+            // der Rest ist nach Googles eigener Stimmen-Tabelle ergänzt.
             voices: [
                 { id: 'Kore', label: 'Kore - sachlich, klar' },
                 { id: 'Aoede', label: 'Aoede - leicht, freundlich' },
@@ -320,7 +401,29 @@ Object.assign(app.ttsProviders, {
                 { id: 'Puck', label: 'Puck - munter, verspielt' },
                 { id: 'Charon', label: 'Charon - ruhig, tief' },
                 { id: 'Enceladus', label: 'Enceladus - behaglich, hauchig' },
-                { id: 'Sulafat', label: 'Sulafat - warm' }
+                { id: 'Sulafat', label: 'Sulafat - warm' },
+                { id: 'Zephyr', label: 'Zephyr - hell, klar' },
+                { id: 'Fenrir', label: 'Fenrir - lebhaft, aufgeregt' },
+                { id: 'Orus', label: 'Orus - bestimmt' },
+                { id: 'Autonoe', label: 'Autonoe - hell, freundlich' },
+                { id: 'Iapetus', label: 'Iapetus - klar, deutlich' },
+                { id: 'Umbriel', label: 'Umbriel - locker, gelassen' },
+                { id: 'Algieba', label: 'Algieba - weich, geschmeidig' },
+                { id: 'Despina', label: 'Despina - sanft, samtig' },
+                { id: 'Erinome', label: 'Erinome - klar, präzise' },
+                { id: 'Algenib', label: 'Algenib - rau, markant' },
+                { id: 'Rasalgethi', label: 'Rasalgethi - sachlich, informativ' },
+                { id: 'Laomedeia', label: 'Laomedeia - munter, schwungvoll' },
+                { id: 'Achernar', label: 'Achernar - weich, leise' },
+                { id: 'Alnilam', label: 'Alnilam - klar, bestimmt' },
+                { id: 'Schedar', label: 'Schedar - gleichmäßig, ruhig' },
+                { id: 'Gacrux', label: 'Gacrux - reif, erwachsen' },
+                { id: 'Pulcherrima', label: 'Pulcherrima - energisch, direkt' },
+                { id: 'Achird', label: 'Achird - freundlich, zugewandt' },
+                { id: 'Zubenelgenubi', label: 'Zubenelgenubi - locker, alltagsnah' },
+                { id: 'Vindemiatrix', label: 'Vindemiatrix - sanft, zart' },
+                { id: 'Sadachbia', label: 'Sadachbia - lebendig, quirlig' },
+                { id: 'Sadaltager', label: 'Sadaltager - kundig, sachkundig' }
             ],
             defaultVoice: 'Kore',
             supportsStyle: true,
@@ -330,6 +433,7 @@ Object.assign(app.ttsProviders, {
             id: 'googlecloud',
             label: 'Google Cloud Chirp 3 HD (1 Mio. Zeichen/Monat gratis)',
             tier: 'Bezahlt',
+            costTier: 'cheap',
             neural: true,
             hint: 'Braucht ein Google-Cloud-Projekt mit hinterlegter Zahlungsart. Die ersten 1 Mio. Zeichen pro Monat sind frei (grob: mehrere tausend Buchseiten), danach ca. 30 US-Dollar je 1 Mio. Zeichen.',
             keySetting: 'googleTtsKey',
@@ -354,8 +458,9 @@ Object.assign(app.ttsProviders, {
             id: 'elevenlabs',
             label: 'ElevenLabs (beste Vorlese-Qualität)',
             tier: 'Bezahlt',
+            costTier: 'expensive',
             neural: true,
-            hint: 'Klingt am lebendigsten und hält als einziger Anbieter die Wort-Hervorhebung exakt synchron. Gratis-Konto: 10.000 Zeichen/Monat (ca. 10 Minuten, nur privat). Bezahlt ab ca. 5 US-Dollar/Monat. Achtung: der Browser-Zugriff kann vom Anbieter gesperrt sein - der Test-Knopf zeigt es sofort.',
+            hint: 'Klingt am lebendigsten und hält die Wort-Hervorhebung zeichengenau synchron (wie auch Speechify). Gratis-Konto: 10.000 Zeichen/Monat (ca. 10 Minuten, nur privat). Bezahlt ab ca. 5 US-Dollar/Monat, danach ca. 100 US-Dollar je 1 Mio. Zeichen - der mit Abstand teuerste Anbieter hier. Achtung: der Browser-Zugriff kann vom Anbieter gesperrt sein - der Test-Knopf zeigt es sofort.',
             keySetting: 'elevenLabsKey',
             keyUrl: 'https://elevenlabs.io/app/settings/api-keys',
             pricingUrl: 'https://elevenlabs.io/pricing',
@@ -377,11 +482,15 @@ Object.assign(app.ttsProviders, {
             id: 'openai',
             label: 'OpenAI (günstig, gut steuerbar)',
             tier: 'Bezahlt',
+            costTier: 'cheap',
             neural: true,
             hint: 'Kein Gratis-Kontingent, dafür sehr günstig (ca. 1,3 Cent je Minute Audio) und die Erzähler-Persona lässt sich direkt als Sprechanweisung mitgeben.',
             keySetting: 'openAiKey',
             keyUrl: 'https://platform.openai.com/api-keys',
             pricingUrl: 'https://openai.com/api/pricing/',
+            // NEU: alle 13 aktuellen gpt-4o-mini-tts-Stimmen (vorher 7) - die
+            // bewährten 7 bleiben oben, marin/cedar sind laut OpenAI die
+            // neueren, besonders hochwertigen Stimmen.
             voices: [
                 { id: 'nova', label: 'Nova - weiblich, freundlich' },
                 { id: 'shimmer', label: 'Shimmer - weiblich, sanft' },
@@ -389,12 +498,46 @@ Object.assign(app.ttsProviders, {
                 { id: 'fable', label: 'Fable - erzählend' },
                 { id: 'alloy', label: 'Alloy - neutral' },
                 { id: 'onyx', label: 'Onyx - männlich, tief' },
-                { id: 'ballad', label: 'Ballad - männlich, ruhig' }
+                { id: 'ballad', label: 'Ballad - männlich, ruhig' },
+                { id: 'ash', label: 'Ash - männlich, gelassen' },
+                { id: 'echo', label: 'Echo - männlich, klar' },
+                { id: 'sage', label: 'Sage - weiblich, weise, ruhig' },
+                { id: 'verse', label: 'Verse - neutral, ausdrucksstark' },
+                { id: 'marin', label: 'Marin - weiblich, hochwertig, klar' },
+                { id: 'cedar', label: 'Cedar - männlich, hochwertig, warm' }
             ],
             defaultVoice: 'nova',
             supportsStyle: true,
             supportsRate: true,
             synthesize: openaiSynthesize
+        },
+        {
+            id: 'speechify',
+            label: 'Speechify (günstig, exakte Zeitstempel)',
+            tier: 'Bezahlt',
+            costTier: 'cheap',
+            neural: true,
+            hint: 'Ähnlich günstig wie OpenAI, hält die Wort-Hervorhebung aber zeichengenau synchron (wie ElevenLabs) - ca. 6-10 US-Dollar je 1 Mio. Zeichen statt ElevenLabs\' ca. 100 US-Dollar. Gratis-Konto: 50.000 Zeichen/Monat. Modell simba-3.2, Deutsch wird direkt unterstützt.',
+            keySetting: 'speechifyKey',
+            keyUrl: 'https://console.speechify.ai/api-keys',
+            pricingUrl: 'https://speechify.com/pricing-api/',
+            // Bekannte simba-3.2-Standardstimmen laut Anbieter-Doku; eigene/
+            // geklonte Stimmen lassen sich in den Einstellungen per Knopf aus
+            // dem Konto nachladen (wie bei ElevenLabs).
+            voices: [
+                { id: 'beatrice_32', label: 'Beatrice - weiblich' },
+                { id: 'harper_32', label: 'Harper - weiblich' },
+                { id: 'imogen_32', label: 'Imogen - weiblich' },
+                { id: 'dominic_32', label: 'Dominic - männlich' },
+                { id: 'edmund_32', label: 'Edmund - männlich' },
+                { id: 'geffen_32', label: 'Geffen - männlich' },
+                { id: 'hugh_32', label: 'Hugh - männlich' },
+                { id: 'wyatt_32', label: 'Wyatt - männlich' }
+            ],
+            defaultVoice: 'beatrice_32',
+            supportsStyle: false,
+            supportsVoiceFetch: true,
+            synthesize: speechifySynthesize
         }
     ],
 
@@ -449,5 +592,36 @@ Object.assign(app.ttsProviders, {
 
         const data = await res.json();
         return (data.voices || []).map(v => ({ id: v.voice_id, label: v.name }));
+    },
+
+    // NEU: eigene/geklonte Stimmen aus dem Speechify-Konto nachladen, analog
+    // zu fetchElevenVoices() oben.
+    async fetchSpeechifyVoices() {
+        const key = app.settings.speechifyKey;
+        if (!key) throw new TtsError('Kein Speechify-API-Key hinterlegt.', { fatal: true, code: 'NO_KEY' });
+
+        let res;
+        try {
+            res = await fetch('https://api.sws.speechify.com/v1/voices?limit=200', {
+                headers: { 'Authorization': `Bearer ${key}` }
+            });
+        } catch (e) {
+            throw wrapNetworkError(e, 'Speechify');
+        }
+        if (!res.ok) throw await describeHttpError(res, 'Speechify');
+
+        const data = await res.json();
+        const voices = data.voices || data || [];
+        return voices.map(v => ({ id: v.id || v.voice_id, label: v.display_name || v.name || v.id }));
+    },
+
+    // NEU: Tarif-Lock (siehe CLAUDE.md/ROADMAP.md "Tarif-Lock"). Prüft, ob
+    // ein Wechsel von einem Anbieter zum anderen in eine teurere Preisstufe
+    // führt - schützt nur vor Versehen, nicht vor Absicht (kein Passwort,
+    // keine Sperre), deshalb reicht ein einfacher Bestätigungsdialog.
+    isCostUpgrade(fromProvider, toProvider) {
+        const fromRank = COST_TIER_ORDER[fromProvider && fromProvider.costTier] ?? 0;
+        const toRank = COST_TIER_ORDER[toProvider && toProvider.costTier] ?? 0;
+        return toRank > fromRank;
     }
 });

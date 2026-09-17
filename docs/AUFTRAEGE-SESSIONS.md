@@ -1,6 +1,6 @@
 # 📋 Aufträge für einzelne Claude-Code-Sitzungen
 
-**Stand: v0.12.0-beta, September 2026**
+**Stand: v0.13.0-beta, September 2026**
 
 Diese Datei schneidet die offenen Punkte aus [`docs/TODO-GESAMT.md`](TODO-GESAMT.md) in
 **in sich abgeschlossene Aufträge**, die jeweils an eine eigene Claude-Code-Sitzung

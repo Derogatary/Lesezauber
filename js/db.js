@@ -23,8 +23,12 @@ const TTS_STORE_NAME = 'ttsCache';
 // (ca. 40 KB) - 600 Gemini-Aufnahmen wären mehrere hundert MB gewesen und
 // hätten auf dem Handy den Platz für die Bücher selbst verdrängt. Deshalb
 // zusätzlich eine Größengrenze, die in der Praxis zuerst greift.
+// NEU: von 100 auf 300 MB erhöht (entschieden, siehe docs/ROADMAP.md) - bei
+// Gemini wächst die Reichweite so von ca. 100 auf ca. 300 Seiten. Moderne
+// Browser gewähren IndexedDB großzügig Speicher, 300 MB bleibt auf
+// praktisch jedem Gerät unkritisch.
 const TTS_CACHE_MAX_ENTRIES = 600;
-const TTS_CACHE_MAX_BYTES = 100 * 1024 * 1024;
+const TTS_CACHE_MAX_BYTES = 300 * 1024 * 1024;
 
 // Key, unter dem die Bibliothek in der alten (localStorage-basierten)
 // Version dieser App gespeichert wurde - nur für die einmalige Migration

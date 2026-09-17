@@ -6,7 +6,8 @@ const KEY_STORAGE = {
     apiKey: 'lz_api_key',
     googleTtsKey: 'lz_google_tts_key',
     elevenLabsKey: 'lz_eleven_key',
-    openAiKey: 'lz_openai_key'
+    openAiKey: 'lz_openai_key',
+    speechifyKey: 'lz_speechify_key'
 };
 
 // Liest das Feld für den Anbieter-Key aus und speichert es. Wird sowohl
@@ -44,11 +45,35 @@ Object.assign(app.settingsConfig, {
         app.ui.toast(enabled ? 'Zweiseitiges Layout aktiviert' : 'Zweiseitiges Layout deaktiviert', '📖');
     },
 
+    // NEU: Ken-Burns-Effekt/Kreuzblende im Kino-Modus (Vollbild-Vorlesen)
+    // ein-/ausschalten - unabhängig davon respektiert der Effekt weiterhin
+    // "prefers-reduced-motion" des Betriebssystems (siehe css/style.css).
+    toggleFocusEffects(enabled) {
+        app.settings.focusEffectsEnabled = enabled;
+        localStorage.setItem('lz_focus_effects', enabled ? '1' : '0');
+    },
+
     // NEU: Anbieter der Vorlese-Stimme wechseln (Gerätestimme <-> KI-Stimme).
     // Wirkt sofort, ohne "Speichern" - so kann man direkt den Test-Knopf
     // benutzen.
     changeTtsProvider(providerId) {
-        persistProviderKey(app.ttsProviders.current());
+        const current = app.ttsProviders.current();
+        const next = app.ttsProviders.get(providerId);
+
+        // NEU: Tarif-Lock - vor einem Wechsel in eine teurere Preisstufe
+        // erst bestätigen lassen. Schützt nur vor einem Versehen (z.B. ein
+        // Kind tippt sich durch die Auswahl), nicht vor Absicht - kein
+        // Passwort, keine Sperre, siehe CLAUDE.md "Tarif-Lock".
+        if (app.ttsProviders.isCostUpgrade(current, next)) {
+            const ok = confirm(`"${next.label}" ist eine teurere Preisstufe als die aktuelle Auswahl.\n\n${next.hint}\n\nTrotzdem wechseln?`);
+            if (!ok) {
+                const select = document.getElementById('selectTtsProvider');
+                if (select) select.value = current.id;
+                return;
+            }
+        }
+
+        persistProviderKey(current);
 
         app.settings.ttsProvider = providerId;
         localStorage.setItem('lz_tts_provider', providerId);
@@ -100,6 +125,26 @@ Object.assign(app.settingsConfig, {
             app.ui.toast(`${voices.length} Stimmen geladen`, '✅');
         } catch (e) {
             console.error('ElevenLabs-Stimmen konnten nicht geladen werden:', e);
+            app.ui.toast(e.message || 'Stimmen konnten nicht geladen werden.', '⚠️');
+        }
+    },
+
+    // NEU: dasselbe für Speechify (5. Anbieter, siehe ttsProviders.js).
+    async loadSpeechifyVoices() {
+        persistProviderKey(app.ttsProviders.get('speechify'));
+        app.ui.toast('Stimmen werden geladen...', '⏳');
+        try {
+            const voices = await app.ttsProviders.fetchSpeechifyVoices();
+            if (!voices.length) {
+                app.ui.toast('Keine Stimmen im Konto gefunden.', 'ℹ️');
+                return;
+            }
+            app.settings.speechifyVoices = voices;
+            localStorage.setItem('lz_speechify_voices', JSON.stringify(voices));
+            app.render.settings();
+            app.ui.toast(`${voices.length} Stimmen geladen`, '✅');
+        } catch (e) {
+            console.error('Speechify-Stimmen konnten nicht geladen werden:', e);
             app.ui.toast(e.message || 'Stimmen konnten nicht geladen werden.', '⚠️');
         }
     },

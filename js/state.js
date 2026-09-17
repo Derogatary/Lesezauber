@@ -13,6 +13,10 @@ Object.assign(app.settings, {
     // NEU: zweiseitiges Layout (Bild links, Text rechts) - nur Option,
     // wirkt sich per CSS ohnehin erst ab Tablet-Breite aus (siehe style.css)
     twoPageLayout: localStorage.getItem('lz_two_page_layout') === '1',
+    // NEU: Ken-Burns-Effekt + Kreuzblende im Vollbild-Vorlese-Modus
+    // ("Kino-Modus", siehe docs/KONZEPT-Video.md Abschnitt 3, Stufe 1).
+    // Standardmäßig an, abschaltbar (z.B. auf schwächeren Geräten).
+    focusEffectsEnabled: localStorage.getItem('lz_focus_effects') !== '0',
 
     // NEU: KI-Stimmen statt der maschinellen Gerätestimme.
     // 'device' = wie bisher die eingebaute Stimme (Standard, damit sich für
@@ -36,9 +40,18 @@ Object.assign(app.settings, {
             return [];
         }
     })(),
+    // NEU: dasselbe für Speechify (5. Anbieter, siehe ttsProviders.js)
+    speechifyVoices: (() => {
+        try {
+            return JSON.parse(localStorage.getItem('lz_speechify_voices') || '[]');
+        } catch (e) {
+            return [];
+        }
+    })(),
     googleTtsKey: localStorage.getItem('lz_google_tts_key') || '',
     elevenLabsKey: localStorage.getItem('lz_eleven_key') || '',
     openAiKey: localStorage.getItem('lz_openai_key') || '',
+    speechifyKey: localStorage.getItem('lz_speechify_key') || '',
     // Erzeugte Sprachaufnahmen behalten: dieselbe Seite ein zweites Mal
     // vorlesen kostet dann kein Kontingent mehr. Standard: an.
     ttsCacheEnabled: localStorage.getItem('lz_tts_cache') !== '0',
@@ -59,6 +72,10 @@ Object.assign(app.state, {
     apiBusy: false,
     // NEU: Vollbild-Vorlese-Modus aktiv?
     focusMode: false,
+    // NEU: welches der beiden übereinanderliegenden <img>-Elemente im
+    // Kino-Modus gerade sichtbar ist (Kreuzblende, siehe app.render.focusMode()
+    // in js/render/reader.js) - hält die DOM-Referenz, nicht nur eine ID.
+    _focusFrontImg: null,
     // NEU: Backup-Erinnerung für diese Sitzung weggeklickt?
     backupReminderDismissed: false,
     // NEU: Zustand für den Vokabeltrainer (aktuelles Karten-Deck + Position)

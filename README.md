@@ -59,12 +59,18 @@ Eine Web-App, mit der du Kinderbuch-Seiten mit dem Handy fotografierst (oder aus
 - 🎭 Persona beim Lesen umschaltbar (unabhängig von der Standard-Persona), wird pro Seite bei Bedarf einmalig nachgeladen und dauerhaft gespeichert
 - 🎉 Verständnisfragen zum gesamten Buch am Ende (nicht nur pro Seite)
 - ⚡ Eigener Tailwind-Build statt CDN (schnelleres Laden, kein Live-Compiling im Browser)
-- 🗣️ **Echte KI-Vorlese-Stimmen** statt der maschinellen Gerätestimme - wahlweise Gemini (Free Tier), Google Cloud Chirp 3 HD, ElevenLabs oder OpenAI, mit Probe-Anhören, Zwischenspeicher und automatischem Rückfall auf die Gerätestimme (siehe eigenen Abschnitt unten)
+- 🗣️ **Echte KI-Vorlese-Stimmen** statt der maschinellen Gerätestimme - wahlweise Gemini (Free Tier), Google Cloud Chirp 3 HD, ElevenLabs, OpenAI oder Speechify, mit Probe-Anhören, Zwischenspeicher und automatischem Rückfall auf die Gerätestimme (siehe eigenen Abschnitt unten)
 - 🌙 Optionale Hintergrund-Vorbereitung: erstellt fehlende Erzähler-Varianten und Buch-Quiz automatisch, wenn gerade nichts läuft (aus-/einschaltbar in den Einstellungen)
 - 📝 **Übungsheft-Modus:** Arbeitsblätter statt Geschichten - die KI liest die Aufgabenstellung aus, erklärt sie kindgerecht, gibt eine Schritt-für-Schritt-Hilfe und zeigt auf Wunsch die Lösung. Vorlesen bleibt danach stehen, statt weiterzublättern (das Kind hat ja zu tun). Gedacht für die Schulvorbereitung zu Hause, siehe `docs/KONZEPT-Uebungshefte.md`
 - 📷 **Blatt kontrollieren lassen:** das Kind fotografiert sein ausgefülltes Übungsblatt, die KI vergleicht es mit Aufgabe und Lösung und gibt eine vorgelesene Rückmeldung (Lob zuerst, dann Tipps - nie "falsch"). Ist alles richtig, wird die Aufgabe automatisch abgehakt; erkennt die KI das Foto nicht sicher, sagt sie das, statt zu raten
 - 🎤 **Fragen sprechen statt tippen:** der 🎤-Knopf öffnet die Tastatur, deren Mikrofon-Taste schreibt die gesprochene Frage ins Feld (keine eigene Spracherkennung nötig - funktioniert mit Gboard und iOS-Diktat)
 - ✅ **Fortschritt & Belohnung:** jede Seite bzw. Aufgabe abhaken, Sticker dazu, Pokal für ein komplett geschafftes Buch/Heft - getrennt pro Kind-Profil, wandert mit Export/Import mit
+- 🔉 **Sauberere Aussprache:** Trennstriche am Zeilenende, harte Umbrüche und gängige Abkürzungen ("z.B.") werden vor dem Vorlesen geglättet - hilft der Gerätestimme genauso wie den KI-Stimmen (v0.13.0-beta)
+- 💾 **Buch hörfertig machen:** legt auf Knopfdruck alle Seiten vorab in den Stimmen-Speicher - danach startet das Vorlesen ohne Wartezeit und funktioniert auch offline. Bereits gespeicherte Seiten werden übersprungen, kosten also nichts (v0.13.0-beta)
+- 💶 **Kosten-Anzeige:** zählt rein lokal mit, wie viele Zeichen diesen Monat wirklich an einen Stimmen-Anbieter gingen, und schätzt daraus einen Betrag - Treffer aus dem Stimmen-Speicher zählen nicht mit, weil sie nichts kosten (v0.13.0-beta)
+- 🔒 **Tarif-Lock:** vor dem Wechsel auf eine teurere Stimme fragt die App einmal nach - Schutz vor Versehen, keine Sperre (v0.13.0-beta)
+- 🎬 **Kino-Modus:** im Vollbild-Vorlesen zoomt das Seitenbild langsam (Ken-Burns) und blendet beim Seitenwechsel weich über; abschaltbar und respektiert "reduzierte Bewegung" (v0.13.0-beta)
+- 🎧 **Hörbuch-Export:** ein ganzes Buch als eine Audiodatei ausgeben, Bildbeschreibung und Quiz wahlweise mit - setzt eine KI-Stimme voraus (v0.13.0-beta)
 
 ## 🗣️ Echte KI-Stimmen statt Roboterstimme
 
@@ -79,17 +85,19 @@ Alles läuft weiterhin ohne eigenen Server: Die App holt die Audiodatei direkt b
 | **Gerätestimme** | kostenlos, offline | Standard. Wenn kein Internet da ist oder nichts extra eingerichtet werden soll. | – |
 | **Gemini KI-Stimme** | **Free Tier** (kostenlos, aber wenige Anfragen/Tag) | Zum Ausprobieren ohne neues Konto - nutzt denselben Key wie die Seitenanalyse. | vorhandener Gemini-Key |
 | **Google Cloud Chirp 3 HD** | 1 Mio. Zeichen/Monat gratis, danach ca. 30 $/Mio. Zeichen | Der Alltags-Tipp fürs ganze Buch: 1 Mio. Zeichen sind grob mehrere tausend Buchseiten. Braucht ein Google-Cloud-Projekt mit hinterlegter Zahlungsart. | eigener API-Key |
-| **ElevenLabs** | 10.000 Zeichen/Monat gratis (privat), bezahlt ab ca. 5 $/Monat | Beste Vorlese-Qualität und als einziger Anbieter zeichengenaue Zeitstempel → die Wort-Hervorhebung läuft exakt mit. | eigener API-Key |
+| **ElevenLabs** | 10.000 Zeichen/Monat gratis (privat), bezahlt ab ca. 5 $/Monat, danach ca. 100 $/Mio. Zeichen | Beste Vorlese-Qualität und zeichengenaue Zeitstempel → die Wort-Hervorhebung läuft exakt mit. Der teuerste Anbieter hier. | eigener API-Key |
 | **OpenAI** | kein Gratis-Kontingent, ca. 1,3 Cent je Minute Audio | Günstig und gut steuerbar - die Erzähler-Persona wird als Sprechanweisung mitgeschickt. | eigener API-Key |
+| **Speechify** | 50.000 Zeichen/Monat gratis, danach ca. 6-10 $/Mio. Zeichen | Ähnlich günstig wie OpenAI, aber ebenfalls zeichengenaue Zeitstempel wie ElevenLabs - grob 10-15× günstiger. | eigener API-Key |
 
-Faustregel: **Gemini** zum kostenlosen Reinschnuppern, **Google Cloud Chirp 3 HD** für den Dauerbetrieb, **ElevenLabs**, wenn es besonders schön klingen soll.
+Faustregel: **Gemini** zum kostenlosen Reinschnuppern, **Google Cloud Chirp 3 HD** für den Dauerbetrieb, **Speechify**, wenn die Wort-Hervorhebung exakt sitzen soll ohne ElevenLabs' Preis, **ElevenLabs**, wenn es unbedingt die beste Qualität sein soll.
 
 ### Was die App dabei mitmacht
 
 - **Stimmen-Speicher:** Jede erzeugte Aufnahme landet in der lokalen Datenbank. Dieselbe Seite ein zweites Mal vorlesen kostet dann kein Kontingent mehr und startet sofort. Abschaltbar; Belegung und "Leeren"-Knopf stehen direkt darunter.
 - **Vorbereitung im Hintergrund:** Während eine Seite vorgelesen wird, entsteht die Audiodatei der nächsten Seite schon - so bleibt beim Umblättern keine Stille.
 - **Rückfall:** Kein Internet, Tageslimit erreicht oder Key falsch? Dann springt automatisch die Gerätestimme ein, mit einem kurzen Hinweis - das Vorlesen bricht nie einfach ab.
-- **Wort-Hervorhebung:** Läuft auch bei KI-Stimmen mit. Bei ElevenLabs zeichengenau, bei den übrigen Anbietern anhand der Audiolänge geschätzt.
+- **Wort-Hervorhebung:** Läuft auch bei KI-Stimmen mit. Bei ElevenLabs und Speechify zeichengenau, bei den übrigen Anbietern anhand der Audiolänge geschätzt.
+- **Tarif-Lock:** Beim Wechsel in eine teurere Preisstufe (z.B. von Gemini zu ElevenLabs) fragt die App vorher noch einmal nach - schützt vor einem Versehen, nicht vor Absicht.
 - **Persona-Stimmlage:** Bei Gemini und OpenAI wird die gewählte Erzähler-Persona als Sprechanweisung mitgeschickt - die "Gute-Nacht-Fee" klingt dann tatsächlich sanfter als der "Weise Professor".
 - **Vorbereitet für den Video-Export:** Die Aufnahmen liegen als echte Dateien inklusive Länge und Wort-Zeitpunkten vor (`app.ttsNeural.renderAudio()` / `renderPageSegments()`). Damit lässt sich später ein Video aus Buchseite + Stimme + mitlaufenden Untertiteln bauen, ohne dass dafür noch einmal Kontingent verbraucht wird. Mit der Gerätestimme geht das nicht - die spricht direkt über den Lautsprecher und gibt keine Datei heraus.
 
@@ -160,7 +168,7 @@ js/
   nav.js                  Ansichten-Router
   api.js                  Google-Gemini-Anfragen
   tts.js                  Sprachausgabe inkl. Auto-Vorlese-Modus (Weiche Gerät/KI-Stimme)
-  ttsProviders.js         KI-Stimmen-Anbieter (Gemini, Google Cloud, ElevenLabs, OpenAI)
+  ttsProviders.js         KI-Stimmen-Anbieter (Gemini, Google Cloud, ElevenLabs, OpenAI, Speechify)
   ttsNeural.js            Abspielen, Zwischenspeicher & Wort-Hervorhebung der KI-Stimmen
   ui.js                   Toast-Meldungen & Ladeanzeige
   utils.js                Hilfsfunktionen (Bildverkleinerung, Sanitizing, Cover)
@@ -215,7 +223,7 @@ docs/
 ## 🗺 Mögliche nächste Schritte
 
 > **Die vollständige, zusammengeführte To-Do-Liste steht in [`docs/TODO-GESAMT.md`](docs/TODO-GESAMT.md)**
-> - inklusive der Punkte, die mit v0.12.0 bereits erledigt sind. Ausführliche Konzepte, offene
+> - inklusive der Punkte, die mit v0.13.0 bereits erledigt sind. Ausführliche Konzepte, offene
 > Entscheidungen zu Vorlesen/Stimmen und eine Kostenübersicht: [`docs/ROADMAP.md`](docs/ROADMAP.md). Die Liste hier ist nur die Kurzfassung.
 
 **Bleibt komplett im Browser (kein Server nötig):**

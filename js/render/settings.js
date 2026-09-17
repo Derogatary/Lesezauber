@@ -10,8 +10,12 @@ Object.assign(app.render, {
 
         const provider = app.ttsProviders.current();
 
+        // NEU: Tarif-Lock - kleines Preis-Symbol je nach costTier, damit
+        // die teurere Stufe schon in der Auswahl selbst sichtbar ist, nicht
+        // erst nach dem Wechsel im Bestätigungsdialog.
+        const costBadge = { free: '', cheap: ' 💶', expensive: ' 💶💶' };
         select.innerHTML = app.ttsProviders.list
-            .map(p => `<option value="${p.id}">${app.utils.sanitize(p.label)}</option>`)
+            .map(p => `<option value="${p.id}">${app.utils.sanitize(p.label)}${costBadge[p.costTier] || ''}</option>`)
             .join('');
         select.value = provider.id;
 
@@ -51,7 +55,10 @@ Object.assign(app.render, {
         const voiceSelect = document.getElementById('selectTtsVoice');
         if (voiceRow) voiceRow.classList.toggle('hidden', !provider.neural);
         if (provider.neural && voiceSelect) {
-            const loaded = provider.id === 'elevenlabs' ? (app.settings.elevenVoices || []) : [];
+            // NEU: Speechify nachgeladene Stimmen genauso bevorzugen wie
+            // bei ElevenLabs (beide unterstützen supportsVoiceFetch).
+            const fetchedByProvider = { elevenlabs: app.settings.elevenVoices, speechify: app.settings.speechifyVoices };
+            const loaded = fetchedByProvider[provider.id] || [];
             const voices = loaded.length ? loaded : provider.voices;
             voiceSelect.innerHTML = voices
                 .map(v => `<option value="${app.utils.sanitize(v.id)}">${app.utils.sanitize(v.label)}</option>`)
@@ -63,7 +70,9 @@ Object.assign(app.render, {
         }
 
         const elevenBtn = document.getElementById('btnLoadElevenVoices');
-        if (elevenBtn) elevenBtn.classList.toggle('hidden', !provider.supportsVoiceFetch);
+        if (elevenBtn) elevenBtn.classList.toggle('hidden', provider.id !== 'elevenlabs' || !provider.supportsVoiceFetch);
+        const speechifyBtn = document.getElementById('btnLoadSpeechifyVoices');
+        if (speechifyBtn) speechifyBtn.classList.toggle('hidden', provider.id !== 'speechify' || !provider.supportsVoiceFetch);
 
         // Zusatz-Optionen (Persona-Stil, Stimmen-Speicher) sind nur bei
         // einer KI-Stimme sinnvoll.
@@ -86,6 +95,42 @@ Object.assign(app.render, {
                 ? `${stats.count} gespeicherte Aufnahme(n), ${mb} MB`
                 : 'Noch nichts gespeichert.';
         }
+    },
+
+    // NEU: rein lokale Kosten-/Verbrauchsanzeige (js/costMeter.js) - zeigt,
+    // wie viele Zeichen diesen Kalendermonat WIRKLICH synthetisiert wurden
+    // (Cache-Treffer zaehlen nicht mit) und einen daraus GESCHAETZTEN Betrag.
+    costMeterCard() {
+        const list = document.getElementById('costMeterList');
+        const totalEl = document.getElementById('costMeterTotal');
+        if (!list || !totalEl) return;
+
+        const stats = app.costMeter.currentMonthStats();
+        const fmtChars = n => n.toLocaleString('de-DE');
+        const fmtCost = n => n.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+        const rows = stats.providers.map(p => {
+            const costText = p.estCost > 0 ? `≈ ${fmtCost(p.estCost)} USD` : 'kostenlos';
+            return `<div class="flex items-center justify-between gap-2">
+                <span>${app.utils.sanitize(p.label)}: ${fmtChars(p.chars)} Zeichen (${p.requests}×)</span>
+                <span class="font-bold text-slate-700 flex-shrink-0">${costText}</span>
+            </div>`;
+        });
+
+        if (stats.geminiText.chars > 0) {
+            rows.push(`<div class="flex items-center justify-between gap-2 text-slate-400">
+                <span>Gemini-Textaufrufe (Analyse/Quiz): ${fmtChars(stats.geminiText.chars)} Zeichen (${stats.geminiText.requests}×)</span>
+                <span class="flex-shrink-0">separat, siehe Gemini-Preisliste</span>
+            </div>`);
+        }
+
+        list.innerHTML = rows.length
+            ? rows.join('')
+            : '<p class="text-slate-500">Diesen Monat noch keine KI-Stimme genutzt.</p>';
+
+        totalEl.innerText = stats.totalCost > 0
+            ? `Ungefähr ${fmtCost(stats.totalCost)} USD diesen Monat geschätzt - ohne Gewähr, verbindlich ist die Abrechnung des Anbieters.`
+            : 'Diesen Monat noch keine geschätzten Kosten.';
     },
 
     async settings() {
@@ -123,13 +168,19 @@ Object.assign(app.render, {
         // NEU: zweiseitiges Layout - Schalterstellung anzeigen
         const twoPageToggle = document.getElementById('toggleTwoPageLayout');
         if (twoPageToggle) twoPageToggle.checked = app.settings.twoPageLayout;
+
         const bgStatus = document.getElementById('pregenStatus');
         if (bgStatus) {
             const missing = app.utils.countMissingVariants();
             bgStatus.innerText = missing > 0 ? `${missing} Variante(n) noch offen` : 'Alles vorbereitet ✅';
         }
+
+        // NEU: Kino-Effekte (Ken-Burns + Kreuzblende) - Schalterstellung anzeigen
+        const focusEffectsToggle = document.getElementById('toggleFocusEffects');
+        if (focusEffectsToggle) focusEffectsToggle.checked = app.settings.focusEffectsEnabled;
         app.tts.loadVoices();
         await this.ttsProviderCard();
+        this.costMeterCard();
 
         // NEU: Speicherplatz-Nutzung anzeigen (grobe Schätzung des Browsers)
         const infoEl = document.getElementById('storageInfo');
