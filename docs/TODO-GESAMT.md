@@ -51,7 +51,7 @@ hat, fängt hier an - nichts davon fasst das Datenmodell an.
 | 5 | Mehr Stimmen freischalten (je eine Zeile in `ttsProviders.js`) | Vorlesen | **S** |
 | 6 | „Buch hörfertig machen" - alle Seiten vorab in den Stimmen-Speicher | Vorlesen | **S** |
 | 7 | Stimme pro Profil statt global | Vorlesen | **S** |
-| 8 | Kosten-Anzeige (lokal gezählte Zeichen pro Monat) | Vorlesen | **S** |
+| ~~8~~ | ~~Kosten-Anzeige (lokal gezählte Zeichen pro Monat)~~ | Vorlesen | **erledigt (v0.13.0-beta)** |
 | 9 | Zweiter Comic-Testlauf mit korrigiertem Prompt | Eigene Werke | **S** |
 | 10 | Tarif-Lock: Warnung vor Wechsel in teurere Preisstufe | Vorlesen | **S** |
 
@@ -72,7 +72,7 @@ Details: [`docs/ROADMAP.md`](ROADMAP.md)
 | **Mehr Stimmen freischalten** | **S** | In `js/ttsProviders.js` ist nur eine Vorauswahl eingetragen (Gemini hat 30, OpenAI 11+) |
 | **„Buch hörfertig machen"** | **S** | Knopf, der alle Seiten vorab in den `ttsCache` legt - danach ohne Wartezeit und offline |
 | **Stimme pro Profil** | **S** | `app.settings.ttsVoices` müsste pro Profil statt global gespeichert werden |
-| **Kosten-Anzeige** | **S** | Rein lokal geschätzt mitzählen, wie viele Zeichen im Monat an den Anbieter gingen |
+| ~~**Kosten-Anzeige**~~ | **erledigt (v0.13.0-beta)** | Rein lokal geschätzt mitgezählt, wie viele Zeichen im Monat an den Anbieter gingen (`js/costMeter.js`), zusätzlich getrennt die Gemini-Textaufrufe. Zählt nur echte Synthesen, keine Cache-Treffer |
 | **Tarif-Lock** | **S** | Neu, aus der SchreibZauber-Budget-Diskussion. `costTier`-Flag je Stimme/Modell, Bestätigungsdialog vor einem Wechsel auf eine teurere Option - schützt vor Versehen, nicht vor Absicht. Betrag bleibt beim Anbieter gedeckelt, nicht in der App |
 | **Mitmachmodus mit KI-Stimme** | **M** | Läuft heute bewusst immer über die Gerätestimme. Über Pausen-Tags lösbar (Gemini `[pause]`, Chirp 3 über `markup`) - eine Aufnahme, keine Mehrkosten. Text stückeln wäre die teure Alternative |
 | **Lange Texte stückeln** | **M** | Über `MAX_NEURAL_CHARS = 4000` (praktisch nur EPUB-Kapitel) fällt es auf die Gerätestimme zurück. An Satzenden in ~800-Zeichen-Stücke zerlegen, Wort-Offsets verschieben |

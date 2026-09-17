@@ -1,7 +1,7 @@
 // Bei jeder inhaltlichen Änderung an einer dieser Dateien diese Nummer
 // erhöhen - sonst bekommen wiederkehrende Besucher weiter die alte
 // zwischengespeicherte Version ausgeliefert.
-const CACHE_NAME = 'lesezauber-shell-v20';
+const CACHE_NAME = 'lesezauber-shell-v21';
 
 // Hinweis: js/studio/* (SchreibZauber) steht bewusst noch NICHT in der
 // Liste - die Dateien werden von main.js noch nicht importiert. Sie
@@ -28,6 +28,7 @@ const APP_SHELL = [
     './js/tts.js',
     './js/ttsProviders.js',
     './js/ttsNeural.js',
+    './js/costMeter.js',
     './js/ui.js',
     './js/utils.js',
     './js/readerUI.js',

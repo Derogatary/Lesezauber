@@ -88,6 +88,42 @@ Object.assign(app.render, {
         }
     },
 
+    // NEU: rein lokale Kosten-/Verbrauchsanzeige (js/costMeter.js) - zeigt,
+    // wie viele Zeichen diesen Kalendermonat WIRKLICH synthetisiert wurden
+    // (Cache-Treffer zaehlen nicht mit) und einen daraus GESCHAETZTEN Betrag.
+    costMeterCard() {
+        const list = document.getElementById('costMeterList');
+        const totalEl = document.getElementById('costMeterTotal');
+        if (!list || !totalEl) return;
+
+        const stats = app.costMeter.currentMonthStats();
+        const fmtChars = n => n.toLocaleString('de-DE');
+        const fmtCost = n => n.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+        const rows = stats.providers.map(p => {
+            const costText = p.estCost > 0 ? `≈ ${fmtCost(p.estCost)} USD` : 'kostenlos';
+            return `<div class="flex items-center justify-between gap-2">
+                <span>${app.utils.sanitize(p.label)}: ${fmtChars(p.chars)} Zeichen (${p.requests}×)</span>
+                <span class="font-bold text-slate-700 flex-shrink-0">${costText}</span>
+            </div>`;
+        });
+
+        if (stats.geminiText.chars > 0) {
+            rows.push(`<div class="flex items-center justify-between gap-2 text-slate-400">
+                <span>Gemini-Textaufrufe (Analyse/Quiz): ${fmtChars(stats.geminiText.chars)} Zeichen (${stats.geminiText.requests}×)</span>
+                <span class="flex-shrink-0">separat, siehe Gemini-Preisliste</span>
+            </div>`);
+        }
+
+        list.innerHTML = rows.length
+            ? rows.join('')
+            : '<p class="text-slate-500">Diesen Monat noch keine KI-Stimme genutzt.</p>';
+
+        totalEl.innerText = stats.totalCost > 0
+            ? `Ungefähr ${fmtCost(stats.totalCost)} USD diesen Monat geschätzt - ohne Gewähr, verbindlich ist die Abrechnung des Anbieters.`
+            : 'Diesen Monat noch keine geschätzten Kosten.';
+    },
+
     async settings() {
         // Die Persona-Liste kommt aus config.js statt fest im HTML zu
         // stehen. Ergänzt man dort eine Persona, erscheint sie automatisch
@@ -130,6 +166,7 @@ Object.assign(app.render, {
         }
         app.tts.loadVoices();
         await this.ttsProviderCard();
+        this.costMeterCard();
 
         // NEU: Speicherplatz-Nutzung anzeigen (grobe Schätzung des Browsers)
         const infoEl = document.getElementById('storageInfo');

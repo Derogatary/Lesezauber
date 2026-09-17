@@ -146,6 +146,10 @@ async function callGeminiAnalyze(prompt, base64Image) {
 
     const data = await res.json();
     const textResult = data.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
+    // NEU: Kosten-/Verbrauchsanzeige - nur der Text-Anteil (Prompt), da die
+    // tatsaechlichen Kosten bei Bildanalysen stark vom Bild abhaengen und
+    // sich nicht sinnvoll aus Zeichen schaetzen lassen (siehe costMeter.js).
+    app.costMeter.trackGeminiText(prompt.length);
     return parseModelJson(textResult);
 }
 
@@ -242,6 +246,7 @@ Object.assign(app.api, {
             });
             if (!res.ok) throw new Error('API Fehler');
             const data = await res.json();
+            app.costMeter.trackGeminiText(prompt.length);
             return data.candidates?.[0]?.content?.parts?.[0]?.text || 'Das weiß ich leider nicht.';
         } catch (geminiError) {
             if (!app.settings.mistralApiKey) throw new Error('Verbindungsfehler');
@@ -293,6 +298,7 @@ Antworte AUSSCHLIESSLICH als valides JSON-Array ohne Markdown-Blöcke, exakt in 
             if (!res.ok) throw new Error(`Gemini-Fehler ${res.status}`);
             const data = await res.json();
             const textResult = data.candidates?.[0]?.content?.parts?.[0]?.text || '[]';
+            app.costMeter.trackGeminiText(prompt.length);
             return parseModelJson(textResult);
         } catch (geminiError) {
             if (!app.settings.mistralApiKey) throw geminiError;
