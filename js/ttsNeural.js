@@ -9,8 +9,20 @@ import { TtsError } from './ttsProviders.js';
 
 // Sehr lange Texte (z.B. ein komplettes EPUB-Kapitel auf einer "Seite")
 // würden die Anbieter-Limits sprengen und unnötig Kontingent verbrauchen.
-// Darüber wird wieder die Gerätestimme genutzt.
+// Darüber wird ab MAX_NEURAL_CHARS gestückelt (siehe _speakChunked) statt
+// direkt auf die Gerätestimme umzuschalten - Grenze pro Einzel-Aufruf.
 const MAX_NEURAL_CHARS = 4000;
+
+// NEU (Textsegmentierung, siehe docs/ROADMAP.md "Lange Texte stückeln"):
+// Zielgröße je Stück beim Zerlegen - an Satzenden getrennt, siehe
+// app.utils.splitTextIntoChunks(). Kleiner als MAX_NEURAL_CHARS, damit ein
+// einzelnes Stück nie an derselben Grenze scheitert.
+const CHUNK_TARGET_CHARS = 800;
+
+// Darüber lohnt sich das Stückeln nicht mehr (zu viele Einzel-Aufrufe, zu
+// viel Kontingent für eine einzelne Seite) - dann bleibt es beim bisherigen
+// Rückfall auf die Gerätestimme.
+const MAX_CHUNKED_CHARS = 20000;
 
 // Einfache, schnelle Prüfsumme (FNV-1a) für den Cache-Schlüssel. Muss
 // nicht kryptografisch sicher sein - nur "gleicher Text = gleicher
@@ -240,8 +252,17 @@ Object.assign(app.ttsNeural, {
             : text;
 
         if (speakText.length > MAX_NEURAL_CHARS) {
-            console.warn(`Text mit ${speakText.length} Zeichen zu lang für die KI-Stimme - Gerätestimme übernimmt.`);
-            app.tts.speakWithDevice(text, onEnd, containerId);
+            // NEU: getaggte Texte (Audio-Tags) werden NICHT gestückelt - eine
+            // Emotions-Anweisung bezieht sich auf den ganzen Textfluss, ein
+            // Schnitt mitten drin würde sie durcheinanderbringen. Ebenso ein
+            // Rückfall bei absurd langen Texten (siehe MAX_CHUNKED_CHARS).
+            const isTagged = taggedText && provider.supportsTags;
+            if (isTagged || speakText.length > MAX_CHUNKED_CHARS) {
+                console.warn(`Text mit ${speakText.length} Zeichen zu lang für die KI-Stimme - Gerätestimme übernimmt.`);
+                app.tts.speakWithDevice(text, onEnd, containerId);
+                return;
+            }
+            this._speakChunked(speakText, onEnd, containerId);
             return;
         }
 
@@ -304,6 +325,219 @@ Object.assign(app.ttsNeural, {
             console.error('Wiedergabe nicht möglich:', e);
             app.ui.toast('Wiedergabe braucht einen Fingertipp - Gerätestimme springt ein.', '👆');
             app.tts.speakWithDevice(text, onEnd, containerId);
+        }
+    },
+
+    // NEU (Textsegmentierung): liest einen zu langen Text stückweise vor -
+    // an Satzenden getrennt (app.utils.splitTextIntoChunks), nacheinander
+    // erzeugt UND abgespielt (nicht parallel vorausgeladen, sonst laufen
+    // die Anbieter-Ratenlimits sofort in einen 429er). Jedes Stück landet
+    // einzeln im ttsCache - beim erneuten Vorlesen derselben Seite kostet
+    // also nur ein neues/verändertes Stück, nicht der ganze Text erneut.
+    async _speakChunked(fullText, onEnd, containerId) {
+        const token = ++this._token;
+        const chunks = app.utils.splitTextIntoChunks(fullText, CHUNK_TARGET_CHARS);
+        const provider = app.ttsProviders.current();
+        const voice = app.ttsProviders.voiceFor(provider);
+        const rate = app.settings.speechRate || 0.9;
+        const personaId = app.state.readingPersonaId || app.settings.persona;
+
+        for (let i = 0; i < chunks.length; i++) {
+            if (token !== this._token) return; // zwischenzeitlich gestoppt/überholt
+            const chunk = chunks[i];
+
+            let audioData;
+            try {
+                audioData = await this._getAudio(chunk.text, { provider, voice, rate, personaId });
+            } catch (e) {
+                if (token !== this._token) return;
+                this._handleFailure(e, fullText, onEnd, containerId);
+                return;
+            }
+            if (token !== this._token) return;
+
+            try {
+                await this._playChunk(audioData, token, containerId, chunk);
+            } catch (e) {
+                if (token !== this._token) return;
+                this._handleFailure(e, fullText, onEnd, containerId);
+                return;
+            }
+        }
+
+        if (token === this._token && onEnd) onEnd();
+    },
+
+    // Spielt EIN Text-Stück ab und löst das Versprechen erst nach dessen
+    // Ende auf - so wartet die Häppchen-Kette in _speakChunked() sauber
+    // Stück für Stück, statt mehrere gleichzeitig loszuschicken.
+    _playChunk(audioData, token, containerId, chunk) {
+        return new Promise((resolve, reject) => {
+            const audio = this._getAudioElement();
+            if (this._objectUrl) URL.revokeObjectURL(this._objectUrl);
+            this._objectUrl = URL.createObjectURL(audioData.blob);
+            audio.src = this._objectUrl;
+            const provider = app.ttsProviders.current();
+            audio.playbackRate = provider.supportsRate ? 1 : (app.settings.speechRate || 0.9);
+
+            audio.onloadedmetadata = () => {
+                if (token !== this._token) return;
+                this._startHighlightingRange(containerId, audioData.alignment, chunk, token);
+            };
+
+            audio.onended = () => {
+                if (this._rafId) { cancelAnimationFrame(this._rafId); this._rafId = null; }
+                resolve();
+            };
+
+            audio.onerror = () => {
+                reject(new Error('Audiodatei konnte nicht abgespielt werden.'));
+            };
+
+            audio.play().catch(e => {
+                console.error('Wiedergabe nicht möglich:', e);
+                reject(e);
+            });
+        });
+    },
+
+    // Wie _startHighlighting(), aber beschränkt auf die Wort-Spans EINES
+    // Text-Stücks. Die Hervorhebungs-Spans im Container wurden einmal für
+    // den GANZEN Text gebaut (app.tts._prepare()) - data-start zählt dort
+    // also global durch, während die Audiodatei dieses Stücks bei Zeit 0
+    // beginnt. Die Zeichenpositionen werden deshalb um chunk.start
+    // zurückgerechnet ("Wort-Offsets der Folgestücke verschoben").
+    _startHighlightingRange(containerId, alignment, chunk, token) {
+        const container = containerId ? document.getElementById(containerId) : null;
+        if (!container) return;
+
+        const rangeEnd = chunk.start + chunk.text.length;
+        const spans = Array.from(container.querySelectorAll('.speech-word')).filter(span => {
+            const start = parseInt(span.dataset.start, 10) || 0;
+            return start >= chunk.start && start < rangeEnd;
+        });
+        if (!spans.length) return;
+
+        const audio = this._getAudioElement();
+        const duration = isFinite(audio.duration) && audio.duration > 0 ? audio.duration : 0;
+        if (!duration) return;
+
+        const charStarts = spans.map(span => (parseInt(span.dataset.start, 10) || 0) - chunk.start);
+        const times = this._wordStartTimes(charStarts, duration, alignment, chunk.text);
+        let lastIndex = -1;
+
+        const tick = () => {
+            if (token !== this._token) return;
+
+            let current = -1;
+            for (let i = 0; i < times.length; i++) {
+                if (times[i] <= audio.currentTime) current = i; else break;
+            }
+
+            if (current !== lastIndex && current >= 0) {
+                lastIndex = current;
+                container.querySelectorAll('.speech-word').forEach(span => span.classList.remove('speech-highlight'));
+                spans[current].classList.add('speech-highlight');
+                spans[current].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            }
+
+            if (!audio.paused && !audio.ended) this._rafId = requestAnimationFrame(tick);
+        };
+
+        this._rafId = requestAnimationFrame(tick);
+    },
+
+    // NEU: Mitmachmodus mit KI-Stimme (siehe docs/ROADMAP.md "Mitmachmodus
+    // mit KI-Stimme"). Bewusst NICHT wie app.tts.speakMitmach() in viele
+    // Kleinst-Häppchen zerlegt (eine KI-Stimme kostet pro Aufruf) - die
+    // Emoji-Stellen werden stattdessen durch eine Pausen-Anweisung ersetzt
+    // und in EINEM Aufruf mitgesprochen. Setzt voraus, dass der Anbieter
+    // Sprech-Anweisungen versteht (supportsTags) - Chirp 3 (nur eigenes
+    // markup-Feld) und Anbieter ohne Tags fallen auf die Gerätestimme
+    // zurück, keine Mehrkosten durch Zerlegung.
+    async speakMitmach(erstleserText, onEnd, containerId) {
+        const provider = app.ttsProviders.current();
+        if (!this.isActive() || !provider.supportsTags || !erstleserText) {
+            app.tts.speakMitmach(erstleserText, onEnd, containerId);
+            return;
+        }
+
+        app.tts.stop();
+        const token = ++this._token;
+
+        const prepared = app.utils.prepareTextForSpeech(erstleserText);
+        const parts = app.utils.splitBySpeechEmoji(prepared);
+        const { html, plain } = app.utils.buildMitmachSpeechText(parts);
+        const container = containerId ? document.getElementById(containerId) : null;
+        if (container) container.innerHTML = html;
+
+        // "[pause]" ersetzt die Emoji-Stelle in der an den Anbieter
+        // geschickten Fassung - dieselbe eckige-Klammer-Konvention wie bei
+        // den Emotions-Anweisungen (variant.speechText), nur als eigene
+        // Sprechpause statt eines Gefühls.
+        const speakText = parts.map(p => p.type === 'emoji' ? ' [pause] ' : p.value)
+            .join('').replace(/\s+/g, ' ').trim();
+
+        if (!speakText || speakText.length > MAX_NEURAL_CHARS) {
+            app.tts.speakMitmach(erstleserText, onEnd, containerId);
+            return;
+        }
+
+        const voice = app.ttsProviders.voiceFor(provider);
+        const rate = app.settings.speechRate || 0.9;
+        const personaId = app.state.readingPersonaId || app.settings.persona;
+
+        let audioData;
+        try {
+            audioData = await this._getAudio(speakText, { provider, voice, rate, personaId });
+        } catch (e) {
+            if (token !== this._token) return;
+            console.error('KI-Mitmachmodus fehlgeschlagen:', e);
+            if (e instanceof TtsError && e.fatal) {
+                this._disabledReason = e.message;
+                app.ui.toast(`${e.message} Es wird mit der Gerätestimme weitergelesen.`, '🔇');
+            } else {
+                app.ui.toast('KI-Stimme gerade nicht erreichbar - Gerätestimme springt ein.', '🔇');
+            }
+            app.tts.speakMitmach(erstleserText, onEnd, containerId);
+            return;
+        }
+        if (token !== this._token) return;
+
+        const audio = this._getAudioElement();
+        if (this._objectUrl) URL.revokeObjectURL(this._objectUrl);
+        this._objectUrl = URL.createObjectURL(audioData.blob);
+        audio.src = this._objectUrl;
+        audio.playbackRate = provider.supportsRate ? 1 : rate;
+
+        audio.onloadedmetadata = () => {
+            if (token !== this._token) return;
+            // NEU: "plain" (ohne Emojis/Pausen-Tag) - die Wort-Spans in
+            // buildMitmachSpeechText() zählen ihre Position genau darauf
+            // bezogen. Ein evtl. Alignment (ElevenLabs) enthält ohnehin nur
+            // wirklich gesprochene Zeichen, Tags zählen dort nicht mit.
+            this._startHighlighting(containerId, audioData.alignment, plain, token);
+        };
+
+        audio.onended = () => {
+            if (token !== this._token) return;
+            if (this._rafId) { cancelAnimationFrame(this._rafId); this._rafId = null; }
+            if (onEnd) onEnd();
+        };
+
+        audio.onerror = () => {
+            if (token !== this._token) return;
+            console.error('Wiedergabe (Mitmachmodus) fehlgeschlagen.');
+            app.tts.speakMitmach(erstleserText, onEnd, containerId);
+        };
+
+        try {
+            await audio.play();
+        } catch (e) {
+            if (token !== this._token) return;
+            console.error('Wiedergabe nicht möglich:', e);
+            app.ui.toast('Wiedergabe braucht einen Fingertipp - Gerätestimme springt ein.', '👆');
+            app.tts.speakMitmach(erstleserText, onEnd, containerId);
         }
     },
 

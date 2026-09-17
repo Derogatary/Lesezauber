@@ -325,7 +325,11 @@ Object.assign(app.tts, {
         // dort zu sehen sind, wo sie inhaltlich hingehören.
         if (app.state.mitmachModus && variant.erstleserText) {
             app.readerUI.setTab('erstleser');
-            this.speakMitmach(variant.erstleserText, null, this._currentTextElementId());
+            // NEU: mit aktiver KI-Stimme läuft der Mitmachmodus jetzt über
+            // Pausen-Tags statt der Gerätestimme (siehe app.ttsNeural.speakMitmach)
+            // - die Funktion fällt selbst auf die Gerätestimme zurück, wenn
+            // der Anbieter das nicht unterstützt.
+            app.ttsNeural.speakMitmach(variant.erstleserText, null, this._currentTextElementId());
         } else {
             const { plain, tagged } = this._pickSpeechVariant(variant);
             this.speak(plain, null, this._currentTextElementId(), tagged);
@@ -547,7 +551,9 @@ Object.assign(app.tts, {
             // die Emoji-Pausen dort zu sehen sind, wo sie hingehören.
             if (app.state.mitmachModus && variant.erstleserText) {
                 app.readerUI.setTab('erstleser');
-                this.speakMitmach(variant.erstleserText, describeImage, this._currentTextElementId());
+                // NEU: siehe speakCurrentText() oben - Pausen-Tags statt
+                // Gerätestimme, sofern der Anbieter das unterstützt.
+                app.ttsNeural.speakMitmach(variant.erstleserText, describeImage, this._currentTextElementId());
             } else {
                 const { plain, tagged } = this._pickSpeechVariant(variant);
                 this.speak(plain, describeImage, this._currentTextElementId(), tagged);
