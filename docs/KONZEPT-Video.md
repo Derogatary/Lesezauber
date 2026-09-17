@@ -348,7 +348,7 @@ nur noch ein *Renderer* über demselben Master:
 | Format | Renderer | Status |
 |---|---|---|
 | Buch (Lesen / Druck / PDF) | Reader + `printBook()` | existiert |
-| Hörbuch | Audio-Assets aneinanderhängen + Kapitelmarken | fällt fast geschenkt aus Abschnitt 2 |
+| Hörbuch | `app.actions.exportAudiobook()` (ohne Kapitelmarken - WAV kennt keine) | ✅ existiert |
 | Video | Canvas-Renderer (Abschnitt 3/4) | neu, mittel |
 | Comic | Panel-Layout + Bildgenerierung | neu, groß |
 
@@ -431,15 +431,20 @@ eigenen Wohnzimmer und damit unkritisch.
 2. ~~**Kino-Modus (Stufe 1)**~~ **✅ Textteil erledigt (v0.12.0)** - Vollbild-Modus zeigt
    Text samt Hervorhebung. Offen bleiben nur noch Ken-Burns-Effekt und Kreuzblende
    (siehe Nachtrag in Abschnitt 3).
-3. **Hörbuch-Export** - fast geschenkt, die Bausteine aus Schritt 1 stehen bereits.
+3. ~~**Hörbuch-Export**~~ **✅ erledigt** - fast geschenkt, die Bausteine aus Schritt 1
+   standen bereits bereit.
 4. **Video-Export via WebCodecs (Weg B)** - opt-in, mit Fähigkeitsprüfung, nur für
    `origin: 'authored'`. Konkreter Bauplan: Abschnitt 4.6.
 5. **Schreiben + Comic** - eigenes Projekt, eigene Abstimmung, deutlich größer als 1-4
    zusammen. Details: `KONZEPT-SchreibZauber.md`, `KONZEPT-Comic.md`.
 
-**Aktueller Stand (Sept. 2026):** Schritte 1-2 sind erledigt. Der nächste sinnvolle
-Schritt ist **3 (Hörbuch-Export)**, dann **4 (Video-Export)** - beide bauen direkt auf
-den heute schon vorhandenen KI-Stimmen-Bausteinen auf.
+**Aktueller Stand (Sept. 2026):** Schritte 1-3 sind erledigt (Hörbuch-Export:
+`js/actions/audiobookExport.js`, ganzes Buch als eine WAV-Datei, Bild-
+beschreibung/Quiz abwählbar, Seiten mit `excluded` werden übersprungen).
+Die Segmente werden über `AudioContext`/`OfflineAudioContext` neu gerendert statt
+per Blob-Concat zusammengefügt - Begründung dafür direkt im Code (unterschiedliche
+Container/Abtastraten je Anbieter). Der nächste sinnvolle Schritt ist **4
+(Video-Export)** - der baut direkt auf denselben KI-Stimmen-Bausteinen auf.
 
 ---
 
