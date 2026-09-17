@@ -4,7 +4,9 @@ Object.assign(app.render, {
     // NEU: Der Bereich "Vorlese-Stimme" baut sich komplett aus
     // app.ttsProviders.list auf. Ein neuer Anbieter dort taucht hier
     // automatisch auf, ohne dass diese Datei angefasst werden muss.
-    async ttsProviderCard() {
+    // NEU: "locked" kommt aus settings() (Kindersicherung) - sperrt hier
+    // Anbieter-Wechsel, API-Key-Feld und Stimmen-Speicher-Verwaltung.
+    async ttsProviderCard(locked = false) {
         const select = document.getElementById('selectTtsProvider');
         if (!select) return;
 
@@ -14,6 +16,7 @@ Object.assign(app.render, {
             .map(p => `<option value="${p.id}">${app.utils.sanitize(p.label)}</option>`)
             .join('');
         select.value = provider.id;
+        select.disabled = locked;
 
         const hint = document.getElementById('ttsProviderHint');
         if (hint) hint.innerText = provider.hint || '';
@@ -28,6 +31,7 @@ Object.assign(app.render, {
         if (keyRow) keyRow.classList.toggle('hidden', !needsOwnKey);
         if (needsOwnKey && keyInput) {
             keyInput.value = app.settings[provider.keySetting] || '';
+            keyInput.disabled = locked;
             if (keyLabel) keyLabel.innerText = `API-Key (${provider.label.split(' (')[0]})`;
         }
 
@@ -63,7 +67,10 @@ Object.assign(app.render, {
         }
 
         const elevenBtn = document.getElementById('btnLoadElevenVoices');
-        if (elevenBtn) elevenBtn.classList.toggle('hidden', !provider.supportsVoiceFetch);
+        if (elevenBtn) {
+            elevenBtn.classList.toggle('hidden', !provider.supportsVoiceFetch);
+            elevenBtn.disabled = locked;
+        }
 
         // Zusatz-Optionen (Persona-Stil, Stimmen-Speicher) sind nur bei
         // einer KI-Stimme sinnvoll.
@@ -76,7 +83,12 @@ Object.assign(app.render, {
         if (styleToggle) styleToggle.checked = app.settings.ttsPersonaStyle !== false;
 
         const cacheToggle = document.getElementById('toggleTtsCache');
-        if (cacheToggle) cacheToggle.checked = app.settings.ttsCacheEnabled !== false;
+        if (cacheToggle) {
+            cacheToggle.checked = app.settings.ttsCacheEnabled !== false;
+            cacheToggle.disabled = locked;
+        }
+        const clearCacheBtn = document.getElementById('btnClearTtsCache');
+        if (clearCacheBtn) clearCacheBtn.disabled = locked;
 
         const cacheInfo = document.getElementById('ttsCacheInfo');
         if (cacheInfo && provider.neural) {
@@ -89,6 +101,18 @@ Object.assign(app.render, {
     },
 
     async settings() {
+        // NEU: Kinderprofile haben teure/heikle Einstellungen gesperrt
+        // (Stimmen-Anbieter, API-Keys, Stimmen-Speicher-Verwaltung) - reine
+        // Kindersicherung, sichtbar ausgegraut, kein Passwortschutz.
+        const locked = app.utils.isSettingsLockedForActiveProfile();
+        const lockNotice = document.getElementById('settingsLockNotice');
+        if (lockNotice) lockNotice.classList.toggle('hidden', !locked);
+
+        const apiKeyInput = document.getElementById('inputApiKey');
+        if (apiKeyInput) apiKeyInput.disabled = locked;
+        const mistralKeyInput = document.getElementById('inputMistralKey');
+        if (mistralKeyInput) mistralKeyInput.disabled = locked;
+
         // Die Persona-Liste kommt aus config.js statt fest im HTML zu
         // stehen. Ergänzt man dort eine Persona, erscheint sie automatisch
         // hier - ohne diese Datei anzufassen.
@@ -129,7 +153,7 @@ Object.assign(app.render, {
             bgStatus.innerText = missing > 0 ? `${missing} Variante(n) noch offen` : 'Alles vorbereitet ✅';
         }
         app.tts.loadVoices();
-        await this.ttsProviderCard();
+        await this.ttsProviderCard(locked);
 
         // NEU: Speicherplatz-Nutzung anzeigen (grobe Schätzung des Browsers)
         const infoEl = document.getElementById('storageInfo');

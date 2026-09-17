@@ -12,6 +12,9 @@ const ACTIVE_PROFILE_KEY = 'lz_active_profile';
 // obwohl sie z.B. beim Export mitgezählt wurden. Gleicher String-Wert
 // wird in render/library.js und den Buch-Erstellungs-Stellen genutzt.
 const ALL_PROFILES_ID = '__all__';
+// NEU: Vorlese-Stimme (Anbieter + Stimmen-Auswahl je Anbieter) ist ab jetzt
+// pro Profil gespeichert, nicht mehr global - siehe Migration weiter unten.
+const PROFILE_TTS_KEY = 'lz_profile_tts';
 
 function loadProfiles() {
     try {
@@ -45,6 +48,90 @@ const storedIsValid = storedProfileId === ALL_PROFILES_ID
     || app.profiles.some(p => p.id === storedProfileId);
 app.state.currentProfileId = storedIsValid ? storedProfileId : app.profiles[0].id;
 
+function loadProfileTtsMap() {
+    try {
+        const raw = localStorage.getItem(PROFILE_TTS_KEY);
+        const parsed = raw ? JSON.parse(raw) : null;
+        return (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) ? parsed : null;
+    } catch (e) {
+        console.error('Profil-Stimmeneinstellungen unlesbar:', e);
+        return null;
+    }
+}
+
+function saveProfileTtsMap() {
+    try {
+        localStorage.setItem(PROFILE_TTS_KEY, JSON.stringify(app.profileTtsMap));
+    } catch (e) {
+        console.error('Profil-Stimmeneinstellungen konnten nicht gespeichert werden:', e);
+    }
+}
+
+// NEU: Stimmen-Anbieter/-Auswahl (app.settings.ttsProvider/ttsVoices) waren
+// bis v0.12 global, in state.js schon aus localStorage geladen. Gibt es
+// noch keine Zuordnung pro Profil, übernimmt JEDES vorhandene ECHTE Profil
+// einmalig die bisherige globale Wahl, damit niemand seine Stimme verliert.
+// '__all__' ist kein echtes Profil (siehe ALL_PROFILES_ID) und bekommt
+// bewusst keinen eigenen Eintrag.
+app.profileTtsMap = loadProfileTtsMap();
+if (!app.profileTtsMap) {
+    app.profileTtsMap = {};
+    app.profiles.forEach(p => {
+        app.profileTtsMap[p.id] = {
+            ttsProvider: app.settings.ttsProvider,
+            ttsVoices: { ...app.settings.ttsVoices }
+        };
+    });
+    saveProfileTtsMap();
+}
+
+// NEU: Hilfsfunktionen rund um Profile - liegen bewusst in app.utils, dem
+// üblichen Ort für "nie direkt lesen, immer über diese Funktion" (siehe
+// CLAUDE.md, z.B. resolveBookType). app.utils existiert als Objekt schon
+// aus core.js, auch wenn utils.js selbst erst später geladen wird.
+Object.assign(app.utils, {
+    // Stimmen-Einstellung eines ECHTEN Profils - Fallback Gerätestimme,
+    // falls das Profil noch keine eigene Wahl hat (z.B. gerade neu angelegt).
+    getProfileTtsSettings(profileId) {
+        return app.profileTtsMap[profileId] || { ttsProvider: 'device', ttsVoices: {} };
+    },
+
+    // Speichert die Stimmen-Einstellung EINES Profils dauerhaft.
+    setProfileTtsSettings(profileId, { ttsProvider, ttsVoices }) {
+        app.profileTtsMap[profileId] = { ttsProvider, ttsVoices: { ...ttsVoices } };
+        saveProfileTtsMap();
+    },
+
+    // Kopiert die Stimmen-Einstellung des aktuell aktiven (echten) Profils
+    // nach app.settings, wo ttsProviders.js/tts.js/ttsNeural.js/
+    // settingsConfig.js sie unverändert weiter auslesen - so bleibt nur
+    // diese eine Stelle profil-bewusst. Wird beim Start (main.js) und bei
+    // jedem Profilwechsel aufgerufen.
+    syncActiveProfileTtsSettings() {
+        const stored = this.getProfileTtsSettings(this.resolveCreationProfileId());
+        app.settings.ttsProvider = stored.ttsProvider;
+        app.settings.ttsVoices = { ...stored.ttsVoices };
+    },
+
+    // NEU: liest die Profil-Rolle immer über diese Funktion, nie direkt -
+    // fehlendes Feld (alte Profile) zählt bewusst als 'child', siehe
+    // Auftrag "Profil-Rollen".
+    resolveProfileRole(profile) {
+        return profile && profile.role === 'adult' ? 'adult' : 'child';
+    },
+
+    // NEU: sind die teuren/heiklen Einstellungen (Stimmen-Anbieter-Wechsel,
+    // API-Keys, Stimmen-Speicher-Verwaltung) gerade gesperrt? Nur bei einem
+    // konkret ausgewählten Kinderprofil - beim "Alle Profile"-Filter (eher
+    // ein Eltern-Überblick als ein aktives Kind-Profil) bleibt alles frei.
+    // Reine Kindersicherung (sichtbar ausgegraut), kein Passwortschutz.
+    isSettingsLockedForActiveProfile() {
+        if (app.state.currentProfileId === ALL_PROFILES_ID) return false;
+        const profile = app.profiles.find(p => p.id === app.state.currentProfileId);
+        return this.resolveProfileRole(profile) === 'child';
+    }
+});
+
 Object.assign(app.actions, {
     switchProfile(profileId) {
         if (profileId === '__new__') {
@@ -53,6 +140,9 @@ Object.assign(app.actions, {
         }
         app.state.currentProfileId = profileId;
         localStorage.setItem(ACTIVE_PROFILE_KEY, profileId);
+        // NEU: Vorlese-Stimme ist pro Profil - beim Wechsel die zum neuen
+        // Profil gehörende Wahl nach app.settings übernehmen.
+        app.utils.syncActiveProfileTtsSettings();
         app.render.library();
     },
 
@@ -63,14 +153,47 @@ Object.assign(app.actions, {
             return;
         }
 
+        // NEU: Rolle gleich beim Anlegen festlegen - steuert, ob teure/
+        // heikle Einstellungen (Stimmen-Anbieter, API-Keys, Stimmen-Speicher)
+        // für dieses Profil gesperrt sind. Reine Kindersicherung, kein
+        // Passwortschutz, daher genügt ein einfacher Bestätigungsdialog.
+        const isAdult = confirm(`Ist "${name.trim()}" ein Erwachsenen-Profil?\n\nDamit sind alle Einstellungen freigeschaltet (Stimmen-Anbieter, API-Keys, Stimmen-Speicher). Bei "Abbrechen" wird ein Kinderprofil angelegt, bei dem diese Einstellungen ausgegraut sind - lässt sich später jederzeit über das Rollen-Symbol neben der Profil-Auswahl ändern.`);
+
         const id = 'profile_' + Date.now();
-        app.profiles.push({ id, name: name.trim() });
+        app.profiles.push({ id, name: name.trim(), role: isAdult ? 'adult' : 'child' });
         saveProfiles();
+
+        // NEU: neues Profil startet mit der Stimmen-Einstellung des bisher
+        // aktiven Profils, statt stumm auf die Gerätestimme zurückzufallen.
+        app.utils.setProfileTtsSettings(id, app.utils.getProfileTtsSettings(
+            app.utils.resolveCreationProfileId()
+        ));
 
         app.state.currentProfileId = id;
         localStorage.setItem(ACTIVE_PROFILE_KEY, id);
+        app.utils.syncActiveProfileTtsSettings();
         app.render.library();
         app.ui.toast(`Profil "${name.trim()}" erstellt`, '👤');
+    },
+
+    // NEU: Rolle eines Profils umschalten (Kind <-> Erwachsen). Kein
+    // Passwortschutz, nur eine sichtbare Kindersicherung - deshalb reicht
+    // ein einfacher Klick mit kurzer Bestätigung.
+    toggleProfileRole(profileId) {
+        const profile = app.profiles.find(p => p.id === profileId);
+        if (!profile) return;
+
+        const currentlyAdult = app.utils.resolveProfileRole(profile) === 'adult';
+        const confirmed = currentlyAdult
+            ? confirm(`"${profile.name}" wieder als Kinderprofil einstufen? Teure/heikle Einstellungen (Stimmen-Anbieter, API-Keys, Stimmen-Speicher) werden dann wieder ausgegraut.`)
+            : confirm(`"${profile.name}" als Erwachsenen-Profil einstufen? Damit werden alle Einstellungen freigeschaltet.`);
+        if (!confirmed) return;
+
+        profile.role = currentlyAdult ? 'child' : 'adult';
+        saveProfiles();
+        app.render.library();
+        if (app.state.currentView === 'settings') app.render.settings();
+        app.ui.toast(currentlyAdult ? 'Als Kinderprofil eingestuft' : 'Als Erwachsenen-Profil eingestuft', currentlyAdult ? '🧒' : '🧑');
     },
 
     // NEU: Profil umbenennen
@@ -113,9 +236,14 @@ Object.assign(app.actions, {
         app.profiles = app.profiles.filter(p => p.id !== profileId);
         saveProfiles();
 
+        // NEU: verwaisten Stimmen-Eintrag des gelöschten Profils entfernen.
+        delete app.profileTtsMap[profileId];
+        saveProfileTtsMap();
+
         if (app.state.currentProfileId === profileId) {
             app.state.currentProfileId = fallback.id;
             localStorage.setItem(ACTIVE_PROFILE_KEY, fallback.id);
+            app.utils.syncActiveProfileTtsSettings();
         }
 
         app.render.library();

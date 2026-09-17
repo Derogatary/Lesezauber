@@ -72,6 +72,11 @@
             <div class="mb-4 flex items-center gap-2">
                 <select id="profileSelect" onchange="app.actions.switchProfile(this.value)" class="flex-grow text-sm bg-white border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500 shadow-sm font-semibold text-slate-700">
                 </select>
+                <!-- NEU: Profil-Rolle (Kind/Erwachsen) umschalten - steuert, ob
+                     teure/heikle Einstellungen für dieses Profil gesperrt sind
+                     (siehe js/profiles.js toggleProfileRole). Nur bei einem
+                     konkreten Profil sinnvoll, nicht beim "Alle Profile"-Filter. -->
+                <button id="profileRoleBadge" onclick="app.actions.toggleProfileRole(app.state.currentProfileId)" aria-label="Profil-Rolle umschalten" title="Profil-Rolle umschalten (Kind/Erwachsen)" class="w-10 h-10 flex-shrink-0 bg-white border border-slate-200 rounded-xl flex items-center justify-center text-lg hover:bg-slate-50 shadow-sm">🧒</button>
                 <button onclick="app.actions.renameProfile(app.state.currentProfileId)" aria-label="Profil umbenennen" title="Profil umbenennen" class="w-10 h-10 flex-shrink-0 bg-white border border-slate-200 rounded-xl flex items-center justify-center text-slate-500 hover:bg-slate-50 shadow-sm">✏️</button>
                 <button onclick="app.actions.deleteProfile(app.state.currentProfileId)" aria-label="Profil löschen" title="Profil löschen" class="w-10 h-10 flex-shrink-0 bg-white border border-slate-200 rounded-xl flex items-center justify-center text-slate-500 hover:bg-red-50 hover:text-red-600 shadow-sm">🗑️</button>
             </div>
@@ -494,7 +499,7 @@
                 </div>
                 <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
                     <h2 class="text-sm font-bold text-indigo-900 mb-1">👤 Profile</h2>
-                    <p class="text-xs text-slate-600 leading-relaxed">Für mehrere Kinder auf einem Gerät. Rein lokal, kein Login - jedes Profil sieht nur seine eigenen Bücher.</p>
+                    <p class="text-xs text-slate-600 leading-relaxed">Für mehrere Kinder auf einem Gerät. Rein lokal, kein Login - jedes Profil sieht nur seine eigenen Bücher und hat seine eigene Vorlese-Stimme. Über das 🧒/🧑-Symbol neben der Profil-Auswahl lässt sich ein Profil als Kind oder Erwachsener einstufen - bei Kindern sind teure/heikle Einstellungen (Stimmen-Anbieter, API-Keys, Stimmen-Speicher) ausgegraut. Das ist eine Kindersicherung, kein Passwortschutz.</p>
                 </div>
                 <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
                     <h2 class="text-sm font-bold text-indigo-900 mb-1">💾 Backup</h2>
@@ -566,12 +571,19 @@
             </header>
 
             <div class="space-y-6">
+                <!-- NEU: Hinweis, wenn das aktive Profil ein Kinderprofil ist -
+                     einige Einstellungen sind dann ausgegraut (Kindersicherung,
+                     kein Passwortschutz). Wird in render/settings.js befüllt. -->
+                <div id="settingsLockNotice" class="hidden bg-amber-50 border border-amber-200 text-amber-800 text-xs rounded-2xl p-3 leading-relaxed">
+                    🔒 Einige Einstellungen sind für dieses Kinderprofil gesperrt (Stimmen-Anbieter, API-Keys, Stimmen-Speicher-Verwaltung) - das ist eine Kindersicherung, kein Passwortschutz. Zum Ändern oben in der Bibliothek zu einem Erwachsenen-Profil wechseln.
+                </div>
+
                 <!-- API Key Config -->
                 <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-3">
                     <label class="block text-xs font-bold uppercase tracking-wider text-slate-500">
                         Google Gemini API Key
                     </label>
-                    <input id="inputApiKey" type="password" placeholder="AIzaSy..." class="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 font-mono focus:outline-none focus:border-indigo-500">
+                    <input id="inputApiKey" type="password" placeholder="AIzaSy..." class="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 font-mono focus:outline-none focus:border-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed">
                     <div class="flex justify-between items-center pt-1">
                         <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-xs text-indigo-600 font-semibold hover:underline flex items-center gap-1">
                             <span>🔑 Kostenlosen Key holen</span>
@@ -610,7 +622,7 @@
                         Mistral-Fallback (optional)
                     </label>
                     <p class="text-[11px] text-slate-500">Springt nur ein, wenn Gemini mal ausfällt oder das Tageslimit erreicht ist.</p>
-                    <input id="inputMistralKey" type="password" placeholder="Mistral API Key (optional)" class="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 font-mono focus:outline-none focus:border-indigo-500">
+                    <input id="inputMistralKey" type="password" placeholder="Mistral API Key (optional)" class="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 font-mono focus:outline-none focus:border-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed">
                     <a href="https://console.mistral.ai/" target="_blank" class="text-xs text-indigo-600 font-semibold hover:underline flex items-center gap-1">
                         <span>🔑 Kostenlosen Mistral-Key holen</span>
                         <span>↗</span>
@@ -634,13 +646,13 @@
                     <label for="selectTtsProvider" class="block text-xs font-bold uppercase tracking-wider text-slate-500">
                         Vorlese-Stimme
                     </label>
-                    <select id="selectTtsProvider" onchange="app.settingsConfig.changeTtsProvider(this.value)" class="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500 font-medium">
+                    <select id="selectTtsProvider" onchange="app.settingsConfig.changeTtsProvider(this.value)" class="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500 font-medium disabled:opacity-50 disabled:cursor-not-allowed">
                     </select>
                     <p id="ttsProviderHint" class="text-[11px] text-slate-500"></p>
 
                     <div id="ttsKeyRow" class="hidden space-y-2">
                         <label id="ttsKeyLabel" for="inputProviderKey" class="block text-[11px] font-bold uppercase tracking-wider text-slate-500">API-Key</label>
-                        <input id="inputProviderKey" type="password" placeholder="API-Key des Anbieters" class="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 font-mono focus:outline-none focus:border-indigo-500">
+                        <input id="inputProviderKey" type="password" placeholder="API-Key des Anbieters" class="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 font-mono focus:outline-none focus:border-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed">
                     </div>
 
                     <!-- NEU: Direktlinks zum Anbieter - Key-Seite und Preisliste.
@@ -664,7 +676,7 @@
                             <button onclick="app.settingsConfig.testTtsVoice()" class="flex-1 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 font-bold py-2.5 rounded-xl text-sm transition">
                                 🔊 Stimme testen
                             </button>
-                            <button id="btnLoadElevenVoices" onclick="app.settingsConfig.loadElevenVoices()" class="hidden flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 rounded-xl text-sm transition">
+                            <button id="btnLoadElevenVoices" onclick="app.settingsConfig.loadElevenVoices()" class="hidden flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 rounded-xl text-sm transition disabled:opacity-50 disabled:cursor-not-allowed">
                                 🎙️ Eigene Stimmen laden
                             </button>
                         </div>
@@ -681,11 +693,11 @@
                             <label for="toggleTtsCache" class="text-[11px] text-slate-600 font-semibold">
                                 Erzeugte Stimmen speichern (spart Kosten)
                             </label>
-                            <input id="toggleTtsCache" type="checkbox" onchange="app.settingsConfig.toggleTtsCache(this.checked)" class="w-5 h-5 accent-indigo-600 flex-shrink-0">
+                            <input id="toggleTtsCache" type="checkbox" onchange="app.settingsConfig.toggleTtsCache(this.checked)" class="w-5 h-5 accent-indigo-600 flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed">
                         </div>
                         <div class="flex items-center justify-between gap-3">
                             <p id="ttsCacheInfo" class="text-[11px] text-slate-500">Wird ermittelt...</p>
-                            <button onclick="app.dbOps.clearTtsCache()" class="text-[11px] font-bold text-red-600 hover:underline flex-shrink-0">
+                            <button id="btnClearTtsCache" onclick="app.settingsConfig.clearTtsCache()" class="text-[11px] font-bold text-red-600 hover:underline flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed disabled:no-underline">
                                 Leeren
                             </button>
                         </div>
