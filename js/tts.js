@@ -56,7 +56,18 @@ Object.assign(app.tts, {
     // Fällen zu den Zeichenpositionen passt. Die Reader-Anzeige selbst
     // bleibt unangetastet - hier wird nur die Kopie fürs Vorlesen gebaut.
     _prepare(text, highlightElementId) {
-        const prepared = app.utils.prepareTextForSpeech(text);
+        // NEU (Audio-Tags): Sicherheitsnetz - hier läuft immer die TAG-FREIE
+        // Fassung durch (die getaggte geht nur direkt in ttsNeural.speak(),
+        // siehe speak() unten). Landet trotzdem versehentlich ein [Tag] im
+        // normalen Text, würde es sonst buchstäblich angezeigt und vorgelesen.
+        //
+        // REIHENFOLGE IST WICHTIG: erst glätten, dann Tags entfernen.
+        // stripSpeechTags() zieht alle Leerräume zu einfachen Leerzeichen
+        // zusammen - liefe es zuerst, wäre der Zeilenumbruch in
+        // "Kinder-\nwagen" schon weg und prepareTextForSpeech() könnte den
+        // Trennstrich nicht mehr auflösen ("Kinder- wagen" statt
+        // "Kinderwagen"). Nachgeprüft beim Zusammenführen der beiden Zweige.
+        const prepared = app.utils.stripSpeechTags(app.utils.prepareTextForSpeech(text));
         if (!highlightElementId) return app.utils.stripEmojiForSpeech(prepared);
 
         const { clean, html } = app.utils.buildSpeechHighlightHtml(prepared);
@@ -65,10 +76,33 @@ Object.assign(app.tts, {
         return clean;
     },
 
+    // NEU (Audio-Tags): wählt zwischen der um Sprech-Anweisungen
+    // angereicherten Vorlesefassung (variant.speechText) und dem normalen
+    // Text - nur wenn der gerade aktive Anbieter Tags überhaupt versteht
+    // (supportsTags in js/ttsProviders.js). Die Gerätestimme und Anbieter
+    // ohne Tag-Unterstützung bekommen NIE die getaggte Fassung, sonst
+    // läsen sie buchstäblich "eckige Klammer lacht" vor. Ältere Seiten ohne
+    // speechText liefern hier immer tagged=null - unverändertes Verhalten.
+    _pickSpeechVariant(variant) {
+        const plain = variant.text;
+        if (!variant.speechText || variant.speechText === plain) return { plain, tagged: null };
+
+        const provider = app.ttsProviders.current();
+        if (app.ttsNeural.isActive() && provider.supportsTags) {
+            return { plain, tagged: variant.speechText };
+        }
+        return { plain, tagged: null };
+    },
+
     // NEU: zentrale Weiche zwischen Gerätestimme und KI-Stimme. Alles
     // andere im Code ruft weiterhin einfach app.tts.speak(...) auf und muss
     // nicht wissen, welcher Anbieter gerade eingestellt ist.
-    speak(text, onEnd, highlightElementId) {
+    // NEU (Audio-Tags): optionales viertes Argument taggedText - die
+    // getaggte Fassung von "text" (siehe _pickSpeechVariant), die NUR an
+    // eine KI-Stimme mit supportsTags geht. Die Hervorhebung baut IMMER auf
+    // dem normalen "text" auf, damit Klammer-Tags nicht als eigene Wörter
+    // mitgezählt werden.
+    speak(text, onEnd, highlightElementId, taggedText) {
         // FIX: hier wurde einfach abgebrochen. Beim automatischen Vorlesen
         // hängen aber mehrere speak()-Aufrufe als Kette aneinander (Text ->
         // Bildbeschreibung -> Rätselfrage -> nächste Seite). Fehlte ein
@@ -85,7 +119,8 @@ Object.assign(app.tts, {
         if (app.ttsNeural.isActive()) {
             // Läuft asynchron (Netzwerk) und schaltet bei Problemen selbst
             // auf die Gerätestimme um.
-            app.ttsNeural.speak(clean, onEnd, highlightElementId);
+            const cleanTagged = taggedText ? app.utils.stripEmojiForSpeech(taggedText) : null;
+            app.ttsNeural.speak(clean, onEnd, highlightElementId, cleanTagged || null);
             return;
         }
 
@@ -292,7 +327,8 @@ Object.assign(app.tts, {
             app.readerUI.setTab('erstleser');
             this.speakMitmach(variant.erstleserText, null, this._currentTextElementId());
         } else {
-            this.speak(variant.text, null, this._currentTextElementId());
+            const { plain, tagged } = this._pickSpeechVariant(variant);
+            this.speak(plain, null, this._currentTextElementId(), tagged);
         }
     },
 
@@ -459,7 +495,14 @@ Object.assign(app.tts, {
         const nextPage = book.pages[app.state.currentPageIdx + 1];
         if (nextPage && !nextPage.excluded) {
             const nextVariant = app.utils.resolvePageVariant(nextPage, app.state.readingPersonaId);
-            if (nextVariant && nextVariant.text) app.ttsNeural.warmUp(nextVariant.text);
+            if (nextVariant && nextVariant.text) {
+                // NEU (Audio-Tags): dieselbe Fassung vorbereiten, die beim
+                // tatsächlichen Vorlesen gleich unten (startPageText) auch
+                // angefordert wird - sonst landet die getaggte Fassung nicht
+                // im Cache und es wird beim Umblättern trotzdem neu erzeugt.
+                const { plain, tagged } = this._pickSpeechVariant(nextVariant);
+                app.ttsNeural.warmUp(tagged || plain);
+            }
         }
 
         // Kombinierter Modus: Rätselfrage sichtbar UND hörbar, mit Pause
@@ -506,7 +549,8 @@ Object.assign(app.tts, {
                 app.readerUI.setTab('erstleser');
                 this.speakMitmach(variant.erstleserText, describeImage, this._currentTextElementId());
             } else {
-                this.speak(variant.text, describeImage, this._currentTextElementId());
+                const { plain, tagged } = this._pickSpeechVariant(variant);
+                this.speak(plain, describeImage, this._currentTextElementId(), tagged);
             }
         };
 

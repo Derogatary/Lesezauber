@@ -221,11 +221,26 @@ Object.assign(app.ttsNeural, {
 
     // Der eigentliche Sprechvorgang. "text" ist bereits emoji-bereinigt und
     // der Hervorhebungs-Container bereits gefüllt (siehe tts.js).
-    async speak(text, onEnd, containerId) {
+    // NEU (Audio-Tags): optionales taggedText - die um Sprech-Anweisungen
+    // angereicherte Fassung von "text" (variant.speechText), die NUR beim
+    // Anbieter tatsächlich zur Synthese geschickt wird, wenn er
+    // supportsTags hat. Die Hervorhebung bleibt IMMER auf "text" (ohne
+    // Tags) - eckige Klammern zählen nicht als eigene Wörter.
+    async speak(text, onEnd, containerId, taggedText) {
         const provider = app.ttsProviders.current();
+        // FIX (Zusammenführung Welle 0 + Audio-Tags): "text" kommt schon
+        // aufbereitet aus app.tts._prepare(), "taggedText" dagegen roh aus
+        // variant.speechText. Ohne diese Zeile liefe die getaggte Fassung als
+        // einzige OHNE prepareTextForSpeech() in die Synthese - ausgerechnet
+        // bei den Anbietern mit Emotionen wären "z.B." und "Kinder-\nwagen"
+        // dann wieder ungeglättet. Die Klammer-Tags überstehen die Aufbereitung
+        // unverändert (nachgeprüft), sie fasst nur Leerräume und Abkürzungen an.
+        const speakText = (taggedText && provider.supportsTags)
+            ? app.utils.stripEmojiForSpeech(app.utils.prepareTextForSpeech(taggedText))
+            : text;
 
-        if (text.length > MAX_NEURAL_CHARS) {
-            console.warn(`Text mit ${text.length} Zeichen zu lang für die KI-Stimme - Gerätestimme übernimmt.`);
+        if (speakText.length > MAX_NEURAL_CHARS) {
+            console.warn(`Text mit ${speakText.length} Zeichen zu lang für die KI-Stimme - Gerätestimme übernimmt.`);
             app.tts.speakWithDevice(text, onEnd, containerId);
             return;
         }
@@ -237,7 +252,12 @@ Object.assign(app.ttsNeural, {
 
         let audioData;
         try {
-            audioData = await this._getAudio(text, { provider, voice, rate, personaId });
+            // NEU: der Cache-Schlüssel (siehe _cacheKey) hängt am Text -
+            // getaggte und ungetaggte Fassung landen dadurch automatisch
+            // unter verschiedenen Schlüsseln, eine alte Aufnahme ohne
+            // Emotion wird also nie fälschlich für eine getaggte Anfrage
+            // wiederverwendet (und umgekehrt).
+            audioData = await this._getAudio(speakText, { provider, voice, rate, personaId });
         } catch (e) {
             if (token !== this._token) return; // zwischenzeitlich gestoppt
             this._handleFailure(e, text, onEnd, containerId);
@@ -257,6 +277,11 @@ Object.assign(app.ttsNeural, {
 
         audio.onloadedmetadata = () => {
             if (token !== this._token) return;
+            // NEU: "text" (ohne Tags) statt "speakText" - die Wort-Spans im
+            // Hervorhebungs-Container sind aus dem tag-freien Text gebaut,
+            // die Zeichenpositionen müssen also dazu passen. Bei ElevenLabs
+            // enthält audioData.alignment ohnehin nur wirklich gesprochene
+            // Zeichen (Tags werden nicht mitgesprochen), passt also zu "text".
             this._startHighlighting(containerId, audioData.alignment, text, token);
         };
 
