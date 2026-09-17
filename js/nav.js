@@ -16,7 +16,7 @@ Object.assign(app.nav, {
         }
 
         // Hide all main views safely
-        ['viewLibrary', 'viewBook', 'viewScanner', 'viewReader', 'viewSettings', 'viewVocab', 'viewHelp'].forEach(id => {
+        ['viewLibrary', 'viewBook', 'viewScanner', 'viewReader', 'viewSettings', 'viewVocab', 'viewHelp', 'viewStudioLibrary', 'viewStudioWizard'].forEach(id => {
             const el = document.getElementById(id);
             if (el) el.classList.add('view-hidden');
         });
@@ -42,6 +42,12 @@ Object.assign(app.nav, {
             app.render.vocabTrainer();
         } else if (viewId === 'help') {
             document.getElementById('viewHelp').classList.remove('view-hidden');
+        } else if (viewId === 'studio') {
+            document.getElementById('viewStudioLibrary').classList.remove('view-hidden');
+            app.render.studioLibrary();
+        } else if (viewId === 'studioWizard') {
+            document.getElementById('viewStudioWizard').classList.remove('view-hidden');
+            app.render.studioWizard();
         }
     }
 });

@@ -75,7 +75,7 @@ import './actions/meineNeueDatei.js';
 |---|---|
 | `js/core.js` | Das `app`-Objekt selbst - Namespace-Definitionen |
 | `js/state.js` | `app.state` (Laufzeit) + `app.settings` (persistiert, localStorage) - **Reihenfolge: settings vor state**, da state teils von settings liest |
-| `js/db.js` | IndexedDB-Speicher-Engine (`app.library`, `app.vocabulary`, `ttsCache`). **Version 3** - beim Hinzufügen eines neuen Object Stores `DB_VERSION` erhöhen und `onupgradeneeded` erweitern |
+| `js/db.js` | IndexedDB-Speicher-Engine (`app.library`, `app.vocabulary`, `ttsCache`, `projects`). **Version 4** - beim Hinzufügen eines neuen Object Stores `DB_VERSION` erhöhen und `onupgradeneeded` erweitern |
 | `js/nav.js` | Router zwischen den `<main id="view...">`-Ansichten |
 | `js/api.js` | Gemini/Mistral-Aufrufe, der komplette Analyse-Prompt lebt hier |
 | `js/tts.js` | Sprachausgabe: Weiche zwischen Gerätestimme und KI-Stimme, Auto-Vorlesen, Wort-Hervorhebung (SpeechSynthesis `boundary`-Event), kombinierter Rätsel-Modus |
@@ -92,6 +92,12 @@ import './actions/meineNeueDatei.js';
 | `js/actions/checkWork.js` | Kontrolle bearbeiteter Blätter (Foto → KI-Rückmeldung), nur im Heft-Modus |
 | `js/render/checkWork.js` | Ergebniskarte der Kontrolle (Lob, Rückmeldung, Tipps) |
 | `js/render/progress.js` | Fortschrittsbalken, Erledigt-Knopf, Belohnungs-Banner |
+| `js/studio/studioCore.js` | SchreibZauber: `app.studio`-Projekt-CRUD, Stufen-Logik (Idee/Bauplan/Geschichte), Platzhalter-Aufruf pro Doppelseite |
+| `js/studio/studioPrompts.js` | SchreibZauber: alle Prompt-Bausteine inkl. `guardrailsBlock()` (Veröffentlichungs-Leitplanken, siehe Entscheidung 6) |
+| `js/studio/studioApi.js` | SchreibZauber: eigener Gemini/Mistral-Textaufruf fürs Manuskript (gleiche Keys wie `js/api.js`, aber getrennte Funktionen) |
+| `js/studio/studioExport.js` | SchreibZauber: Projekt → normales Buch in `app.library` ("Ins Regal stellen") |
+| `js/studio/imageFormats.js`, `placeholder.js`, `imageSource.js` | SchreibZauber: Bildformat-Katalog, Platzhalter-Erzeugung, Bildquellen-Adapter (`{full, thumb, meta}`) - Details `docs/KONZEPT-Bildquellen.md` |
+| `js/render/studioLibrary.js`, `render/studioWizard.js` | SchreibZauber: Werkstatt-Übersicht bzw. die Stufen-Ansicht |
 | `js/vendor/` | PDF.js und JSZip - NIE direkt bearbeiten, nur austauschen/aktualisieren |
 | `sw.js` | Service Worker - **`CACHE_NAME`-Version bei jeder Datei-Änderung hochzählen**, neue Dateien zur `APP_SHELL`-Liste hinzufügen |
 
@@ -271,3 +277,5 @@ Feste Regeln dabei:
 ## Versionsstand
 
 Aktuell `v0.13.0-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Zähl die Version bei größeren Änderungen entsprechend hoch (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).
+
+Seit v0.13.0-beta gibt es zusätzlich den **SchreibZauber**-Bereich (`js/studio/*`, `js/render/studio*.js`, eigener `app.studio`-Namespace, Object Store `projects` in `js/db.js`): eine Werkstatt, um eigene Kinderbuch-Werke von der KI schreiben zu lassen und als normales Buch "ins Regal zu stellen". Stufe 1 (Fundament: Idee → Bauplan → Geschichte, nur Platzhalter-Bilder, kein einziger Bildaufruf) ist gebaut - Hintergrund, Datenmodell und wo die nächsten Ausbaustufen andocken: `docs/KONZEPT-SchreibZauber.md`.

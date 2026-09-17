@@ -7,13 +7,15 @@ import { app } from './core.js';
 // einzelnen Seite schreibt nur noch dieses eine Buch, nicht mehr die
 // komplette Bibliothek neu.
 const DB_NAME = 'LeseZauberDB';
-// NEU: Version 3 - zusätzlicher Speicher für bereits erzeugte KI-Stimmen
-// (siehe ttsNeural.js). Bereits vorhandene Bücher/Vokabeln bleiben beim
-// Upgrade unangetastet erhalten.
-const DB_VERSION = 3;
+// NEU: Version 4 - zusätzlicher Speicher für SchreibZauber-Werke (siehe
+// js/studio/studioCore.js). Bereits vorhandene Bücher/Vokabeln/Stimmen
+// bleiben beim Upgrade unangetastet erhalten - die Migration fügt nur
+// den neuen Store hinzu, löscht nichts.
+const DB_VERSION = 4;
 const STORE_NAME = 'books';
 const VOCAB_STORE_NAME = 'vocabulary';
 const TTS_STORE_NAME = 'ttsCache';
+const PROJECTS_STORE_NAME = 'projects';
 
 // Obergrenze für zwischengespeicherte Sprachaufnahmen. Beim Überschreiten
 // werden die ältesten gelöscht - sonst wächst der Speicher bei einer
@@ -55,6 +57,13 @@ function openDatabase() {
             if (!db.objectStoreNames.contains(TTS_STORE_NAME)) {
                 const ttsStore = db.createObjectStore(TTS_STORE_NAME, { keyPath: 'key' });
                 ttsStore.createIndex('created', 'created');
+            }
+            // NEU: SchreibZauber-Werke (Werkstatt-Projekte) - siehe
+            // docs/KONZEPT-SchreibZauber.md. Ein eigener Store, kein Teil
+            // von "books": ein Projekt ist die Werkstatt drumherum, kein
+            // fertiges Buch (das entsteht erst beim "Ins Regal stellen").
+            if (!db.objectStoreNames.contains(PROJECTS_STORE_NAME)) {
+                db.createObjectStore(PROJECTS_STORE_NAME, { keyPath: 'id' });
             }
         };
 
@@ -171,6 +180,37 @@ async function pruneTtsCache() {
     });
 }
 
+// NEU: SchreibZauber-Projekte (gleiches Muster wie Bücher)
+async function getAllProjectsFromDB() {
+    const db = await openDatabase();
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction(PROJECTS_STORE_NAME, 'readonly');
+        const request = tx.objectStore(PROJECTS_STORE_NAME).getAll();
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+    });
+}
+
+async function putProjectInDB(project) {
+    const db = await openDatabase();
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction(PROJECTS_STORE_NAME, 'readwrite');
+        tx.objectStore(PROJECTS_STORE_NAME).put(project);
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+    });
+}
+
+async function deleteProjectFromDB(id) {
+    const db = await openDatabase();
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction(PROJECTS_STORE_NAME, 'readwrite');
+        tx.objectStore(PROJECTS_STORE_NAME).delete(id);
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+    });
+}
+
 // Einmalige Migration: bestehende Bücher aus der alten localStorage-Version
 // in IndexedDB übernehmen. Betrifft nur Leute, die die App schon vorher
 // benutzt haben - für alle anderen passiert hier einfach nichts.
@@ -207,10 +247,18 @@ Object.assign(app.dbOps, {
             const vocab = await getAllVocabFromDB();
             app.vocabulary = {};
             vocab.forEach(entry => { app.vocabulary[entry.word] = entry; });
+
+            // NEU: SchreibZauber-Werke laden - app.studio.projects existiert
+            // bereits als leeres Objekt (siehe js/studio/studioCore.js),
+            // hier wird es wie app.library befüllt.
+            const projects = await getAllProjectsFromDB();
+            app.studio.projects = {};
+            projects.forEach(project => { app.studio.projects[project.id] = project; });
         } catch (e) {
             console.error('Bibliothek konnte nicht geladen werden:', e);
             app.library = {};
             app.vocabulary = {};
+            app.studio.projects = {};
             app.ui.toast('Bibliothek konnte nicht geladen werden.', '⚠️');
         }
     },
@@ -230,6 +278,25 @@ Object.assign(app.dbOps, {
         });
         app.nav.go('lib');
         app.ui.toast('Buch gelöscht', '🗑️');
+    },
+
+    // NEU: SchreibZauber-Projekt speichern/löschen - gleiches Muster wie
+    // saveBook()/deleteBook(). Die Navigation nach dem Löschen übernimmt
+    // der Aufrufer (app.studio.deleteProject), da ein Projekt anders als
+    // ein Buch aus mehreren Ansichten heraus gelöscht werden kann.
+    saveProject(project) {
+        app.studio.projects[project.id] = project;
+        putProjectInDB(project).catch(e => {
+            console.error('Werk konnte nicht gespeichert werden:', e);
+            app.ui.toast('Werk konnte nicht gespeichert werden.', '⚠️');
+        });
+    },
+
+    deleteProject(projectId) {
+        delete app.studio.projects[projectId];
+        deleteProjectFromDB(projectId).catch(e => {
+            console.error('Werk konnte nicht gelöscht werden:', e);
+        });
     },
 
     // NEU: eine Vokabel speichern/aktualisieren
