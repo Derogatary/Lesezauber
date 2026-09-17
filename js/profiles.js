@@ -93,7 +93,15 @@ Object.assign(app.utils, {
     // Stimmen-Einstellung eines ECHTEN Profils - Fallback Gerätestimme,
     // falls das Profil noch keine eigene Wahl hat (z.B. gerade neu angelegt).
     getProfileTtsSettings(profileId) {
-        return app.profileTtsMap[profileId] || { ttsProvider: 'device', ttsVoices: {} };
+        // FIX: '__all__' ist kein echtes Profil (siehe ALL_PROFILES_ID) und hat
+        // deshalb nie einen eigenen Eintrag. Ohne Rückfall landete der
+        // "Alle Profile"-Überblick stumm auf der Gerätestimme, obwohl gerade
+        // eben noch eine KI-Stimme lief - deshalb die Werte des ersten echten
+        // Profils übernehmen statt zurückzufallen.
+        const realId = (profileId && profileId !== ALL_PROFILES_ID)
+            ? profileId
+            : (app.profiles[0] && app.profiles[0].id);
+        return app.profileTtsMap[realId] || { ttsProvider: 'device', ttsVoices: {} };
     },
 
     // Speichert die Stimmen-Einstellung EINES Profils dauerhaft.

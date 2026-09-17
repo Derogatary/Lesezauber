@@ -165,10 +165,18 @@ Object.assign(app.render, {
         const lockNotice = document.getElementById('settingsLockNotice');
         if (lockNotice) lockNotice.classList.toggle('hidden', !locked);
 
+        // NEU: zusätzlich zum zentralen Hinweis oben steht die Erklärung
+        // direkt am jeweiligen Feld - wer bis hierher scrollt, sieht sonst nur
+        // ein ausgegrautes Feld ohne Grund.
         const apiKeyInput = document.getElementById('inputApiKey');
         if (apiKeyInput) apiKeyInput.disabled = locked;
+        const apiKeyHint = document.getElementById('apiKeyChildLockHint');
+        if (apiKeyHint) apiKeyHint.classList.toggle('hidden', !locked);
+
         const mistralKeyInput = document.getElementById('inputMistralKey');
         if (mistralKeyInput) mistralKeyInput.disabled = locked;
+        const mistralKeyHint = document.getElementById('mistralKeyChildLockHint');
+        if (mistralKeyHint) mistralKeyHint.classList.toggle('hidden', !locked);
 
         // Die Persona-Liste kommt aus config.js statt fest im HTML zu
         // stehen. Ergänzt man dort eine Persona, erscheint sie automatisch
