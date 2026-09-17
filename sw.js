@@ -45,6 +45,7 @@ const APP_SHELL = [
     './js/actions/progress.js',
     './js/actions/checkWork.js',
     './js/actions/prepareAudio.js',
+    './js/actions/audiobookExport.js',
     './js/render/library.js',
     './js/render/book.js',
     './js/render/reader.js',

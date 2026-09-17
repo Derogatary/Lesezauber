@@ -145,6 +145,10 @@
                     <button onclick="app.actions.downloadBook(app.state.currentBookId)" class="text-xs text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1.5 rounded-lg font-bold transition">
                         📥 Download
                     </button>
+                    <!-- NEU: Hörbuch-Export - braucht eine KI-Stimme, siehe app.actions.exportAudiobook() -->
+                    <button onclick="app.actions.exportAudiobook(app.state.currentBookId)" aria-label="Als Hörbuch exportieren" title="Als Hörbuch exportieren (braucht eine KI-Stimme)" class="text-xs text-amber-700 hover:text-amber-900 bg-amber-50 hover:bg-amber-100 px-2.5 py-1.5 rounded-lg font-bold transition">
+                        🎧 Hörbuch
+                    </button>
                     <button onclick="app.actions.confirmDeleteBook(app.state.currentBookId)" class="text-xs text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 px-2.5 py-1.5 rounded-lg font-bold transition">
                         Löschen
                     </button>
