@@ -1,13 +1,12 @@
 // Bei jeder inhaltlichen Änderung an einer dieser Dateien diese Nummer
 // erhöhen - sonst bekommen wiederkehrende Besucher weiter die alte
 // zwischengespeicherte Version ausgeliefert.
-const CACHE_NAME = 'lesezauber-shell-v20';
+const CACHE_NAME = 'lesezauber-shell-v21';
 
-// Hinweis: js/studio/* (SchreibZauber) steht bewusst noch NICHT in der
-// Liste - die Dateien werden von main.js noch nicht importiert. Sie
-// kommen hier rein, sobald der Bereich verdrahtet wird. Bis dahin
-// landen sie über die Fallback-Regel unten im Cache, sobald sie das
-// erste Mal geladen werden.
+// NEU: js/studio/* (SchreibZauber) ist jetzt in main.js verdrahtet (Stufe 1,
+// siehe docs/KONZEPT-SchreibZauber.md) und steht deshalb komplett in der
+// APP_SHELL-Liste - inklusive der schon vorher vorhandenen, aber bis jetzt
+// unverdrahteten Bildquellen-Module.
 
 // Nur die eigenen, lokalen Dateien werden zwischengespeichert (die
 // "App-Hülle"). Die Gemini-/Mistral-APIs werden absichtlich NICHT
@@ -51,6 +50,15 @@ const APP_SHELL = [
     './js/render/workbook.js',
     './js/render/progress.js',
     './js/render/checkWork.js',
+    './js/studio/imageFormats.js',
+    './js/studio/placeholder.js',
+    './js/studio/imageSource.js',
+    './js/studio/studioCore.js',
+    './js/studio/studioPrompts.js',
+    './js/studio/studioApi.js',
+    './js/studio/studioExport.js',
+    './js/render/studioLibrary.js',
+    './js/render/studioWizard.js',
     './js/backgroundPregen.js',
     './js/keyboard.js',
     './js/gestures.js',

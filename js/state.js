@@ -73,5 +73,8 @@ Object.assign(app.state, {
     // NEU: Art des NAECHSTEN neu angelegten Buches ('story' oder 'workbook').
     // Bewusst nur zur Laufzeit und nicht in localStorage: sonst legt man
     // Wochen spaeter unbemerkt weiter Uebungshefte statt Geschichten an.
-    newBookType: 'story'
+    newBookType: 'story',
+    // NEU: aktuell geöffnetes SchreibZauber-Werk (siehe js/studio/studioCore.js) -
+    // gleiches Muster wie currentBookId.
+    currentStudioProjectId: null
 });

@@ -596,6 +596,62 @@ Verbleibend offen: nur noch 1 (Zahlungsmethode am Google-Konto).
 
 ---
 
+## Stand nach Stufe 1 (Fundament) - was steht, wo docken Stufe 2+3 und Stufe 4 an
+
+Stufe 1 ist gebaut und gemerged. Umgesetzt genau wie oben in TEIL E beschrieben:
+Projekt-Datenmodell, DB v4 (Object Store `projects`), Werkstatt-Übersicht,
+Idee → Bauplan → Geschichte, Platzhalter-Bilder über die bereits vorhandene
+Bildquellen-Schicht, Export "ins Regal" - **ohne einen einzigen Bildaufruf**.
+`js/studio/imageFormats.js`, `placeholder.js`, `imageSource.js` sind jetzt in
+`js/main.js`/`sw.js` verdrahtet (waren vorher bewusst nur vorbereitet, siehe
+D.6a). Alle Werkstatt-Module sind **statisch** in `main.js` importiert, nicht
+lazy per `import()` wie in D.2 skizziert - für die kleinen, reinen
+Canvas-/Fetch-Module in Stufe 1 war das nicht nötig; lohnt sich erst, wenn ein
+späterer Schritt echte Bild-Bibliotheken nachlädt.
+
+**Was die parallelen Werktyp-Pfade jetzt vorfinden:**
+
+- `app.studio.projects[id]` trägt bereits das VOLLSTÄNDIGE Schema aus D.1
+  (`style`, `characters`, `spreads[].imagePrompt/characterIds/layout/balloons`,
+  `worksheet`), auch wenn Stufe 1 nur `brief`/`spec`/`spreads[].text` und
+  `pageTurnHook` füllt. Stufe 2+3 und Stufe 4 müssen das Schema NICHT migrieren,
+  nur die für sie leeren Felder befüllen.
+- `app.studio.imageSource.request('placeholder', spec)` liefert bei jeder
+  Doppelseite bereits `meta.prompt` mit - der Bildprompt existiert also schon,
+  bevor je ein echter Bildaufruf passiert ist (siehe `docs/KONZEPT-Bildquellen.md`
+  Abschnitt 4). Eine echte Bildquelle (`gemini`/`pollinations`) muss in
+  `js/studio/imageSource.js` nur als weiterer Eintrag in `providers` ergänzt
+  werden - kein anderer Code ändert sich, und "alle Platzhalter ersetzen" bleibt
+  ein Durchlauf über `spread.imageMeta.source === 'placeholder'`.
+- `app.studio.prompts.guardrailsBlock()` (in `studioPrompts.js`) ist der EINE
+  wiederverwendbare Baustein für die Veröffentlichungs-Leitplanken aus
+  Entscheidung 6. Jeder neue Prompt (Figurenblatt, Bildidee, Comic-Panel,
+  Arbeitsheft-Aufgabe) sollte ihn 1:1 mit einbauen, statt die Regeln erneut zu
+  formulieren.
+- `app.studio.computeSpec(totalPages, audienceAge)` und `trimToFormat(trim)`
+  (in `studioCore.js`) sind die einzigen Stellen, die Umfangsplanung und
+  Papierform kennen - Stufe 3 (Layout & Druck) sollte hier andocken statt
+  eigene Umrechnungen zu bauen.
+- Stufe 4 (Arbeitsheft) legt eigene Projekte mit `type: 'workbook'` an - dafür
+  muss in `app.studio.projectTypes` (studioCore.js) nur `available: true`
+  gesetzt und ein eigener Wizard-Zweig (analog `js/render/studioWizard.js`)
+  sowie ein eigener Export (analog `js/studio/studioExport.js`, aber mit
+  `bookType: 'workbook'` und den Übungsheft-Variantenfeldern aus `CLAUDE.md`)
+  gebaut werden. `project.worksheet` ist dafür bereits reserviert.
+- `app.studio.export.toLibraryBook()` ist bewusst idempotent
+  (`project.exportedBookId`) - ein späteres "Bild jetzt generieren" direkt am
+  fertigen Buch kann darüber (bzw. über das neue `book.studioProjectId`) zum
+  Projekt zurückfinden, ohne eine Dublette anzulegen.
+
+Bewusst NICHT in Stufe 1 enthalten (folgt mit den jeweiligen Ausbaustufen):
+Figuren-Bibel/Figurenblatt, Storyboard-Sketch-Vorschläge der KI, echte
+Bildgenerierung, Stilkarte-Auswahl in der UI, Druckansicht, Comic/Arbeitsheft-
+Wizard. Der Prompt-Kopier-Weg (`copyPrompt()`) ist zwar technisch nutzbar,
+aber in der Stufe-1-UI noch nicht verdrahtet - dafür fehlt bislang eine echte
+Bildidee pro Doppelseite (kommt erst mit dem Storyboard-Schritt in Stufe 2).
+
+---
+
 ## Quellen
 
 Bilderbuch- und Verlagsworkflow:

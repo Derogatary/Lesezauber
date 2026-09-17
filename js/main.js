@@ -29,6 +29,15 @@ import './actions/workbook.js';
 import './actions/progress.js';
 import './actions/checkWork.js';
 
+// NEU: SchreibZauber (Werkstatt für eigene Werke) - siehe
+// docs/KONZEPT-SchreibZauber.md. studioCore.js importiert seinerseits
+// imageFormats.js/placeholder.js/imageSource.js, deshalb reicht hier ein
+// gebündelter Import pro Datei statt einer festen Ladereihenfolge.
+import './studio/studioCore.js';
+import './studio/studioPrompts.js';
+import './studio/studioApi.js';
+import './studio/studioExport.js';
+
 import './render/library.js';
 import './render/book.js';
 import './render/reader.js';
@@ -37,6 +46,8 @@ import './render/vocab.js';
 import './render/workbook.js';
 import './render/progress.js';
 import './render/checkWork.js';
+import './render/studioLibrary.js';
+import './render/studioWizard.js';
 
 import './readerUI.js';
 import './settingsConfig.js';
