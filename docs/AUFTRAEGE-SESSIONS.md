@@ -18,31 +18,49 @@ diese Datei ist nur die Aufteilung in Arbeitspakete.
 
 ## Stand (Oktober 2026)
 
-**Welle 0 ist gebaut und zusammengeführt.** Der vereinte Stand liegt auf
-`claude/merge-branches-main-gzs6qt`: die fünf Einzelbranches, Auftrag 7 (Hörbuch-Export,
-kam über `claude/tasks-7-12-qli5ns`), der Integrations-Pass und v0.13.0-beta.
+**Welle 0 und Welle 1 sind in `main`.** Aktuelle Version: `v0.14.0-beta`.
 
 | # | Auftrag | Stand |
 |---|---|---|
-| 1 | Vorlese-Aufbereitung | ✅ gebaut, in Welle 0 zusammengeführt |
-| 2 | Stimmen-Speicher + „Buch hörfertig machen" | ✅ gebaut, in Welle 0 zusammengeführt |
-| 3 | TTS-Anbieter-Paket | ✅ gebaut, in Welle 0 zusammengeführt |
-| 4 | Stimme pro Profil + Kinder-/Elternbereich | ⚠️ **noch offen - kein Branch vorhanden** |
-| 5 | Kosten-Anzeige | ✅ gebaut, in Welle 0 zusammengeführt |
-| 6 | Kino-Modus vollenden | ✅ gebaut, in Welle 0 zusammengeführt |
-| 7 | Hörbuch-Export | ✅ gebaut, in Welle 0 zusammengeführt |
-| 13 | Integrations-Pass + v0.13.0-beta | ✅ gelaufen, Teil von Welle 0 |
-| 8-12, 14, 15 | siehe Reihenfolge unten | ⬜ offen |
+| 1 | Vorlese-Aufbereitung | ✅ in `main` |
+| 2 | Stimmen-Speicher + „Buch hörfertig machen" | ✅ in `main` |
+| 3 | TTS-Anbieter-Paket | ✅ in `main` |
+| 4 | Stimme pro Profil + Kinder-/Elternbereich | ✅ in `main` |
+| 5 | Kosten-Anzeige | ✅ in `main` |
+| 6 | Kino-Modus vollenden | ✅ in `main` |
+| 7 | Hörbuch-Export | ✅ in `main` |
+| 8 | Emotionen / Audio-Tags | ✅ in `main` |
+| 12 | SchreibZauber Stufe 1 | ✅ in `main` (DB-Version 3 → 4) |
+| 13 | Integrations-Pass | ✅ gelaufen, Vorlage für jedes Wellen-Ende |
+| 9, 10, 11, 14, 15 | Welle 2 und später | ⬜ offen |
 
-Der zusammengeführte Stand wurde geprüft: alle vier Sanity-Checks aus `CLAUDE.md` sauber,
-`CACHE_NAME` auf `v23` (höher als in jedem Einzelbranch), alle neuen Dateien
-(`prepareAudio.js`, `costMeter.js`, `audiobookExport.js`) sowohl in `js/main.js` importiert
-als auch in `APP_SHELL` eingetragen, und `css/tailwind.css` bytegleich mit einem frischen
-Build - der Build wurde also wirklich gemacht.
+**Auftrag 4 lag doppelt vor.** Zwei Sitzungen hatten denselben Auftrag bearbeitet
+(`-hgcao9` und `-miityv`). Gemergt wurde `-hgcao9`: gleicher Funktionsumfang, aber mit der
+zentralen Hilfsfunktion `isSettingsLockedForActiveProfile()` und Sicherheitsnetzen in den
+Aktionen selbst statt nur ausgegrauter Bedienelemente. Zwei Details aus `-miityv` wurden
+nachgezogen (Rückfall für `__all__`, Erklärung direkt an den API-Key-Feldern).
 
-> **Nr. 4 ist durchgerutscht.** Für „Stimme pro Profil + Kinder-/Elternbereich" liegt kein
-> Branch auf dem Server. Der Auftragstext unten ist unverändert gültig - die Sitzung muss
-> nur noch gestartet werden.
+### Beim Zusammenführen gefundene Fehler
+
+Alle drei hätte keine der beteiligten Sitzungen allein finden können - sie entstehen erst
+im vereinten Stand:
+
+1. **Die Abkürzungs-Ersetzung beim Vorlesen hat nie gegriffen.** Alle acht Muster in
+   `_SPEECH_ABBREVIATIONS` endeten auf `\.\b`; hinter dem Punkt einer Abkürzung steht aber
+   ein Leerzeichen, also gibt es dort nie eine Wortgrenze. „z.B." wurde weiterhin
+   buchstabiert. Jetzt `(?=\s|$)` statt `\b`.
+2. **„Buch hörfertig machen" bereitete die falsche Text-Fassung vor.** Seit den Audio-Tags
+   geht bei Anbietern mit `supportsTags` die getaggte Fassung an die Synthese, und der
+   Cache-Schlüssel hängt am Text. Vorbereitet wurde die eine Fassung, gebraucht die andere -
+   das Buch war trotz „hörfertig" nicht fertig und jede Seite kostete doppelt.
+3. **Der getaggte Text lief als einziger ohne Vorlese-Aufbereitung in die Synthese.**
+   Ausgerechnet bei den Anbietern mit Emotionen wären Trennstriche und Abkürzungen
+   ungeglättet geblieben.
+
+Dazu eine Reihenfolge-Falle, die beim Auflösen eines Konflikts auffiel: In `tts._prepare()`
+muss `prepareTextForSpeech()` **vor** `stripSpeechTags()` laufen. Umgekehrt hätte das
+Zusammenziehen der Leerräume den Zeilenumbruch schon entfernt, und aus „Kinder-\nwagen"
+wäre „Kinder- wagen" geworden statt „Kinderwagen".
 
 ---
 
@@ -106,12 +124,12 @@ Drei Dinge tauchen bei **jedem** Merge auf:
 
 | Welle | Aufträge | Parallel? | Bedingung |
 |---|---|---|---|
-| ~~**0**~~ | ~~Branches 1,2,3,5,6,7 mergen, dann **13** (Integrations-Pass + v0.13.0-beta)~~ | - | ✅ **erledigt** - liegt auf `claude/merge-branches-main-gzs6qt`, wartet auf den Merge nach `main` |
-| **1 - jetzt** | **4** (Profil-Rollen) · **8** (Audio-Tags) · **12** (SchreibZauber Stufe 1) | ✅ drei Sitzungen gleichzeitig | sobald Welle 0 in `main` ist |
-| **2** | **9** (Texte stückeln + Mitmachmodus) · **10** (Heft-Generator API) | ✅ zwei gleichzeitig | beide nach **8** |
+| ~~**0**~~ | ~~Branches 1,2,3,5,6,7 mergen, dann **13** (Integrations-Pass)~~ | - | ✅ **erledigt**, alles in `main` |
+| ~~**1**~~ | ~~**4** (Profil-Rollen) · **8** (Audio-Tags) · **12** (SchreibZauber Stufe 1)~~ | - | ✅ **erledigt**, alles in `main` |
+| **2 - jetzt** | **9** (Texte stückeln + Mitmachmodus) · **10** (Heft-Generator API) | ✅ zwei gleichzeitig | **8** ist in `main`, beide startbar |
 | **3** | **11** (Heft-Generator Ansicht) · **14** (Video-Renderer, Einzelseite) | ✅ zwei gleichzeitig | 11 nach 10 · 14 ist durch Welle 0 bereits frei |
 | **4** | **15** (Video-Export fürs ganze Buch) | allein | nach **14** |
-| **5** | SchreibZauber Stufe 2+3 (Bilderbuch) ∥ Stufe 4 (Arbeitsheft) | ✅ zwei gleichzeitig | erst wenn **12** gemerged ist |
+| **5** | SchreibZauber Stufe 2+3 (Bilderbuch) ∥ Stufe 4 (Arbeitsheft) | ✅ zwei gleichzeitig | **12** ist gemerged - startbar |
 
 **Warum 12 (SchreibZauber Stufe 1) schon in Welle 1 startet:** Es ist der längste Weg im
 ganzen Projekt und blockiert vier weitere Stufen. Es fasst fast nur neue Dateien an
@@ -135,15 +153,15 @@ Kindern direkt und ist Voraussetzung für SchreibZauber Stufe 6.
 | 1 | Vorlese-Aufbereitung des erkannten Texts | Vorlesen | **S** | ✅ `claude/tts-textaufbereitung` |
 | 2 | Stimmen-Speicher 300 MB + „Buch hörfertig machen" | Vorlesen | **S** | ✅ `claude/tts-cache-und-hoerfertig` |
 | 3 | TTS-Anbieter-Paket (Speechify, mehr Stimmen, Tarif-Lock) | Vorlesen | **S** | ✅ `claude/tts-anbieter-paket` |
-| 4 | Stimme pro Profil + Kinder-/Elternbereich | Plattform | **S+M** | `claude/profil-rollen-und-stimme` |
+| 4 | Stimme pro Profil + Kinder-/Elternbereich | Plattform | **S+M** | ✅ in `main` |
 | 5 | Kosten-Anzeige | Vorlesen | **S** | ✅ `claude/kosten-anzeige` |
 | 6 | Kino-Modus vollenden (Ken-Burns + Kreuzblende) | Video | **S** | ✅ `claude/kino-modus-vollenden` |
 | 7 | Hörbuch-Export | Video | **M** | ✅ in Welle 0 |
-| 8 | Emotionen / Audio-Tags | Vorlesen | **M** | `claude/audio-tags` |
+| 8 | Emotionen / Audio-Tags | Vorlesen | **M** | ✅ in `main` |
 | 9 | Lange Texte stückeln + Mitmachmodus mit KI-Stimme | Vorlesen | **M** | `claude/tts-stueckeln-mitmachmodus` |
 | 10 | Heft-Generator: API-Aufruf + Prompt | Übungshefte | **S** | `claude/heft-generator-api` |
 | 11 | Heft-Generator: Auswahl-Ansicht + Canvas | Übungshefte | **M** | `claude/heft-generator-ansicht` |
-| 12 | SchreibZauber Stufe 1 - Fundament | Eigene Werke | **L** | `claude/schreibzauber-stufe1` |
+| 12 | SchreibZauber Stufe 1 - Fundament | Eigene Werke | **L** | ✅ in `main` |
 | 13 | Integrations-Pass nach dem Merge + v0.13.0-beta | Plattform | **S** | ✅ in Welle 0 gelaufen - **Vorlage für jedes Wellen-Ende** |
 | 14 | Video-Export Weg B, Teil 1: Renderer-Kern | Video | **M** | `claude/video-renderer-kern` |
 | 15 | Video-Export Weg B, Teil 2: ganzes Buch + Regie | Video | **M** | `claude/video-buch-export` |

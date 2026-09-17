@@ -276,6 +276,6 @@ Feste Regeln dabei:
 
 ## Versionsstand
 
-Aktuell `v0.13.0-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Zähl die Version bei größeren Änderungen entsprechend hoch (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).
+Aktuell `v0.14.0-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Zähl die Version bei größeren Änderungen entsprechend hoch (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).
 
-Seit v0.13.0-beta gibt es zusätzlich den **SchreibZauber**-Bereich (`js/studio/*`, `js/render/studio*.js`, eigener `app.studio`-Namespace, Object Store `projects` in `js/db.js`): eine Werkstatt, um eigene Kinderbuch-Werke von der KI schreiben zu lassen und als normales Buch "ins Regal zu stellen". Stufe 1 (Fundament: Idee → Bauplan → Geschichte, nur Platzhalter-Bilder, kein einziger Bildaufruf) ist gebaut - Hintergrund, Datenmodell und wo die nächsten Ausbaustufen andocken: `docs/KONZEPT-SchreibZauber.md`.
+Seit v0.14.0-beta gibt es zusätzlich den **SchreibZauber**-Bereich (`js/studio/*`, `js/render/studio*.js`, eigener `app.studio`-Namespace, Object Store `projects` in `js/db.js`): eine Werkstatt, um eigene Kinderbuch-Werke von der KI schreiben zu lassen und als normales Buch "ins Regal zu stellen". Stufe 1 (Fundament: Idee → Bauplan → Geschichte, nur Platzhalter-Bilder, kein einziger Bildaufruf) ist gebaut - Hintergrund, Datenmodell und wo die nächsten Ausbaustufen andocken: `docs/KONZEPT-SchreibZauber.md`.
