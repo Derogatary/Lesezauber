@@ -91,7 +91,8 @@ Details: [`docs/KONZEPT-Video.md`](KONZEPT-Video.md)
 | Punkt | Aufwand | Anmerkung |
 |---|---|---|
 | ~~**Hörbuch-Export**~~ | **M** | ✅ **erledigt (v0.13.0-beta)** - ganzes Buch als eine Audiodatei (`js/actions/audiobookExport.js`), Bildbeschreibung/Quiz zuschaltbar, nutzt den `ttsCache` und synthetisiert nichts doppelt |
-| **Video-Export Weg B** (WebCodecs + Muxer) | **L** | „mittel, ~3-5 Tage inkl. Regie-Logik". **Durch die Entscheidung „pro Buch" der einzig sinnvolle Weg** - siehe unten. Muxer-Bibliothek nur wenige KB nach `js/vendor/` |
+| ~~**Video-Export Weg B, Teil 1: Renderer-Kern**~~ | **M** | ✅ **erledigt (v0.15.0-beta)** - Canvas-Renderer (`js/render/cinema.js`), Zeitplan über einen Seitenbereich (`js/actions/videoTimeline.js`) und Film-Vorschau (`js/actions/videoPreview.js`). Bild mit Ken-Burns + Untertitel-Balken mit mitlaufender Wort-Hervorhebung, drei Formate. Noch stumm und ohne Datei. Entscheidungen dazu: [`KONZEPT-Video.md`, Abschnitt 4.7](KONZEPT-Video.md#47-stand-von-weg-b-was-teil-1-entschieden-und-gebaut-hat) |
+| **Video-Export Weg B, Teil 2: Ton + Datei** | **L** | Was noch fehlt: echte Sprach-Segmente in den Zeitplan (`segmentsByPage`), Wiedergabe an `audio.currentTime` hängen, dann `VideoEncoder`/`AudioEncoder` + MP4-Muxer (wenige KB nach `js/vendor/`), Ausgabe über OPFS, Fähigkeiten-Prüfung. Liste in `KONZEPT-Video.md` 4.7 unter „Offen für Teil 2" |
 | ~~Weg A (`MediaRecorder`)~~ | — | **Für ganze Bücher ausgeschieden:** nimmt in Echtzeit auf, 8-10 Minuten mit sichtbarem Tab im Vordergrund. Höchstens noch Notnagel für Einzelseiten |
 | ~~Weg C (ffmpeg.wasm)~~ | — | **Bewusst verworfen.** 25-30 MB Zusatz-Download und auf GitHub Pages nur mit Service-Worker-Trick. Nicht neu aufrollen |
 
@@ -105,9 +106,12 @@ Daraus folgen zwei Dinge:
   durch keinen E-Mail-Anhang. Die beiden Varianten haben verschiedene Zwecke.
 
 **✅ Kino-Modus (Sept. 2026 erledigt):** Ken-Burns-Zoom + Kreuzblende sind umgesetzt, siehe
-Nachtrag in [`docs/KONZEPT-Video.md`](KONZEPT-Video.md#3-video-in-drei-ausbaustufen). Nächster
-Schritt in diesem Bereich ist der Bereichs-Renderer für den eigentlichen Export - getestet an
-einer Einzelseite, ausgeliefert fürs ganze Buch.
+Nachtrag in [`docs/KONZEPT-Video.md`](KONZEPT-Video.md#3-video-in-drei-ausbaustufen).
+
+**✅ Bereichs-Renderer (17.09.2026 erledigt):** Der Renderer bekommt von Anfang an einen
+Seitenbereich; eine Einzelseite ist der Bereich `[i, i]` und läuft durch denselben Code
+(„🎬 Film" in der Buch-Ansicht = ganzes Buch, „🎬 Film-Vorschau dieser Seite" im Reader).
+**Nächster Schritt in diesem Bereich ist Teil 2: Ton in den Film und dann die Videodatei.**
 
 ---
 

@@ -41,7 +41,7 @@
                     <p id="streakBadge" class="hidden text-xs font-bold text-amber-600 mt-0.5"></p>
                     <!-- NEU: Belohnung - Anzahl komplett geschaffter Bücher/Hefte -->
                     <p id="medalBadge" class="hidden text-xs font-bold text-emerald-600 mt-0.5"></p>
-                    <p class="text-[10px] text-slate-400 font-semibold mt-0.5">v0.14.0-beta</p>
+                    <p class="text-[10px] text-slate-400 font-semibold mt-0.5">v0.15.0-beta</p>
                 </div>
                 <div class="flex items-center gap-2 flex-shrink-0">
                     <button onclick="app.nav.go('help')" aria-label="Hilfe öffnen" title="Hilfe" class="w-10 h-10 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-600 hover:bg-slate-100 shadow-sm transition active:scale-95">
@@ -143,11 +143,14 @@
 
         <!-- ================= VIEW 2: BUCH DETAIL & SEITEN ================= -->
         <main id="viewBook" class="flex-grow overflow-y-auto pb-24 px-4 pt-6 view-hidden view-transition">
-            <header class="mb-4 flex items-center justify-between gap-2">
+            <!-- FIX: "flex-wrap" wie im Bibliotheks-Header - mit dem
+                 Film-Knopf sind es fünf Knöpfe, die auf schmalen Handys
+                 sonst seitlich aus dem Bild laufen. -->
+            <header class="mb-4 flex flex-wrap items-center justify-between gap-2">
                 <button onclick="app.nav.go('lib')" class="p-2 -ml-2 text-slate-600 hover:text-slate-900 flex items-center gap-1 font-semibold text-sm flex-shrink-0">
                     ❮ Bibliothek
                 </button>
-                <div class="flex items-center gap-2">
+                <div class="flex flex-wrap items-center justify-end gap-2">
                     <button onclick="app.actions.printBook()" aria-label="Buch drucken" title="Buch drucken" class="text-xs text-slate-600 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 px-2.5 py-1.5 rounded-lg font-bold transition">
                         🖨️
                     </button>
@@ -157,6 +160,13 @@
                     <!-- NEU: Hörbuch-Export - braucht eine KI-Stimme, siehe app.actions.exportAudiobook() -->
                     <button onclick="app.actions.exportAudiobook(app.state.currentBookId)" aria-label="Als Hörbuch exportieren" title="Als Hörbuch exportieren (braucht eine KI-Stimme)" class="text-xs text-amber-700 hover:text-amber-900 bg-amber-50 hover:bg-amber-100 px-2.5 py-1.5 rounded-lg font-bold transition">
                         🎧 Hörbuch
+                    </button>
+                    <!-- NEU: Film-Vorschau des ganzen Buchs (Video-Export Weg B,
+                         Teil 1 - Renderer-Kern, siehe app.actions.openVideoPreview()).
+                         Kostet nichts: es wird nichts synthetisiert und nichts
+                         gespeichert, nur gezeichnet. -->
+                    <button onclick="app.actions.openVideoPreview(app.state.currentBookId)" aria-label="Film-Vorschau des Buchs" title="Film-Vorschau (stumm, Video-Datei folgt)" class="text-xs text-violet-700 hover:text-violet-900 bg-violet-50 hover:bg-violet-100 px-2.5 py-1.5 rounded-lg font-bold transition">
+                        🎬 Film
                     </button>
                     <button onclick="app.actions.confirmDeleteBook(app.state.currentBookId)" class="text-xs text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 px-2.5 py-1.5 rounded-lg font-bold transition">
                         Löschen
@@ -312,6 +322,13 @@
             <!-- NEU: Vollbild-Vorlese-Modus (nur Bild, keine Bedienelemente) -->
             <button onclick="app.actions.toggleFocusMode()" class="w-full mb-4 bg-slate-800 hover:bg-slate-900 text-white font-bold py-2.5 rounded-xl text-sm transition flex items-center justify-center gap-2">
                 🌙 Vollbild-Vorlese-Modus
+            </button>
+
+            <!-- NEU: Film-Vorschau nur dieser Seite - derselbe Renderer wie beim
+                 Buch-Film, nur mit dem Bereich [i, i] (so entschieden, siehe
+                 docs/KONZEPT-Video.md, Abschnitt 4.6). -->
+            <button onclick="app.actions.openVideoPreview(app.state.currentBookId, { fromIdx: app.state.currentPageIdx, toIdx: app.state.currentPageIdx })" class="w-full mb-4 bg-white border border-violet-200 text-violet-700 hover:bg-violet-50 font-bold py-2.5 rounded-xl text-sm transition flex items-center justify-center gap-2">
+                🎬 Film-Vorschau dieser Seite
             </button>
 
             <!-- NEU: Wrapper für Bild + Text - im zweiseitigen Layout (Option,
@@ -498,6 +515,49 @@
             </div>
         </div>
 
+        <!-- ================= FILM-VORSCHAU (Video-Export Weg B, Teil 1) =================
+             Prüfstand für den Canvas-Renderer aus js/render/cinema.js: zeigt
+             Bild + Untertitel-Balken mit mitlaufender Wort-Hervorhebung genau
+             so, wie sie später in die Videodatei kodiert werden. Noch ohne Ton
+             und ohne Datei (siehe docs/KONZEPT-Video.md, Abschnitt 4.3). -->
+        <div id="viewVideoPreview" class="hidden absolute inset-0 z-40 bg-black flex flex-col">
+            <div class="p-3 flex items-center justify-between gap-2 bg-gradient-to-b from-black/80 to-transparent">
+                <button onclick="app.actions.closeVideoPreview()" aria-label="Film-Vorschau schließen" class="w-10 h-10 flex-shrink-0 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center text-white active:scale-90 transition">✕</button>
+                <p id="videoPreviewTitle" class="text-white text-xs font-bold truncate text-center"></p>
+                <div class="w-10 flex-shrink-0"></div>
+            </div>
+
+            <div class="flex-grow flex items-center justify-center overflow-hidden px-3">
+                <!-- Die Auflösung setzt der Renderer (app.cinema.prepareCanvas),
+                     hier wird sie nur eingepasst - Breite UND Höhe begrenzt,
+                     das Seitenverhältnis bleibt dabei automatisch erhalten. -->
+                <canvas id="videoPreviewCanvas" class="max-w-full max-h-full rounded-xl shadow-2xl"></canvas>
+            </div>
+
+            <div class="p-4 space-y-3 bg-black/60">
+                <div class="flex items-center gap-3">
+                    <button id="videoPreviewPlayBtn" onclick="app.actions.toggleVideoPreviewPlay()" aria-label="Vorschau abspielen" class="w-12 h-12 flex-shrink-0 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center text-white text-xl active:scale-90 transition">▶️</button>
+                    <input id="videoPreviewSeek" type="range" min="0" max="1000" value="0" step="1" oninput="app.actions.seekVideoPreview(this.value)" aria-label="Position im Film" class="flex-grow accent-indigo-500">
+                    <span id="videoPreviewTime" class="text-white text-xs font-bold whitespace-nowrap">0:00 / 0:00</span>
+                </div>
+                <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
+                    <label class="flex items-center gap-1.5 text-[11px] text-white/80 font-semibold">
+                        <span>🖼️ Format</span>
+                        <select id="videoPreviewFormat" onchange="app.actions.setVideoPreviewFormat(this.value)" aria-label="Videoformat" class="bg-slate-800 border border-white/20 text-white text-[11px] rounded-lg px-2 py-1 focus:outline-none"></select>
+                    </label>
+                    <label class="flex items-center gap-1.5 text-[11px] text-white/80 font-semibold">
+                        <input type="checkbox" id="videoPreviewDesc" onchange="app.actions.rebuildVideoPreview()" class="accent-indigo-500">
+                        <span>Bildbeschreibung</span>
+                    </label>
+                    <label class="flex items-center gap-1.5 text-[11px] text-white/80 font-semibold">
+                        <input type="checkbox" id="videoPreviewQuiz" onchange="app.actions.rebuildVideoPreview()" class="accent-indigo-500">
+                        <span>Rätselfrage</span>
+                    </label>
+                </div>
+                <p id="videoPreviewHint" class="text-[10px] text-white/60 leading-snug"></p>
+            </div>
+        </div>
+
         <!-- ================= HILFE ================= -->
         <main id="viewHelp" class="flex-grow overflow-y-auto pb-24 px-4 pt-6 view-hidden view-transition">
             <header class="mb-6 flex items-center justify-between">
@@ -524,6 +584,10 @@
                 <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
                     <h2 class="text-sm font-bold text-indigo-900 mb-1">👤 Profile</h2>
                     <p class="text-xs text-slate-600 leading-relaxed">Für mehrere Kinder auf einem Gerät. Rein lokal, kein Login - jedes Profil sieht nur seine eigenen Bücher und hat seine eigene Vorlese-Stimme. Über das 🧒/🧑-Symbol neben der Profil-Auswahl lässt sich ein Profil als Kind oder Erwachsener einstufen - bei Kindern sind teure/heikle Einstellungen (Stimmen-Anbieter, API-Keys, Stimmen-Speicher) ausgegraut. Das ist eine Kindersicherung, kein Passwortschutz.</p>
+                </div>
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                    <h2 class="text-sm font-bold text-indigo-900 mb-1">🎬 Film-Vorschau</h2>
+                    <p class="text-xs text-slate-600 leading-relaxed">"🎬 Film" in der Buch-Ansicht zeigt, wie das Buch als Video aussieht: Seitenbild mit langsamem Zoom und darunter der Text mit mitlaufender Wort-Hervorhebung. Im Reader gibt es dasselbe für die aktuelle Seite allein. Die Vorschau ist noch <b>stumm</b> und erzeugt noch keine Videodatei - sie kostet dafür auch nichts. Das Format (hochkant fürs Handy, quer für den Fernseher) lässt sich unten umschalten.</p>
                 </div>
                 <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
                     <h2 class="text-sm font-bold text-indigo-900 mb-1">💾 Backup</h2>

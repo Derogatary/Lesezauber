@@ -1,7 +1,11 @@
 // Bei jeder inhaltlichen Änderung an einer dieser Dateien diese Nummer
 // erhöhen - sonst bekommen wiederkehrende Besucher weiter die alte
 // zwischengespeicherte Version ausgeliefert.
-const CACHE_NAME = 'lesezauber-shell-v24';
+const CACHE_NAME = 'lesezauber-shell-v25';
+
+// NEU (v25): Video-Export Weg B, Teil 1 - js/render/cinema.js,
+// js/actions/videoTimeline.js und js/actions/videoPreview.js sind in
+// main.js verdrahtet und gehören damit in die App-Hülle.
 
 // NEU: js/studio/* (SchreibZauber) ist jetzt in main.js verdrahtet (Stufe 1,
 // siehe docs/KONZEPT-SchreibZauber.md) und steht deshalb komplett in der
@@ -45,6 +49,8 @@ const APP_SHELL = [
     './js/actions/checkWork.js',
     './js/actions/prepareAudio.js',
     './js/actions/audiobookExport.js',
+    './js/actions/videoTimeline.js',
+    './js/actions/videoPreview.js',
     './js/render/library.js',
     './js/render/book.js',
     './js/render/reader.js',
@@ -53,6 +59,7 @@ const APP_SHELL = [
     './js/render/workbook.js',
     './js/render/progress.js',
     './js/render/checkWork.js',
+    './js/render/cinema.js',
     './js/studio/imageFormats.js',
     './js/studio/placeholder.js',
     './js/studio/imageSource.js',

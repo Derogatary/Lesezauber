@@ -71,6 +71,7 @@ Eine Web-App, mit der du Kinderbuch-Seiten mit dem Handy fotografierst (oder aus
 - 🔒 **Tarif-Lock:** vor dem Wechsel auf eine teurere Stimme fragt die App einmal nach - Schutz vor Versehen, keine Sperre (v0.13.0-beta)
 - 🎬 **Kino-Modus:** im Vollbild-Vorlesen zoomt das Seitenbild langsam (Ken-Burns) und blendet beim Seitenwechsel weich über; abschaltbar und respektiert "reduzierte Bewegung" (v0.13.0-beta)
 - 🎧 **Hörbuch-Export:** ein ganzes Buch als eine Audiodatei ausgeben, Bildbeschreibung und Quiz wahlweise mit - setzt eine KI-Stimme voraus (v0.13.0-beta)
+- 🎬 **Film-Vorschau:** zeigt ein Buch (oder eine einzelne Seite) als Film - Seitenbild mit langsamem Zoom, darunter der Text mit mitlaufender Wort-Hervorhebung, umschaltbar zwischen hochkant (Handy/Status), quer (Fernseher) und quadratisch. Erster Teil des Video-Exports: noch stumm und noch ohne Videodatei, kostet dafür nichts (v0.15.0-beta)
 
 ## 🗣️ Echte KI-Stimmen statt Roboterstimme
 
@@ -185,6 +186,9 @@ js/
     workbook.js            Übungsheft-Modus (Buchart umschalten, Lösung aufdecken)
     progress.js            Erledigt-Häkchen, Sticker, Belohnungen (pro Profil)
     checkWork.js           Bearbeitetes Blatt fotografieren und kontrollieren lassen
+    audiobookExport.js     Ganzes Buch als eine Audiodatei
+    videoTimeline.js       Zeitplan/"Regie" des Films (welche Szene wann)
+    videoPreview.js        Film-Vorschau: spielt den Zeitplan auf dem Canvas ab
   render/
     library.js             Bibliotheks-Ansicht + Suche
     book.js                 Buch-Detail-Ansicht
@@ -193,6 +197,7 @@ js/
     workbook.js               Hilfe-/Lösungs-Karte und Art-Umschalter
     progress.js               Fortschrittsbalken, Erledigt-Knopf, Belohnungen
     checkWork.js              Ergebniskarte der Blatt-Kontrolle
+    cinema.js                 Canvas-Renderer für den Film (Bild + Untertitel)
   studio/                 SchreibZauber-Fundament (noch nicht verdrahtet, s. Konzept)
     imageFormats.js         Seitenformate für selbst erstellte Werke
     imageSource.js          Woher ein Bild kommt (Foto, Upload, KI)
@@ -231,7 +236,7 @@ docs/
 - 🎨 KI-generierte Illustrationen für textlastige EPUB-Kapitel ohne eigenes Bild, optional im Comic-Stil (Gemini kann mittlerweile auch Bilder erzeugen, gleicher Key wie bisher) - Cover-Bild-Sonderfall erstmal nicht nötig
 - 📱 Native App / Android-Store-Verpackung (Capacitor) - verpackt den bestehenden Code weitgehend unverändert
 - 📝 **Heft-Generator**: Übungsblätter von der KI erstellen lassen (Geschichte + Lernziel auswählen) - Entwurf und offene Punkte in `docs/KONZEPT-Uebungshefte.md`
-- 🎬 **Video-Export** (Seite UND ganzes Buch als Film, Schwerpunkt Buch - bereits entschieden). Vorarbeit ist erledigt: Audiodatei, Länge und Wort-Zeitpunkte je Seite liefert `app.ttsNeural.renderPageSegments()`, das Seitenbild liegt ohnehin vor. Offen ist nur noch das Zusammensetzen im Browser (Canvas + `WebCodecs`). Setzt eine KI-Stimme voraus. Ausführliches Konzept dazu (Sprach-API, Video/MP4, Hörbuch, Mehrformat - was, wie und warum): [`docs/KONZEPT-Video.md`](docs/KONZEPT-Video.md)
+- 🎬 **Video-Export** (Seite UND ganzes Buch als Film, Schwerpunkt Buch - bereits entschieden). Vorarbeit ist erledigt: Audiodatei, Länge und Wort-Zeitpunkte je Seite liefert `app.ttsNeural.renderPageSegments()`, das Seitenbild liegt ohnehin vor. **Der Renderer-Kern steht seit v0.15.0-beta** (Canvas-Bild + Untertitel mit Wort-Hervorhebung, sichtbar als "🎬 Film"-Vorschau). Offen ist noch das Kodieren zur Datei (`WebCodecs` + MP4-Muxer) und der Ton im Film. Setzt eine KI-Stimme voraus. Ausführliches Konzept dazu (Sprach-API, Video/MP4, Hörbuch, Mehrformat - was, wie und warum): [`docs/KONZEPT-Video.md`](docs/KONZEPT-Video.md)
 
 **Bräuchte einen eigenen Server** (aktuell bewusst zurückgestellt):
 - API-Key über ein Backend absichern

@@ -96,6 +96,9 @@ Object.assign(app.state, {
     // Bewusst nur zur Laufzeit und nicht in localStorage: sonst legt man
     // Wochen spaeter unbemerkt weiter Uebungshefte statt Geschichten an.
     newBookType: 'story',
+    // NEU: Zustand der Film-Vorschau (Zeitplan, Abspielposition,
+    // Animationsschritt) - siehe js/actions/videoPreview.js. null = zu.
+    videoPreview: null,
     // NEU: aktuell geöffnetes SchreibZauber-Werk (siehe js/studio/studioCore.js) -
     // gleiches Muster wie currentBookId.
     currentStudioProjectId: null

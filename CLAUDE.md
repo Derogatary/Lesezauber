@@ -92,6 +92,9 @@ import './actions/meineNeueDatei.js';
 | `js/actions/checkWork.js` | Kontrolle bearbeiteter Blätter (Foto → KI-Rückmeldung), nur im Heft-Modus |
 | `js/render/checkWork.js` | Ergebniskarte der Kontrolle (Lob, Rückmeldung, Tipps) |
 | `js/render/progress.js` | Fortschrittsbalken, Erledigt-Knopf, Belohnungs-Banner |
+| `js/render/cinema.js` | Video-Export Weg B, Teil 1: der Canvas-Renderer (`app.cinema`). Zeichnet EINEN Frame zu einem Zeitpunkt t - Seitenbild mit Ken-Burns plus Untertitel-Balken mit mitlaufender Wort-Hervorhebung. Verwaltet absichtlich keine Zeit und spielt nichts ab |
+| `js/actions/videoTimeline.js` | Der Zeitplan/die "Regie" dazu (`app.cinema.buildTimeline`): welche Szene über welchem **Seitenbereich** wann läuft. Nimmt echte Sprach-Segmente aus `renderPageSegments()` entgegen, schätzt die Längen sonst aus der Textlänge |
+| `js/actions/videoPreview.js` | Film-Vorschau ("🎬 Film"): spielt den Zeitplan in Echtzeit auf einem sichtbaren Canvas ab. Noch stumm, erzeugt noch keine Datei - und synthetisiert bewusst nichts |
 | `js/studio/studioCore.js` | SchreibZauber: `app.studio`-Projekt-CRUD, Stufen-Logik (Idee/Bauplan/Geschichte), Platzhalter-Aufruf pro Doppelseite |
 | `js/studio/studioPrompts.js` | SchreibZauber: alle Prompt-Bausteine inkl. `guardrailsBlock()` (Veröffentlichungs-Leitplanken, siehe Entscheidung 6) |
 | `js/studio/studioApi.js` | SchreibZauber: eigener Gemini/Mistral-Textaufruf fürs Manuskript (gleiche Keys wie `js/api.js`, aber getrennte Funktionen) |
@@ -229,7 +232,7 @@ Nutzer, nicht einfach lospreschen):
 
 | Vorhaben | Konzept |
 |---|---|
-| 🎬 Video-Export (Seite UND Buch, Schwerpunkt Buch - entschieden) - Vorarbeit steht (siehe "KI-Stimmen"), offen ist nur Canvas + `WebCodecs` | [`docs/KONZEPT-Video.md`](docs/KONZEPT-Video.md) |
+| 🎬 Video-Export Teil 2: Ton im Film + Kodieren zur Datei (`WebCodecs` + MP4-Muxer). Der Renderer-Kern (Teil 1) ist gebaut, siehe `js/render/cinema.js` und Abschnitt 4.7 des Konzepts | [`docs/KONZEPT-Video.md`](docs/KONZEPT-Video.md) |
 | 🪄 "SchreibZauber" - eigener Schreib-/Generierungs-Bereich für eigene Werke | [`docs/KONZEPT-SchreibZauber.md`](docs/KONZEPT-SchreibZauber.md), [`docs/KONZEPT-Bildquellen.md`](docs/KONZEPT-Bildquellen.md) |
 | 📝 Heft-Generator - Übungsblätter von der KI erstellen lassen | [`docs/KONZEPT-Uebungshefte.md`](docs/KONZEPT-Uebungshefte.md) |
 | 🎨 KI-generierte Illustrationen (Comic-Stil), für Text-only-EPUB-Kapitel UND als SchreibZauber-Werktyp | [`docs/KONZEPT-Comic.md`](docs/KONZEPT-Comic.md) |
@@ -276,6 +279,14 @@ Feste Regeln dabei:
 
 ## Versionsstand
 
-Aktuell `v0.14.0-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Zähl die Version bei größeren Änderungen entsprechend hoch (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).
+Aktuell `v0.15.0-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Zähl die Version bei größeren Änderungen entsprechend hoch (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).
+
+Seit v0.15.0-beta gibt es den **Renderer-Kern des Video-Exports** (Weg B, Teil 1):
+`js/render/cinema.js` + `js/actions/videoTimeline.js` + `js/actions/videoPreview.js`,
+eigener `app.cinema`-Namespace. Sichtbar als "🎬 Film"-Vorschau in der Buch-Ansicht bzw.
+"🎬 Film-Vorschau dieser Seite" im Reader - noch stumm und ohne Videodatei. Die dabei
+gefallenen Entscheidungen (9:16 als Standard, Untertitel in Blöcken, wer die dekodierten
+Bilder besitzt, warum die Vorschau nichts synthetisiert) stehen in
+`docs/KONZEPT-Video.md`, Abschnitt 4.7 - **vor dem Bau von Teil 2 dort nachlesen.**
 
 Seit v0.14.0-beta gibt es zusätzlich den **SchreibZauber**-Bereich (`js/studio/*`, `js/render/studio*.js`, eigener `app.studio`-Namespace, Object Store `projects` in `js/db.js`): eine Werkstatt, um eigene Kinderbuch-Werke von der KI schreiben zu lassen und als normales Buch "ins Regal zu stellen". Stufe 1 (Fundament: Idee → Bauplan → Geschichte, nur Platzhalter-Bilder, kein einziger Bildaufruf) ist gebaut - Hintergrund, Datenmodell und wo die nächsten Ausbaustufen andocken: `docs/KONZEPT-SchreibZauber.md`.

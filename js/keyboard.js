@@ -9,6 +9,13 @@ document.addEventListener('keydown', (e) => {
     const tag = document.activeElement?.tagName;
     if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
 
+    // NEU: Escape schließt auch die Film-Vorschau (gleiches Muster wie
+    // beim Vollbild-Vorlese-Modus, sie liegt ebenfalls als Overlay oben).
+    if (e.key === 'Escape' && app.state.videoPreview) {
+        app.actions.closeVideoPreview();
+        return;
+    }
+
     if (e.key === 'Escape' && app.state.focusMode) {
         app.actions.toggleFocusMode();
         return;

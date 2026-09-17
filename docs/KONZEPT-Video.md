@@ -6,6 +6,14 @@
 > Kino-Modus** (Abschnitt 3, Stufe 1) umgesetzt - der eigentliche Video-**Export**
 > ist weiterhin offen. Einzelne Stellen tragen deshalb einen Nachtrag.
 >
+> **Nachtrag (17.09.2026, v0.15.0-beta): Weg B, Teil 1 ist gebaut.** Der
+> **Renderer-Kern** steht: `js/render/cinema.js` zeichnet einen Frame zu einem
+> Zeitpunkt t (Seitenbild mit Ken-Burns + Untertitel-Balken mit mitlaufender
+> Wort-Hervorhebung), `js/actions/videoTimeline.js` legt den Zeitplan über
+> einen **Seitenbereich**, `js/actions/videoPreview.js` spielt das Ganze als
+> "🎬 Film"-Vorschau auf einem sichtbaren Canvas ab. Offen bleiben Ton im
+> Film und das Kodieren zur Datei (Teil 2/3) - Details unten in Abschnitt 4.7.
+>
 > **Zusammengeführt (Sept. 2026):** Die Video-Inhalte aus `docs/ROADMAP.md` (dort
 > ursprünglich dupliziert) sind jetzt hier eingearbeitet - `ROADMAP.md` ist seitdem
 > auf reine Vorlese-/Stimmen-Themen begrenzt, dieses Dokument ist die einzige
@@ -342,6 +350,68 @@ Bereich einmal aufrufen und aneinanderhängen.
 Das ist bewusst **Weg-unabhängig** formuliert: Schritte 1-3 sind für Weg A (Prototyp,
 Einzelseite) und Weg B (Zielarchitektur, ganzes Buch) identisch, nur Schritt 4 unterscheidet
 sich (`MediaRecorder` vs. `VideoEncoder`/`AudioEncoder` + Muxer).
+
+### 4.7 Stand von Weg B: was Teil 1 entschieden und gebaut hat
+
+**Gebaut (v0.15.0-beta), drei Module:**
+
+| Datei | Rolle |
+|---|---|
+| `js/render/cinema.js` (`app.cinema`) | Der Renderer. Kann genau eines: `drawFrame(ctx, timeline, timeSec)`. Dazu Formate, Bild-Dekodierung, Schrift-Bereitschaft, Zeilenumbruch, Ken-Burns |
+| `js/actions/videoTimeline.js` (`app.cinema.buildTimeline`) | Die "Regie": welche Szene läuft wann, mit welchem Text und welchen Wort-Zeitpunkten - über einen **Seitenbereich** |
+| `js/actions/videoPreview.js` (`app.actions.openVideoPreview`) | Prüfstand: spielt den Zeitplan in Echtzeit auf einem sichtbaren Canvas ab, mit Zeitbalken und Formatwechsel |
+
+**Entscheidungen, die dabei gefallen sind** (damit sie nicht neu diskutiert werden):
+
+1. **Der Renderer verwaltet die Zeit NICHT selbst.** Er bekommt t und zeichnet.
+   Nur so können Vorschau (Echtzeit, `requestAnimationFrame`) und Encoder
+   (schneller als Echtzeit, frameweise) exakt dasselbe Bild erzeugen.
+2. **Seitenverhältnis: hochkant 9:16 ist Standard** (1080x1920), quer 16:9 und
+   quadratisch sind wählbar. Die offene Frage aus Abschnitt 4.5 ist damit
+   beantwortet - und zwar wie dort vermutet.
+3. **Ränder werden gefüllt, nicht geschwärzt:** dasselbe Seitenbild
+   formatfüllend, unscharf und abgedunkelt im Hintergrund. Einmal pro Szene
+   gerendert, nicht pro Frame - ein Weichzeichner pro Frame wäre die teuerste
+   Operation im ganzen Renderer.
+4. **Untertitel laufen in Blöcken** von 3-4 Zeilen (je Format) wie echte
+   Untertitel, statt den ganzen Seitentext zu zeigen. Sichtbar ist immer der
+   Block mit dem gerade gesprochenen Wort. Der Balken hat eine **feste** Höhe,
+   sonst springt das Bild bei jedem Blockwechsel.
+5. **Text steht unter dem Bild, nicht darauf.** Über einer hellen Illustration
+   wäre Untertiteltext schlecht lesbar - und für ein Kind, das gerade lesen
+   lernt, ist Lesbarkeit wichtiger als Bildfläche.
+6. **Die Wort-Zeitpunkte kommen NICHT aus einer zweiten Rechnung.** Der
+   Zeitplan nutzt `app.ttsNeural._wordStartTimes()`, also genau die
+   Berechnung, die auch die Hervorhebung im Reader benutzt.
+7. **Dekodierte Seitenbilder gehören dem Renderer-Zwischenspeicher, nicht der
+   Szene** (höchstens 3 gleichzeitig). Eine Szene, die ihr `ImageBitmap`
+   selbst festhält, zeichnet nach der Verdrängung mit einem geschlossenen
+   Bild - und das bricht den Frame mit einem `InvalidStateError` ab.
+8. **Titel- und Abspannkarte nur beim Buch-Film**, nicht bei der Einzelseite:
+   die Einzelseite ist die Variante zum Weiterschicken und soll sofort
+   losgehen.
+9. **Die Vorschau synthetisiert nichts.** Sie schätzt die Längen aus der
+   Textlänge (~14 Zeichen/Sekunde) und schreibt sichtbar hin, dass die Zeiten
+   geschätzt sind. Eine Vorschau, die beim Öffnen Kontingent verbraucht, wäre
+   beim Entwickeln unbenutzbar - und für die Familie eine Kostenfalle.
+
+**Offen für Teil 2 (Ton + Datei):**
+
+- Ton in die Vorschau: `renderPageSegments()` liefern und über
+  `segmentsByPage` in `buildTimeline()` geben - der Zeitplan nimmt echte
+  Segmente schon entgegen, nutzt dann deren Länge und Wort-Zeitpunkte und
+  setzt `timeline.exact = true`. Die Wiedergabe müsste sich dann an
+  `audio.currentTime` hängen statt an der eigenen Uhr.
+- Metadaten-Ansage für die Titelkarte (Titel/Autor/Kapitel, siehe
+  `app.tts._buildMetadataAnnouncements()`): `renderPageSegments()` kennt sie
+  nicht, die Titelkarte läuft deshalb bisher stumm mit fester Länge.
+- Kreuzblende zwischen zwei Szenen (im Kino-Modus vorhanden, im Renderer
+  noch nicht - der Szenenwechsel ist ein harter Schnitt).
+- `VideoEncoder`/`AudioEncoder` + Muxer, OPFS-Ausgabe, Fähigkeiten-Prüfung
+  (`VideoEncoder.isConfigSupported()`) und das Ausblenden des Knopfes, wo es
+  nicht geht - alles wie in 4.3/4.5 beschrieben.
+- Höhere Bildauflösung (`videoUrl`, ~2560 px) bleibt wie in 4.5 offen; mit
+  1600 px Vorlage und 1,12-fachem Zoom sieht 1080p bisher vertretbar aus.
 
 ---
 
