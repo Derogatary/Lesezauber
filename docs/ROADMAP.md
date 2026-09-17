@@ -62,14 +62,56 @@ genau das, was ein durchgehender Film braucht und eine Einzelseite nicht hat.
 
 ---
 
-## Offene Entscheidungen (blockieren den nächsten Schritt)
+**2. Emotions-Tags: automatisch je nach Anbieter, kein Bezahltarif-Vorbehalt mehr.** (entschieden, Sept. 2026)
 
-2. **ElevenLabs v3 (bezahlt) für Emotions-Tags?**
-   Nur damit gibt es `[lacht]`, `[flüstert]` usw. bei ElevenLabs. Ohne Bezahltarif bleibt es bei `eleven_multilingual_v2`.
-3. **Reicht der Stimmen-Speicher mit 100 MB?**
-   Bei Gemini (unkomprimiert, ~1 MB/Seite) sind das rund 100 Seiten, bei den MP3-Anbietern mehrere tausend. Höher setzen heißt: weniger Platz für Bücher.
-4. **Welcher Anbieter wird der Familien-Standard?**
-   Davon hängt ab, ob sich Arbeit an exakten Wort-Zeitstempeln (nur ElevenLabs) oder an Emotions-Tags (Gemini) lohnt.
+**Korrektur einer überholten Annahme:** ElevenLabs v3 ist seit März 2026 allgemein
+verfügbar (nicht mehr Alpha) und kostet **genauso viel wie v2** - $0,10 je 1.000 Zeichen,
+kein Aufpreis für Tags mehr, dazu 70+ statt 29 Sprachen. Die alte Aussage "nur mit
+Bezahltarif" stimmt nicht mehr.
+
+Damit ist es keine Frage von zwei getrennten APIs, sondern nur, welches Modell angesteuert
+wird:
+- `speechText` (Text mit Tags) wird **immer** mitgeneriert - kostenlos im selben
+  Analyse-Aufruf, kein Zusatz-Call.
+- `supportsTags`-Flag je Anbieter entscheidet, ob es genutzt wird. Bei ElevenLabs zeigt das
+  Modell direkt auf `eleven_v3` statt `eleven_multilingual_v2` - **ersetzt** v2, kein
+  Parallelbetrieb. Bei Gemini die eigene Tag-Syntax (siehe unten). Bei Anbietern ohne
+  Unterstützung (Chirp 3, OpenAI, künftig Speechify) werden Tags automatisch herausgefiltert.
+- **Vorbehalt:** Ob der kostenlose 10.000-Credits-Tarif von ElevenLabs v3 uneingeschränkt
+  erlaubt, ist nicht zu 100% verifiziert (keine gegenteiligen Hinweise gefunden) - im
+  Praxistest bestätigen.
+
+**3. Stimmen-Speicher: 300 MB statt 100 MB.** (entschieden, Sept. 2026)
+
+Faktor 3 als Mittelweg: bei Gemini (~1 MB/Seite) wächst die Reichweite von ~100 auf
+~300 Seiten, bei den MP3-Anbietern (~40 KB/Seite) greift das Limit ohnehin kaum. Moderne
+Browser gewähren IndexedDB großzügig Speicher - 300 MB ist auf praktisch jedem Gerät
+unkritisch, sollte aber wegen der ggf. knappen Handys der Kinder nicht ohne Grund höher.
+
+Eine Zeile Aufwand: `TTS_CACHE_MAX_BYTES` in `js/db.js`. Die Eviction-Logik (älteste
+Einträge zuerst raus, sobald das Limit erreicht ist) sowie ein manueller
+"Cache leeren"-Knopf existieren bereits.
+
+**Geprüft und verworfen (fürs Erste): Audiodateien mit exportieren.** Der bestehende
+Bibliotheks-Export (`backup.js`) sichert nur Bild und Text, **nicht** die TTS-Aufnahmen -
+Export/Reimport würde sie also nicht mitnehmen, sie müssten neu erzeugt werden (kostet
+erneut). Das wirklich umzusetzen bräuchte einen neuen Exportweg mit Audio-Blobs - technisch
+machbar, aber ein eigener, größerer Punkt, kein Teil dieser Entscheidung.
+
+**4. Kein fest verdrahteter Familien-Standard - bleibt wählbar, Default Gerätestimme.**
+(entschieden, Sept. 2026)
+
+Es wird kein Anbieter hart als "der" Standard festgelegt. `app.settings.ttsProvider`
+bleibt `'device'` (kostenlos, offline) als Voreinstellung; jede Familie/jedes Profil kann
+in den Einstellungen weiterhin frei wechseln - das ist bereits heute so gebaut.
+
+**Speechify als fünfter Anbieter vorgemerkt:** bietet wortgenaue Zeitstempel
+("Speech Marks", technisch gleichwertig zu ElevenLabs), Deutsch unterstützt, aber zu
+**$6-10 je 1 Mio. Zeichen statt ElevenLabs' ~$100/Mio.** - grob Faktor 10-15 günstiger,
+dazu 50.000 Zeichen/Monat gratis (fünfmal mehr als ElevenLabs). Sobald an
+`js/ttsProviders.js` gearbeitet wird, dort ergänzen. Andere geprüfte Kandidaten (Inworld,
+Rime, Cartesia) zielen auf Echtzeit-Sprachassistenten - kein Zusatznutzen für vorab
+erzeugte Vorlese-Dateien, deshalb nicht aufgenommen.
 
 ---
 
@@ -117,7 +159,7 @@ Einzelseiten-Export bauen und das Buch später nachrüsten.
 |---|---|
 | Gemini 3.1 Flash TTS | Stil-Anweisung für den ganzen Text **plus** 200+ Inline-Tags (`[whispers]`, `[laughs]`, `[excited]`) |
 | OpenAI | eigenes `instructions`-Feld für den ganzen Text, keine Inline-Tags |
-| ElevenLabs v3 | Audio-Tags - aber **nur in bezahlten Tarifen**; wir nutzen derzeit `eleven_multilingual_v2` ohne Tags |
+| ElevenLabs v3 | Audio-Tags. **Nachtrag:** seit GA (März 2026) zum selben Preis wie v2 ($0,10/1.000 Zeichen) - siehe Entscheidung 2 oben. Modell wird auf `eleven_v3` umgestellt |
 | Google Cloud Chirp 3 HD | keine Emotionen, nur Tempo und Pausen-Tags (eigenes `markup`-Feld, nicht `text`) |
 
 **Was bereits wirkt:** Die Persona bringt seit v0.10.2 eine eigene Sprech-Anweisung mit (`ttsStyle` in `js/config.js`) - die Gute-Nacht-Fee wird ausdrücklich als "sehr sanft, leise, fast flüsternd" angesagt, nicht mehr nur als "sanfte Gute-Nacht-Fee" (das war eine Schreib-, keine Sprech-Anweisung).
@@ -170,7 +212,26 @@ Für textlastige EPUB-Kapitel ohne eigenes Bild, Comic-Stil, über die Bildgener
 ### 9. 📱 Native App via Capacitor
 Verpackt den bestehenden Code weitgehend unverändert. Nebeneffekt: Ein natives Paket könnte Audio im Hintergrund abspielen - im Browser hört das Vorlesen beim Sperren des Bildschirms auf.
 
-### 10. 🔒 Bewusst zurückgestellt (bräuchte einen eigenen Server)
+### 10. 🔐 Kinder-/Elternbereich (Profil-Rollen) - neu, Sept. 2026
+
+Aus der Diskussion um den Anbieter-Standard (Entscheidung 4) entstanden: Profile speichern
+heute nur `{id, name}`, es gibt **keine** Rolle/Rechte-Unterscheidung. Ein Kind kann also
+schon jetzt aus Neugier einen kostenpflichtigen TTS-Anbieter anklicken oder einen API-Key
+sehen.
+
+**Konzept:**
+- Profil bekommt ein neues Feld `role: 'child' | 'adult'`, Default `'child'` - ein
+  bestehendes Profil ohne Migration bleibt damit sicher restriktiv, nicht versehentlich offen.
+- Bestimmte Einstellungen (TTS-Anbieter wechseln, API-Keys eintragen, später:
+  kostenpflichtige SchreibZauber-Bildgenerierung auslösen) sind nur sichtbar/bedienbar,
+  wenn ein Erwachsenen-Profil aktiv ist.
+- Rein clientseitige Beschränkung - kein Schutz vor einem technisch versierten Kind mit
+  Entwicklerkonsole, aber genau richtig gegen "aus Versehen/Neugier teuer".
+
+Aufwand **mittel** (neues Datenfeld, DB-Migration, mehrere UI-Stellen die jetzt prüfen
+müssen). Lohnt sich schon **vor** SchreibZauber Stufe 6, nicht erst danach.
+
+### 11. 🔒 Bewusst zurückgestellt (bräuchte einen eigenen Server)
 API-Keys über ein Backend absichern · automatische Cloud-Synchronisierung · echte Multi-Geräte-Accounts. Gilt seit den KI-Stimmen für **mehr** Keys als vorher - die Abwägung bleibt aber dieselbe.
 
 ---
@@ -188,10 +249,14 @@ API-Keys über ein Backend absichern · automatische Cloud-Synchronisierung · e
 
 | Anbieter | Gratis | Danach | Besonderheit |
 |---|---|---|---|
-| Gerätestimme | unbegrenzt | – | offline, klingt maschinell |
+| Gerätestimme | unbegrenzt | – | offline, klingt maschinell. **Bleibt der Standard (Entscheidung 4)** |
 | Gemini TTS | Free Tier, wenige Anfragen/Tag | – | nutzt den vorhandenen Gemini-Key |
 | Google Cloud Chirp 3 HD | 1 Mio. Zeichen/Monat | ~30 $/Mio. Zeichen | braucht Cloud-Projekt mit Zahlungsart |
-| ElevenLabs | 10.000 Zeichen/Monat (privat) | ab ~5 $/Monat | einzige exakte Wort-Zeitstempel |
+| ElevenLabs | 10.000 Zeichen/Monat (privat) ≈ 13-15 Min. Sprache | ~100 $/Mio. Zeichen | exakte Wort-Zeitstempel; seit v3 auch Emotions-Tags zum gleichen Preis |
 | OpenAI | – | ~1,3 ct/Minute Audio | Persona als Sprechanweisung |
+| Speechify *(vorgemerkt, noch nicht eingebaut)* | 50.000 Zeichen/Monat | 6-10 $/Mio. Zeichen | ebenfalls exakte Wort-Zeitstempel, **10-15× günstiger als ElevenLabs** - siehe Entscheidung 4 |
+
+10.000 Zeichen (ElevenLabs-Gratistarif) entsprechen grob 6-10 neu vorgelesenen Bilderbüchern
+im Monat - danach ist alles gecacht und kostet beim erneuten Vorlesen nichts mehr.
 
 Preise und Limits ändern sich häufig - die Links dazu stehen direkt in der App unter ⚙️ → Vorlese-Stimme.

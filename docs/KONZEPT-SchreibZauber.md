@@ -6,6 +6,12 @@
 > kostenlosen und kostenpflichtigen Wege, an die Bilder zu kommen, und beschreibt das
 > bereits gebaute Platzhalter-Fundament (`js/studio/`) samt Austausch-Mechanik.
 
+> **Nachtrag (Sept. 2026, entschieden):** Die Werke sollen **auf Veröffentlichung ausgelegt**
+> sein (z.B. Amazon KDP), nicht nur auf reine Privatnutzung - private Nutzung durch die
+> eigenen Kinder bleibt der Alltagsfall, aber Stufe 1 und Stufe 3 müssen von Anfang an so
+> gebaut sein, dass eine spätere Veröffentlichung nicht an nachträglich fehlenden
+> Leitplanken/Exportformaten scheitert. Details: TEIL F unten.
+
 Dieses Dokument beschreibt, wie LeseZauber Pro um einen Bereich erweitert wird, in dem
 eigene Werke **geschrieben und illustriert** werden: Bilderbücher, Erstlesebücher,
 Comics/Hefte und Kinder-Arbeitshefte. Es beantwortet drei Fragen:
@@ -30,6 +36,8 @@ Comics/Hefte und Kinder-Arbeitshefte. Es beantwortet drei Fragen:
 5. **Optionale Ausbaustufe:** eine zweite Einstiegsseite `schreiben.html` mit eigenem Manifest –
    zwei App-Icons auf dem Homescreen, aber weiterhin eine einzige Code-Basis und ein
    gemeinsamer Datenspeicher. Das ist der beste Kompromiss zwischen „eigene App“ und „Wartbarkeit“.
+   *(Icon-Idee, Sept. 2026: ein magischer Stift/Federkiel, passend zu LeseZauber Pros
+   bestehendem Icon-Stil - reine Bildgestaltung, kein technisches Thema.)*
 
 ---
 
@@ -500,13 +508,44 @@ und sollte zuerst gebaut werden.
 | **KI schreibt Schrift ins Bild** | Prompt-Leitplanke + Text grundsätzlich als HTML-Ebene, nie im Bild |
 | **App wird zu groß / Start zu langsam** | Studio-Module komplett lazy laden |
 | **Unpassende Inhalte** | Harte Prompt-Leitplanken, Zielalter in jedem Aufruf, Vorschau-Freigabe durch Erwachsene vor „Ins Regal stellen“ |
-| **Urheberrecht** | Keine realen Figuren/Marken im Prompt zulassen; Hinweis in der Hilfe, dass generierte Werke privat genutzt werden |
+| **Urheberrecht** | Keine realen Figuren/Marken im Prompt zulassen - **verschärft seit der Veröffentlichungsabsicht** (s.u.), nicht nachträglich in Stufe 1 nachrüstbar |
 | **Scope-Falle** | Reihenfolge der Ausbaustufen einhalten. Stufe 1 ohne Bilder ist ein vollständiges Feature, kein Torso |
 
 **Bewusst NICHT vorgesehen** (passt nicht zur Server-losen Architektur):
-- Buchbestellung/Print-on-Demand-Anbindung
+- **Automatisierte** Buchbestellung/Print-on-Demand-**Anbindung** (kein API-Upload zu KDP o.ä.
+  - das bräuchte einen Server/Account-Flow außerhalb der reinen Client-Architektur). Ein
+  **manueller** druckfertiger Export für die eigenhändige Einreichung bei KDP ist dagegen
+  jetzt Ziel, siehe unten
 - Geteilte Projekte / gemeinsames Bearbeiten über mehrere Geräte in Echtzeit
 - Vertonung als Audiodatei (braucht eine Sprach-API mit Dateiausgabe, siehe README)
+
+---
+
+## Nachtrag: Veröffentlichung von Anfang an mitdenken (entschieden, Sept. 2026)
+
+Bisher ging dieses Konzept von reiner Privatnutzung aus. Jetzt: Werke sollen veröffentlichbar
+sein (z.B. Amazon KDP als Self-Publishing), private Nutzung bleibt der Alltagsfall daneben.
+
+**Amazon KDP verlangt seit 2025/26 verschärft durchgesetzt eine Offenlegung**, ob Text,
+Bilder oder Übersetzungen von KI erzeugt wurden - auch bei starker Nacharbeit. Die Kette bei
+Nicht-Offenlegung eskaliert (Hinweis → Aussetzung → Entfernung → Konto-Vermerk → im
+Wiederholungsfall Sperre). Die Offenlegung selbst ist intern bei Amazon, erscheint nicht auf
+der Produktseite und beeinflusst laut Amazon weder Tantiemen noch Ranking - **kein
+Hindernis**, aber eine Pflichtangabe, die ehrlich "ja" lauten muss (Text UND Bilder sind hier
+KI-generiert).
+
+**Zwei konkrete Konsequenzen für die Planung:**
+- **Stufe 1 (Prompt-Leitplanken) muss von Anfang an strenger sein.** Keine bekannten
+  Figuren/Marken/Stile, die bei Veröffentlichung zum Problem würden - das lässt sich nicht
+  sauber nachrüsten, wenn Stufe 1 erst auf "nur privat" ausgelegt gebaut wird.
+- **Stufe 3 (Layout & Druck) sollte gleich druckfertige Exportformate mitdenken**, nicht nur
+  "für den eigenen Drucker reicht's". KDP hat konkrete technische Vorgaben für
+  Print-on-Demand-Bilderbücher (i.d.R. 300 dpi, Randabstand/Bleed, PDF-Exportformat, ISBN -
+  die KDP kostenlos vergibt). Diese Eckdaten vor dem Bau von Stufe 3 einmal aktuell
+  verifizieren, sie waren zum Zeitpunkt dieses Nachtrags nicht abschließend prüfbar.
+
+**Die Reihenfolge der Ausbaustufen ändert sich dadurch NICHT** - Stufe 1 zuerst, ohne Bilder,
+bleibt richtig. Nur der Anspruch an Stufe 1 und 3 steigt von Anfang an.
 
 ---
 
@@ -516,13 +555,19 @@ Diese Punkte sollten vor Umsetzungsbeginn geklärt werden:
 
 1. **Bild-API freigeschaltet?** Ist der bestehende Google-Account abrechnungsfähig? Falls nein:
    Stufe 1 (ohne Bilder) bauen und Kinderzeichnungen fotografieren – das ist ohnehin charmanter.
-2. **Zwei Icons oder eines?** Soll SchreibZauber später als eigenes Homescreen-Icon erscheinen
-   (Ausbaustufe 6), oder reicht ein Button in LeseZauber?
+2. ~~**Zwei Icons oder eines?**~~ **✅ beantwortet (Sept. 2026): beides, als Stufen.** Stufe 1-5
+   als Tab/Button in LeseZauber, Stufe 6 optional das zweite Homescreen-Icon
+   (Icon-Idee: magischer Stift/Federkiel) - siehe Kernempfehlung Punkt 5 oben.
 3. **Welcher Werktyp zuerst?** Empfehlung: Bilderbuch. Alternativ Arbeitsheft, wenn der
    Schulbezug aktuell wichtiger ist.
 4. **Budgetgrenze**: Welcher Betrag pro Projekt fühlt sich richtig an?
-5. **Wer darf erstellen?** Soll die Werkstatt hinter einer Erwachsenen-Schwelle liegen
-   (z. B. nur in den Einstellungen sichtbar), oder dürfen die Kinder direkt loslegen?
+5. ~~**Wer darf erstellen?**~~ **✅ beantwortet (Sept. 2026): hinter einer Erwachsenen-Schwelle.**
+   Löst sich über den neuen, allgemeinen "Kinder-/Elternbereich" (Profil-Rolle
+   `role: 'child' | 'adult'`, Default `'child'`) - siehe `docs/ROADMAP.md`, Große Brocken
+   Punkt 10. Kein SchreibZauber-eigener Mechanismus, sondern derselbe Schalter, der auch
+   die teuren TTS-Einstellungen sperrt.
+
+Verbleibend offen: 1, 3 und 4.
 
 ---
 

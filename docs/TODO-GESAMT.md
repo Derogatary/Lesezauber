@@ -46,11 +46,13 @@ hat, fängt hier an - nichts davon fasst das Datenmodell an.
 |---|---|---|---|
 | 1 | Vorlese-Aufbereitung des erkannten Texts (Trennstriche, Abkürzungen) | Vorlesen | **S** |
 | 2 | Kino-Modus vollenden: Ken-Burns-Zoom + Kreuzblende | Video | **S** |
-| 3 | Mehr Stimmen freischalten (je eine Zeile in `ttsProviders.js`) | Vorlesen | **S** |
-| 4 | „Buch hörfertig machen" - alle Seiten vorab in den Stimmen-Speicher | Vorlesen | **S** |
-| 5 | Stimme pro Profil statt global | Vorlesen | **S** |
-| 6 | Kosten-Anzeige (lokal gezählte Zeichen pro Monat) | Vorlesen | **S** |
-| 7 | Zweiter Comic-Testlauf mit korrigiertem Prompt | Eigene Werke | **S** |
+| 3 | Stimmen-Speicher auf 300 MB erhöhen (eine Konstante) | Vorlesen | **S** |
+| 4 | Speechify als 5. Anbieter ergänzen (günstiger als ElevenLabs, exakte Zeitstempel) | Vorlesen | **S** |
+| 5 | Mehr Stimmen freischalten (je eine Zeile in `ttsProviders.js`) | Vorlesen | **S** |
+| 6 | „Buch hörfertig machen" - alle Seiten vorab in den Stimmen-Speicher | Vorlesen | **S** |
+| 7 | Stimme pro Profil statt global | Vorlesen | **S** |
+| 8 | Kosten-Anzeige (lokal gezählte Zeichen pro Monat) | Vorlesen | **S** |
+| 9 | Zweiter Comic-Testlauf mit korrigiertem Prompt | Eigene Werke | **S** |
 
 **Nummer 1 ist der beste Einstieg:** Sie verbessert *jede* Stimme, Geräte- wie KI-Stimme,
 lässt die Anzeige unangetastet und kann nichts kaputt machen.
@@ -63,6 +65,8 @@ Details: [`docs/ROADMAP.md`](ROADMAP.md)
 
 | Punkt | Aufwand | Anmerkung |
 |---|---|---|
+| **Stimmen-Speicher auf 300 MB erhöhen** | **S** | ✅ entschieden - eine Konstante in `js/db.js` (`TTS_CACHE_MAX_BYTES`). Eviction-Logik existiert bereits |
+| **Speechify als 5. Anbieter ergänzen** | **S** | ✅ entschieden - $6-10/Mio. Zeichen statt ElevenLabs' ~$100/Mio., ebenfalls exakte Wort-Zeitstempel, Deutsch unterstützt. Neuer Eintrag in `js/ttsProviders.js` |
 | **Vorlese-Aufbereitung des erkannten Texts** | **S** | Eigene Funktion neben `app.utils.stripEmojiForSpeech()`; Trennstrich + Zeilenumbruch zusammenziehen, Abkürzungen ausschreiben. Nur fürs Ohr, Anzeige bleibt |
 | **Mehr Stimmen freischalten** | **S** | In `js/ttsProviders.js` ist nur eine Vorauswahl eingetragen (Gemini hat 30, OpenAI 11+) |
 | **„Buch hörfertig machen"** | **S** | Knopf, der alle Seiten vorab in den `ttsCache` legt - danach ohne Wartezeit und offline |
@@ -70,7 +74,11 @@ Details: [`docs/ROADMAP.md`](ROADMAP.md)
 | **Kosten-Anzeige** | **S** | Rein lokal geschätzt mitzählen, wie viele Zeichen im Monat an den Anbieter gingen |
 | **Mitmachmodus mit KI-Stimme** | **M** | Läuft heute bewusst immer über die Gerätestimme. Über Pausen-Tags lösbar (Gemini `[pause]`, Chirp 3 über `markup`) - eine Aufnahme, keine Mehrkosten. Text stückeln wäre die teure Alternative |
 | **Lange Texte stückeln** | **M** | Über `MAX_NEURAL_CHARS = 4000` (praktisch nur EPUB-Kapitel) fällt es auf die Gerätestimme zurück. An Satzenden in ~800-Zeichen-Stücke zerlegen, Wort-Offsets verschieben |
-| **Emotionen / Audio-Tags** | **M** | Neues **optionales** Feld `speechText` je Variante, erzeugt ohne zusätzlichen API-Aufruf. **Sicherheitsnetz Pflicht:** Flag `supportsTags`, sonst liest die Stimme „eckige Klammer lacht" vor |
+| **Emotionen / Audio-Tags** | **M** | ✅ entschieden, Weg klar: `speechText`-Feld immer mitgenerieren (kein Zusatz-Call), `supportsTags`-Flag je Anbieter. Bei ElevenLabs Modell auf `eleven_v3` umstellen - **kostet seit GA nicht mehr als v2** |
+
+**Geprüft und verworfen (fürs Erste):** Audiodateien im Bibliotheks-Export mit sichern.
+Würde einen neuen Exportweg mit Audio-Blobs brauchen (Export/Reimport nimmt heute nur Bild+Text
+mit) - eigener, größerer Punkt, kein Teil der Speicher-Entscheidung oben.
 
 ---
 
@@ -108,12 +116,12 @@ Der größte Brocken im Projekt - dafür in Stufen geschnitten, die **einzeln li
 | Punkt | Aufwand | Anmerkung |
 |---|---|---|
 | **Comic: zweiter Testlauf** | **S** | Ein Testbild hat zwei Prompt-Probleme aufgedeckt; der korrigierte Wortlaut ist noch nicht erprobt. Steht vor allem Weiteren |
-| **SchreibZauber Stufe 1 - Fundament** | **L** | Datenmodell, **DB v3**, Werkstatt-Übersicht, Idee/Bauplan/Geschichte, Platzhalter-Bilder, Export „ins Regal". **Ohne einen einzigen Bildaufruf** und laut Konzept bestes Nutzen-pro-Aufwand-Verhältnis |
+| **SchreibZauber Stufe 1 - Fundament** | **L** | Datenmodell, **DB v3**, Werkstatt-Übersicht, Idee/Bauplan/Geschichte, Platzhalter-Bilder, Export „ins Regal". **Ohne einen einzigen Bildaufruf**, laut Konzept bestes Nutzen-pro-Aufwand-Verhältnis. **Prompt-Leitplanken jetzt von Anfang an auf Veröffentlichung auslegen** (Entscheidung 6) - nicht nachträglich nachrüstbar |
 | **SchreibZauber Stufe 2 - Bilder** | **L** | Stilkarte, Figuren-Bibel, Storyboard, Bildgenerierung, Kostenzähler. Ab hier kostet es echtes Geld |
-| **SchreibZauber Stufe 3 - Layout & Druck** | **M** | Textplatzierung, Silbenfarben, Doppelseiten-Druck |
+| **SchreibZauber Stufe 3 - Layout & Druck** | **M** | Textplatzierung, Silbenfarben, Doppelseiten-Druck. **Gleich druckfertige Exportformate mitdenken** (KDP-taugliche PDF/Auflösung/Bleed, Entscheidung 6) |
 | **SchreibZauber Stufe 4 - Arbeitsheft** | **L** | Lernziel, Progression, Aufgabenbaukasten, Lösungsteil |
 | **SchreibZauber Stufe 5 - Comic** | **L** | Panel-Layouts, Sprechblasen-Overlay |
-| **SchreibZauber Stufe 6 - Politur** | **M** | Zweite Einstiegsseite `schreiben.html`, projektübergreifende Figuren, Vorlagen |
+| **SchreibZauber Stufe 6 - Politur** | **M** | Zweite Einstiegsseite `schreiben.html` (Icon-Idee: magischer Stift), projektübergreifende Figuren, Vorlagen. ✅ entschieden: kommt, keine reine Tab-Lösung auf Dauer |
 | **Comic-Generator-Werkzeug** | **L** | Bewusst **kein** App-Feature: eigenes Node-Werkzeug lokal beim Betreiber (`tools/comic-gen/`), weil Browser nur CORS-fähige Bild-Anbieter erreichen |
 
 **Zwei Fallen, die im Konzept ausdrücklich benannt sind:**
@@ -149,6 +157,7 @@ Ankreuzen, Nachspuren, Schwungübungen). Ausmalbilder setzen die Bildgenerierung
 
 | Punkt | Aufwand | Anmerkung |
 |---|---|---|
+| **Kinder-/Elternbereich (Profil-Rollen)** | **M** | Neu, aus der Diskussion um den TTS-Anbieter entstanden. Profile speichern heute nur `{id, name}` - neues Feld `role: 'child' \| 'adult'` (Default `'child'`), sperrt teure Einstellungen (TTS-Anbieter, API-Keys) für Kinderprofile. Lohnt sich schon **vor** SchreibZauber Stufe 6 |
 | **Native Android-App via Capacitor** | **M** | Verpackt den bestehenden Code weitgehend unverändert. Nebeneffekt laut Roadmap: Ein natives Paket könnte **Audio im Hintergrund** abspielen - im Browser hört das Vorlesen beim Sperren des Bildschirms auf |
 | **API-Keys über ein Backend absichern** | **XL** | Braucht einen Server |
 | **Automatische Cloud-Synchronisierung** | **XL** | Braucht einen Server |
@@ -176,14 +185,20 @@ einschätzen.
 
 Diese Punkte sind **nicht** technisch offen, sondern brauchen eine Ansage des Betreibers:
 
-| # | Entscheidung | Blockiert |
+Alle sechs sind inzwischen entschieden (Sept. 2026) - Details jeweils in ROADMAP.md
+bzw. KONZEPT-SchreibZauber.md:
+
+| # | Entscheidung | Ergebnis |
 |---|---|---|
-| ~~1~~ | ~~Video-Export: pro Seite oder pro Buch?~~ **✅ entschieden: beides, Schwerpunkt pro Buch** | — (siehe Video-Bereich) |
-| 2 | **ElevenLabs v3 (bezahlt) für Emotions-Tags?** | Audio-Tags bei ElevenLabs |
-| 3 | **Reicht der Stimmen-Speicher mit 100 MB?** | mehr Platz für Stimmen = weniger für Bücher |
-| 4 | **Welcher Anbieter wird der Familien-Standard?** | ob sich exakte Wort-Zeitstempel (nur ElevenLabs) oder Emotions-Tags (Gemini) lohnen |
-| 5 | **SchreibZauber: eigener Tab oder eigene App?** | SchreibZauber Stufe 1 bzw. 6 |
-| 6 | **Weitergabe erzeugter Hefte an andere Familien** | Quellen und Lizenzen erst klären |
+| ~~1~~ | ~~Video-Export: pro Seite oder pro Buch?~~ | **beides, Schwerpunkt pro Buch** (siehe Video-Bereich) |
+| ~~2~~ | ~~ElevenLabs v3 (bezahlt) für Emotions-Tags?~~ | **kein Bezahltarif nötig** - v3 ist seit GA (März 2026) zum Preis von v2. Tags automatisch je Anbieter (`supportsTags`) |
+| ~~3~~ | ~~Reicht der Stimmen-Speicher mit 100 MB?~~ | **auf 300 MB erhöht**, eine Konstante in `js/db.js` |
+| ~~4~~ | ~~Welcher Anbieter wird der Familien-Standard?~~ | **kein fester Standard** - bleibt wählbar, Default Gerätestimme. Speechify als 5. Anbieter vorgemerkt (günstiger als ElevenLabs, ebenfalls exakte Zeitstempel) |
+| ~~5~~ | ~~SchreibZauber: eigener Tab oder eigene App?~~ | **beides, als Stufen** - Stufe 1-5 als Tab, Stufe 6 optional zweites Icon (Vorschlag: magischer Stift), gleiche Code-Basis |
+| ~~6~~ | ~~Weitergabe erzeugter Hefte/Werke~~ | **ja, auf Veröffentlichung auslegen** (z.B. Amazon KDP) - verschärft Stufe 1 (Prompt-Leitplanken) und Stufe 3 (druckfertiger Export) von Anfang an |
+
+**Neu dazugekommen aus der Diskussion:** Kinder-/Elternbereich (Profil-Rollen) - siehe
+Bereich „App & Plattform" unten.
 
 ---
 
