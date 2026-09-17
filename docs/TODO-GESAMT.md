@@ -27,6 +27,7 @@ wo dort eine Zahl steht, ist sie übernommen.
 | Datei | Inhalt |
 |---|---|
 | `docs/TODO-GESAMT.md` (hier) | Übersicht über **alle** offenen Punkte, nach Bereich & Aufwand |
+| `docs/AUFTRAEGE-SESSIONS.md` | Dieselben Punkte als fertige Arbeitspakete für einzelne Claude-Code-Sitzungen (zum Kopieren) |
 | `docs/ROADMAP.md` | Vorlesen/Stimmen im Detail, inkl. Kostenübersicht |
 | `docs/KONZEPT-Video.md` | Sprach-API, Video/MP4, Hörbuch, Mehrformat-Ausspielung |
 | `docs/KONZEPT-SchreibZauber.md` | Eigener Schreib-/Generierungs-Bereich für selbst erstellte Werke |

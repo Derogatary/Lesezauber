@@ -1,0 +1,520 @@
+# 📋 Aufträge für einzelne Claude-Code-Sitzungen
+
+**Stand: v0.12.0-beta, September 2026**
+
+Diese Datei schneidet die offenen Punkte aus [`docs/TODO-GESAMT.md`](TODO-GESAMT.md) in
+**in sich abgeschlossene Aufträge**, die jeweils an eine eigene Claude-Code-Sitzung
+gegeben werden können. Jeder Auftrag ist ein fertiger Text zum Kopieren - er nennt das
+Ziel, die betroffenen Dateien, die Grenzen ("nicht tun") und den Branch.
+
+> **Die Aufträge sind bewusst so geschnitten, dass parallel laufende Sitzungen möglichst
+> nicht in dieselbe Datei schreiben.** Wo das nicht geht, sind mehrere To-do-Punkte in
+> einem Auftrag zusammengefasst (z.B. alles, was `js/ttsProviders.js` anfasst).
+
+Die inhaltliche Quelle bleibt `docs/TODO-GESAMT.md` und die verlinkten Konzeptpapiere -
+diese Datei ist nur die Aufteilung in Arbeitspakete.
+
+---
+
+## Regeln fürs Parallel-Arbeiten
+
+| Regel | Warum |
+|---|---|
+| Jede Sitzung bekommt einen **eigenen Branch** (steht im jeweiligen Auftrag) | sonst überschreiben sich die Sitzungen gegenseitig |
+| **Gleichzeitig startbar:** 1, 2, 3, 4, 5, 6 | disjunkte Dateien |
+| **Erst nach dem Vorgänger:** 7 nach 6 · 8 nach 3 · 9 nach 8 · 11 nach 10 | gleiche Datei bzw. inhaltliche Abhängigkeit |
+| **Nr. 12 (SchreibZauber Stufe 1) allein laufen lassen** | ist die Grundlage für alle späteren Werktyp-Pfade (Entscheidung Sept. 2026) |
+| `sw.js` (`CACHE_NAME`) und `css/tailwind.css` fassen **alle** Aufträge an | dort sind triviale Merge-Konflikte zu erwarten: immer die höhere Versionsnummer nehmen, `tailwind.css` nach dem Merge einfach neu bauen |
+
+## Übersicht
+
+| # | Auftrag | Bereich | Aufwand | Branch |
+|---|---|---|---|---|
+| 1 | Vorlese-Aufbereitung des erkannten Texts | Vorlesen | **S** | `claude/tts-textaufbereitung` |
+| 2 | Stimmen-Speicher 300 MB + „Buch hörfertig machen" | Vorlesen | **S** | `claude/tts-cache-und-hoerfertig` |
+| 3 | TTS-Anbieter-Paket (Speechify, mehr Stimmen, Tarif-Lock) | Vorlesen | **S** | `claude/tts-anbieter-paket` |
+| 4 | Stimme pro Profil + Kinder-/Elternbereich | Plattform | **S+M** | `claude/profil-rollen-und-stimme` |
+| 5 | Kosten-Anzeige | Vorlesen | **S** | `claude/kosten-anzeige` |
+| 6 | Kino-Modus vollenden (Ken-Burns + Kreuzblende) | Video | **S** | `claude/kino-modus-vollenden` |
+| 7 | Hörbuch-Export | Video | **M** | `claude/hoerbuch-export` |
+| 8 | Emotionen / Audio-Tags | Vorlesen | **M** | `claude/audio-tags` |
+| 9 | Lange Texte stückeln + Mitmachmodus mit KI-Stimme | Vorlesen | **M** | `claude/tts-stueckeln-mitmachmodus` |
+| 10 | Heft-Generator: API-Aufruf + Prompt | Übungshefte | **S** | `claude/heft-generator-api` |
+| 11 | Heft-Generator: Auswahl-Ansicht + Canvas | Übungshefte | **M** | `claude/heft-generator-ansicht` |
+| 12 | SchreibZauber Stufe 1 - Fundament | Eigene Werke | **L** | `claude/schreibzauber-stufe1` |
+
+---
+
+## 1 · Vorlese-Aufbereitung des erkannten Texts (S - bester Einstieg)
+
+```
+Arbeite im Repo Lesezauber (LeseZauber Pro). Lies zuerst CLAUDE.md im Root und
+docs/ROADMAP.md, Abschnitt zur Vorlese-Aufbereitung.
+
+Aufgabe: Eine neue Aufbereitungsfunktion für den Text, der an die Sprachausgabe geht.
+Ziel ist, dass jede Stimme (Gerätestimme UND KI-Stimme) sauberer klingt - die Anzeige
+im Reader bleibt dabei unverändert.
+
+Zu tun:
+- Neue Funktion neben app.utils.stripEmojiForSpeech() in js/utils.js, z.B.
+  app.utils.prepareTextForSpeech(text). Sie soll mindestens:
+  - Trennstrich + Zeilenumbruch zusammenziehen ("Kinder-\nwagen" -> "Kinderwagen"),
+    aber echte Bindestrich-Komposita ("Ost-West") NICHT zerstören
+  - harte Zeilenumbrüche innerhalb eines Satzes zu Leerzeichen machen
+  - gängige Abkürzungen ausschreiben (z.B. -> "zum Beispiel", usw., ca., Nr., u.a., d.h.)
+  - mehrfache Leerzeichen/Leerzeilen normalisieren
+- Die Funktion an den Stellen einhängen, an denen Text zur Sprachausgabe geht:
+  js/tts.js und js/ttsNeural.js. Wichtig: die Wort-Hervorhebung darf nicht verrutschen -
+  prüfe, wie buildSpeechHighlightHtml() und _wordStartTimes() den Text erwarten, und
+  wende die Aufbereitung an derselben Stelle wie stripEmojiForSpeech() an.
+- Deutsche Kommentare, jede geänderte Stelle mit // NEU: bzw. // FIX: und WARUM.
+
+Nicht tun: Anzeigetext im Reader verändern, Datenmodell anfassen, gespeicherte
+Seitentexte umschreiben.
+
+Abschluss: die vier Sanity-Checks aus CLAUDE.md laufen lassen,
+sw.js CACHE_NAME hochzählen, committen und auf den Branch
+claude/tts-textaufbereitung pushen (git push -u origin claude/tts-textaufbereitung).
+Keinen Pull Request anlegen.
+```
+
+---
+
+## 2 · Stimmen-Speicher 300 MB + „Buch hörfertig machen" (S)
+
+```
+Arbeite im Repo Lesezauber (LeseZauber Pro). Lies zuerst CLAUDE.md im Root, dann
+js/db.js und js/ttsNeural.js.
+
+Zwei zusammengehörige Aufgaben rund um den Stimmen-Zwischenspeicher (ttsCache):
+
+(a) TTS_CACHE_MAX_BYTES in js/db.js von 100 MB auf 300 MB erhöhen. Die
+    Eviction-Logik existiert bereits und darf unverändert bleiben. Prüfe, ob die
+    Zahl irgendwo in der Oberfläche oder in den Einstellungen als Text steht und
+    dort mitgezogen werden muss.
+
+(b) Neuer Knopf "Buch hörfertig machen": legt alle Seiten des aktuell geöffneten
+    Buchs vorab in den ttsCache, damit danach ohne Wartezeit und offline vorgelesen
+    werden kann.
+    - Neue Datei js/actions/prepareAudio.js, in js/main.js importieren
+    - Nur sichtbar/aktiv, wenn app.settings.ttsProvider !== 'device' (mit der
+      Gerätestimme gibt es nichts vorzubereiten)
+    - Seiten nacheinander, nicht parallel; Fortschrittsanzeige per app.ui.toast()
+      oder kleinem Balken; abbrechbar
+    - Seiten mit excluded=true überspringen; bereits gecachte Seiten NICHT erneut
+      synthetisieren (jede Aufnahme kostet Kontingent - das ist eine harte Regel
+      des Projekts)
+    - Fehler nie stumm verschlucken: console.error + Toast, und auf die nächste
+      Seite weitergehen statt abzubrechen
+    - Nur die aktuell gewählte Persona vorbereiten, nicht alle Personas
+
+Nicht tun: zusätzliche Synthese-Aufrufe an anderer Stelle einbauen, den
+Abspielweg in js/tts.js umbauen.
+
+Abschluss: Tailwind neu bauen, falls du neue Klassen benutzt hast
+(npx @tailwindcss/cli -i ./css/tailwind-input.css -o ./css/tailwind.css --minify),
+die vier Sanity-Checks aus CLAUDE.md laufen lassen, sw.js CACHE_NAME hochzählen
+und neue Dateien in APP_SHELL eintragen. Committen und auf den Branch
+claude/tts-cache-und-hoerfertig pushen. Keinen Pull Request anlegen.
+```
+
+---
+
+## 3 · TTS-Anbieter-Paket: Speechify, mehr Stimmen, Tarif-Lock (S)
+
+```
+Arbeite im Repo Lesezauber (LeseZauber Pro). Lies zuerst CLAUDE.md im Root, dann
+js/ttsProviders.js komplett und docs/ROADMAP.md.
+
+Drei Punkte, die alle dieselbe Datei betreffen und deshalb zusammen erledigt werden:
+
+(a) Speechify als 5. Anbieter ergänzen. Begründung laut Entscheidung:
+    ~6-10 $/Mio. Zeichen statt ElevenLabs' ~100 $/Mio., ebenfalls exakte
+    Wort-Zeitstempel, Deutsch unterstützt. Neuer Eintrag in app.ttsProviders.list
+    nach dem Muster der bestehenden Anbieter (id, label, Stimmenliste, Key-Feld,
+    Synthese-Aufruf, Wort-Zeitstempel). Recherchiere die aktuelle API-Doku, bevor
+    du den Aufruf schreibst - rate die Endpunkte nicht.
+
+(b) Mehr Stimmen freischalten: in der Datei ist bisher nur eine Vorauswahl
+    eingetragen (Gemini hat ~30, OpenAI 11+). Ergänze die fehlenden Stimmen mit
+    kurzen, deutschen Beschreibungs-Labels im Stil der vorhandenen Einträge.
+    Die Reihenfolge soll die bisher bewährten Stimmen oben lassen.
+
+(c) Tarif-Lock: neues Feld costTier je Stimme/Modell (z.B. 'free' | 'cheap' |
+    'expensive'). Beim Wechsel auf eine teurere Stufe erscheint ein
+    Bestätigungsdialog mit Hinweis auf die ungefähren Kosten. Das schützt vor
+    Versehen, nicht vor Absicht - kein Passwort, keine Sperre. Der eigentliche
+    Betrag bleibt beim Anbieter gedeckelt, nicht in der App.
+
+Die Oberfläche der Einstellungen baut sich aus app.ttsProviders.list automatisch
+auf - prüfe, ob das nach deinen Änderungen noch stimmt, und passe die Stelle an,
+die die Liste rendert, falls costTier dort angezeigt werden soll.
+
+Nicht tun: den Standard-Anbieter ändern (bleibt 'device'), die Fallback-Kette auf
+die Gerätestimme anfassen.
+
+Abschluss: Tailwind neu bauen, die vier Sanity-Checks aus CLAUDE.md laufen lassen,
+sw.js CACHE_NAME hochzählen. Committen und auf den Branch
+claude/tts-anbieter-paket pushen. Keinen Pull Request anlegen.
+```
+
+---
+
+## 4 · Stimme pro Profil + Kinder-/Elternbereich (S + M)
+
+```
+Arbeite im Repo Lesezauber (LeseZauber Pro). Lies zuerst CLAUDE.md im Root, dann
+js/profiles.js, js/state.js und den Einstellungs-Teil von index.html.
+
+Zwei Punkte, die beide am Profil-Datensatz hängen und deshalb zusammengehören:
+
+(a) Stimme pro Profil statt global. app.settings.ttsVoices (und ggf.
+    ttsProvider) werden heute global in localStorage gehalten. Sie sollen pro
+    Profil gespeichert werden, mit sauberer Migration: bestehende globale
+    Einstellung wird beim ersten Start als Wert für alle vorhandenen Profile
+    übernommen, damit niemand seine Auswahl verliert. Den Sonderfilter '__all__'
+    aus js/profiles.js dabei mitdenken - er ist kein echtes Profil.
+
+(b) Profil-Rollen (Kinder-/Elternbereich). Profile speichern heute nur {id, name}.
+    Neues Feld role: 'child' | 'adult', Default 'child' für bestehende Profile
+    (fehlendes Feld muss wie 'child' behandelt werden - lies es über eine
+    Hilfsfunktion, nie direkt). Für Kinderprofile sind teure bzw. heikle
+    Einstellungen gesperrt: TTS-Anbieter-Wechsel, API-Key-Felder,
+    Stimmen-Speicher-Verwaltung. Die Sperre ist ein Kinderschutz, keine
+    Sicherheitsfunktion - sichtbar ausgegraut mit kurzer Erklärung reicht,
+    kein Passwort.
+
+Nicht tun: ein Login/Konto-System bauen (das Projekt ist bewusst serverlos),
+API-Keys verschlüsseln (bekannte, akzeptierte Grenze laut CLAUDE.md).
+
+Abschluss: Tailwind neu bauen, die vier Sanity-Checks aus CLAUDE.md laufen lassen,
+sw.js CACHE_NAME hochzählen. Committen und auf den Branch
+claude/profil-rollen-und-stimme pushen. Keinen Pull Request anlegen.
+```
+
+---
+
+## 5 · Kosten-Anzeige (S)
+
+```
+Arbeite im Repo Lesezauber (LeseZauber Pro). Lies zuerst CLAUDE.md im Root, dann
+js/ttsNeural.js, js/ttsProviders.js und js/api.js.
+
+Aufgabe: Eine rein lokale Kosten-/Verbrauchsanzeige. Sie soll mitzählen, wie viele
+Zeichen im laufenden Monat tatsächlich an einen TTS-Anbieter gegangen sind, und
+daraus einen geschätzten Betrag anzeigen.
+
+Zu tun:
+- Neue Datei js/costMeter.js (oder js/actions/costMeter.js), in js/main.js
+  importieren. Zählerstand in localStorage, pro Anbieter und pro Kalendermonat.
+- Nur echte Synthese zählen - Treffer aus dem ttsCache kosten nichts und dürfen
+  NICHT mitgezählt werden. Such die eine Stelle in js/ttsNeural.js, an der nach
+  einem Cache-Fehlschlag wirklich synthetisiert wird, und häng den Zähler dort ein.
+- Preis pro Mio. Zeichen je Anbieter als Konstante mit Quellenkommentar und
+  Datum; die Anzeige muss klar als Schätzung gekennzeichnet sein
+  ("ungefähr", "ohne Gewähr", verbindlich ist die Abrechnung des Anbieters).
+- Anzeige in den Einstellungen unter dem Stimmen-Bereich, plus ein Knopf
+  "Zähler zurücksetzen".
+- Optional, wenn es ohne Zusatzaufwand geht: auch die Gemini-Textaufrufe aus
+  js/api.js mitzählen (getrennt ausweisen).
+
+Nicht tun: irgendeine Abrechnungs-API des Anbieters abfragen, den Zähler als
+Sperre benutzen (das macht der Tarif-Lock in einem anderen Auftrag).
+
+Abschluss: Tailwind neu bauen, die vier Sanity-Checks aus CLAUDE.md laufen lassen,
+sw.js CACHE_NAME hochzählen, neue Datei in APP_SHELL eintragen. Committen und auf
+den Branch claude/kosten-anzeige pushen. Keinen Pull Request anlegen.
+```
+
+---
+
+## 6 · Kino-Modus vollenden: Ken-Burns + Kreuzblende (S)
+
+```
+Arbeite im Repo Lesezauber (LeseZauber Pro). Lies zuerst CLAUDE.md im Root, dann
+docs/KONZEPT-Video.md Abschnitt 3 ("Kino-Modus", Stufe 1) und js/actions/focusMode.js
+sowie den Vollbild-Block in index.html.
+
+Wichtig vorab: Der Textteil des Kino-Modus (Text mit Wort-Hervorhebung im Vollbild)
+ist seit v0.12.0 ERLEDIGT. Das Konzeptpapier führt ihn an einer Stelle noch als offen -
+das stimmt nicht mehr. Offen sind nur noch zwei optische Punkte:
+
+(a) Ken-Burns-Effekt: langsamer Zoom/Schwenk über das Seitenbild im
+    Vollbild-Vorlese-Modus. Reines CSS (transform/scale + translate, lange
+    Dauer, ease). Richtung leicht variieren, damit es über mehrere Seiten
+    nicht mechanisch wirkt.
+
+(b) Kreuzblende beim Seitenwechsel statt hartem Schnitt.
+
+Randbedingungen:
+- prefers-reduced-motion respektieren: dann keine Bewegung, harter Schnitt.
+- Die Wort-Hervorhebung darf nicht ruckeln oder verrutschen - sie läuft über
+  requestAnimationFrame bzw. das boundary-Event; die Animationen dürfen ihr
+  nicht ins Gehege kommen.
+- Ein Schalter in den Einstellungen zum Abschalten wäre sinnvoll, wenn es ohne
+  großen Aufwand geht.
+- Nur der Vollbild-Modus, der normale Reader bleibt unverändert.
+
+Nicht tun: Video-Export anfangen (eigener Auftrag), MediaRecorder oder
+ffmpeg.wasm einbauen - beide Wege sind laut Konzept bewusst verworfen.
+
+Abschluss: Tailwind neu bauen (npx @tailwindcss/cli -i ./css/tailwind-input.css
+-o ./css/tailwind.css --minify), die vier Sanity-Checks aus CLAUDE.md laufen
+lassen, sw.js CACHE_NAME hochzählen. Außerdem in docs/KONZEPT-Video.md den
+Nachtrag ergänzen, dass Stufe 1 damit vollständig ist. Committen und auf den
+Branch claude/kino-modus-vollenden pushen. Keinen Pull Request anlegen.
+```
+
+---
+
+## 7 · Hörbuch-Export (M) - *nach Nr. 6*
+
+```
+Arbeite im Repo Lesezauber (LeseZauber Pro). Lies zuerst CLAUDE.md im Root, dann
+docs/KONZEPT-Video.md - besonders Abschnitt 2 (Audio-Asset-Layer, inkl. Nachtrag)
+und Abschnitt 8, Schritt 3.
+
+Aufgabe: Hörbuch-Export. Laut Konzept "fast geschenkt", weil die Bausteine schon
+stehen: app.ttsNeural.renderAudio() und renderPageSegments() liefern Blob, MIME,
+Dauer und Wort-Zeitpunkte.
+
+Zu tun:
+- Neue Datei js/actions/audiobookExport.js, in js/main.js importieren.
+- Ein ganzes Buch als eine Audiodatei ausgeben: Seiten der Reihe nach über
+  renderPageSegments() holen, in der dokumentierten Reihenfolge
+  (Text -> Bildbeschreibung -> Quiz), wobei der Nutzer Bildbeschreibung und Quiz
+  ab- bzw. zuschalten kann.
+- Zusammenfügen der Segmente im Browser ohne neue schwere Abhängigkeit prüfen:
+  bei gleichem Codec reicht ggf. ein simples Blob-Concat, sonst über
+  AudioContext/OfflineAudioContext zu WAV rendern. Entscheide begründet und
+  schreib die Begründung als Kommentar an die Stelle.
+- Fortschrittsanzeige mit Abbruchmöglichkeit, Ergebnis per Download-Link.
+- Seiten mit excluded=true überspringen.
+- Mit ttsProvider === 'device' ist das unmöglich (SpeechSynthesis gibt keine
+  Datei heraus) - dann eine verständliche Meldung zeigen, nicht abstürzen.
+- Bereits gecachte Aufnahmen wiederverwenden, nie doppelt synthetisieren.
+
+Nicht tun: Video/MP4 anfangen (eigener Auftrag), den Abspielweg umbauen.
+
+Abschluss: die vier Sanity-Checks aus CLAUDE.md, Tailwind neu bauen, sw.js
+CACHE_NAME hochzählen und die neue Datei in APP_SHELL eintragen. In
+docs/KONZEPT-Video.md Abschnitt 8 den Stand nachziehen. Committen und auf den
+Branch claude/hoerbuch-export pushen. Keinen Pull Request anlegen.
+```
+
+---
+
+## 8 · Emotionen / Audio-Tags (M) - *nach Nr. 3*
+
+```
+Arbeite im Repo Lesezauber (LeseZauber Pro). Lies zuerst CLAUDE.md im Root, dann
+docs/ROADMAP.md (Abschnitt Emotionen/Audio-Tags), js/api.js, js/utils.js und
+js/ttsProviders.js.
+
+Der Weg ist bereits entschieden, nicht neu diskutieren:
+- Ein zusätzliches Feld speechText wird IMMER gleich mitgeneriert, im selben
+  KI-Aufruf - kein zweiter API-Call.
+- Neues Flag supportsTags je Anbieter in js/ttsProviders.js. Anbieter ohne
+  Tag-Unterstützung bekommen den Text ohne Tags.
+- Bei ElevenLabs das Modell auf eleven_v3 umstellen - kostet seit GA (März 2026)
+  nicht mehr als v2.
+
+Zu tun:
+- Analyse-Prompt in js/api.js um speechText erweitern (Vorlesefassung mit
+  Sprech-Anweisungen/Emotions-Tags mitten im Satz).
+- app.utils.buildPageVariant() in js/utils.js um das Feld erweitern - das ist die
+  EINE Stelle für die Varianten-Umrechnung, nicht an beiden Aufrufstellen
+  (scanner.js und backgroundPregen.js) doppeln.
+- In js/tts.js / js/ttsNeural.js: speechText nutzen, wenn vorhanden UND der
+  Anbieter supportsTags hat; sonst wie bisher den normalen Text. Alte Seiten
+  ohne speechText müssen unverändert funktionieren - lies Varianten immer über
+  app.utils.resolvePageVariant() / resolveAnyVariant().
+- Anzeige im Reader bleibt der normale Text; Tags dürfen niemals sichtbar werden
+  und niemals vorgelesen werden, wenn der Anbieter sie nicht versteht.
+- Die Wort-Hervorhebung muss weiter passen: die Tags zählen nicht als Wörter.
+  Prüfe _wordStartTimes() entsprechend.
+
+Nicht tun: einen zweiten API-Aufruf für die Vorlesefassung einbauen, den
+Kontroll-Prompt für bearbeitete Blätter anfassen.
+
+Abschluss: die vier Sanity-Checks aus CLAUDE.md, Tailwind neu bauen, sw.js
+CACHE_NAME hochzählen. Committen und auf den Branch claude/audio-tags pushen.
+Keinen Pull Request anlegen.
+```
+
+---
+
+## 9 · Lange Texte stückeln + Mitmachmodus mit KI-Stimme (M) - *nach Nr. 8*
+
+```
+Arbeite im Repo Lesezauber (LeseZauber Pro). Lies zuerst CLAUDE.md im Root
+(besonders den Abschnitt "KI-Stimmen"), dann js/ttsNeural.js und js/tts.js.
+
+Zwei Punkte, die beide tief im Wiedergabe-Weg sitzen und deshalb zusammengehören:
+
+(a) Lange Texte stückeln. Über MAX_NEURAL_CHARS = 4000 (js/ttsNeural.js, praktisch
+    nur EPUB-Kapitel) fällt die App heute auf die Gerätestimme zurück. Stattdessen:
+    an Satzenden in Stücke von ~800 Zeichen zerlegen, nacheinander synthetisieren
+    und abspielen, die Wort-Offsets der Folgestücke um die Dauer der vorherigen
+    verschieben, damit die Hervorhebung durchläuft. Der ttsCache muss pro Stück
+    greifen. Beachte den _token-Zähler: stop() erhöht ihn, und jede asynchrone
+    Fortsetzung muss vorher prüfen, ob sie noch aktuell ist - sonst spricht ein
+    abgebrochenes Kapitel verspätet doch noch los.
+
+(b) Mitmachmodus mit KI-Stimme. Der Mitmachmodus (Sprechpause vor jedem durch ein
+    Emoji ersetzten Wort) läuft heute bewusst immer über die Gerätestimme. Lösung
+    laut Konzept: über Pausen-Tags in EINER Aufnahme - Gemini kennt [pause],
+    Chirp 3 kann es über markup. Keine Mehrkosten, weil es eine Aufnahme bleibt.
+    Text zu stückeln wäre die teure Alternative und ist ausdrücklich zweite Wahl.
+    Anbieter ohne Pausen-Unterstützung bleiben wie bisher auf der Gerätestimme -
+    das ist kein Fehler, sondern der geplante Rückfall.
+
+Harte Projektregeln, die hier gelten:
+- Nie ohne Ton enden: jeder Fehler fällt auf app.tts.speakWithDevice() zurück.
+- Ohne triftigen Grund keine zusätzlichen Synthese-Aufrufe.
+- Ein einziges <audio>-Element für die ganze App (iOS).
+
+Abschluss: die vier Sanity-Checks aus CLAUDE.md, sw.js CACHE_NAME hochzählen.
+Committen und auf den Branch claude/tts-stueckeln-mitmachmodus pushen.
+Keinen Pull Request anlegen.
+```
+
+---
+
+## 10 · Heft-Generator: API-Aufruf + Prompt (S)
+
+```
+Arbeite im Repo Lesezauber (LeseZauber Pro). Lies zuerst CLAUDE.md im Root und
+docs/KONZEPT-Uebungshefte.md komplett - der Heft-MODUS ist fertig, offen ist nur
+das ERZEUGEN von Blättern.
+
+Aufgabe: den ersten, kleinsten Schritt des Heft-Generators - den API-Aufruf samt
+Prompt. Noch keine Oberfläche, noch kein Canvas.
+
+Zu tun:
+- Neue Funktion in js/api.js nach dem Muster von generateBookQuiz(),
+  inkl. Mistral-Fallback wie dort.
+- Ganz wichtig laut Konzept: EIN Heft = EIN Aufruf, nicht ein Aufruf pro Blatt.
+  Die KI liefert also eine Liste von Blättern in einem Rutsch, als JSON.
+- Zuerst nur Aufgabentypen OHNE Bild: Zählen, Ankreuzen, Nachspuren,
+  Schwungübungen, einfache Buchstaben-/Zahlenaufgaben. "Male die Tiere an" ist
+  bewusst ausgeschlossen - auf ein Canvas gezeichneter Text hat keine Tiere;
+  Ausmalbilder setzen die Bildgenerierung voraus und kommen später.
+- Das Ergebnis soll zum bestehenden Heft-Datenmodell passen (bookType 'workbook':
+  text = Aufgabenstellung, erstleserText = kindgerechte Erklärung, desc,
+  taskType, materials, helpSteps, solution). Sieh dir app.utils.buildPageVariant()
+  an und halte dich exakt an diese Felder.
+- Eingabeparameter: Thema, Altersstufe/Schwierigkeit, Anzahl Blätter.
+- Ein paar Beispiel-Aufrufe im Kommentar dokumentieren, damit der nächste Schritt
+  (Auswahl-Ansicht) direkt andocken kann.
+- Antwort sauber validieren: fehlende oder kaputte Felder abfangen, console.error
+  plus app.ui.toast(), nie stumm verschlucken.
+
+Nicht tun: neue Ansicht oder Router-Eintrag bauen (eigener Auftrag), Blätter auf
+Canvas zeichnen (eigener Auftrag), den Kontroll-Prompt für bearbeitete Blätter
+anfassen.
+
+Abschluss: die vier Sanity-Checks aus CLAUDE.md, sw.js CACHE_NAME hochzählen.
+In docs/KONZEPT-Uebungshefte.md den Stand nachziehen. Committen und auf den
+Branch claude/heft-generator-api pushen. Keinen Pull Request anlegen.
+```
+
+---
+
+## 11 · Heft-Generator: Auswahl-Ansicht + Blätter auf Canvas (M) - *nach Nr. 10*
+
+```
+Arbeite im Repo Lesezauber (LeseZauber Pro). Lies zuerst CLAUDE.md im Root und
+docs/KONZEPT-Uebungshefte.md. Voraussetzung: der Heft-Generator-API-Aufruf in
+js/api.js existiert bereits (Branch claude/heft-generator-api) - bau darauf auf,
+nicht daneben.
+
+Zwei Schritte:
+
+(a) Auswahl-Ansicht. Neue <main id="view...">-Ansicht in index.html plus
+    Router-Eintrag in js/nav.js. Der Nutzer wählt Thema, Altersstufe/Schwierigkeit
+    und Anzahl Blätter, bekommt die von der KI vorgeschlagenen Blätter als Liste
+    zur Ansicht und kann einzelne abwählen, bevor das Heft angelegt wird.
+    Dazu js/render/workbookGenerator.js und js/actions/workbookGenerator.js,
+    beide in js/main.js importieren.
+
+(b) Blätter auf Canvas zeichnen. Vorlage ist renderTextAsImageCanvas() in
+    js/actions/epubImport.js - genau dieselbe Technik, nicht neu erfinden.
+    Ergebnis sind WebP-Bilder in zwei Größen (imgUrl + thumbUrl) wie bei jedem
+    importierten Blatt, damit Reader, Heft-Modus und Kontrolle unverändert
+    funktionieren. Die Variantendaten aus dem API-Aufruf direkt mit ablegen,
+    damit für erzeugte Blätter kein erneuter Analyse-Aufruf nötig ist.
+    Große, kindgerechte Schrift, viel Platz zum Schreiben, ausreichend Rand
+    zum Ausdrucken.
+
+Das erzeugte Heft ist danach ein ganz normales Buch mit bookType 'workbook' -
+lies die Buchart immer über app.utils.resolveBookType(book).
+
+Nicht tun: eine eigene Druckansicht bauen (optionaler Folgeschritt),
+Bildgenerierung anfangen.
+
+Abschluss: Tailwind neu bauen (Pflicht - neue Ansicht = neue Klassen), die vier
+Sanity-Checks aus CLAUDE.md, sw.js CACHE_NAME hochzählen und alle neuen Dateien
+in APP_SHELL eintragen. Committen und auf den Branch
+claude/heft-generator-ansicht pushen. Keinen Pull Request anlegen.
+```
+
+---
+
+## 12 · SchreibZauber Stufe 1 - Fundament (L) - *allein laufen lassen*
+
+```
+Arbeite im Repo Lesezauber (LeseZauber Pro). Lies zuerst CLAUDE.md im Root, dann
+docs/KONZEPT-SchreibZauber.md KOMPLETT (inkl. TEIL G) und docs/KONZEPT-Bildquellen.md.
+Ohne diese Dokumente nicht anfangen - dort stehen bereits gefallene Entscheidungen
+und verworfene Wege, die nicht neu diskutiert werden sollen.
+
+Aufgabe: SchreibZauber Stufe 1 (Fundament) - und NUR Stufe 1.
+
+Umfang laut Konzept:
+- Datenmodell für eigene Werke, DB-Version erhöhen (heute DB_VERSION = 3 in
+  js/db.js) und onupgradeneeded erweitern
+- Werkstatt-Übersicht als neue Ansicht inkl. Router-Eintrag in js/nav.js
+- Ablauf Idee -> Bauplan -> Geschichte
+- Platzhalter-Bilder (js/studio/placeholder.js liegt bereits im Repo)
+- Export "ins Regal", also als normales Buch in die bestehende Bibliothek
+
+Zwei Punkte, die das Konzept ausdrücklich betont:
+1. Stufe 1 läuft OHNE einen einzigen Bildaufruf - das ist Absicht und laut
+   Konzept das beste Nutzen-pro-Aufwand-Verhältnis. Stufe 1 ohne Bilder ist ein
+   vollständiges Feature, kein Torso. Nicht vorgreifen.
+2. js/studio/* (imageFormats.js, imageSource.js, placeholder.js) liegt schon im
+   Repo, ist aber absichtlich noch NICHT in js/main.js eingebunden und steht
+   deshalb auch nicht in der APP_SHELL von sw.js. Beides einzubinden gehört zum
+   ersten Schritt dieser Aufgabe.
+
+Außerdem Entscheidung 6 beachten: Die Prompt-Leitplanken müssen von Anfang an auf
+Veröffentlichung ausgelegt sein (z.B. Amazon KDP) - das ist nachträglich nicht
+sauber nachrüstbar.
+
+Diese Aufgabe ist die Grundlage für die späteren Werktyp-Pfade (Bilderbuch
+Stufe 2+3, Arbeitsheft Stufe 4), die danach parallel entwickelt werden sollen.
+Halte die Schnittstellen deshalb bewusst so, dass beide Pfade darauf aufbauen
+können, ohne aufeinander zu warten. Schreib am Ende in docs/KONZEPT-SchreibZauber.md
+kurz auf, welche Bausteine jetzt stehen und wo die beiden Pfade andocken.
+
+Wenn der Umfang größer wird als erwartet: lieber einen sauber lieferbaren
+Teilstand melden und nachfragen, als Stufe 2 anzufangen.
+
+Abschluss: Tailwind neu bauen, die vier Sanity-Checks aus CLAUDE.md, sw.js
+CACHE_NAME hochzählen, alle neuen Dateien in APP_SHELL eintragen. Committen und
+auf den Branch claude/schreibzauber-stufe1 pushen. Keinen Pull Request anlegen.
+```
+
+---
+
+## Bewusst **nicht** als Sitzungs-Auftrag
+
+| Punkt | Warum nicht |
+|---|---|
+| **Video-Export Weg B** (WebCodecs, **L**) | Sinnvoll erst nach Nr. 6 + 7 - und laut `CLAUDE.md` braucht ein Vorhaben dieser Größe vorher eine Abstimmung mit dem Betreiber. Konzept: [`docs/KONZEPT-Video.md`](KONZEPT-Video.md), Abschnitt 4.6 |
+| **Comic: zweiter Testlauf** (**S**) | Läuft in `tools/comic-gen/` lokal beim Betreiber, nicht in der App - braucht dessen API-Keys und dessen Urteil über das Ergebnis |
+| **Kontroll-Funktion im Alltag beobachten** (**S**) | Reine Beobachtung mit den Kindern, kein Code |
+| **Scroll-Verhalten am Bildschirmrand / Zoom-Unschärfe** | Nicht reproduzierbar - braucht erst einen Screenshot vom Nutzer |
+| **SchreibZauber Stufe 2-6** | Erst nach Nr. 12 (Stufe 1 gebaut und gemerged), sonst laufen die Sitzungen auf unterschiedlichen Grundlagen auseinander (Entscheidung Sept. 2026, TEIL G) |
+| **Die drei XL-Punkte** (Backend, Cloud-Sync, Accounts) | Bewusst zurückgestellt - würden die serverlose Architektur des Projekts umdrehen |
