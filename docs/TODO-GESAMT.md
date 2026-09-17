@@ -45,15 +45,14 @@ hat, fängt hier an - nichts davon fasst das Datenmodell an.
 | # | Punkt | Bereich | Aufwand |
 |---|---|---|---|
 | 1 | Vorlese-Aufbereitung des erkannten Texts (Trennstriche, Abkürzungen) | Vorlesen | **S** |
-| 2 | Kino-Modus vollenden: Ken-Burns-Zoom + Kreuzblende | Video | **S** |
-| 3 | Stimmen-Speicher auf 300 MB erhöhen (eine Konstante) | Vorlesen | **S** |
-| 4 | Speechify als 5. Anbieter ergänzen (günstiger als ElevenLabs, exakte Zeitstempel) | Vorlesen | **S** |
-| 5 | Mehr Stimmen freischalten (je eine Zeile in `ttsProviders.js`) | Vorlesen | **S** |
-| 6 | „Buch hörfertig machen" - alle Seiten vorab in den Stimmen-Speicher | Vorlesen | **S** |
-| 7 | Stimme pro Profil statt global | Vorlesen | **S** |
-| 8 | Kosten-Anzeige (lokal gezählte Zeichen pro Monat) | Vorlesen | **S** |
-| 9 | Zweiter Comic-Testlauf mit korrigiertem Prompt | Eigene Werke | **S** |
-| 10 | Tarif-Lock: Warnung vor Wechsel in teurere Preisstufe | Vorlesen | **S** |
+| 2 | Stimmen-Speicher auf 300 MB erhöhen (eine Konstante) | Vorlesen | **S** |
+| 3 | Speechify als 5. Anbieter ergänzen (günstiger als ElevenLabs, exakte Zeitstempel) | Vorlesen | **S** |
+| 4 | Mehr Stimmen freischalten (je eine Zeile in `ttsProviders.js`) | Vorlesen | **S** |
+| 5 | „Buch hörfertig machen" - alle Seiten vorab in den Stimmen-Speicher | Vorlesen | **S** |
+| 6 | Stimme pro Profil statt global | Vorlesen | **S** |
+| 7 | Kosten-Anzeige (lokal gezählte Zeichen pro Monat) | Vorlesen | **S** |
+| 8 | Zweiter Comic-Testlauf mit korrigiertem Prompt | Eigene Werke | **S** |
+| 9 | Tarif-Lock: Warnung vor Wechsel in teurere Preisstufe | Vorlesen | **S** |
 
 **Nummer 1 ist der beste Einstieg:** Sie verbessert *jede* Stimme, Geräte- wie KI-Stimme,
 lässt die Anzeige unangetastet und kann nichts kaputt machen.
@@ -90,7 +89,6 @@ Details: [`docs/KONZEPT-Video.md`](KONZEPT-Video.md)
 
 | Punkt | Aufwand | Anmerkung |
 |---|---|---|
-| **Kino-Modus vollenden** | **S** | Nur noch Ken-Burns-Zoom (reines CSS) und Kreuzblende beim Seitenwechsel. **Der Textteil ist seit v0.12.0 erledigt** - das Konzeptpapier führt ihn noch als offen, das stimmt nicht mehr |
 | **Video-Export Weg B** (WebCodecs + Muxer) | **L** | „mittel, ~3-5 Tage inkl. Regie-Logik". **Durch die Entscheidung „pro Buch" der einzig sinnvolle Weg** - siehe unten. Muxer-Bibliothek nur wenige KB nach `js/vendor/` |
 | ~~Weg A (`MediaRecorder`)~~ | — | **Für ganze Bücher ausgeschieden:** nimmt in Echtzeit auf, 8-10 Minuten mit sichtbarem Tab im Vordergrund. Höchstens noch Notnagel für Einzelseiten |
 | ~~Weg C (ffmpeg.wasm)~~ | — | **Bewusst verworfen.** 25-30 MB Zusatz-Download und auf GitHub Pages nur mit Service-Worker-Trick. Nicht neu aufrollen |
@@ -104,8 +102,10 @@ Daraus folgen zwei Dinge:
 - **Pro Seite bleibt die Einheit zum Verschicken** - ein Buch-Film hat 120-240 MB und passt
   durch keinen E-Mail-Anhang. Die beiden Varianten haben verschiedene Zwecke.
 
-**Reihenfolge:** erst Kino-Modus (größter Effekt pro Aufwand), dann den Bereichs-Renderer -
-getestet an einer Einzelseite, ausgeliefert fürs ganze Buch.
+**✅ Kino-Modus (Sept. 2026 erledigt):** Ken-Burns-Zoom + Kreuzblende sind umgesetzt, siehe
+Nachtrag in [`docs/KONZEPT-Video.md`](KONZEPT-Video.md#3-video-in-drei-ausbaustufen). Nächster
+Schritt in diesem Bereich ist der Bereichs-Renderer für den eigentlichen Export - getestet an
+einer Einzelseite, ausgeliefert fürs ganze Buch.
 
 ---
 

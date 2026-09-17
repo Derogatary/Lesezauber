@@ -149,6 +149,17 @@ Aufwand: ~200 Zeilen, keine neue Abhängigkeit.
 > unabhängig davon erledigt - der Vollbild-Modus zeigt Text samt mitlaufender
 > Wort-Hervorhebung. **Von Stufe 1 bleiben damit nur noch Ken-Burns-Effekt und Kreuzblende
 > übrig**, also deutlich weniger als die genannten ~200 Zeilen.
+>
+> **Nachtrag (Sept. 2026):** Auch Ken-Burns-Effekt und Kreuzblende sind jetzt umgesetzt
+> (`css/style.css`, `app.render.focusMode()` in `js/render/reader.js`) - **Stufe 1 ist damit
+> vollständig abgeschlossen**. Zwei übereinanderliegende `<img>`-Elemente wechseln sich beim
+> Seitenwechsel per Opacity/z-index ab, die Zoom-Richtung variiert zyklisch nach Seitenindex
+> (vier CSS-Keyframe-Varianten). Respektiert `prefers-reduced-motion` (harter Schnitt ohne
+> Bewegung) und ist zusätzlich über einen Schalter in den Einstellungen abschaltbar
+> (`app.settings.focusEffectsEnabled`). Reine CSS-Animation über eine eigene Klasse
+> (`.focus-kenburns-img`), rührt die Wort-Hervorhebung im Untertitel-Bereich (eigenes
+> Element, eigenes `requestAnimationFrame`/`boundary`-Event) nicht an. Offen für Video bleibt
+> ausschließlich der eigentliche Export (Stufe 2/3), siehe unten.
 
 ### Stufe 2 - Videodatei per `MediaRecorder` (WebM oder MP4)
 
