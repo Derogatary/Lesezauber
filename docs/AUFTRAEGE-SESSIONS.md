@@ -21,8 +21,9 @@ diese Datei ist nur die Aufteilung in Arbeitspakete.
 | Regel | Warum |
 |---|---|
 | Jede Sitzung bekommt einen **eigenen Branch** (steht im jeweiligen Auftrag) | sonst überschreiben sich die Sitzungen gegenseitig |
-| **Gleichzeitig startbar:** 1, 2, 3, 4, 5, 6 | disjunkte Dateien |
-| **Erst nach dem Vorgänger:** 7 nach 6 · 8 nach 3 · 9 nach 8 · 11 nach 10 | gleiche Datei bzw. inhaltliche Abhängigkeit |
+| ~~**Gleichzeitig startbar:** 1, 2, 3, 4, 5, 6~~ | disjunkte Dateien |
+| **Stand (Sept. 2026):** 1, 2, 3, 5 gemergt · 6 (Kino-Modus) noch in Bearbeitung · **jetzt startbar: 4, 8, 10, 12** | 8 war durch 3 blockiert, das ist jetzt erledigt |
+| **Erst nach dem Vorgänger:** 7 nach 6 (weiter blockiert) · ~~8 nach 3~~ (3 gemergt, 8 jetzt frei) · 9 nach 8 · 11 nach 10 | gleiche Datei bzw. inhaltliche Abhängigkeit |
 | **Nr. 12 (SchreibZauber Stufe 1) allein laufen lassen** | ist die Grundlage für alle späteren Werktyp-Pfade (Entscheidung Sept. 2026) |
 | `sw.js` (`CACHE_NAME`) und `css/tailwind.css` fassen **alle** Aufträge an | dort sind triviale Merge-Konflikte zu erwarten: immer die höhere Versionsnummer nehmen, `tailwind.css` nach dem Merge einfach neu bauen |
 
@@ -30,18 +31,18 @@ diese Datei ist nur die Aufteilung in Arbeitspakete.
 
 | # | Auftrag | Bereich | Aufwand | Branch |
 |---|---|---|---|---|
-| 1 | Vorlese-Aufbereitung des erkannten Texts | Vorlesen | **S** | `claude/tts-textaufbereitung` |
-| 2 | Stimmen-Speicher 300 MB + „Buch hörfertig machen" | Vorlesen | **S** | `claude/tts-cache-und-hoerfertig` |
-| 3 | TTS-Anbieter-Paket (Speechify, mehr Stimmen, Tarif-Lock) | Vorlesen | **S** | `claude/tts-anbieter-paket` |
-| 4 | Stimme pro Profil + Kinder-/Elternbereich | Plattform | **S+M** | `claude/profil-rollen-und-stimme` |
-| 5 | Kosten-Anzeige | Vorlesen | **S** | `claude/kosten-anzeige` |
-| 6 | Kino-Modus vollenden (Ken-Burns + Kreuzblende) | Video | **S** | `claude/kino-modus-vollenden` |
+| ~~1~~ | ~~Vorlese-Aufbereitung des erkannten Texts~~ ✅ gemergt | Vorlesen | **S** | `claude/tts-textaufbereitung` |
+| ~~2~~ | ~~Stimmen-Speicher 300 MB + „Buch hörfertig machen"~~ ✅ gemergt | Vorlesen | **S** | `claude/tts-cache-und-hoerfertig` |
+| ~~3~~ | ~~TTS-Anbieter-Paket (Speechify, mehr Stimmen, Tarif-Lock)~~ ✅ gemergt | Vorlesen | **S** | `claude/tts-anbieter-paket` |
+| 4 | Stimme pro Profil + Kinder-/Elternbereich - **jetzt startbar** | Plattform | **S+M** | `claude/profil-rollen-und-stimme` |
+| ~~5~~ | ~~Kosten-Anzeige~~ ✅ gemergt (v0.13.0-beta) | Vorlesen | **S** | `claude/kosten-anzeige` |
+| 6 | Kino-Modus vollenden (Ken-Burns + Kreuzblende) - ⏳ läuft noch, wird zuletzt gemergt | Video | **S** | `claude/kino-modus-vollenden` |
 | 7 | Hörbuch-Export | Video | **M** | `claude/hoerbuch-export` |
-| 8 | Emotionen / Audio-Tags | Vorlesen | **M** | `claude/audio-tags` |
+| 8 | Emotionen / Audio-Tags - **jetzt startbar** | Vorlesen | **M** | `claude/audio-tags` |
 | 9 | Lange Texte stückeln + Mitmachmodus mit KI-Stimme | Vorlesen | **M** | `claude/tts-stueckeln-mitmachmodus` |
-| 10 | Heft-Generator: API-Aufruf + Prompt | Übungshefte | **S** | `claude/heft-generator-api` |
+| 10 | Heft-Generator: API-Aufruf + Prompt - **jetzt startbar** | Übungshefte | **S** | `claude/heft-generator-api` |
 | 11 | Heft-Generator: Auswahl-Ansicht + Canvas | Übungshefte | **M** | `claude/heft-generator-ansicht` |
-| 12 | SchreibZauber Stufe 1 - Fundament | Eigene Werke | **L** | `claude/schreibzauber-stufe1` |
+| 12 | SchreibZauber Stufe 1 - Fundament - **jetzt startbar** | Eigene Werke | **L** | `claude/schreibzauber-stufe1` |
 
 ---
 
