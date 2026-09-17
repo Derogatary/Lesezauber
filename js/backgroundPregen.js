@@ -48,10 +48,18 @@ async function generatePersonaVariantForPage(book, pageIdx, personaId) {
     const page = book.pages[pageIdx];
     const b64 = page.imgUrl.split(',')[1];
     const isCover = (pageIdx === 0 && (!book.title || book.title === 'Neues Buch'));
+    // FIX: bookType landete hier auf der Positions-Stelle von forceToc
+    // (app.api.analyze() erwartet knownText, forceToc, DANN bookType) - ein
+    // im Hintergrund für eine weitere Persona nachgezogenes Übungsheft bekam
+    // dadurch immer den Geschichten-Prompt statt des Heft-Prompts. Gleiche
+    // forceToc-Ermittlung wie im manuellen Scan (js/actions/scanner.js),
+    // damit ein als Inhaltsverzeichnis markiertes Blatt auch im Hintergrund
+    // korrekt erkannt wird.
+    const forceToc = !!book.tocPageId && page.id === book.tocPageId;
     // NEU: auch im Hintergrund gilt die Buchart - ein Übungsheft bekommt
     // sonst plötzlich Erzähltext-Varianten, sobald man die Persona wechselt.
     const bookType = app.utils.resolveBookType(book);
-    const result = await app.api.analyze(b64, isCover, personaId, page.pdfSourceText || null, bookType);
+    const result = await app.api.analyze(b64, isCover, personaId, page.pdfSourceText || null, forceToc, bookType);
 
     if (!page.variants) page.variants = {};
     // Gemeinsame Umrechnung mit dem Scanner (js/utils.js) - hier lag vorher
