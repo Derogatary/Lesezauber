@@ -5,6 +5,10 @@
 > **Ergänzendes Dokument:** [`KONZEPT-Bildquellen.md`](KONZEPT-Bildquellen.md) bewertet die
 > kostenlosen und kostenpflichtigen Wege, an die Bilder zu kommen, und beschreibt das
 > bereits gebaute Platzhalter-Fundament (`js/studio/`) samt Austausch-Mechanik.
+>
+> **Ergänzendes Dokument:** [`KONZEPT-Comic.md`](KONZEPT-Comic.md) - der Comic/Heft-Werktyp
+> (Stufe 5) teilt Prompt-Lektionen und die Panel-Layout-Bibliothek mit dem dort
+> beschriebenen, separaten Illustrations-Vorhaben für vorhandene EPUB-Kapitel.
 
 > **Nachtrag (Sept. 2026, entschieden):** Die Werke sollen **auf Veröffentlichung ausgelegt**
 > sein (z.B. Amazon KDP), nicht nur auf reine Privatnutzung - private Nutzung durch die
@@ -415,7 +419,11 @@ in `studioApi.js`, die aber dieselben Keys und dieselbe Fallback-Logik nutzen.
   keine Markennamen, keine Schrift im Bild
 - Bilderbuch: „Text erscheint NICHT im Bild. Lass in der Zone `<textPos>` eine ruhige,
   kontrastarme Fläche frei.“
-- Comic: „Keine Sprechblasen zeichnen. Freiraum oben/unten für Blasen lassen.“
+- Comic: **nicht** negativ formulieren ("Keine Sprechblasen zeichnen" hat im
+  Testlauf zu `docs/KONZEPT-Comic.md` genau eine gemalte Sprechblase erzeugt -
+  Bildmodelle reagieren auf erwähnte Begriffe, nicht zuverlässig auf Verneinungen).
+  Stattdessen rein visuell beschreiben: „Oben/unten ein unbedeckter
+  Hintergrundbereich ohne Figuren/Objekte/Details, ca. ein Fünftel der Bildfläche.“
 - Arbeitsheft: „Klare Konturen, wenig Fläche, funktioniert in Graustufen.“
 
 ## D.5 Bild-Konsistenz – die eigentliche technische Kernfrage
@@ -559,7 +567,7 @@ Diese Punkte sollten vor Umsetzungsbeginn geklärt werden:
    reicht der bestehende kostenlose API-Key. Stufe 2 (Bilder) will Gemini dagegen neue Bilder
    *erzeugen* - dafür verlangt Google in der Regel eine hinterlegte Zahlungsmethode am
    Google-Cloud-Projekt, auch wenn der Preis pro Bild klein ist (~0,04 $, siehe
-   `COMIC-ADAPTION-TODO.md`). **Zu prüfen:** Hat das Google-Konto hinter dem aktuellen
+   `docs/KONZEPT-Comic.md`). **Zu prüfen:** Hat das Google-Konto hinter dem aktuellen
    API-Key eine Zahlungsmethode hinterlegt? Falls nein/unsicher: kein Blocker - Stufe 1
    (ohne Bilder) bauen und Kinderzeichnungen fotografieren, das ist ohnehin charmanter.
 2. ~~**Zwei Icons oder eines?**~~ **✅ beantwortet (Sept. 2026): beides, als Stufen.** Stufe 1-5

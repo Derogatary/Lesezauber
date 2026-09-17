@@ -61,7 +61,7 @@ Eine Web-App, mit der du Kinderbuch-Seiten mit dem Handy fotografierst (oder aus
 - ⚡ Eigener Tailwind-Build statt CDN (schnelleres Laden, kein Live-Compiling im Browser)
 - 🗣️ **Echte KI-Vorlese-Stimmen** statt der maschinellen Gerätestimme - wahlweise Gemini (Free Tier), Google Cloud Chirp 3 HD, ElevenLabs oder OpenAI, mit Probe-Anhören, Zwischenspeicher und automatischem Rückfall auf die Gerätestimme (siehe eigenen Abschnitt unten)
 - 🌙 Optionale Hintergrund-Vorbereitung: erstellt fehlende Erzähler-Varianten und Buch-Quiz automatisch, wenn gerade nichts läuft (aus-/einschaltbar in den Einstellungen)
-- 📝 **Übungsheft-Modus:** Arbeitsblätter statt Geschichten - die KI liest die Aufgabenstellung aus, erklärt sie kindgerecht, gibt eine Schritt-für-Schritt-Hilfe und zeigt auf Wunsch die Lösung. Vorlesen bleibt danach stehen, statt weiterzublättern (das Kind hat ja zu tun). Gedacht für die Schulvorbereitung zu Hause, siehe `docs/uebungshefte-konzept.md`
+- 📝 **Übungsheft-Modus:** Arbeitsblätter statt Geschichten - die KI liest die Aufgabenstellung aus, erklärt sie kindgerecht, gibt eine Schritt-für-Schritt-Hilfe und zeigt auf Wunsch die Lösung. Vorlesen bleibt danach stehen, statt weiterzublättern (das Kind hat ja zu tun). Gedacht für die Schulvorbereitung zu Hause, siehe `docs/KONZEPT-Uebungshefte.md`
 - 📷 **Blatt kontrollieren lassen:** das Kind fotografiert sein ausgefülltes Übungsblatt, die KI vergleicht es mit Aufgabe und Lösung und gibt eine vorgelesene Rückmeldung (Lob zuerst, dann Tipps - nie "falsch"). Ist alles richtig, wird die Aufgabe automatisch abgehakt; erkennt die KI das Foto nicht sicher, sagt sie das, statt zu raten
 - 🎤 **Fragen sprechen statt tippen:** der 🎤-Knopf öffnet die Tastatur, deren Mikrofon-Taste schreibt die gesprochene Frage ins Feld (keine eigene Spracherkennung nötig - funktioniert mit Gboard und iOS-Diktat)
 - ✅ **Fortschritt & Belohnung:** jede Seite bzw. Aufgabe abhaken, Sticker dazu, Pokal für ein komplett geschafftes Buch/Heft - getrennt pro Kind-Profil, wandert mit Export/Import mit
@@ -194,13 +194,12 @@ js/
 main.js                  Bindet alle Module zusammen und startet die App
 docs/
   TODO-GESAMT.md           Alle offenen Punkte auf einen Blick (Einstieg)
-  ROADMAP.md               Konzepte & offene Entscheidungen für die nächsten Schritte
-  konzept-video-und-multiformat.md  Sprach-API, Video/MP4, Hörbuch, Comic
+  ROADMAP.md               Vorlesen/Stimmen im Detail, offene Entscheidungen
+  KONZEPT-Video.md         Sprach-API, Video/MP4, Hörbuch, Mehrformat-Ausspielung
   KONZEPT-SchreibZauber.md Eigener Schreib-/Generierungs-Bereich für eigene Werke
   KONZEPT-Bildquellen.md   Woher Bilder für selbst erstellte Werke kommen
-  uebungshefte-konzept.md  Konzept: Bibel-Übungshefte zur Schulvorbereitung
-  todo-heft-generator.md   Offenes To-Do: Übungsblätter von der KI erstellen lassen
-COMIC-ADAPTION-TODO.md     Comic-Adaption: Diskussionsstand, Kosten, lokale GPU-Option
+  KONZEPT-Comic.md         KI-generierte Illustrationen/Comic (EPUB + SchreibZauber)
+  KONZEPT-Uebungshefte.md  Bibel-Übungshefte: Stand + offener Heft-Generator
 ```
 
 **Neue Funktion hinzufügen?** In der Regel reicht eine neue Datei unter `js/actions/` oder `js/render/`, die in `js/main.js` importiert wird – der Rest des Codes muss dafür nicht angefasst werden.
@@ -217,14 +216,14 @@ COMIC-ADAPTION-TODO.md     Comic-Adaption: Diskussionsstand, Kosten, lokale GPU-
 
 > **Die vollständige, zusammengeführte To-Do-Liste steht in [`docs/TODO-GESAMT.md`](docs/TODO-GESAMT.md)**
 > - inklusive der Punkte, die mit v0.12.0 bereits erledigt sind. Ausführliche Konzepte, offene
-> Entscheidungen und eine Kostenübersicht: [`docs/ROADMAP.md`](docs/ROADMAP.md). Die Liste hier ist nur die Kurzfassung.
+> Entscheidungen zu Vorlesen/Stimmen und eine Kostenübersicht: [`docs/ROADMAP.md`](docs/ROADMAP.md). Die Liste hier ist nur die Kurzfassung.
 
 **Bleibt komplett im Browser (kein Server nötig):**
 - 🪄 **SchreibZauber** - eigener Bereich zum Schreiben und Illustrieren eigener Bilderbücher, Comics/Hefte und Kinder-Arbeitshefte. Ausführliches Konzept: [`docs/KONZEPT-SchreibZauber.md`](docs/KONZEPT-SchreibZauber.md)
 - 🎨 KI-generierte Illustrationen für textlastige EPUB-Kapitel ohne eigenes Bild, optional im Comic-Stil (Gemini kann mittlerweile auch Bilder erzeugen, gleicher Key wie bisher) - Cover-Bild-Sonderfall erstmal nicht nötig
 - 📱 Native App / Android-Store-Verpackung (Capacitor) - verpackt den bestehenden Code weitgehend unverändert
-- 📝 **Heft-Generator**: Übungsblätter von der KI erstellen lassen (Geschichte + Lernziel auswählen) - Entwurf und offene Punkte in `docs/todo-heft-generator.md`
-- 🎬 **Video-Export** (Seite + KI-Stimme als Videodatei). Vorarbeit ist erledigt: Audiodatei, Länge und Wort-Zeitpunkte je Seite liefert `app.ttsNeural.renderPageSegments()`, das Seitenbild liegt ohnehin vor. Offen ist nur noch das Zusammensetzen im Browser (Bild auf ein Canvas zeichnen, Untertitel einblenden, mit `MediaRecorder` aufnehmen) - und die Entscheidung, ob pro Seite oder ein Video fürs ganze Buch. Setzt eine KI-Stimme voraus. Ausführliches Konzept dazu (Sprach-API, Video/MP4, Hörbuch, Comic - was, wie und warum): [`docs/konzept-video-und-multiformat.md`](docs/konzept-video-und-multiformat.md)
+- 📝 **Heft-Generator**: Übungsblätter von der KI erstellen lassen (Geschichte + Lernziel auswählen) - Entwurf und offene Punkte in `docs/KONZEPT-Uebungshefte.md`
+- 🎬 **Video-Export** (Seite UND ganzes Buch als Film, Schwerpunkt Buch - bereits entschieden). Vorarbeit ist erledigt: Audiodatei, Länge und Wort-Zeitpunkte je Seite liefert `app.ttsNeural.renderPageSegments()`, das Seitenbild liegt ohnehin vor. Offen ist nur noch das Zusammensetzen im Browser (Canvas + `WebCodecs`). Setzt eine KI-Stimme voraus. Ausführliches Konzept dazu (Sprach-API, Video/MP4, Hörbuch, Mehrformat - was, wie und warum): [`docs/KONZEPT-Video.md`](docs/KONZEPT-Video.md)
 
 **Bräuchte einen eigenen Server** (aktuell bewusst zurückgestellt):
 - API-Key über ein Backend absichern

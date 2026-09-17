@@ -1,6 +1,18 @@
-# Bibel-Übungshefte zur Schulvorbereitung – Konzept
+# 📝 Konzept: Übungshefte – Stand und Heft-Generator
 
-**Stand:** v0.11.0-beta · Grundlage für die Weiterarbeit, noch keine fertige Planung.
+**Stand:** v0.11.0-beta (Teil 1), noch nicht begonnen (Teil 2) · **Zusammengeführt aus**
+`uebungshefte-konzept.md` und `todo-heft-generator.md`, September 2026.
+
+Dieses Dokument hat zwei Teile, die zusammengehören, aber unterschiedlich weit sind:
+
+- **Teil 1 – Was die App heute kann:** der Heft-Modus (auslesen, erklären, kontrollieren)
+  ist **gebaut und im Einsatz**.
+- **Teil 2 – Heft-Generator:** Übungsblätter von der KI **erstellen** lassen, statt nur
+  vorhandene auszulesen, ist **Konzept, noch nicht begonnen**.
+
+---
+
+# TEIL 1 – Bibel-Übungshefte zur Schulvorbereitung (Stand)
 
 ## Idee
 
@@ -15,7 +27,7 @@ Bearbeiten**: die App liest die Aufgabe vor, erklärt sie kindgerecht, hilft Sch
 für Schritt und verrät auf Wunsch die Lösung. Das Kind arbeitet dabei auf Papier,
 das Tablet steht daneben.
 
-## Was die App heute dafür kann (v0.10.0-beta)
+## Was die App heute dafür kann
 
 | Baustein | Wo | Anmerkung |
 |---|---|---|
@@ -33,7 +45,7 @@ das Tablet steht daneben.
 ## Was sie (noch) nicht kann
 
 - **Hefte selbst erzeugen.** Blätter müssen vorhanden sein (selbst gestaltet, gekauft,
-  ausgedruckt). Siehe `docs/todo-heft-generator.md`.
+  ausgedruckt). Siehe Teil 2 unten.
 - **Selbst zuhören.** Die App hat keine eigene Spracherkennung. Gesprochene Fragen
   laufen über die Mikrofon-Taste der Bildschirmtastatur (Gboard/iOS-Diktat), die ganz
   normal Text ins Feld schreibt. Das funktioniert, ist aber kein freihändiges Zuhören:
@@ -123,13 +135,96 @@ für den Privatgebrauch:
 - Die App selbst gibt nichts weiter – jede Weitergabe ist eine bewusste Handlung
   (Export-Datei verschicken oder Heft ausdrucken).
 
-## Offene Fragen
+---
 
-- Sollen die Hefte nur für die eigenen Kinder sein oder auch für andere Familien?
-  Davon hängt ab, wie streng die Quellenfrage behandelt werden muss.
-- Woher kommt der Bibeltext: eigene Nacherzählung, gemeinfreie Übersetzung, oder eine
-  vorhandene Kinderbibel, die abfotografiert wird?
-- Soll ein Heft einem festen Lehrplan folgen (Woche 1 bis Woche 12) oder frei nach
-  Lust und Laune bearbeitet werden? Ein Lehrplan bräuchte eine Reihenfolge-Sperre,
-  die es heute nicht gibt.
-- Sollen bearbeitete Blätter abfotografiert und von der KI kontrolliert werden?
+# TEIL 2 – Heft-Generator (Übungsblätter von der KI erstellen lassen)
+
+**Status:** noch nicht begonnen – braucht vorher eine Entscheidung des Betreibers.
+**Voraussetzung:** Teil 1 (der Heft-Modus) läuft bereits.
+
+## Ziel
+
+Heute kann die App vorhandene Übungsblätter **auslesen und erklären** (Teil 1). Der
+Generator soll den Schritt davor übernehmen: aus „Arche Noah" + „Zahlen bis 10" ein
+fertiges Übungsblatt machen, das man ausdrucken oder direkt am Tablet bearbeiten kann.
+
+## Gedachter Ablauf
+
+1. Bibliothek → „📝 Heft erstellen lassen"
+2. Auswahl: Geschichte (z.B. Arche Noah), Lernziel (z.B. Mengen bis 10), Anzahl Blätter
+3. Optional: eigenen Bibeltext einfügen, statt die KI erzählen zu lassen
+4. Die KI liefert pro Blatt: Überschrift, Aufgabenstellung, kindgerechte Erklärung,
+   Hilfeschritte, Lösung
+5. Blätter werden als ganz normales Übungsheft in der Bibliothek angelegt
+6. Ausdrucken über die vorhandene Druckfunktion
+
+## Technischer Entwurf
+
+**Neue Dateien** (Konvention aus der CLAUDE.md):
+- `js/actions/heftGenerator.js` – Auswahl entgegennehmen, KI aufrufen, Buch anlegen
+- `js/render/heftGenerator.js` – die Auswahl-Ansicht
+- beide in `js/main.js` importieren und in `sw.js` zur `APP_SHELL` hinzufügen
+
+**Neuer API-Aufruf** in `js/api.js`, nach dem Muster von `generateBookQuiz()`
+(reiner Text-Aufruf ohne Bild):
+
+```js
+app.api.generateWorksheets(story, learningGoal, count, personaId, ownBibleText)
+// -> [{ heading, taskText, taskExplained, taskType, materials, helpSteps, solution }]
+```
+
+**Das Kernproblem: eine Seite braucht ein Bild.** Das gesamte Datenmodell ist
+„eine Seite = ein Bild + Text" (`page.imgUrl`). Ein erzeugtes Blatt hat aber kein Foto.
+Dafür gibt es im Projekt schon einen gelösten Präzedenzfall: `renderTextAsImageCanvas()`
+in `js/actions/epubImport.js` zeichnet Text auf ein Canvas und erzeugt daraus über
+`app.utils.createImageVariants()` ein ganz normales Seitenbild. Genau dieses Verfahren
+sollte der Generator übernehmen – dann bleibt der Rest der App (Reader, Druck,
+Fortschritt, Export) unverändert.
+
+**Kein zweiter KI-Aufruf nötig:** die erzeugten Felder werden direkt als Variante in
+die Seite geschrieben (`page.variants[personaId]`, Aufbau wie in
+`app.utils.buildPageVariant()` für `bookType: 'workbook'`), `status: 'done'`. Das
+Blatt muss also nicht nachträglich „ausgelesen" werden – ein Heft mit 12 Blättern
+kostet damit **einen** Aufruf statt zwölf.
+
+## Offene Punkte vor dem Start
+
+1. **Wie sehen die Blätter aus?** Ein auf Canvas gezeichnetes Textblatt ist für
+   „Male die Tiere an" nutzlos – da fehlen die Tiere. Realistisch sind zuerst
+   Aufgabentypen, die ohne Bild auskommen: Zählen, Ankreuzen, Nachspuren von
+   Buchstaben, Schwungübungen (als Linien aufs Canvas gezeichnet). Ausmalbilder
+   bräuchten KI-Bildgenerierung – siehe
+   [`docs/KONZEPT-Comic.md`](KONZEPT-Comic.md) und
+   [`docs/KONZEPT-Bildquellen.md`](KONZEPT-Bildquellen.md) für den aktuellen Stand
+   dazu, wäre der nächste Schritt danach.
+2. **Woher kommt der Bibeltext?** Die KI frei erzählen zu lassen ist bei
+   Bibelinhalten unzuverlässig (siehe „Verlässlichkeit" in Teil 1). Sicherer: Feld für
+   eigenen Text, den die KI wörtlich übernehmen muss.
+3. **Druckqualität.** Ein Canvas-Bild druckt schlechter als echter Text. Für
+   ausdruckbare Hefte wäre eine eigene Druckansicht mit echtem HTML-Text besser als
+   der Umweg über das Seitenbild – dann aber zwei Wege zum selben Inhalt.
+4. **Kosten/Limit.** Ein Aufruf pro Heft ist unkritisch, auch im kostenlosen Tarif.
+5. **Weitergabe an andere Familien / woher der Bibeltext kommt / fester Lehrplan oder
+   frei?** - drei zusammengehörige Fragen, die vor allem für Teil-1-Nutzung *und* den
+   Generator gelten:
+   - Sollen Hefte nur für die eigenen Kinder sein oder auch für andere Familien? Davon
+     hängt ab, wie streng die Quellenfrage behandelt werden muss (siehe „Wenn das Heft
+     die eigene Familie verlässt" in Teil 1).
+   - Woher kommt der Bibeltext konkret: eigene Nacherzählung, gemeinfreie Übersetzung,
+     oder eine vorhandene Kinderbibel, die abfotografiert wird?
+   - Soll ein Heft einem festen Lehrplan folgen (Woche 1 bis Woche 12) oder frei nach
+     Lust und Laune bearbeitet werden? Ein Lehrplan bräuchte eine Reihenfolge-Sperre,
+     die es heute nicht gibt.
+
+## Aufwand (grobe Einschätzung)
+
+| Schritt | Umfang |
+|---|---|
+| API-Aufruf + Prompt | klein, Muster vorhanden (`generateBookQuiz`) |
+| Auswahl-Ansicht | mittel, neue Ansicht inkl. Router-Eintrag in `js/nav.js` |
+| Blätter auf Canvas zeichnen | mittel, Vorlage in `epubImport.js` vorhanden |
+| Eigene Druckansicht (Punkt 3) | mittel, optional |
+| KI-Bildgenerierung für Ausmalbilder | groß, eigenes Thema |
+
+**Empfohlene Reihenfolge:** erst Aufgabentypen ohne Bild (Punkt 1), damit der Ablauf
+komplett steht und benutzt werden kann. Bildgenerierung danach als eigener Schritt.

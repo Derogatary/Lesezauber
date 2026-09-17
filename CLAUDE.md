@@ -6,7 +6,7 @@ Diese Datei gibt Claude Code Kontext für die Arbeit an diesem Projekt. Sie lieg
 
 **LeseZauber Pro** ist eine Web-App (PWA), mit der man Kinderbuch-Seiten fotografiert/importiert (Foto, Galerie, PDF, EPUB) und sich per KI (Gemini, optional Mistral-Fallback) automatisch vorlesen, vereinfachen ("Erstleser"-Modus mit Emojis) und erklären lässt (Bildbeschreibung, Quizfragen, Vokabeltrainer).
 
-Seit v0.10.0-beta gibt es zusätzlich den **Heft-Modus**: ein Buch kann statt einer Geschichte auch ein **Übungsheft** sein (Arbeitsblätter zur Schulvorbereitung). Dann wertet die KI die Seite als Aufgabe aus (Aufgabenstellung, kindgerechte Erklärung, Hilfeschritte, Lösung) statt als Erzähltext. Seit v0.11.0-beta kann das Kind sein bearbeitetes Blatt zusätzlich abfotografieren und bekommt eine vorgelesene Rückmeldung (`js/actions/checkWork.js`). Hintergrund und Planung dazu: `docs/uebungshefte-konzept.md`, offener Generator: `docs/todo-heft-generator.md`.
+Seit v0.10.0-beta gibt es zusätzlich den **Heft-Modus**: ein Buch kann statt einer Geschichte auch ein **Übungsheft** sein (Arbeitsblätter zur Schulvorbereitung). Dann wertet die KI die Seite als Aufgabe aus (Aufgabenstellung, kindgerechte Erklärung, Hilfeschritte, Lösung) statt als Erzähltext. Seit v0.11.0-beta kann das Kind sein bearbeitetes Blatt zusätzlich abfotografieren und bekommt eine vorgelesene Rückmeldung (`js/actions/checkWork.js`). Hintergrund und Planung dazu, inklusive offenem Generator: `docs/KONZEPT-Uebungshefte.md`.
 
 **Zielgruppe:** Eine Familie nutzt die App privat für ihre Kinder. Der Betreiber ist technischer Laie ("kann ein bisschen HTML"), arbeitet aber regelmäßig mit Claude (Chat) und jetzt auch Claude Code an dem Projekt weiter.
 
@@ -223,12 +223,12 @@ Nutzer, nicht einfach lospreschen):
 
 | Vorhaben | Konzept |
 |---|---|
-| 🎬 Video-Export - Vorarbeit steht (siehe "KI-Stimmen"), offen ist nur Canvas + `MediaRecorder` | [`docs/ROADMAP.md`](docs/ROADMAP.md), [`docs/konzept-video-und-multiformat.md`](docs/konzept-video-und-multiformat.md) |
+| 🎬 Video-Export (Seite UND Buch, Schwerpunkt Buch - entschieden) - Vorarbeit steht (siehe "KI-Stimmen"), offen ist nur Canvas + `WebCodecs` | [`docs/KONZEPT-Video.md`](docs/KONZEPT-Video.md) |
 | 🪄 "SchreibZauber" - eigener Schreib-/Generierungs-Bereich für eigene Werke | [`docs/KONZEPT-SchreibZauber.md`](docs/KONZEPT-SchreibZauber.md), [`docs/KONZEPT-Bildquellen.md`](docs/KONZEPT-Bildquellen.md) |
-| 📝 Heft-Generator - Übungsblätter von der KI erstellen lassen | [`docs/todo-heft-generator.md`](docs/todo-heft-generator.md) |
-| 🎨 KI-generierte Illustrationen (Comic-Stil) für Text-only-EPUB-Kapitel | [`COMIC-ADAPTION-TODO.md`](COMIC-ADAPTION-TODO.md) |
+| 📝 Heft-Generator - Übungsblätter von der KI erstellen lassen | [`docs/KONZEPT-Uebungshefte.md`](docs/KONZEPT-Uebungshefte.md) |
+| 🎨 KI-generierte Illustrationen (Comic-Stil), für Text-only-EPUB-Kapitel UND als SchreibZauber-Werktyp | [`docs/KONZEPT-Comic.md`](docs/KONZEPT-Comic.md) |
 | 🎭 Emotionen/Sprech-Anweisungen mitten im Satz (Audio-Tags) | [`docs/ROADMAP.md`](docs/ROADMAP.md) |
-| 📱 Native Android-App via Capacitor (Play Store, ggf. Samsung/Amazon Store) | [`docs/ROADMAP.md`](docs/ROADMAP.md) |
+| 🔐 Kinder-/Elternbereich (Profil-Rollen), 📱 Native Android-App via Capacitor | [`docs/TODO-GESAMT.md`](docs/TODO-GESAMT.md), Bereich "App & Plattform" |
 
 **Vor jeder Arbeit an einem dieser Themen erst das verlinkte Dokument lesen** - sonst werden
 Entscheidungen neu diskutiert, die schon gefallen sind, und bereits verworfene Wege erneut probiert.

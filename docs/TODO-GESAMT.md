@@ -27,13 +27,12 @@ wo dort eine Zahl steht, ist sie übernommen.
 | Datei | Inhalt |
 |---|---|
 | `docs/TODO-GESAMT.md` (hier) | Übersicht über **alle** offenen Punkte, nach Bereich & Aufwand |
-| `docs/ROADMAP.md` | Nächste größere Schritte rund um Vorlesen/Stimmen, inkl. Kostenübersicht |
-| `docs/konzept-video-und-multiformat.md` | Sprach-API, Video/MP4, Hörbuch, Comic - das große Konzeptpapier |
+| `docs/ROADMAP.md` | Vorlesen/Stimmen im Detail, inkl. Kostenübersicht |
+| `docs/KONZEPT-Video.md` | Sprach-API, Video/MP4, Hörbuch, Mehrformat-Ausspielung |
 | `docs/KONZEPT-SchreibZauber.md` | Eigener Schreib-/Generierungs-Bereich für selbst erstellte Werke |
 | `docs/KONZEPT-Bildquellen.md` | Woher Bilder für selbst erstellte Werke kommen |
-| `docs/uebungshefte-konzept.md` | Hintergrund zum Heft-Modus (umgesetzt) |
-| `docs/todo-heft-generator.md` | Übungsblätter von der KI **erstellen** lassen (offen) |
-| `COMIC-ADAPTION-TODO.md` | Comic-Adaption: Diskussionsstand, Kosten, lokale GPU-Option |
+| `docs/KONZEPT-Comic.md` | KI-generierte Illustrationen/Comic - EPUB-Illustration UND SchreibZauber-Werktyp |
+| `docs/KONZEPT-Uebungshefte.md` | Heft-Modus (umgesetzt) + Heft-Generator (offen), ein Dokument |
 
 ---
 
@@ -86,7 +85,7 @@ mit) - eigener, größerer Punkt, kein Teil der Speicher-Entscheidung oben.
 
 ## 🎬 Bereich: Video & Ausspielung
 
-Details: [`docs/konzept-video-und-multiformat.md`](konzept-video-und-multiformat.md), [`docs/ROADMAP.md`](ROADMAP.md)
+Details: [`docs/KONZEPT-Video.md`](KONZEPT-Video.md)
 
 | Punkt | Aufwand | Anmerkung |
 |---|---|---|
@@ -111,7 +110,7 @@ getestet an einer Einzelseite, ausgeliefert fürs ganze Buch.
 
 ## 🪄 Bereich: Eigene Werke erstellen
 
-Details: [`docs/KONZEPT-SchreibZauber.md`](KONZEPT-SchreibZauber.md), [`docs/KONZEPT-Bildquellen.md`](KONZEPT-Bildquellen.md), [`COMIC-ADAPTION-TODO.md`](../COMIC-ADAPTION-TODO.md)
+Details: [`docs/KONZEPT-SchreibZauber.md`](KONZEPT-SchreibZauber.md), [`docs/KONZEPT-Bildquellen.md`](KONZEPT-Bildquellen.md), [`docs/KONZEPT-Comic.md`](KONZEPT-Comic.md)
 
 Der größte Brocken im Projekt - dafür in Stufen geschnitten, die **einzeln lieferbar** sind.
 
@@ -143,7 +142,7 @@ Details: `docs/KONZEPT-SchreibZauber.md`, TEIL G.
 
 ## 📝 Bereich: Übungshefte & Lernen
 
-Details: [`docs/todo-heft-generator.md`](todo-heft-generator.md), [`docs/uebungshefte-konzept.md`](uebungshefte-konzept.md)
+Details: [`docs/KONZEPT-Uebungshefte.md`](KONZEPT-Uebungshefte.md)
 
 Der Heft-**Modus** (Blätter auslesen, erklären, kontrollieren) ist fertig. Offen ist der
 Schritt davor: Blätter **erzeugen**.
@@ -194,8 +193,8 @@ einschätzen.
 
 Diese Punkte sind **nicht** technisch offen, sondern brauchen eine Ansage des Betreibers:
 
-Alle sechs sind inzwischen entschieden (Sept. 2026) - Details jeweils in ROADMAP.md
-bzw. KONZEPT-SchreibZauber.md:
+Alle sechs sind inzwischen entschieden (Sept. 2026) - Details in `KONZEPT-Video.md`
+(Punkt 1), `ROADMAP.md` (Punkte 2-4) bzw. `KONZEPT-SchreibZauber.md` (Punkte 5-6):
 
 | # | Entscheidung | Ergebnis |
 |---|---|---|

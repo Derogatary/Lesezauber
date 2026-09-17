@@ -1,21 +1,51 @@
-# Comic-Adaption: Status & Referenz
+# 🎨 Konzept: Comic & KI-Illustrationen
 
-Begleitdokument zum offenen Roadmap-Punkt "KI-generierte Illustrationen
-(Comic-Stil) für Text-only-EPUB-Kapitel" aus `CLAUDE.md`. Fasst den
-Konzeptions-Chat zusammen, damit der Stand nicht bei jeder neuen Session
-neu erarbeitet werden muss. **Noch nichts von alledem ist implementiert** -
-das hier ist die Diskussions- und Entscheidungslage, kein Code-Stand.
+**Stand:** 16.09.2026 · **Status:** Konzeptphase, erster Testlauf gemacht ·
+**Umgezogen von:** `COMIC-ADAPTION-TODO.md` (Repo-Root) nach `docs/`, September 2026,
+für einheitliche Ablage aller Konzeptpapiere.
 
-Zuletzt aktualisiert: 2026-09-16 (im Rahmen dieser Unterhaltung).
+**Noch nichts von alledem ist implementiert** - das hier ist die Diskussions- und
+Entscheidungslage, kein Code-Stand.
+
+---
+
+## 0. Zwei getrennte Vorhaben, die dieselbe Technik brauchen
+
+Zwei unterschiedliche Anlässe für KI-generierte Bilder im Comic-/Illustrationsstil
+laufen im Projekt parallel und werden hier bewusst **nicht** vermischt, weil sie
+unterschiedliche Architekturen brauchen:
+
+| | **A. Illustrationen für vorhandene Bücher** (dieses Dokument) | **B. Comic/Heft als eigenes Werk** ([`KONZEPT-SchreibZauber.md`](KONZEPT-SchreibZauber.md)) |
+|---|---|---|
+| **Anlass** | Ein importiertes Text-only-EPUB-Kapitel hat kein Bild | Ein Kind will von Grund auf einen eigenen Comic erstellen lassen |
+| **Architektur** | **Separates lokales Node-Werkzeug** (`tools/comic-gen/`), nicht Teil der PWA | **In-Browser**, Teil der SchreibZauber-Werkstatt |
+| **Warum die unterschiedliche Architektur?** | Freie Modellwahl gewünscht (Flux, lokale GPU) - viele Bild-Anbieter erlauben keine CORS-Aufrufe aus dem Browser | Bleibt bei Gemini (CORS-fähig), läuft also problemlos im Browser wie der Rest der App |
+| **Ergebnis** | Ein normales Buch-JSON zum Import in LeseZauber | Ein Projekt in der Werkstatt, am Ende „ins Regal gestellt" |
+
+**Was beide teilen** und deshalb hier an einer Stelle gesammelt ist: Figurenkonsistenz,
+Prompt-Aufbau für Comic-Stil-Bilder, die Lektion zu Sprechblasen/Panelrahmen (Abschnitt
+5) - diese Erkenntnisse gelten für **beide** Vorhaben. Wo SchreibZauber dieselbe Technik
+braucht, wird unten verwiesen statt dupliziert.
+
+**Konkreter Fund, der auf SchreibZauber übertragen gehört:** `KONZEPT-SchreibZauber.md`
+Abschnitt D.4 weist der KI aktuell an: *"Keine Sprechblasen zeichnen."* Genau diese
+Formulierung hat im Testbild unten (Abschnitt 5) das Gegenteil bewirkt - das Modell hat
+trotzdem eine Sprechblase gemalt, vermutlich **weil** das Wort im Prompt vorkam. Die
+positiv formulierte Alternative aus Abschnitt 5 sollte beim Bau von SchreibZauber Stufe 5
+(Comic) direkt übernommen werden, statt denselben Fehler dort noch einmal zu machen.
+
+---
+
+# TEIL A – Illustrationen für Text-only-EPUB-Kapitel
 
 ## Status: Konzeptphase
 
 Ein Testbild wurde manuell über die Gemini-App erzeugt und hat zwei
-Prompt-Probleme aufgedeckt (siehe unten). Als Nächstes steht ein
+Prompt-Probleme aufgedeckt (siehe Abschnitt 5). Als Nächstes steht ein
 zweiter Testlauf mit dem korrigierten Wortlaut an, bevor die
 Kategorien-JSON und das Generator-Skript gebaut werden.
 
-## Architekturentscheidung: separates lokales Werkzeug, keine PWA-Änderung
+## 1. Architekturentscheidung: separates lokales Werkzeug, keine PWA-Änderung
 
 - LeseZauber Pro bleibt unverändert - reiner Reader, kein Server, kein Proxy.
 - Comic-Erzeugung läuft als eigenes kleines Node-Werkzeug lokal auf dem
@@ -33,7 +63,7 @@ Kategorien-JSON und das Generator-Skript gebaut werden.
   (z. B. Syncthing/Dropbox) statt Netzwerk-Server, falls der Betreiber
   selten am Generierungs-Rechner sitzt.
 
-## Datenmodell / Ausgabeformat
+## 2. Datenmodell / Ausgabeformat
 
 Kein neues Format nötig - ein Comic-Panel ist einfach eine normale
 LeseZauber-Seite mit Bild + Text:
@@ -48,7 +78,7 @@ LeseZauber-Seite mit Bild + Text:
   jedes Panel schon beim Erzeugen ein Layout-Tag mitbekommen (siehe
   Panel-Raster unten) - das nachträglich zu vergeben wäre reine Handarbeit.
 
-## Kosten (Stand der Recherche, Bild-API-Preise ändern sich laufend)
+## 3. Kosten (Stand der Recherche, Bild-API-Preise ändern sich laufend)
 
 - Textteil (Skript-Zerlegung, Konsistenz-Check): Cent-Bereich pro Buch (Sonnet 5 $2/$10 pro Mio. Token).
 - Bildgenerierung dominiert: Gemini Nano Banana ~0,04 $/Bild, Nano Banana Pro ~0,13-0,24 $/Bild.
@@ -57,7 +87,7 @@ LeseZauber-Seite mit Bild + Text:
 - Lokale Erzeugung (siehe unten) ist nicht kostenlos, sondern nur ohne API-Kosten -
   Stromkosten ca. 0,60 €/Buch bei einem Kontext-Modell-Lauf über mehrere Stunden.
 
-## Lokale GPU-Option (Notiz zur Hardware des Betreibers: RTX 2080 Super, 8 GB VRAM, 32 GB RAM)
+## 4. Lokale GPU-Option (Notiz zur Hardware des Betreibers: RTX 2080 Super, 8 GB VRAM, 32 GB RAM)
 
 - Turing-Architektur, kein FP8 - GGUF-Quantisierung + `--lowvram`/Offloading
   ins System-RAM ist der Weg, nicht die schnellen fp8-Pfade neuerer Karten.
@@ -69,7 +99,7 @@ LeseZauber-Seite mit Bild + Text:
 - Empfehlung: mit Gemini Free Tier starten, Bild-Erzeugung als austauschbaren
   Baustein (`generateImage(prompt, refs)`) bauen, lokale GPU optional später.
 
-## Prompt-Aufbau: was Einstellung ist vs. was Prompt-Text ist
+## 5. Prompt-Aufbau: was Einstellung ist vs. was Prompt-Text ist
 
 Bei gehosteten APIs (Gemini) sind nur Seitenverhältnis (`aspectRatio`) und
 Auflösung (`imageSize`) echte Parameter (`imageConfig`-Block). Alles andere
@@ -96,7 +126,7 @@ Immer gleich (Meiden-Block):
 
 Echte Parameter (kein Prompt-Text): Seitenverhältnis, Auflösung, Modell, Referenzbilder, (lokal zusätzlich) Negativprompt/Steps/CFG/Sampler/Seed.
 
-## Gefundener Prompt-Fehler (aus dem ersten Testbild)
+### Gefundener Prompt-Fehler (aus dem ersten Testbild) - gilt auch für SchreibZauber
 
 Testbild zeigte trotz gegenteiliger Anweisung eine gemalte Sprechblasen-Form
 und einen Panelrahmen. Ursache: Bildmodelle reagieren auf **erwähnte
@@ -117,7 +147,11 @@ visuelle Beschreibung geben:
 Entwickler-Parameter, das erklärt die fehlende Auflösungs-/Ratio-Kontrolle
 im ersten Test).
 
-## Panel-Layout beim Druck: Vorlagen-Bibliothek statt festem Raster
+**Für SchreibZauber (Teil B):** Diese Lektion sollte direkt in
+`KONZEPT-SchreibZauber.md` Abschnitt D.4 einfließen, dessen Comic-Prompt-Leitplanke
+aktuell noch die problematische Negations-Form nutzt ("Keine Sprechblasen zeichnen").
+
+## 6. Panel-Layout beim Druck: Vorlagen-Bibliothek statt festem Raster
 
 Ursprünglicher Vorschlag (ein einziges festes Raster) wurde verworfen -
 zu Recht, echte Comics/Mangas variieren die Panelgröße gezielt für die
@@ -134,7 +168,10 @@ komplett zu verlieren.
 Für den Reader selbst ist das irrelevant (ein Panel = eine App-Seite,
 unabhängig vom späteren Druck-Layout) - betrifft nur `printBook()`.
 
-## Rechtliche Einschätzung (keine Rechtsberatung, nur Diskussionsstand)
+**Für SchreibZauber (Teil B):** dieselbe Vorlagen-Bibliothek ist direkt für
+SchreibZauber Stufe 5 (Comic) wiederverwendbar, statt sie dort neu zu entwerfen.
+
+## 7. Rechtliche Einschätzung (keine Rechtsberatung, nur Diskussionsstand)
 
 - Rein privater Gebrauch (nur die eigene Familie, nicht geteilt/veröffentlicht):
   rechtlich vergleichsweise unkritisch, ähnlich einer Privatkopie.
@@ -145,7 +182,13 @@ unabhängig vom späteren Druck-Layout) - betrifft nur `printBook()`.
   sobald es über den privaten Kreis hinausgeht. Bei ernsthaftem kommerziellen
   Interesse vorher echten Rechtsrat einholen.
 
-## Offene To-Dos (in empfohlener Reihenfolge)
+**Für SchreibZauber (Teil B):** Bei selbst erdachten (nicht fremden) Werken
+entfällt dieses Risiko - genau deshalb sollen SchreibZauber-Werke laut
+`KONZEPT-SchreibZauber.md` von Anfang an auf Veröffentlichung ausgelegt sein,
+während Teil A hier (Illustration **fremder** EPUB-Kapitel) bewusst beim privaten
+Gebrauch bleibt.
+
+## 8. Offene To-Dos (in empfohlener Reihenfolge)
 
 1. Prompt-Fix (Sprechblase/Rahmen-Wortlaut) mit einem zweiten Testbild verifizieren
 2. Kategorien-JSON anlegen (Stil-/Kamera-/Meiden-Bausteine aus obiger Tabelle)
@@ -154,11 +197,3 @@ unabhängig vom späteren Druck-Layout) - betrifft nur `printBook()`.
 5. Konsistenz-Check-Schritt (Vision-Modell prüft Panels gegen Referenzbilder)
 6. Layout-Vorlagen-Bibliothek + Wichtigkeits-Tagging fürs Skript
 7. Erst danach: `printBook()`-Erweiterung fürs comic-Layout (gegen echte Panel-Daten bauen, nicht gegen erfundene)
-
-## Bereits erledigt (separater, unabhängiger Fund aus diesem Gespräch)
-
-Beim Durchgehen von `js/actions/backup.js` fiel ein echter Bug auf (nicht
-Teil der Comic-Planung, aber im selben Gespräch gefunden und behoben):
-`importLibrary()` konnte eine per `downloadBook()` heruntergeladene
-Einzelbuch-Datei nicht wieder einlesen. Fix committet (siehe Git-Log,
-Commit "Fix: Einzelbuch-Datei liess sich nicht zurueck importieren").

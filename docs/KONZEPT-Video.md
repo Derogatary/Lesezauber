@@ -1,9 +1,15 @@
 # Konzept: Sprach-API, Video-Export und Mehrformat-Ausspielung
 
 > **Status: weitgehend Konzept.** Stand: 16.09.2026, App-Version v0.9.0-beta;
-> gegengelesen für v0.12.0-beta. Seitdem sind die KI-Stimmen (Abschnitt 2) und der
-> Textteil des Kino-Modus (Abschnitt 3, Stufe 1) umgesetzt - der Video-Export selbst
+> gegengelesen für v0.12.0-beta. Seitdem sind der **Audio-Asset-Layer** (Abschnitt 2,
+> allerdings anders als hier geplant), die **KI-Stimmen** und der **Textteil des
+> Kino-Modus** (Abschnitt 3, Stufe 1) umgesetzt - der eigentliche Video-**Export**
 > ist weiterhin offen. Einzelne Stellen tragen deshalb einen Nachtrag.
+>
+> **Zusammengeführt (Sept. 2026):** Die Video-Inhalte aus `docs/ROADMAP.md` (dort
+> ursprünglich dupliziert) sind jetzt hier eingearbeitet - `ROADMAP.md` ist seitdem
+> auf reine Vorlese-/Stimmen-Themen begrenzt, dieses Dokument ist die einzige
+> Quelle für Video/Multiformat.
 > Dieses Dokument hält fest, **was** gebaut werden könnte, **wie** es technisch aussähe und
 > vor allem **warum** die Entscheidungen so und nicht anders fallen würden - damit man in
 > ein paar Monaten nicht wieder bei null anfängt und dieselben Sackgassen abläuft.
@@ -95,6 +101,29 @@ einmal bewusst so entschieden (siehe `CLAUDE.md`) und gilt hier erst recht.
 
 **Größenordnung:** ~48 kbit/s mono ≈ 6 KB/s. Ein 30-Seiten-Buch mit 15 s pro Seite
 ≈ 450 s ≈ **2,7 MB pro Persona**. Unkritisch.
+
+> **Nachtrag v0.12.0: dieser Abschnitt ist im Kern erledigt, aber anders als hier
+> geplant.** Die KI-Stimmen (v0.10.0-v0.10.2) haben einen Audio-Asset-Layer gebaut -
+> nicht über einen neuen generischen `media`-Store, sondern über den bereits für
+> Stimmen-Zwischenspeicherung gebauten `ttsCache` (ebenfalls `DB_VERSION` 3, ebenfalls
+> Blob statt Data-URL/Base64, also dieselben beiden Kernentscheidungen aus diesem
+> Abschnitt - nur anders benannt und etwas anders geschnitten):
+>
+> - `app.ttsNeural.renderAudio(text, {personaId})` → `{ text, blob, mime, durationSec,
+>   words: [{word, start, end}], exact }` - genau das Audio-Asset samt Wort-Zeitstempeln,
+>   das dieser Abschnitt forderte.
+> - `app.ttsNeural.renderPageSegments(bookId, pageIdx, {includeDescription, includeQuiz,
+>   onProgress})` → `{ imgUrl, totalDurationSec, segments: [...] }` - Bild, Ton, Länge
+>   und Wortzeiten für eine ganze Seite in einem Aufruf, Reihenfolge Text → Bildbeschreibung
+>   → Quiz.
+> - Gilt weiterhin **nur mit einer KI-Stimme** - die Gerätestimme (`SpeechSynthesis`) kann
+>   nach wie vor keine Datei herausgeben, `renderAudio()` wirft bei `ttsProvider === 'device'`
+>   deshalb einen verständlichen Fehler. Der Flaschenhals aus Abschnitt 1 bleibt also
+>   bestehen - nur eben durch die KI-Stimmen bereits gelöst, nicht mehr offen.
+>
+> Für den Video-Export bedeutet das: **Schritt 1 der Empfohlenen Reihenfolge (Abschnitt 8)
+> ist erledigt.** Der Video-Export kann direkt auf diesen Bausteinen aufbauen, ohne den
+> hier beschriebenen `media`-Store separat zu bauen.
 
 ---
 
@@ -264,6 +293,44 @@ Unabhängig vom gewählten Weg - das sind die Punkte, an denen der bestehende Co
 > Praktische Folge für die Bedienung: Ein Buch-Film liegt bei 120-240 MB und lässt sich
 > nicht mehr verschicken. Der Einzelseiten-Export ist damit nicht bloß ein Testfall,
 > sondern die Variante **zum Weitergeben** - beide bleiben dauerhaft sinnvoll.
+>
+> Gut dazu passt, dass die App seit v0.12.0 Metadaten ansagt: Ein Buch-Film kann mit
+> "Der Titel des Buchs ist ... geschrieben von ..." beginnen und neue Kapitel ankündigen -
+> genau das, was ein durchgehender Film braucht und eine Einzelseite nicht hat.
+>
+> **Empfehlung für den Einstieg:** den Renderer sofort mit dem Seitenbereich bauen, aber
+> als Erstes an einer einzelnen Seite testen - das ist derselbe Code mit Bereich `[i, i]`
+> und in Sekunden statt Minuten durchgelaufen. **Nicht** zuerst einen Einzelseiten-Export
+> bauen und das Buch später nachrüsten, sonst entsteht doch wieder ein zweiter Codeweg.
+
+### Der konkrete Bauplan, mit den heute schon vorhandenen Bausteinen
+
+Direkt nutzbar (siehe Nachtrag in Abschnitt 2 - `renderPageSegments()` existiert bereits):
+
+```js
+await app.ttsNeural.renderPageSegments(bookId, pageIdx, { includeQuiz: false })
+// → { imgUrl, totalDurationSec, segments: [{ kind, text, blob, durationSec, words }] }
+```
+
+Bild, Ton, Länge und Wortzeiten liegen damit vollständig vor - ohne erneute API-Kosten,
+wenn die Seite schon einmal vorgelesen wurde. Für einen ganzen Buch-Film: pro Seite im
+Bereich einmal aufrufen und aneinanderhängen.
+
+**Was für den Export selbst noch fehlt (unabhängig von Weg A/B, nur die Mechanik):**
+1. Ein `<canvas>` in Zielauflösung, darauf das Seitenbild einpassen.
+2. Untertitel: aus `segments[].words` das jeweils aktuelle Wort hervorheben - gleiche
+   Logik wie im Reader (`buildSpeechHighlightHtml()`), aber auf Canvas gezeichnet statt
+   ins DOM geschrieben (siehe Glossar-Eintrag "Canvas" unten, warum das ein anderer Weg ist).
+3. Ton: die Segment-Blobs über die Web Audio API aneinanderhängen (`decodeAudioData` →
+   `AudioBufferSourceNode` → `createMediaStreamDestination` bei Weg A, bzw. direkt an
+   `AudioEncoder` bei Weg B).
+4. Bild- und Tonspur zusammenführen und aufnehmen/kodieren (siehe Weg A vs. B oben).
+5. Ergebnis als Datei zum Download anbieten (wie `actions/backup.js` es beim
+   Bibliotheks-Export schon macht) - bei Weg B über OPFS, siehe 4.5.
+
+Das ist bewusst **Weg-unabhängig** formuliert: Schritte 1-3 sind für Weg A (Prototyp,
+Einzelseite) und Weg B (Zielarchitektur, ganzes Buch) identisch, nur Schritt 4 unterscheidet
+sich (`MediaRecorder` vs. `VideoEncoder`/`AudioEncoder` + Muxer).
 
 ---
 
@@ -298,8 +365,10 @@ book.style = {
 ```
 
 …und das Referenzbild wandert bei **jeder** Panel-Generierung als Bildinput mit in den
-Aufruf. Das ist gleichzeitig die Vorarbeit für den schon im README notierten Punkt
-"KI-generierte Illustrationen für textlastige EPUB-Kapitel".
+Aufruf. Das ist gleichzeitig die Vorarbeit für den in `docs/KONZEPT-Comic.md` ausführlich
+behandelten Punkt "KI-generierte Illustrationen für textlastige EPUB-Kapitel" - dort auch
+die konkrete Kategorien-Aufteilung, ein bereits gefundener Prompt-Fehler und die
+Panel-Layout-Vorlagen-Bibliothek, die hier nicht dupliziert werden.
 
 **Das Persona-System passt hier erstaunlich gut**: Aus Erzähl-Personas
 (`js/config.js`) werden **Sprecherstimmen**. Dasselbe Buch als Video mit "Lustiger Papa" oder
@@ -355,16 +424,22 @@ eigenen Wohnzimmer und damit unkritisch.
 
 ## 8. Empfohlene Reihenfolge
 
-1. **Audio-Asset-Layer** - Sprach-API anbinden, `media`-Store, `DB_VERSION` 3,
-   Wort-Zeitstempel. Ohne das geht nichts anderes, und es verbessert das normale Vorlesen
-   sofort spürbar.
-2. **Kino-Modus (Stufe 1)** - größter Effekt pro Aufwand, erledigt nebenbei den offenen
-   Punkt "Vollbild-Modus ohne Text".
-3. **Hörbuch-Export** - fast geschenkt, sobald 1 steht.
+1. ~~**Audio-Asset-Layer**~~ **✅ erledigt (v0.10.0-v0.10.2, KI-Stimmen)** - anders
+   gebaut als hier ursprünglich geplant (`ttsCache` statt eigener `media`-Store), aber
+   dieselbe Wirkung: Sprach-API angebunden, `DB_VERSION` 3, Wort-Zeitstempel vorhanden.
+   Details: Nachtrag in Abschnitt 2.
+2. ~~**Kino-Modus (Stufe 1)**~~ **✅ Textteil erledigt (v0.12.0)** - Vollbild-Modus zeigt
+   Text samt Hervorhebung. Offen bleiben nur noch Ken-Burns-Effekt und Kreuzblende
+   (siehe Nachtrag in Abschnitt 3).
+3. **Hörbuch-Export** - fast geschenkt, die Bausteine aus Schritt 1 stehen bereits.
 4. **Video-Export via WebCodecs (Weg B)** - opt-in, mit Fähigkeitsprüfung, nur für
-   `origin: 'authored'`.
+   `origin: 'authored'`. Konkreter Bauplan: Abschnitt 4.6.
 5. **Schreiben + Comic** - eigenes Projekt, eigene Abstimmung, deutlich größer als 1-4
-   zusammen.
+   zusammen. Details: `KONZEPT-SchreibZauber.md`, `KONZEPT-Comic.md`.
+
+**Aktueller Stand (Sept. 2026):** Schritte 1-2 sind erledigt. Der nächste sinnvolle
+Schritt ist **3 (Hörbuch-Export)**, dann **4 (Video-Export)** - beide bauen direkt auf
+den heute schon vorhandenen KI-Stimmen-Bausteinen auf.
 
 ---
 
