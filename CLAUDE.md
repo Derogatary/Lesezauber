@@ -19,6 +19,7 @@ Läuft rein im Browser, gehostet auf GitHub Pages (statisches Hosting). Alle Dat
 - **JSZip** (vendored, lazy-geladen als klassisches Script, kein ESM-Build verfügbar) für EPUB-Import
 - **Google Gemini API** (aktuell `gemini-3.6-flash`, siehe `js/api.js`) für Bildanalyse/Text
 - **Mistral API** als optionaler Fallback bei Gemini-Fehlern
+- **Neuronale TTS-Anbieter** (optional, opt-in): Gemini TTS, Google Cloud Chirp 3 HD, ElevenLabs, OpenAI - siehe `js/ttsProviders.js`
 - Service Worker für PWA/Offline-Fähigkeit der App-Hülle
 - Kein Build-Tool für JS nötig (reine ES-Module, kein Bundler) - NUR Tailwind braucht einen Build-Schritt
 
@@ -72,10 +73,12 @@ import './actions/meineNeueDatei.js';
 |---|---|
 | `js/core.js` | Das `app`-Objekt selbst - Namespace-Definitionen |
 | `js/state.js` | `app.state` (Laufzeit) + `app.settings` (persistiert, localStorage) - **Reihenfolge: settings vor state**, da state teils von settings liest |
-| `js/db.js` | IndexedDB-Speicher-Engine (`app.library`, `app.vocabulary`). **Version 2** - beim Hinzufügen eines neuen Object Stores `DB_VERSION` erhöhen und `onupgradeneeded` erweitern |
+| `js/db.js` | IndexedDB-Speicher-Engine (`app.library`, `app.vocabulary`, `ttsCache`). **Version 3** - beim Hinzufügen eines neuen Object Stores `DB_VERSION` erhöhen und `onupgradeneeded` erweitern |
 | `js/nav.js` | Router zwischen den `<main id="view...">`-Ansichten |
 | `js/api.js` | Gemini/Mistral-Aufrufe, der komplette Analyse-Prompt lebt hier |
-| `js/tts.js` | Sprachausgabe: Auto-Vorlesen, Wort-Hervorhebung (SpeechSynthesis `boundary`-Event), kombinierter Rätsel-Modus |
+| `js/tts.js` | Sprachausgabe: Weiche zwischen Gerätestimme und KI-Stimme, Auto-Vorlesen, Wort-Hervorhebung (SpeechSynthesis `boundary`-Event), kombinierter Rätsel-Modus |
+| `js/ttsProviders.js` | KI-Stimmen-Anbieter als Liste (`app.ttsProviders.list`) - neue Stimme/neuer Anbieter = neuer Eintrag, UI baut sich daraus automatisch auf |
+| `js/ttsNeural.js` | Wiedergabe der KI-Stimmen: IndexedDB-Zwischenspeicher, eigene Wort-Hervorhebung per `requestAnimationFrame`, Vorbereitung der nächsten Seite, Rückfall auf die Gerätestimme |
 | `js/profiles.js` | Lokale Profile (kein Server/Login), inkl. `__all__`-Sonderfilter |
 | `js/backgroundPregen.js` | Opt-in Hintergrund-Vorbereitung fehlender Persona-Varianten/Buch-Quiz |
 | `js/keyboard.js`, `js/gestures.js` | Desktop-Tastatur bzw. Touch-Wisch-Navigation im Reader |
@@ -135,7 +138,9 @@ import './actions/meineNeueDatei.js';
 
 ## Persona-System
 
-`js/config.js` definiert `app.personas` (Array von `{id, label, instruction}`). Neue Persona = neuer Eintrag dort, taucht automatisch überall auf (Settings-Dropdown, Reader-Dropdown), keine weiteren Code-Änderungen nötig.
+`js/config.js` definiert `app.personas` (Array von `{id, label, instruction, ttsStyle}`). `instruction` steuert, wie die KI den Text **schreibt**, das optionale `ttsStyle`, wie die KI-Stimme ihn **spricht** (fehlt es, dient `instruction` als Rückfall). Neue Persona = neuer Eintrag dort, taucht automatisch überall auf (Settings-Dropdown, Reader-Dropdown), keine weiteren Code-Änderungen nötig.
+
+Die Persona färbt bei Anbietern mit `supportsStyle` (Gemini, OpenAI) auch die **Stimmlage** - über `app.ttsProviders.styleHintFor()`, abschaltbar in den Einstellungen.
 
 Zwei getrennte Persona-Konzepte, nicht verwechseln:
 - `app.settings.persona` - globale Standard-Persona für neue Scans
@@ -183,8 +188,11 @@ Kein CI/CD - der Nutzer lädt den kompletten Ordnerinhalt manuell über die GitH
 
 ## Offene Punkte (Stand zuletzt besprochen)
 
+**Ausführliche Konzepte, offene Entscheidungen und Kostenübersicht: [`docs/ROADMAP.md`](docs/ROADMAP.md).** Diese Datei bei größeren Änderungen mitpflegen - sie ist der Einstieg für eine neue Sitzung.
+
 Größere, noch nicht begonnene Features (brauchen erst Abstimmung mit dem Nutzer, nicht einfach lospreschen):
 - KI-generierte Illustrationen (Comic-Stil) für Text-only-EPUB-Kapitel via Gemini-Bildgenerierung
+- Video-Export: Vorarbeit steht (siehe "KI-Stimmen"), offen ist nur das Zusammensetzen per Canvas + `MediaRecorder` und die Frage "ein Video pro Seite oder pro Buch"
 - Native Android-App via Capacitor (Play Store, ggf. Samsung/Amazon Store)
 - Diagnose: Scroll-Verhalten am Bildschirmrand (Desktop), Zoom/Unschärfe im Fenstermodus - noch nicht reproduziert, braucht ggf. Screenshot vom Nutzer
 
@@ -201,6 +209,23 @@ Bewusst zurückgestellt (bräuchten einen eigenen Server):
 - Fehler nie stumm verschlucken - mindestens `console.error()`, meist zusätzlich `app.ui.toast(...)`
 - Vor dem Vorlesen IMMER `app.utils.stripEmojiForSpeech()` bzw. `speak()` nutzen (nie rohen Text direkt an `SpeechSynthesisUtterance` geben) - sonst versucht der Browser, Emojis auszusprechen
 
+## KI-Stimmen (neuronale TTS)
+
+`app.settings.ttsProvider` entscheidet, wie vorgelesen wird - Standard ist `'device'` (Gerätestimme wie bisher). **Alles im Code ruft weiterhin nur `app.tts.speak(text, onEnd, highlightElementId)` auf**; die Weiche zwischen Gerät und KI-Stimme sitzt ausschließlich in `js/tts.js`.
+
+Feste Regeln dabei:
+- **Nie ohne Ton enden:** Jeder Fehler (Key falsch, Limit, CORS, offline) fällt auf `app.tts.speakWithDevice()` zurück. Endgültige Fehler setzen `app.ttsNeural._disabledReason`, damit nicht jede Seite erneut in dieselbe Wartezeit läuft.
+- **Jede Aufnahme kostet Geld/Kontingent:** Ohne triftigen Grund keine zusätzlichen Synthese-Aufrufe einbauen. Der IndexedDB-Zwischenspeicher (`ttsCache`) ist Absicht, nicht Optimierung.
+- **`_token`-Zähler beachten:** `stop()` erhöht ihn; jede asynchrone Fortsetzung muss vorher prüfen, ob sie noch aktuell ist - sonst spricht eine abgebrochene Seite verspätet doch noch los.
+- Ein einziges `<audio>`-Element für die ganze App (iOS erlaubt Wiedergabe nur bei einem Element, das schon per Fingertipp gestartet wurde).
+
+**Bausteine für den Video-Export** (bewusst getrennt vom Abspielen):
+- `app.ttsNeural.renderAudio(text, {personaId})` → `{ text, blob, mime, durationSec, words: [{word, start, end}], exact }`
+- `app.ttsNeural.renderPageSegments(bookId, pageIdx, {includeDescription, includeQuiz, onProgress})` → `{ imgUrl, totalDurationSec, segments: [...] }` (Reihenfolge: Text → Bildbeschreibung → Quiz)
+- Beide gehen zuerst in den `ttsCache`; Cache-Einträge tragen seit v0.10.1 `mime` und `durationSec`. Ältere Einträge messen ihre Länge beim ersten Export einmalig nach.
+- Die Wort-Zeitpunkte kommen aus derselben `_wordStartTimes()`-Berechnung wie die Hervorhebung im Reader (exakt bei ElevenLabs, sonst über die Textlänge geschätzt) - nicht duplizieren.
+- **Mit der Gerätestimme unmöglich:** SpeechSynthesis gibt keine Datei heraus. `renderAudio()` wirft deshalb bei `ttsProvider === 'device'` einen verständlichen Fehler.
+
 ## Versionsstand
 
-Aktuell `v0.9.6-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Zähl die Version bei größeren Änderungen entsprechend hoch (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).
+Aktuell `v0.10.2-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Zähl die Version bei größeren Änderungen entsprechend hoch (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).

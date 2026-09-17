@@ -7,11 +7,24 @@ import { app } from './core.js';
 // einzelnen Seite schreibt nur noch dieses eine Buch, nicht mehr die
 // komplette Bibliothek neu.
 const DB_NAME = 'LeseZauberDB';
-// NEU: Version 2 - zusätzlicher Speicher für den Vokabeltrainer. Bereits
-// vorhandene Bücher bleiben beim Upgrade unangetastet erhalten.
-const DB_VERSION = 2;
+// NEU: Version 3 - zusätzlicher Speicher für bereits erzeugte KI-Stimmen
+// (siehe ttsNeural.js). Bereits vorhandene Bücher/Vokabeln bleiben beim
+// Upgrade unangetastet erhalten.
+const DB_VERSION = 3;
 const STORE_NAME = 'books';
 const VOCAB_STORE_NAME = 'vocabulary';
+const TTS_STORE_NAME = 'ttsCache';
+
+// Obergrenze für zwischengespeicherte Sprachaufnahmen. Beim Überschreiten
+// werden die ältesten gelöscht - sonst wächst der Speicher bei einer
+// vielgenutzten Bibliothek unbegrenzt.
+// FIX: Anzahl allein reicht als Grenze nicht. Gemini liefert
+// unkomprimiertes WAV (ca. 1 MB je Buchseite), die anderen Anbieter MP3
+// (ca. 40 KB) - 600 Gemini-Aufnahmen wären mehrere hundert MB gewesen und
+// hätten auf dem Handy den Platz für die Bücher selbst verdrängt. Deshalb
+// zusätzlich eine Größengrenze, die in der Praxis zuerst greift.
+const TTS_CACHE_MAX_ENTRIES = 600;
+const TTS_CACHE_MAX_BYTES = 100 * 1024 * 1024;
 
 // Key, unter dem die Bibliothek in der alten (localStorage-basierten)
 // Version dieser App gespeichert wurde - nur für die einmalige Migration
@@ -32,6 +45,12 @@ function openDatabase() {
             }
             if (!db.objectStoreNames.contains(VOCAB_STORE_NAME)) {
                 db.createObjectStore(VOCAB_STORE_NAME, { keyPath: 'word' });
+            }
+            // NEU: Zwischenspeicher für KI-Stimmen. Der Index auf "created"
+            // wird nur fürs Aufräumen der ältesten Einträge gebraucht.
+            if (!db.objectStoreNames.contains(TTS_STORE_NAME)) {
+                const ttsStore = db.createObjectStore(TTS_STORE_NAME, { keyPath: 'key' });
+                ttsStore.createIndex('created', 'created');
             }
         };
 
@@ -87,6 +106,62 @@ async function putVocabInDB(entry) {
     return new Promise((resolve, reject) => {
         const tx = db.transaction(VOCAB_STORE_NAME, 'readwrite');
         tx.objectStore(VOCAB_STORE_NAME).put(entry);
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+    });
+}
+
+// NEU: Zwischenspeicher für KI-Stimmen. Jede erzeugte Sprachaufnahme
+// kostet Geld bzw. Kontingent - dieselbe Seite ein zweites Mal vorlesen
+// soll deshalb nichts mehr kosten und sofort starten.
+async function getTtsFromDB(key) {
+    const db = await openDatabase();
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction(TTS_STORE_NAME, 'readonly');
+        const request = tx.objectStore(TTS_STORE_NAME).get(key);
+        request.onsuccess = () => resolve(request.result || null);
+        request.onerror = () => reject(request.error);
+    });
+}
+
+async function putTtsInDB(entry) {
+    const db = await openDatabase();
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction(TTS_STORE_NAME, 'readwrite');
+        tx.objectStore(TTS_STORE_NAME).put(entry);
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+    });
+}
+
+// Älteste Einträge löschen, sobald Anzahl ODER Gesamtgröße die Grenze
+// überschreiten. Läuft von der neuesten zur ältesten Aufnahme und behält,
+// was ins Budget passt - alles dahinter fliegt raus.
+async function pruneTtsCache() {
+    const db = await openDatabase();
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction(TTS_STORE_NAME, 'readwrite');
+        const store = tx.objectStore(TTS_STORE_NAME);
+
+        let keptCount = 0;
+        let keptBytes = 0;
+
+        // 'prev' = neueste zuerst
+        const cursorRequest = store.index('created').openCursor(null, 'prev');
+        cursorRequest.onsuccess = (event) => {
+            const cursor = event.target.result;
+            if (!cursor) return;
+
+            const bytes = cursor.value.bytes || 0;
+            if (keptCount + 1 > TTS_CACHE_MAX_ENTRIES || keptBytes + bytes > TTS_CACHE_MAX_BYTES) {
+                cursor.delete();
+            } else {
+                keptCount++;
+                keptBytes += bytes;
+            }
+            cursor.continue();
+        };
+
         tx.oncomplete = () => resolve();
         tx.onerror = () => reject(tx.error);
     });
@@ -159,5 +234,72 @@ Object.assign(app.dbOps, {
         putVocabInDB(entry).catch(e => {
             console.error('Vokabel konnte nicht gespeichert werden:', e);
         });
+    },
+
+    // NEU: gespeicherte KI-Sprachaufnahme holen. Fehler sind hier bewusst
+    // kein Drama - dann wird die Aufnahme eben neu erzeugt.
+    async getTtsAudio(key) {
+        try {
+            return await getTtsFromDB(key);
+        } catch (e) {
+            console.error('Stimmen-Speicher konnte nicht gelesen werden:', e);
+            return null;
+        }
+    },
+
+    async saveTtsAudio(entry) {
+        try {
+            await putTtsInDB(entry);
+            await pruneTtsCache();
+        } catch (e) {
+            // Häufigster Fall: Gerätespeicher voll. Das Vorlesen selbst
+            // funktioniert trotzdem, nur eben ohne Zwischenspeicher.
+            console.error('Stimme konnte nicht zwischengespeichert werden:', e);
+        }
+    },
+
+    // Für die Anzeige in den Einstellungen (Anzahl + belegter Platz).
+    async getTtsCacheStats() {
+        try {
+            const db = await openDatabase();
+            return await new Promise((resolve, reject) => {
+                const tx = db.transaction(TTS_STORE_NAME, 'readonly');
+                // FIX: per Cursor zählen statt getAll() - sonst würden zum
+                // reinen Anzeigen der Belegung alle Audiodateien auf einmal
+                // geladen.
+                const cursorRequest = tx.objectStore(TTS_STORE_NAME).openCursor();
+                let count = 0;
+                let bytes = 0;
+                cursorRequest.onsuccess = (event) => {
+                    const cursor = event.target.result;
+                    if (!cursor) return;
+                    count++;
+                    bytes += cursor.value.bytes || 0;
+                    cursor.continue();
+                };
+                tx.oncomplete = () => resolve({ count, bytes });
+                tx.onerror = () => reject(tx.error);
+            });
+        } catch (e) {
+            console.error('Stimmen-Speicher konnte nicht gelesen werden:', e);
+            return { count: 0, bytes: 0 };
+        }
+    },
+
+    async clearTtsCache() {
+        try {
+            const db = await openDatabase();
+            await new Promise((resolve, reject) => {
+                const tx = db.transaction(TTS_STORE_NAME, 'readwrite');
+                tx.objectStore(TTS_STORE_NAME).clear();
+                tx.oncomplete = () => resolve();
+                tx.onerror = () => reject(tx.error);
+            });
+            app.ui.toast('Gespeicherte Stimmen gelöscht', '🗑️');
+        } catch (e) {
+            console.error('Stimmen-Speicher konnte nicht geleert werden:', e);
+            app.ui.toast('Stimmen-Speicher konnte nicht geleert werden.', '⚠️');
+        }
+        app.render.settings();
     }
 });

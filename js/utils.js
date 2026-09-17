@@ -158,6 +158,22 @@ Object.assign(app.utils, {
             .trim();
     },
 
+    // NEU: zerlegt einen (bereits emoji-bereinigten) Text in Wörter mit
+    // ihrer Zeichenposition. Basis sowohl für die Hervorhebung im Reader
+    // als auch für Untertitel/Karaoke-Timing beim geplanten Video-Export -
+    // deshalb bewusst ohne DOM, damit beides dieselbe Zerlegung nutzt.
+    speechWordOffsets(cleanText) {
+        const words = [];
+        let idx = 0;
+        (cleanText || '').split(/(\s+)/).forEach(token => {
+            const start = idx;
+            idx += token.length;
+            if (token === '' || /^\s+$/.test(token)) return;
+            words.push({ word: token, start });
+        });
+        return words;
+    },
+
     // NEU: baut aus einem Text HTML mit einem <span> pro Wort (inkl.
     // Start-Index), damit beim Vorlesen genau das gerade gesprochene Wort
     // hervorgehoben werden kann (Speedreader-artig). Nutzt den bereits

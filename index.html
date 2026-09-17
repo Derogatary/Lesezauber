@@ -39,7 +39,7 @@
                     </h1>
                     <p id="libraryGreeting" class="text-sm text-slate-500 font-semibold">Deine interaktive Kinderbuch-Welt</p>
                     <p id="streakBadge" class="hidden text-xs font-bold text-amber-600 mt-0.5"></p>
-                    <p class="text-[10px] text-slate-400 font-semibold mt-0.5">v0.9.6-beta</p>
+                    <p class="text-[10px] text-slate-400 font-semibold mt-0.5">v0.10.2-beta</p>
                 </div>
                 <div class="flex items-center gap-2 flex-shrink-0">
                     <button onclick="app.nav.go('help')" aria-label="Hilfe öffnen" title="Hilfe" class="w-10 h-10 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-600 hover:bg-slate-100 shadow-sm transition active:scale-95">
@@ -412,7 +412,7 @@
                 </div>
                 <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
                     <h2 class="text-sm font-bold text-indigo-900 mb-1">🔊 Vorlesen</h2>
-                    <p class="text-xs text-slate-600 leading-relaxed">🔊-Symbol liest die aktuelle Seite einmal vor. "Buch automatisch vorlesen" liest Seite für Seite durch und sagt dabei erkannte Metadaten an (Titel/Autor/Verlag/Reihe zu Beginn, neue Kapitelüberschriften, Inhaltsverzeichnis ohne Seitenzahlen). "Vollbild-Vorlese-Modus" blendet alles bis auf Bild, Text mit Hervorhebung und Play/Pause aus - ideal fürs Bett. Mit "🙌 Mitmachmodus" wird stattdessen der Erstleser-Text vorgelesen und vor jedem durch ein Emoji ersetzten Wort eine Pause zum Mitraten eingelegt.</p>
+                    <p class="text-xs text-slate-600 leading-relaxed">🔊-Symbol liest die aktuelle Seite einmal vor. "Buch automatisch vorlesen" liest Seite für Seite durch und sagt dabei erkannte Metadaten an (Titel/Autor/Verlag/Reihe zu Beginn, neue Kapitelüberschriften, Inhaltsverzeichnis ohne Seitenzahlen). "Vollbild-Vorlese-Modus" blendet alles bis auf Bild, Text mit Hervorhebung und Play/Pause aus - ideal fürs Bett. Mit "🙌 Mitmachmodus" wird stattdessen der Erstleser-Text vorgelesen und vor jedem durch ein Emoji ersetzten Wort eine Pause zum Mitraten eingelegt. In den Einstellungen kannst du statt der Gerätestimme eine echte KI-Stimme wählen, die viel natürlicher klingt.</p>
                 </div>
                 <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
                     <h2 class="text-sm font-bold text-indigo-900 mb-1">🎭 Erzähler-Persona</h2>
@@ -537,20 +537,85 @@
                     </select>
                 </div>
 
+                <!-- NEU: KI-Stimme statt der maschinellen Gerätestimme.
+                     Der Inhalt (Stimmen, Hinweise, Key-Feld) wird passend
+                     zum gewählten Anbieter in render/settings.js gefüllt. -->
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                    <label for="selectTtsProvider" class="block text-xs font-bold uppercase tracking-wider text-slate-500">
+                        Vorlese-Stimme
+                    </label>
+                    <select id="selectTtsProvider" onchange="app.settingsConfig.changeTtsProvider(this.value)" class="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500 font-medium">
+                    </select>
+                    <p id="ttsProviderHint" class="text-[11px] text-slate-500"></p>
+
+                    <div id="ttsKeyRow" class="hidden space-y-2">
+                        <label id="ttsKeyLabel" for="inputProviderKey" class="block text-[11px] font-bold uppercase tracking-wider text-slate-500">API-Key</label>
+                        <input id="inputProviderKey" type="password" placeholder="API-Key des Anbieters" class="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 font-mono focus:outline-none focus:border-indigo-500">
+                    </div>
+
+                    <!-- NEU: Direktlinks zum Anbieter - Key-Seite und Preisliste.
+                         Steht bewusst außerhalb von ttsKeyRow, damit die Links
+                         auch bei Gemini sichtbar sind (das kein eigenes
+                         Key-Feld hat, weil es den Key von oben mitbenutzt). -->
+                    <div id="ttsLinkRow" class="hidden flex flex-wrap gap-x-4 gap-y-1">
+                        <a id="ttsKeyLink" href="#" target="_blank" rel="noopener" class="text-xs text-indigo-600 font-semibold hover:underline flex items-center gap-1">
+                            <span>🔑 Key holen</span><span>↗</span>
+                        </a>
+                        <a id="ttsPricingLink" href="#" target="_blank" rel="noopener" class="text-xs text-indigo-600 font-semibold hover:underline flex items-center gap-1">
+                            <span>💶 Preise ansehen</span><span>↗</span>
+                        </a>
+                    </div>
+
+                    <div id="ttsVoiceRow" class="hidden space-y-2">
+                        <label for="selectTtsVoice" class="block text-[11px] font-bold uppercase tracking-wider text-slate-500">Stimme</label>
+                        <select id="selectTtsVoice" onchange="app.settingsConfig.changeTtsVoice(this.value)" class="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500 font-medium">
+                        </select>
+                        <div class="flex gap-2 pt-1">
+                            <button onclick="app.settingsConfig.testTtsVoice()" class="flex-1 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 font-bold py-2.5 rounded-xl text-sm transition">
+                                🔊 Stimme testen
+                            </button>
+                            <button id="btnLoadElevenVoices" onclick="app.settingsConfig.loadElevenVoices()" class="hidden flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 rounded-xl text-sm transition">
+                                🎙️ Eigene Stimmen laden
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="ttsOptionsRow" class="hidden space-y-3 pt-2 border-t border-slate-100">
+                        <div id="ttsStyleRow" class="flex items-center justify-between gap-3">
+                            <label for="toggleTtsPersonaStyle" class="text-[11px] text-slate-600 font-semibold">
+                                Stimme an Erzähler-Persona anpassen
+                            </label>
+                            <input id="toggleTtsPersonaStyle" type="checkbox" onchange="app.settingsConfig.toggleTtsPersonaStyle(this.checked)" class="w-5 h-5 accent-indigo-600 flex-shrink-0">
+                        </div>
+                        <div class="flex items-center justify-between gap-3">
+                            <label for="toggleTtsCache" class="text-[11px] text-slate-600 font-semibold">
+                                Erzeugte Stimmen speichern (spart Kosten)
+                            </label>
+                            <input id="toggleTtsCache" type="checkbox" onchange="app.settingsConfig.toggleTtsCache(this.checked)" class="w-5 h-5 accent-indigo-600 flex-shrink-0">
+                        </div>
+                        <div class="flex items-center justify-between gap-3">
+                            <p id="ttsCacheInfo" class="text-[11px] text-slate-500">Wird ermittelt...</p>
+                            <button onclick="app.dbOps.clearTtsCache()" class="text-[11px] font-bold text-red-600 hover:underline flex-shrink-0">
+                                Leeren
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- System TTS Voice Selection -->
                 <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-3">
                     <label class="block text-xs font-bold uppercase tracking-wider text-slate-500">
-                        Vorlese-Stimme (Gerät)
+                        Gerätestimme &amp; Darstellung
                     </label>
                     <select id="selectVoice" class="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500 font-medium">
                         <option value="">Standard-Systemstimme</option>
                     </select>
-                    <p class="text-[11px] text-slate-500">Zeigt alle auf deinem Gerät installierten Stimmen - auch andere Sprachen (z.B. US-/UK-Englisch), praktisch für fremdsprachige Bücher. Tipp: Auf iOS/Android lassen sich in den Systemeinstellungen weitere Stimmen herunterladen.</p>
+                    <p class="text-[11px] text-slate-500">Wird genutzt, wenn oben &quot;Gerätestimme&quot; gewählt ist - und als Rückfall, falls eine KI-Stimme mal nicht erreichbar ist. Zeigt alle auf deinem Gerät installierten Stimmen - auch andere Sprachen (z.B. US-/UK-Englisch), praktisch für fremdsprachige Bücher. Tipp: Auf iOS/Android lassen sich in den Systemeinstellungen weitere Stimmen herunterladen.</p>
 
                     <!-- NEU: Vorlesegeschwindigkeit -->
                     <div class="pt-2 border-t border-slate-100">
                         <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
-                            Vorlesegeschwindigkeit
+                            Vorlesegeschwindigkeit (gilt für alle Stimmen)
                         </label>
                         <div class="flex items-center gap-3">
                             <span class="text-[10px] text-slate-500">Langsam</span>

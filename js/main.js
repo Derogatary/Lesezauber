@@ -11,6 +11,8 @@ import './profiles.js';
 import './nav.js';
 import './api.js';
 import './tts.js';
+import './ttsProviders.js';
+import './ttsNeural.js';
 import './ui.js';
 import './utils.js';
 

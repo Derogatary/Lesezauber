@@ -20,6 +20,8 @@ const APP_SHELL = [
     './js/nav.js',
     './js/api.js',
     './js/tts.js',
+    './js/ttsProviders.js',
+    './js/ttsNeural.js',
     './js/ui.js',
     './js/utils.js',
     './js/readerUI.js',

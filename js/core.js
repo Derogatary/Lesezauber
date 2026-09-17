@@ -14,6 +14,9 @@ export const app = {
     nav: {},
     api: {},
     tts: {},
+    // NEU: KI-Stimmen (Anbieter-Liste + Wiedergabe), siehe ttsProviders.js
+    ttsProviders: {},
+    ttsNeural: {},
     ui: {},
     actions: {},
     render: {},

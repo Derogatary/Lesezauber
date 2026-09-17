@@ -33,35 +33,76 @@ Object.assign(app.tts, {
         });
     },
 
+    // NEU: bereitet den Text fürs Vorlesen auf - Emojis raus (sonst
+    // versucht die Stimme, sie auszusprechen) und, falls ein Textfeld
+    // angegeben ist, ein <span> pro Wort für die Hervorhebung. Beide
+    // Sprechwege (Gerät und KI-Stimme) nutzen danach denselben Text, damit
+    // die Hervorhebung in beiden Fällen zu den Zeichenpositionen passt.
+    _prepare(text, highlightElementId) {
+        if (!highlightElementId) return app.utils.stripEmojiForSpeech(text);
+
+        const { clean, html } = app.utils.buildSpeechHighlightHtml(text);
+        const el = document.getElementById(highlightElementId);
+        if (el) el.innerHTML = html;
+        return clean;
+    },
+
+    // NEU: zentrale Weiche zwischen Gerätestimme und KI-Stimme. Alles
+    // andere im Code ruft weiterhin einfach app.tts.speak(...) auf und muss
+    // nicht wissen, welcher Anbieter gerade eingestellt ist.
     speak(text, onEnd, highlightElementId) {
-        // FIX: hier wurde vorher einfach abgebrochen. Beim automatischen
-        // Vorlesen hängen aber mehrere speak()-Aufrufe als Kette aneinander
-        // (Text -> Bildbeschreibung -> Rätselfrage -> nächste Seite). Fehlte
-        // ein Baustein (z.B. eine Seite ohne Antworttext, oder ein Browser
-        // ganz ohne Sprachausgabe), wurde onEnd nie aufgerufen und das
-        // Vorlesen blieb ohne jede Meldung stehen - der Knopf zeigte weiter
-        // "stoppen", es passierte aber nichts mehr. Jetzt wird der nächste
-        // Schritt trotzdem angestoßen und die Kette läuft weiter.
-        if (!this.synth || !text) {
+        // FIX: hier wurde einfach abgebrochen. Beim automatischen Vorlesen
+        // hängen aber mehrere speak()-Aufrufe als Kette aneinander (Text ->
+        // Bildbeschreibung -> Rätselfrage -> nächste Seite). Fehlte ein
+        // Baustein (z.B. eine Seite ohne Antworttext), wurde onEnd nie
+        // aufgerufen und das Vorlesen blieb ohne Meldung stehen - der Knopf
+        // zeigte weiter "stoppen", es passierte aber nichts mehr.
+        if (!text) { if (onEnd) onEnd(); return; }
+        this.stop();
+
+        const clean = this._prepare(text, highlightElementId);
+        // Gleicher Fall: Text bestand nur aus Emojis -> trotzdem weiterreichen.
+        if (!clean) { if (onEnd) onEnd(); return; }
+
+        if (app.ttsNeural.isActive()) {
+            // Läuft asynchron (Netzwerk) und schaltet bei Problemen selbst
+            // auf die Gerätestimme um.
+            app.ttsNeural.speak(clean, onEnd, highlightElementId);
+            return;
+        }
+
+        this.speakWithDevice(clean, onEnd, highlightElementId);
+    },
+
+    // NEU: stoppt beides - die Gerätestimme UND eine laufende KI-Aufnahme.
+    // FIX: zählt zusätzlich die Generation hoch. Eine laufende
+    // speakMitmach()-Häppchen-Kette hängt an setTimeout-Pausen, die von
+    // synth.cancel() NICHT erfasst werden - ohne diesen Zähler liefe sie
+    // nach dem Stoppen munter weiter.
+    stop() {
+        this.speakGeneration++;
+        if (this.synth) this.synth.cancel();
+        app.ttsNeural.stop();
+    },
+
+    // Die eingebaute Stimme des Geräts. Erwartet bereits aufbereiteten
+    // Text aus _prepare() (emoji-frei, Hervorhebung steht schon im DOM).
+    speakWithDevice(cleanText, onEnd, highlightElementId) {
+        // Sehr seltener Fall (alter/eingeschränkter Browser): Ohne
+        // Sprachausgabe würde das Auto-Vorlesen sonst stumm im
+        // Sekundentakt durchs ganze Buch blättern - deshalb hier abbrechen
+        // statt einfach weiterzureichen.
+        if (!this.synth) {
+            console.error('Dieses Gerät bietet keine Sprachausgabe (SpeechSynthesis).');
+            app.ui.toast('Dieses Gerät kann keinen Text vorlesen.', '⚠️');
+            if (app.state.autoReadActive) this.stopAutoRead();
+            return;
+        }
+        if (!cleanText) {
             if (onEnd) onEnd();
             return;
         }
-        // NEU: die Generation erst HIER hochzählen, nicht vor dem Abbruch
-        // oben. Nur ab dieser Stelle wird wirklich neu gesprochen; ein
-        // reiner Weiterreich-Aufruf mit leerem Text würde sonst eine noch
-        // laufende Mitmach-Kette abwürgen, ohne selbst etwas zu sprechen.
-        this.speakGeneration++;
         this.synth.cancel();
-
-        let cleanText;
-        if (highlightElementId) {
-            const { clean, html } = app.utils.buildSpeechHighlightHtml(text);
-            cleanText = clean;
-            const el = document.getElementById(highlightElementId);
-            if (el) el.innerHTML = html;
-        } else {
-            cleanText = app.utils.stripEmojiForSpeech(text);
-        }
 
         const utter = new SpeechSynthesisUtterance(cleanText);
         utter.rate = app.settings.speechRate || 0.9;
@@ -100,6 +141,18 @@ Object.assign(app.tts, {
         this.synth.speak(utter);
     },
 
+    // NEU: feste Ansage je Seite statt Zufall. Bei einer KI-Stimme wird
+    // jede gesprochene Zeile zwischengespeichert - eine zufällige Ansage
+    // hätte pro Seite bis zu fünf verschiedene Aufnahmen erzeugt. Aus der
+    // Seiten-ID abgeleitet bleibt die Abwechslung zwischen den Seiten
+    // erhalten, dieselbe Seite klingt aber immer gleich.
+    _introForPage(page) {
+        const id = String((page && page.id) || '');
+        let sum = 0;
+        for (let i = 0; i < id.length; i++) sum += id.charCodeAt(i);
+        return IMAGE_INTROS[sum % IMAGE_INTROS.length];
+    },
+
     // NEU: Mitmachmodus - liest (anders als das normale Vorlesen) bewusst
     // den ERSTLESER-Text vor, in dem einzelne Nomen komplett durch ein
     // Emoji ersetzt sind, und legt vor jedem Emoji eine echte Sprechpause
@@ -109,8 +162,11 @@ Object.assign(app.tts, {
     // .mitmach-emoji.mitmach-active in style.css).
     speakMitmach(erstleserText, onEnd, highlightElementId) {
         if (!this.synth || !erstleserText) { if (onEnd) onEnd(); return; }
-        const myGen = ++this.speakGeneration;
-        this.synth.cancel();
+        // FIX: über die gemeinsame stop()-Weiche abbrechen, damit auch eine
+        // laufende KI-Stimme verstummt. stop() zählt die Generation selbst
+        // hoch - die eigene wird deshalb DANACH gemerkt.
+        this.stop();
+        const myGen = this.speakGeneration;
 
         const parts = app.utils.splitBySpeechEmoji(erstleserText);
         const container = highlightElementId ? document.getElementById(highlightElementId) : null;
@@ -232,11 +288,7 @@ Object.assign(app.tts, {
 
     stopAutoRead() {
         app.state.autoReadActive = false;
-        // NEU: bricht auch eine laufende speakMitmach()-Häppchen-Kette ab -
-        // deren Emoji-Pausen laufen über setTimeout, nicht über synth, und
-        // würden sonst nach dem Stoppen trotzdem weiterlaufen.
-        this.speakGeneration++;
-        if (this.synth) this.synth.cancel();
+        this.stop();
         const btn = document.getElementById('btnAutoRead');
         if (btn) btn.innerHTML = '▶️ Buch automatisch vorlesen';
         const focusBtn = document.getElementById('focusPlayBtn');
@@ -294,6 +346,16 @@ Object.assign(app.tts, {
         const focusBtn = document.getElementById('focusPlayBtn');
         if (focusBtn) focusBtn.innerText = '⏸️';
 
+        // NEU: Bei einer KI-Stimme dauert das Erzeugen der Audiodatei ein
+        // paar Sekunden. Während diese Seite vorgelesen wird, entsteht die
+        // nächste schon im Hintergrund - so bleibt beim Umblättern keine
+        // Stille. Ohne KI-Stimme passiert hier nichts.
+        const nextPage = book.pages[app.state.currentPageIdx + 1];
+        if (nextPage && !nextPage.excluded) {
+            const nextVariant = app.utils.resolvePageVariant(nextPage, app.state.readingPersonaId);
+            if (nextVariant && nextVariant.text) app.ttsNeural.warmUp(nextVariant.text);
+        }
+
         // Kombinierter Modus: Rätselfrage sichtbar UND hörbar, mit Pause
         // zum Raten, bevor die Antwort kommt.
         const maybeAskQuiz = () => {
@@ -319,11 +381,11 @@ Object.assign(app.tts, {
         const describeImage = () => {
             if (!app.state.autoReadActive) return;
             if (variant.desc) {
-                const intro = IMAGE_INTROS[Math.floor(Math.random() * IMAGE_INTROS.length)];
-                this.speak(intro, () => {
-                    if (!app.state.autoReadActive) return;
-                    this.speak(variant.desc, maybeAskQuiz);
-                });
+                // FIX: Ansage und Bildbeschreibung laufen jetzt in EINEM
+                // Sprechvorgang. Vorher waren es zwei - bei einer KI-Stimme
+                // also zwei API-Aufrufe und zwei Aufnahmen pro Seite. Klingt
+                // nebenbei natürlicher, weil die Pause dazwischen wegfällt.
+                this.speak(`${this._introForPage(page)} ${variant.desc}`, maybeAskQuiz);
             } else {
                 maybeAskQuiz();
             }
