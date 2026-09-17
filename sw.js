@@ -1,7 +1,7 @@
 // Bei jeder inhaltlichen Änderung an einer dieser Dateien diese Nummer
 // erhöhen - sonst bekommen wiederkehrende Besucher weiter die alte
 // zwischengespeicherte Version ausgeliefert.
-const CACHE_NAME = 'lesezauber-shell-v25';
+const CACHE_NAME = 'lesezauber-shell-v26';
 
 // NEU: js/studio/* (SchreibZauber) ist jetzt in main.js verdrahtet (Stufe 1,
 // siehe docs/KONZEPT-SchreibZauber.md) und steht deshalb komplett in der
@@ -43,6 +43,7 @@ const APP_SHELL = [
     './js/actions/workbook.js',
     './js/actions/progress.js',
     './js/actions/checkWork.js',
+    './js/actions/workbookGenerator.js',
     './js/actions/prepareAudio.js',
     './js/actions/audiobookExport.js',
     './js/render/library.js',
@@ -51,6 +52,7 @@ const APP_SHELL = [
     './js/render/settings.js',
     './js/render/vocab.js',
     './js/render/workbook.js',
+    './js/render/workbookGenerator.js',
     './js/render/progress.js',
     './js/render/checkWork.js',
     './js/studio/imageFormats.js',

@@ -16,7 +16,7 @@ Object.assign(app.nav, {
         }
 
         // Hide all main views safely
-        ['viewLibrary', 'viewBook', 'viewScanner', 'viewReader', 'viewSettings', 'viewVocab', 'viewHelp', 'viewStudioLibrary', 'viewStudioWizard'].forEach(id => {
+        ['viewLibrary', 'viewBook', 'viewScanner', 'viewReader', 'viewSettings', 'viewVocab', 'viewHelp', 'viewStudioLibrary', 'viewStudioWizard', 'viewWorkbookGenerator'].forEach(id => {
             const el = document.getElementById(id);
             if (el) el.classList.add('view-hidden');
         });
@@ -48,6 +48,9 @@ Object.assign(app.nav, {
         } else if (viewId === 'studioWizard') {
             document.getElementById('viewStudioWizard').classList.remove('view-hidden');
             app.render.studioWizard();
+        } else if (viewId === 'workbookGenerator') {
+            document.getElementById('viewWorkbookGenerator').classList.remove('view-hidden');
+            app.render.workbookGenerator();
         }
     }
 });

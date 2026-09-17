@@ -1,16 +1,18 @@
 # 📝 Konzept: Übungshefte – Stand und Heft-Generator
 
-**Stand:** v0.11.0-beta (Teil 1), begonnen (Teil 2: der KI-Aufruf steht) · **Zusammengeführt
+**Stand:** v0.11.0-beta (Teil 1), v0.16.0-beta (Teil 2: fertig) · **Zusammengeführt
 aus** `uebungshefte-konzept.md` und `todo-heft-generator.md`, September 2026.
 
-Dieses Dokument hat zwei Teile, die zusammengehören, aber unterschiedlich weit sind:
+Dieses Dokument hat zwei Teile, die zusammengehören:
 
 - **Teil 1 – Was die App heute kann:** der Heft-Modus (auslesen, erklären, kontrollieren)
   ist **gebaut und im Einsatz**.
 - **Teil 2 – Heft-Generator:** Übungsblätter von der KI **erstellen** lassen, statt nur
-  vorhandene auszulesen. Der **KI-Aufruf ist gebaut**
-  (`app.api.generateWorksheets()`), die Auswahl-Ansicht und das Zeichnen der
-  Blätter fehlen noch.
+  vorhandene auszulesen. **Gebaut und im Einsatz:** der KI-Aufruf
+  (`app.api.generateWorksheets()`), die Auswahl-Ansicht
+  (`js/render/workbookGenerator.js`, `js/actions/workbookGenerator.js`) und das
+  Zeichnen der Blätter auf Canvas. Offen ist nur noch eine eigene Druckansicht
+  (optionaler Folgeschritt, siehe „Offene Punkte" unten).
 
 ---
 
@@ -141,8 +143,9 @@ für den Privatgebrauch:
 
 # TEIL 2 – Heft-Generator (Übungsblätter von der KI erstellen lassen)
 
-**Status:** angefangen – der KI-Aufruf samt Prompt steht (siehe „Der API-Aufruf" unten),
-alles andere fehlt noch. **Voraussetzung:** Teil 1 (der Heft-Modus) läuft bereits.
+**Status:** fertig gebaut (v0.16.0-beta) – KI-Aufruf, Auswahl-Ansicht und
+Canvas-Zeichnen laufen. Offen ist nur noch die optionale eigene Druckansicht
+(siehe „Offene Punkte" unten). **Voraussetzung:** Teil 1 (der Heft-Modus) läuft bereits.
 
 ## Ziel
 
@@ -162,10 +165,12 @@ fertiges Übungsblatt machen, das man ausdrucken oder direkt am Tablet bearbeite
 
 ## Technischer Entwurf
 
-**Neue Dateien** (Konvention aus der CLAUDE.md):
-- `js/actions/heftGenerator.js` – Auswahl entgegennehmen, KI aufrufen, Buch anlegen
-- `js/render/heftGenerator.js` – die Auswahl-Ansicht
-- beide in `js/main.js` importieren und in `sw.js` zur `APP_SHELL` hinzufügen
+**Gebaute Dateien** (Konvention aus der CLAUDE.md):
+- `js/actions/workbookGenerator.js` – Auswahl entgegennehmen, KI aufrufen, Blätter auf
+  Canvas zeichnen, Buch anlegen
+- `js/render/workbookGenerator.js` – die Auswahl-Ansicht (Formular bzw. Blätter-Liste
+  zum Abwählen)
+- beide in `js/main.js` importiert und in `sw.js` zur `APP_SHELL` hinzugefügt
 
 **Der API-Aufruf (gebaut).** In `js/api.js`, nach dem Muster von `generateBookQuiz()` –
 ein reiner Text-Aufruf ohne Bild, **ein Aufruf für das ganze Heft**:
@@ -209,13 +214,14 @@ Abweichungen vom ursprünglichen Entwurf oben, bewusst so gebaut:
   Namen, Zahlen, Orte oder Abläufe dazuzuerfinden; mit `ownText` ist dieser Text
   inhaltlich verbindlich.
 
-**Das Kernproblem: eine Seite braucht ein Bild.** Das gesamte Datenmodell ist
+**Das Kernproblem: eine Seite braucht ein Bild (gelöst).** Das gesamte Datenmodell ist
 „eine Seite = ein Bild + Text" (`page.imgUrl`). Ein erzeugtes Blatt hat aber kein Foto.
-Dafür gibt es im Projekt schon einen gelösten Präzedenzfall: `renderTextAsImageCanvas()`
-in `js/actions/epubImport.js` zeichnet Text auf ein Canvas und erzeugt daraus über
-`app.utils.createImageVariants()` ein ganz normales Seitenbild. Genau dieses Verfahren
-sollte der Generator übernehmen – dann bleibt der Rest der App (Reader, Druck,
-Fortschritt, Export) unverändert.
+`drawWorksheetCanvas()` in `js/actions/workbookGenerator.js` übernimmt dafür dieselbe
+Technik wie `renderTextAsImageCanvas()` in `js/actions/epubImport.js` (Text auf Canvas
+zeichnen, daraus über `app.utils.createImageVariants()` ein ganz normales Seitenbild
+erzeugen) – nur mit weißem statt gelblichem Hintergrund (Druckqualität), großer
+kindgerechter Schrift und viel Zeilenabstand im Übungsfeld zum Schreiben/Nachspuren.
+Reader, Druck, Fortschritt und Kontrolle laufen dadurch unverändert weiter.
 
 **Kein zweiter KI-Aufruf nötig:** die erzeugten Felder werden direkt als Variante in
 die Seite geschrieben (`page.variants[personaId]`, Aufbau wie in
@@ -223,23 +229,21 @@ die Seite geschrieben (`page.variants[personaId]`, Aufbau wie in
 Blatt muss also nicht nachträglich „ausgelesen" werden – ein Heft mit 12 Blättern
 kostet damit **einen** Aufruf statt zwölf.
 
-## Offene Punkte vor dem Start
+## Offene Punkte
 
-1. **Wie sehen die Blätter aus?** *(für den KI-Aufruf entschieden, siehe oben:
-   nur `zaehlen`, `ankreuzen`, `nachspuren`, `schreiben`)* Ein auf Canvas
-   gezeichnetes Textblatt ist für „Male die Tiere an" nutzlos – da fehlen die
-   Tiere. Realistisch sind zuerst Aufgabentypen, die ohne Bild auskommen: Zählen,
-   Ankreuzen, Nachspuren von Buchstaben, Schwungübungen (als Linien aufs Canvas
-   gezeichnet). Ausmalbilder bräuchten KI-Bildgenerierung – siehe
-   [`docs/KONZEPT-Comic.md`](KONZEPT-Comic.md) und
-   [`docs/KONZEPT-Bildquellen.md`](KONZEPT-Bildquellen.md) für den aktuellen Stand
-   dazu, wäre der nächste Schritt danach.
+1. ~~Wie sehen die Blätter aus?~~ **entschieden und gebaut:** nur `zaehlen`,
+   `ankreuzen`, `nachspuren`, `schreiben` (Aufgabentypen ohne Bild). Ausmalbilder
+   bräuchten KI-Bildgenerierung – siehe [`docs/KONZEPT-Comic.md`](KONZEPT-Comic.md)
+   und [`docs/KONZEPT-Bildquellen.md`](KONZEPT-Bildquellen.md), wäre ein möglicher
+   nächster Schritt danach.
 2. **Woher kommt der Bibeltext?** Die KI frei erzählen zu lassen ist bei
    Bibelinhalten unzuverlässig (siehe „Verlässlichkeit" in Teil 1). Sicherer: Feld für
-   eigenen Text, den die KI wörtlich übernehmen muss.
-3. **Druckqualität.** Ein Canvas-Bild druckt schlechter als echter Text. Für
-   ausdruckbare Hefte wäre eine eigene Druckansicht mit echtem HTML-Text besser als
-   der Umweg über das Seitenbild – dann aber zwei Wege zum selben Inhalt.
+   eigenen Text, den die KI wörtlich übernehmen muss – dieses Feld steht im Formular
+   (`heftGenOwnText`), bleibt aber weiterhin **manuell** einzutragen.
+3. **Druckqualität (weiterhin offen).** Ein Canvas-Bild druckt schlechter als echter
+   Text. Für ausdruckbare Hefte wäre eine eigene Druckansicht mit echtem HTML-Text
+   besser als der Umweg über das Seitenbild – dann aber zwei Wege zum selben Inhalt.
+   Bewusst nicht Teil der ersten Fassung.
 4. **Kosten/Limit.** Ein Aufruf pro Heft ist unkritisch, auch im kostenlosen Tarif.
 5. **Weitergabe an andere Familien / woher der Bibeltext kommt / fester Lehrplan oder
    frei?** - drei zusammengehörige Fragen, die vor allem für Teil-1-Nutzung *und* den
@@ -258,16 +262,11 @@ kostet damit **einen** Aufruf statt zwölf.
 | Schritt | Umfang |
 |---|---|
 | ~~API-Aufruf + Prompt~~ | **erledigt** – `app.api.generateWorksheets()` |
-| Auswahl-Ansicht | mittel, neue Ansicht inkl. Router-Eintrag in `js/nav.js` |
-| Blätter auf Canvas zeichnen | mittel, Vorlage in `epubImport.js` vorhanden |
+| ~~Auswahl-Ansicht~~ | **erledigt** – `js/render/workbookGenerator.js`, Router-Eintrag `workbookGenerator` in `js/nav.js` |
+| ~~Blätter auf Canvas zeichnen~~ | **erledigt** – `drawWorksheetCanvas()` in `js/actions/workbookGenerator.js` |
 | Eigene Druckansicht (Punkt 3) | mittel, optional |
 | KI-Bildgenerierung für Ausmalbilder | groß, eigenes Thema |
 
-**Empfohlene Reihenfolge:** erst Aufgabentypen ohne Bild (Punkt 1), damit der Ablauf
-komplett steht und benutzt werden kann. Bildgenerierung danach als eigener Schritt.
-
-**Nächster Schritt:** Der KI-Aufruf lässt sich heute schon in der Browser-Konsole
-ausprobieren (`await app.api.generateWorksheets({ story: '…', learningGoal: '…' })`).
-Was fehlt, damit daraus ein benutzbares Heft wird, ist das Zeichnen der Blätter
-(`body` → Canvas, Vorlage `renderTextAsImageCanvas()` in `js/actions/epubImport.js`)
-und die Auswahl-Ansicht davor.
+**Nächster möglicher Schritt:** eine eigene Druckansicht (Punkt 3) oder KI-Bildgenerierung
+für Ausmalbilder (`zuordnen`/`ausmalen`/`verbinden`/`suchen` erweitern `GENERATOR_TASK_TYPES`
+in `js/api.js`) – beides eigenständige, größere Themen.

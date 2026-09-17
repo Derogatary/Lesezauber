@@ -91,6 +91,8 @@ import './actions/meineNeueDatei.js';
 | `js/actions/progress.js` | `app.progress`: Erledigt-Häkchen pro Profil, Sticker, Medaillen |
 | `js/actions/checkWork.js` | Kontrolle bearbeiteter Blätter (Foto → KI-Rückmeldung), nur im Heft-Modus |
 | `js/render/checkWork.js` | Ergebniskarte der Kontrolle (Lob, Rückmeldung, Tipps) |
+| `js/actions/workbookGenerator.js` | Heft-Generator: Formular auslesen, `app.api.generateWorksheets()` aufrufen, Blätter auf Canvas zeichnen, Heft anlegen |
+| `js/render/workbookGenerator.js` | Heft-Generator: Auswahl-Ansicht (Formular bzw. Blätter-Liste zum Abwählen) |
 | `js/render/progress.js` | Fortschrittsbalken, Erledigt-Knopf, Belohnungs-Banner |
 | `js/studio/studioCore.js` | SchreibZauber: `app.studio`-Projekt-CRUD, Stufen-Logik (Idee/Bauplan/Geschichte), Platzhalter-Aufruf pro Doppelseite |
 | `js/studio/studioPrompts.js` | SchreibZauber: alle Prompt-Bausteine inkl. `guardrailsBlock()` (Veröffentlichungs-Leitplanken, siehe Entscheidung 6) |
@@ -231,7 +233,6 @@ Nutzer, nicht einfach lospreschen):
 |---|---|
 | 🎬 Video-Export (Seite UND Buch, Schwerpunkt Buch - entschieden) - Vorarbeit steht (siehe "KI-Stimmen"), offen ist nur Canvas + `WebCodecs` | [`docs/KONZEPT-Video.md`](docs/KONZEPT-Video.md) |
 | 🪄 "SchreibZauber" - eigener Schreib-/Generierungs-Bereich für eigene Werke | [`docs/KONZEPT-SchreibZauber.md`](docs/KONZEPT-SchreibZauber.md), [`docs/KONZEPT-Bildquellen.md`](docs/KONZEPT-Bildquellen.md) |
-| 📝 Heft-Generator - Übungsblätter von der KI erstellen lassen - **angefangen:** der KI-Aufruf `app.api.generateWorksheets()` steht (ein Aufruf pro Heft, nur Aufgabenarten ohne Bildmaterial), offen sind Auswahl-Ansicht und das Zeichnen der Blätter | [`docs/KONZEPT-Uebungshefte.md`](docs/KONZEPT-Uebungshefte.md) |
 | 🎨 KI-generierte Illustrationen (Comic-Stil), für Text-only-EPUB-Kapitel UND als SchreibZauber-Werktyp | [`docs/KONZEPT-Comic.md`](docs/KONZEPT-Comic.md) |
 | 🎭 Emotionen/Sprech-Anweisungen mitten im Satz (Audio-Tags) | [`docs/ROADMAP.md`](docs/ROADMAP.md) |
 | 🔐 Kinder-/Elternbereich (Profil-Rollen), 📱 Native Android-App via Capacitor | [`docs/TODO-GESAMT.md`](docs/TODO-GESAMT.md), Bereich "App & Plattform" |
@@ -276,7 +277,9 @@ Feste Regeln dabei:
 
 ## Versionsstand
 
-Aktuell `v0.15.0-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Zähl die Version bei größeren Änderungen entsprechend hoch (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).
+Aktuell `v0.16.0-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Zähl die Version bei größeren Änderungen entsprechend hoch (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).
+
+Seit v0.16.0-beta ist der **Heft-Generator** fertig (Teil 2 aus `docs/KONZEPT-Uebungshefte.md`): über "📝 Heft erstellen lassen" in der Bibliothek (`js/render/workbookGenerator.js`, `js/actions/workbookGenerator.js`) schlägt die KI zu Thema + Lernziel fertige Übungsblätter vor, die einzeln abgewählt werden können, bevor daraus ein ganz normales Übungsheft entsteht. Jedes Blatt wird auf Canvas gezeichnet (gleiche Technik wie `renderTextAsImageCanvas()` in `epubImport.js`) und bekommt seine Variante direkt aus der KI-Antwort mit - kein zweiter Auslese-Aufruf nötig.
 
 Seit v0.15.0-beta werden auch sehr lange Texte (v.a. EPUB-Kapitel) mit KI-Stimme vorgelesen: ab `MAX_NEURAL_CHARS` (`js/ttsNeural.js`) wird an Satzenden in ~800-Zeichen-Stücke zerlegt (`app.utils.splitTextIntoChunks()`) und nacheinander abgespielt, statt wie vorher auf die Gerätestimme umzuschalten. Der Mitmachmodus (Emoji-Ratepausen) funktioniert jetzt auch mit KI-Stimme, über eine `[pause]`-Sprechanweisung statt vieler Kleinst-Aufrufe (`app.ttsNeural.speakMitmach()`) - nur bei Anbietern mit `supportsTags`, sonst weiterhin Gerätestimme.
 

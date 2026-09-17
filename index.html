@@ -41,7 +41,7 @@
                     <p id="streakBadge" class="hidden text-xs font-bold text-amber-600 mt-0.5"></p>
                     <!-- NEU: Belohnung - Anzahl komplett geschaffter Bücher/Hefte -->
                     <p id="medalBadge" class="hidden text-xs font-bold text-emerald-600 mt-0.5"></p>
-                    <p class="text-[10px] text-slate-400 font-semibold mt-0.5">v0.15.0-beta</p>
+                    <p class="text-[10px] text-slate-400 font-semibold mt-0.5">v0.16.0-beta</p>
                 </div>
                 <div class="flex items-center gap-2 flex-shrink-0">
                     <button onclick="app.nav.go('help')" aria-label="Hilfe öffnen" title="Hilfe" class="w-10 h-10 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-600 hover:bg-slate-100 shadow-sm transition active:scale-95">
@@ -124,6 +124,14 @@
             </div>
             <input id="pdfFileInput" type="file" accept="application/pdf" onchange="app.actions.createBookFromPdf(event)" class="hidden">
             <input id="epubFileInput" type="file" accept="application/epub+zip,.epub" onchange="app.actions.createBookFromEpub(event)" class="hidden">
+
+            <!-- NEU (Heft-Generator, Auftrag 11): Übungsheft von der KI
+                 erstellen lassen statt nur vorhandene Blätter auszulesen -
+                 siehe docs/KONZEPT-Uebungshefte.md, Teil 2. -->
+            <button onclick="app.actions.openWorkbookGenerator()" class="w-full mb-6 bg-white border-2 border-purple-100 hover:border-purple-300 rounded-2xl p-3 text-center transition cursor-pointer shadow-sm active:scale-95 flex items-center justify-center gap-2">
+                <span class="text-xl">📝</span>
+                <span class="text-sm font-bold text-purple-900">Übungsheft von der KI erstellen lassen</span>
+            </button>
 
             <section>
                 <div class="mb-4 flex gap-2">
@@ -718,6 +726,59 @@
                 </div>
                 <button id="studioAddSpreadBtn" onclick="app.studio.addSpread()" class="w-full text-xs font-bold text-indigo-600 border border-dashed border-indigo-200 rounded-xl py-2.5 hover:bg-indigo-50 transition">+ Doppelseite von Hand hinzufügen</button>
                 <button id="studioExportBtn" onclick="app.studio.exportToLibraryBook()" class="hidden w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl shadow-md transition">📖 Ins Regal stellen</button>
+            </section>
+        </main>
+
+        <!-- ================= HEFT-GENERATOR: AUSWAHL-ANSICHT ================= -->
+        <!-- NEU (Auftrag 11): Übungshefte von der KI erstellen lassen, statt
+             nur vorhandene auszulesen - baut auf app.api.generateWorksheets()
+             (Auftrag 10) auf. Siehe docs/KONZEPT-Uebungshefte.md, Teil 2.
+             Formularfelder stehen (wie überall sonst, CLAUDE.md-Sanity-Check 2)
+             STATISCH hier; js/render/workbookGenerator.js blendet nur
+             Formular/Ergebnisliste um und füllt die Vorschläge. -->
+        <main id="viewWorkbookGenerator" class="flex-grow overflow-y-auto pb-24 px-4 pt-6 view-hidden view-transition">
+            <header class="mb-4 flex items-center justify-between">
+                <button onclick="app.nav.go('lib')" class="p-2 -ml-2 text-slate-600 hover:text-slate-900 flex items-center gap-1 font-semibold text-sm">
+                    ❮ Bibliothek
+                </button>
+                <h1 class="text-lg font-bold text-slate-900">📝 Heft-Generator</h1>
+                <div class="w-8"></div>
+            </header>
+
+            <section id="heftGenForm" class="space-y-3">
+                <p class="text-xs text-slate-500 font-semibold mb-1 px-1">Aus einem Thema und einem Lernziel schlägt die KI fertige Übungsblätter vor - Zählen, Ankreuzen, Nachspuren und Schreiben, ganz ohne Bildmaterial.</p>
+                <div>
+                    <label class="text-xs font-bold text-slate-600 block mb-1">Thema/Geschichte *</label>
+                    <input id="heftGenStory" type="text" placeholder="z.B. Arche Noah" class="w-full text-sm bg-white border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-slate-600 block mb-1">Lernziel *</label>
+                    <input id="heftGenGoal" type="text" placeholder="z.B. Mengen bis 10" class="w-full text-sm bg-white border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-slate-600 block mb-1">Anzahl Blätter</label>
+                    <select id="heftGenCount" class="w-full text-sm bg-white border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500">
+                        <option value="4">4 Blätter</option>
+                        <option value="6" selected>6 Blätter</option>
+                        <option value="8">8 Blätter</option>
+                        <option value="12">12 Blätter</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-slate-600 block mb-1">Eigener Text zur Geschichte (optional, empfohlen)</label>
+                    <textarea id="heftGenOwnText" rows="3" placeholder="z.B. eine gemeinfreie Bibelübersetzung - ohne eigenen Text hält sich die KI nur an allgemein Bekanntes, um nichts zu erfinden" class="w-full text-sm bg-white border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500"></textarea>
+                </div>
+                <button onclick="app.actions.generateWorksheetDraft()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl shadow-md transition">✨ Blätter vorschlagen lassen</button>
+            </section>
+
+            <section id="heftGenResults" class="hidden space-y-3">
+                <div class="flex items-center justify-between px-1">
+                    <h2 id="heftGenResultTitle" class="text-sm font-bold text-slate-900"></h2>
+                    <button onclick="app.actions.resetWorkbookGeneratorDraft()" class="text-xs font-bold text-slate-500 hover:text-slate-700 flex-shrink-0">↺ Neu</button>
+                </div>
+                <p id="heftGenSkippedHint" class="hidden text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2"></p>
+                <div id="heftGenSheetList" class="space-y-2"></div>
+                <button onclick="app.actions.createWorkbookFromDraft()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl shadow-md transition">📖 Heft anlegen</button>
             </section>
         </main>
 

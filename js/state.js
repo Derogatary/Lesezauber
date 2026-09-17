@@ -98,5 +98,9 @@ Object.assign(app.state, {
     newBookType: 'story',
     // NEU: aktuell geöffnetes SchreibZauber-Werk (siehe js/studio/studioCore.js) -
     // gleiches Muster wie currentBookId.
-    currentStudioProjectId: null
+    currentStudioProjectId: null,
+    // NEU (Heft-Generator, Auftrag 11): zuletzt von der KI vorgeschlagene
+    // Blätter, bevor daraus ein Buch wird - siehe js/actions/workbookGenerator.js.
+    // Bewusst nur zur Laufzeit (wie newBookType), kein localStorage nötig.
+    workbookGeneratorDraft: null
 });
