@@ -1,6 +1,9 @@
 # Konzept: Sprach-API, Video-Export und Mehrformat-Ausspielung
 
-> **Status: Konzept, nichts davon ist umgesetzt.** Stand: 16.09.2026, App-Version v0.9.0-beta.
+> **Status: weitgehend Konzept.** Stand: 16.09.2026, App-Version v0.9.0-beta;
+> gegengelesen für v0.12.0-beta. Seitdem sind die KI-Stimmen (Abschnitt 2) und der
+> Textteil des Kino-Modus (Abschnitt 3, Stufe 1) umgesetzt - der Video-Export selbst
+> ist weiterhin offen. Einzelne Stellen tragen deshalb einen Nachtrag.
 > Dieses Dokument hält fest, **was** gebaut werden könnte, **wie** es technisch aussähe und
 > vor allem **warum** die Entscheidungen so und nicht anders fallen würden - damit man in
 > ein paar Monaten nicht wieder bei null anfängt und dieselben Sackgassen abläuft.
@@ -110,8 +113,13 @@ Der Vollbild-Modus aus `js/actions/focusMode.js` plus:
   (`app.utils.buildSpeechHighlightHtml()` existiert bereits)
 - Kreuzblende beim Seitenwechsel statt hartem Schnitt
 
-Aufwand: ~200 Zeilen, keine neue Abhängigkeit. Löst nebenbei den offenen Punkt
-"Vollbild-Modus zeigt aktuell nur das Bild, keinen Text".
+Aufwand: ~200 Zeilen, keine neue Abhängigkeit.
+
+> **Nachtrag v0.12.0:** Dieser Abschnitt versprach ursprünglich, nebenbei den offenen Punkt
+> "Vollbild-Modus zeigt aktuell nur das Bild, keinen Text" zu lösen. Das ist inzwischen
+> unabhängig davon erledigt - der Vollbild-Modus zeigt Text samt mitlaufender
+> Wort-Hervorhebung. **Von Stufe 1 bleiben damit nur noch Ken-Burns-Effekt und Kreuzblende
+> übrig**, also deutlich weniger als die genannten ~200 Zeilen.
 
 ### Stufe 2 - Videodatei per `MediaRecorder` (WebM oder MP4)
 

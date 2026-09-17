@@ -4,17 +4,29 @@
 
 In dieser Version sind alle bis dahin getrennt entwickelten Entwicklungszweige in einem
 Stand vereint. Jeder Zweig hatte seine eigene To-Do-Liste - diese Datei führt sie zusammen,
-damit nicht mehr an fünf Stellen nachgeschaut werden muss.
+**sortiert nach Bereich und Aufwand**, damit nicht mehr an fünf Stellen nachgeschaut werden muss.
 
 > **Diese Datei ist die Übersicht, nicht der Detailplan.** Wo es ein ausgearbeitetes Konzept
 > gibt, steht hier nur eine Zeile plus Verweis. Vor der Arbeit an einem Punkt immer erst das
 > verlinkte Dokument lesen - dort stehen Begründungen und bereits verworfene Wege.
 
+## Aufwands-Stufen
+
+| Kürzel | Bedeutung |
+|---|---|
+| **S** | unter ~1 Stunde bis halber Tag - wenige Zeilen, Muster im Projekt vorhanden |
+| **M** | ~1-5 Tage - neue Ansicht, neuer Ablauf, aber bekannte Bausteine |
+| **L** | Wochen - mehrere Ausbaustufen, neues Datenmodell oder neue Abhängigkeit |
+| **XL** | Eigenes Vorhaben - verlässt die reine Browser-Architektur |
+
+Die Einschätzungen stammen aus den jeweiligen Konzeptpapieren, nicht aus dem Bauchgefühl;
+wo dort eine Zahl steht, ist sie übernommen.
+
 ## Wo was steht
 
 | Datei | Inhalt |
 |---|---|
-| `docs/TODO-GESAMT.md` (hier) | Übersicht über **alle** offenen Punkte |
+| `docs/TODO-GESAMT.md` (hier) | Übersicht über **alle** offenen Punkte, nach Bereich & Aufwand |
 | `docs/ROADMAP.md` | Nächste größere Schritte rund um Vorlesen/Stimmen, inkl. Kostenübersicht |
 | `docs/konzept-video-und-multiformat.md` | Sprach-API, Video/MP4, Hörbuch, Comic - das große Konzeptpapier |
 | `docs/KONZEPT-SchreibZauber.md` | Eigener Schreib-/Generierungs-Bereich für selbst erstellte Werke |
@@ -22,6 +34,148 @@ damit nicht mehr an fünf Stellen nachgeschaut werden muss.
 | `docs/uebungshefte-konzept.md` | Hintergrund zum Heft-Modus (umgesetzt) |
 | `docs/todo-heft-generator.md` | Übungsblätter von der KI **erstellen** lassen (offen) |
 | `COMIC-ADAPTION-TODO.md` | Comic-Adaption: Diskussionsstand, Kosten, lokale GPU-Option |
+
+---
+
+## 🎯 Schnelle Treffer zuerst
+
+Quer durch alle Bereiche: Das hier ist klein, risikoarm und sofort spürbar. Wer wenig Zeit
+hat, fängt hier an - nichts davon fasst das Datenmodell an.
+
+| # | Punkt | Bereich | Aufwand |
+|---|---|---|---|
+| 1 | Vorlese-Aufbereitung des erkannten Texts (Trennstriche, Abkürzungen) | Vorlesen | **S** |
+| 2 | Kino-Modus vollenden: Ken-Burns-Zoom + Kreuzblende | Video | **S** |
+| 3 | Mehr Stimmen freischalten (je eine Zeile in `ttsProviders.js`) | Vorlesen | **S** |
+| 4 | „Buch hörfertig machen" - alle Seiten vorab in den Stimmen-Speicher | Vorlesen | **S** |
+| 5 | Stimme pro Profil statt global | Vorlesen | **S** |
+| 6 | Kosten-Anzeige (lokal gezählte Zeichen pro Monat) | Vorlesen | **S** |
+| 7 | Zweiter Comic-Testlauf mit korrigiertem Prompt | Eigene Werke | **S** |
+
+**Nummer 1 ist der beste Einstieg:** Sie verbessert *jede* Stimme, Geräte- wie KI-Stimme,
+lässt die Anzeige unangetastet und kann nichts kaputt machen.
+
+---
+
+## 🔊 Bereich: Vorlesen & Stimmen
+
+Details: [`docs/ROADMAP.md`](ROADMAP.md)
+
+| Punkt | Aufwand | Anmerkung |
+|---|---|---|
+| **Vorlese-Aufbereitung des erkannten Texts** | **S** | Eigene Funktion neben `app.utils.stripEmojiForSpeech()`; Trennstrich + Zeilenumbruch zusammenziehen, Abkürzungen ausschreiben. Nur fürs Ohr, Anzeige bleibt |
+| **Mehr Stimmen freischalten** | **S** | In `js/ttsProviders.js` ist nur eine Vorauswahl eingetragen (Gemini hat 30, OpenAI 11+) |
+| **„Buch hörfertig machen"** | **S** | Knopf, der alle Seiten vorab in den `ttsCache` legt - danach ohne Wartezeit und offline |
+| **Stimme pro Profil** | **S** | `app.settings.ttsVoices` müsste pro Profil statt global gespeichert werden |
+| **Kosten-Anzeige** | **S** | Rein lokal geschätzt mitzählen, wie viele Zeichen im Monat an den Anbieter gingen |
+| **Mitmachmodus mit KI-Stimme** | **M** | Läuft heute bewusst immer über die Gerätestimme. Über Pausen-Tags lösbar (Gemini `[pause]`, Chirp 3 über `markup`) - eine Aufnahme, keine Mehrkosten. Text stückeln wäre die teure Alternative |
+| **Lange Texte stückeln** | **M** | Über `MAX_NEURAL_CHARS = 4000` (praktisch nur EPUB-Kapitel) fällt es auf die Gerätestimme zurück. An Satzenden in ~800-Zeichen-Stücke zerlegen, Wort-Offsets verschieben |
+| **Emotionen / Audio-Tags** | **M** | Neues **optionales** Feld `speechText` je Variante, erzeugt ohne zusätzlichen API-Aufruf. **Sicherheitsnetz Pflicht:** Flag `supportsTags`, sonst liest die Stimme „eckige Klammer lacht" vor |
+
+---
+
+## 🎬 Bereich: Video & Ausspielung
+
+Details: [`docs/konzept-video-und-multiformat.md`](konzept-video-und-multiformat.md), [`docs/ROADMAP.md`](ROADMAP.md)
+
+| Punkt | Aufwand | Anmerkung |
+|---|---|---|
+| **Kino-Modus vollenden** | **S** | Nur noch Ken-Burns-Zoom (reines CSS) und Kreuzblende beim Seitenwechsel. **Der Textteil ist seit v0.12.0 erledigt** - das Konzeptpapier führt ihn noch als offen, das stimmt nicht mehr |
+| **Video-Export Weg A** (`MediaRecorder`) | **M** | Im Konzept mit „gering, ~1 Tag" veranschlagt. Preis: **Echtzeit-Aufnahme**, Tab muss sichtbar vorne bleiben. Kein Firefox. Als Prototyp brauchbar |
+| **Video-Export Weg B** (WebCodecs + Muxer) | **L** | „mittel, ~3-5 Tage inkl. Regie-Logik" - im Konzept ausdrücklich als **Zielarchitektur** empfohlen. Schneller als Echtzeit, Muxer-Bibliothek nur wenige KB nach `js/vendor/` |
+| ~~Weg C (ffmpeg.wasm)~~ | — | **Bewusst verworfen.** 25-30 MB Zusatz-Download und auf GitHub Pages nur mit Service-Worker-Trick. Nicht neu aufrollen |
+
+**Reihenfolge-Empfehlung aus dem Konzept:** erst Kino-Modus (größter Effekt pro Aufwand),
+dann eine einzelne Seite exportieren, erst danach ganze Bücher. **Offene Entscheidung Nr. 1
+unten blockiert den Export.**
+
+---
+
+## 🪄 Bereich: Eigene Werke erstellen
+
+Details: [`docs/KONZEPT-SchreibZauber.md`](KONZEPT-SchreibZauber.md), [`docs/KONZEPT-Bildquellen.md`](KONZEPT-Bildquellen.md), [`COMIC-ADAPTION-TODO.md`](../COMIC-ADAPTION-TODO.md)
+
+Der größte Brocken im Projekt - dafür in Stufen geschnitten, die **einzeln lieferbar** sind.
+
+| Punkt | Aufwand | Anmerkung |
+|---|---|---|
+| **Comic: zweiter Testlauf** | **S** | Ein Testbild hat zwei Prompt-Probleme aufgedeckt; der korrigierte Wortlaut ist noch nicht erprobt. Steht vor allem Weiteren |
+| **SchreibZauber Stufe 1 - Fundament** | **L** | Datenmodell, **DB v3**, Werkstatt-Übersicht, Idee/Bauplan/Geschichte, Platzhalter-Bilder, Export „ins Regal". **Ohne einen einzigen Bildaufruf** und laut Konzept bestes Nutzen-pro-Aufwand-Verhältnis |
+| **SchreibZauber Stufe 2 - Bilder** | **L** | Stilkarte, Figuren-Bibel, Storyboard, Bildgenerierung, Kostenzähler. Ab hier kostet es echtes Geld |
+| **SchreibZauber Stufe 3 - Layout & Druck** | **M** | Textplatzierung, Silbenfarben, Doppelseiten-Druck |
+| **SchreibZauber Stufe 4 - Arbeitsheft** | **L** | Lernziel, Progression, Aufgabenbaukasten, Lösungsteil |
+| **SchreibZauber Stufe 5 - Comic** | **L** | Panel-Layouts, Sprechblasen-Overlay |
+| **SchreibZauber Stufe 6 - Politur** | **M** | Zweite Einstiegsseite `schreiben.html`, projektübergreifende Figuren, Vorlagen |
+| **Comic-Generator-Werkzeug** | **L** | Bewusst **kein** App-Feature: eigenes Node-Werkzeug lokal beim Betreiber (`tools/comic-gen/`), weil Browser nur CORS-fähige Bild-Anbieter erreichen |
+
+**Zwei Fallen, die im Konzept ausdrücklich benannt sind:**
+- **Reihenfolge einhalten.** Stufe 1 ohne Bilder ist ein vollständiges Feature, kein Torso.
+- `js/studio/*` liegt schon im Repo, ist aber **absichtlich noch nicht in `js/main.js`
+  eingebunden** und steht deshalb auch nicht in der `APP_SHELL` von `sw.js`. Beides gehört
+  zum ersten Schritt von Stufe 1.
+
+---
+
+## 📝 Bereich: Übungshefte & Lernen
+
+Details: [`docs/todo-heft-generator.md`](todo-heft-generator.md), [`docs/uebungshefte-konzept.md`](uebungshefte-konzept.md)
+
+Der Heft-**Modus** (Blätter auslesen, erklären, kontrollieren) ist fertig. Offen ist der
+Schritt davor: Blätter **erzeugen**.
+
+| Punkt | Aufwand | Anmerkung |
+|---|---|---|
+| **Kontroll-Funktion im Alltag beobachten** | **S** | Wie zuverlässig beurteilt Gemini die Fotos bearbeiteter Blätter? Bei zu vielen „unklar" wäre eine Foto-Hilfe (Rahmen, Helligkeitshinweis) der nächste Schritt |
+| **Heft-Generator: API-Aufruf + Prompt** | **S** | Muster vorhanden (`generateBookQuiz`). Ein Heft = **ein** Aufruf, nicht einer pro Blatt |
+| **Heft-Generator: Auswahl-Ansicht** | **M** | Neue Ansicht inkl. Router-Eintrag in `js/nav.js` |
+| **Heft-Generator: Blätter auf Canvas zeichnen** | **M** | Vorlage vorhanden: `renderTextAsImageCanvas()` in `epubImport.js` |
+| **Heft-Generator: eigene Druckansicht** | **M** | Optional. Ein Canvas-Bild druckt schlechter als echter Text - dafür gäbe es dann zwei Wege zum selben Inhalt |
+
+**Wichtigste Einschränkung:** Ein auf Canvas gezeichnetes Textblatt ist für „Male die Tiere
+an" nutzlos - da fehlen die Tiere. Zuerst also Aufgabentypen **ohne Bild** (Zählen,
+Ankreuzen, Nachspuren, Schwungübungen). Ausmalbilder setzen die Bildgenerierung voraus.
+
+---
+
+## 📱 Bereich: App & Plattform
+
+| Punkt | Aufwand | Anmerkung |
+|---|---|---|
+| **Native Android-App via Capacitor** | **M** | Verpackt den bestehenden Code weitgehend unverändert. Nebeneffekt laut Roadmap: Ein natives Paket könnte **Audio im Hintergrund** abspielen - im Browser hört das Vorlesen beim Sperren des Bildschirms auf |
+| **API-Keys über ein Backend absichern** | **XL** | Braucht einen Server |
+| **Automatische Cloud-Synchronisierung** | **XL** | Braucht einen Server |
+| **Echte Multi-Geräte-Accounts mit Login** | **XL** | Braucht einen Server |
+
+Die drei **XL**-Punkte sind **bewusst zurückgestellt**, nicht vergessen. Seit den KI-Stimmen
+liegen mehr Keys im Browser als vorher - die Abwägung bleibt aber dieselbe: Ein Server würde
+die gesamte Architektur des Projekts umdrehen.
+
+---
+
+## 🔍 Bereich: Diagnose (nicht reproduziert)
+
+| Punkt | Aufwand | Anmerkung |
+|---|---|---|
+| Scroll-Verhalten am Bildschirmrand (Desktop) | **?** | Bisher nicht nachstellbar |
+| Zoom/Unschärfe im Fenstermodus | **?** | Bisher nicht nachstellbar |
+
+Beides braucht vermutlich einen Screenshot vom Nutzer - vorher lässt sich der Aufwand nicht
+einschätzen.
+
+---
+
+## ⚖️ Offene Entscheidungen (blockieren jeweils den nächsten Schritt)
+
+Diese Punkte sind **nicht** technisch offen, sondern brauchen eine Ansage des Betreibers:
+
+| # | Entscheidung | Blockiert |
+|---|---|---|
+| 1 | **Video-Export: ein Video pro Seite oder eins pro Buch?** | den gesamten Video-Export |
+| 2 | **ElevenLabs v3 (bezahlt) für Emotions-Tags?** | Audio-Tags bei ElevenLabs |
+| 3 | **Reicht der Stimmen-Speicher mit 100 MB?** | mehr Platz für Stimmen = weniger für Bücher |
+| 4 | **Welcher Anbieter wird der Familien-Standard?** | ob sich exakte Wort-Zeitstempel (nur ElevenLabs) oder Emotions-Tags (Gemini) lohnen |
+| 5 | **SchreibZauber: eigener Tab oder eigene App?** | SchreibZauber Stufe 1 bzw. 6 |
+| 6 | **Weitergabe erzeugter Hefte an andere Familien** | Quellen und Lizenzen erst klären |
 
 ---
 
@@ -40,76 +194,3 @@ Diese Punkte standen früher auf den Listen und sind jetzt erledigt - nicht erne
 - **KI-Stimmen** (Gemini, Google Cloud Chirp 3 HD, ElevenLabs, OpenAI) inkl. Stimmen-Speicher
 - **Mistral-Fallback fürs Buch-Quiz** (war der letzte Aufruf ohne Fallback)
 - **Dark-Mode-Lücken** geschlossen, Einzelbuch-Reimport repariert
-
----
-
-## 2. Offene Entscheidungen (blockieren jeweils den nächsten Schritt)
-
-Diese Punkte sind **nicht** technisch offen, sondern brauchen eine Ansage des Betreibers:
-
-1. **Video-Export: ein Video pro Seite oder eins pro Buch?** (Details: `docs/ROADMAP.md`)
-2. **ElevenLabs v3 (bezahlt) für Emotions-Tags?** - ohne Bezahltarif keine Audio-Tags
-3. **Reicht der Stimmen-Speicher mit 100 MB?** - mehr Platz für Stimmen heißt weniger für Bücher
-4. **Welcher Anbieter wird der Familien-Standard?** - davon hängt ab, ob sich Arbeit an exakten
-   Wort-Zeitstempeln (nur ElevenLabs) oder an Emotions-Tags (Gemini) lohnt
-5. **SchreibZauber: eigener Tab oder eigene App?** (Details: `docs/KONZEPT-SchreibZauber.md`)
-6. **Weitergabe erzeugter Hefte an andere Familien** - erst Quellen und Lizenzen klären
-
----
-
-## 3. Große Brocken (je eigenes Konzept vorhanden)
-
-| Vorhaben | Stand | Konzept |
-|---|---|---|
-| 🎬 **Video-Export** (Seite + KI-Stimme als Videodatei) | Vorarbeit erledigt, nur das Zusammensetzen fehlt | `docs/ROADMAP.md`, `docs/konzept-video-und-multiformat.md` |
-| 🪄 **SchreibZauber** (eigene Bilderbücher/Comics/Arbeitshefte schreiben) | Konzept fertig, Platzhalter-Fundament liegt in `js/studio/` | `docs/KONZEPT-SchreibZauber.md` |
-| 📝 **Heft-Generator** (Übungsblätter erstellen lassen) | Entwurf fertig, nicht begonnen | `docs/todo-heft-generator.md` |
-| 🎨 **KI-generierte Illustrationen** (Comic-Stil, für Text-only-EPUB-Kapitel) | Konzeptphase, Testbild gemacht | `COMIC-ADAPTION-TODO.md` |
-| 🎭 **Emotionen/Sprech-Anweisungen mitten im Satz** (Audio-Tags) | Konzept steht, Persona-Sprechstil wirkt bereits | `docs/ROADMAP.md` |
-| 📱 **Native Android-App via Capacitor** | Idee, verpackt den Code weitgehend unverändert | `docs/ROADMAP.md` |
-
-**Beim Video-Export ist das Wichtigste schon da:** `app.ttsNeural.renderPageSegments()` liefert
-Bild, Ton, Länge und Wort-Zeitpunkte. Offen ist nur noch das Zusammensetzen im Browser
-(Canvas + `MediaRecorder`) - und Entscheidung 1 oben.
-
-**`js/studio/*` ist bewusst noch nicht in `js/main.js` eingebunden** und steht deshalb auch
-nicht in der `APP_SHELL` von `sw.js`. Beides gehört zum ersten Schritt, sobald SchreibZauber
-tatsächlich verdrahtet wird.
-
----
-
-## 4. Kleinere Punkte
-
-- **Mitmachmodus mit KI-Stimme** - läuft heute immer über die Gerätestimme. Über Pausen-Tags
-  lösbar, ohne Mehrkosten (siehe `docs/ROADMAP.md`, Punkt 3)
-- **Lange Texte stückeln** - über `MAX_NEURAL_CHARS = 4000` (EPUB-Kapitel) fällt es auf die
-  Gerätestimme zurück
-- **Vorlese-Aufbereitung des erkannten Texts** - Trennstriche am Zeilenende zusammenziehen,
-  Abkürzungen ausschreiben; nur fürs Ohr, Anzeige bleibt unangetastet. Klein und risikoarm
-- **Mehr Stimmen freischalten** - in `js/ttsProviders.js` ist nur eine Vorauswahl eingetragen
-- **Stimme pro Profil** - jedes Kind eine eigene Vorlese-Stimme
-- **„Buch hörfertig machen"** - alle Seiten vorab in den Stimmen-Speicher legen
-- **Kosten-Anzeige** - lokal mitzählen, wie viele Zeichen im Monat an den Anbieter gingen
-- **Kontroll-Funktion im Alltag beobachten** - wie zuverlässig beurteilt Gemini die Fotos
-  bearbeiteter Blätter? Bei zu vielen „unklar" wäre eine Foto-Hilfe (Rahmen, Helligkeitshinweis)
-  der nächste Schritt
-
----
-
-## 5. Diagnose / noch nicht reproduziert
-
-- Scroll-Verhalten am Bildschirmrand (Desktop)
-- Zoom/Unschärfe im Fenstermodus
-
-Beides ist bisher nicht nachstellbar - braucht vermutlich einen Screenshot vom Nutzer.
-
----
-
-## 6. Bewusst zurückgestellt (bräuchte einen eigenen Server)
-
-- API-Keys über ein Backend absichern
-- Automatische Cloud-Synchronisierung (statt manuellem Export/Import)
-- Echte Multi-Geräte-Accounts mit Login
-
-Seit den KI-Stimmen liegen **mehr** Keys im Browser als vorher - die Abwägung bleibt aber
-dieselbe: Ein Server würde die gesamte Architektur des Projekts umdrehen.
