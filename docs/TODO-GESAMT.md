@@ -1,6 +1,6 @@
 # ✅ Gesamt-To-Do (alle Zweige zusammengeführt)
 
-**Stand: v0.12.0-beta, September 2026**
+**Stand: v0.13.0-beta, September 2026**
 
 In dieser Version sind alle bis dahin getrennt entwickelten Entwicklungszweige in einem
 Stand vereint. Jeder Zweig hatte seine eigene To-Do-Liste - diese Datei führt sie zusammen,
@@ -90,6 +90,7 @@ Details: [`docs/KONZEPT-Video.md`](KONZEPT-Video.md)
 
 | Punkt | Aufwand | Anmerkung |
 |---|---|---|
+| ~~**Hörbuch-Export**~~ | **M** | ✅ **erledigt (v0.13.0-beta)** - ganzes Buch als eine Audiodatei (`js/actions/audiobookExport.js`), Bildbeschreibung/Quiz zuschaltbar, nutzt den `ttsCache` und synthetisiert nichts doppelt |
 | **Video-Export Weg B** (WebCodecs + Muxer) | **L** | „mittel, ~3-5 Tage inkl. Regie-Logik". **Durch die Entscheidung „pro Buch" der einzig sinnvolle Weg** - siehe unten. Muxer-Bibliothek nur wenige KB nach `js/vendor/` |
 | ~~Weg A (`MediaRecorder`)~~ | — | **Für ganze Bücher ausgeschieden:** nimmt in Echtzeit auf, 8-10 Minuten mit sichtbarem Tab im Vordergrund. Höchstens noch Notnagel für Einzelseiten |
 | ~~Weg C (ffmpeg.wasm)~~ | — | **Bewusst verworfen.** 25-30 MB Zusatz-Download und auf GitHub Pages nur mit Service-Worker-Trick. Nicht neu aufrollen |
