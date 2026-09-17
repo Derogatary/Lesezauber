@@ -242,6 +242,12 @@ API-Keys über ein Backend absichern · automatische Cloud-Synchronisierung · e
 - **Stimme pro Profil:** Jedes Kind bekommt seine eigene Vorlese-Stimme - `app.settings.ttsVoices` müsste dafür pro Profil gespeichert werden.
 - **"Buch hörfertig machen":** Ein Knopf, der alle Seiten eines Buches vorab in den Stimmen-Speicher legt - danach läuft das Vorlesen ohne Wartezeit und offline.
 - **Kosten-Anzeige:** Mitzählen, wie viele Zeichen im Monat an den Anbieter gingen (rein lokal geschätzt).
+- **Tarif-Lock (neu, Sept. 2026):** Aus der Budget-Diskussion zu SchreibZauber entstanden,
+  betrifft aber schon jetzt die TTS-Einstellungen. Jede Stimme/jedes Modell bekommt ein
+  `costTier`-Flag (`standard`/`premium`); beim Wechsel auf eine teurere Option als die
+  aktuell gewählte erscheint ein Bestätigungsdialog statt eines stillen Wechsels - schützt
+  vor versehentlichem Umschalten in eine teurere Preisstufe, nicht vor Absicht. Der Betrag
+  selbst wird weiterhin persönlich beim Anbieter gedeckelt, nicht in der App.
 
 ---
 

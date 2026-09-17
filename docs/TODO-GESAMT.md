@@ -53,6 +53,7 @@ hat, fängt hier an - nichts davon fasst das Datenmodell an.
 | 7 | Stimme pro Profil statt global | Vorlesen | **S** |
 | 8 | Kosten-Anzeige (lokal gezählte Zeichen pro Monat) | Vorlesen | **S** |
 | 9 | Zweiter Comic-Testlauf mit korrigiertem Prompt | Eigene Werke | **S** |
+| 10 | Tarif-Lock: Warnung vor Wechsel in teurere Preisstufe | Vorlesen | **S** |
 
 **Nummer 1 ist der beste Einstieg:** Sie verbessert *jede* Stimme, Geräte- wie KI-Stimme,
 lässt die Anzeige unangetastet und kann nichts kaputt machen.
@@ -72,6 +73,7 @@ Details: [`docs/ROADMAP.md`](ROADMAP.md)
 | **„Buch hörfertig machen"** | **S** | Knopf, der alle Seiten vorab in den `ttsCache` legt - danach ohne Wartezeit und offline |
 | **Stimme pro Profil** | **S** | `app.settings.ttsVoices` müsste pro Profil statt global gespeichert werden |
 | **Kosten-Anzeige** | **S** | Rein lokal geschätzt mitzählen, wie viele Zeichen im Monat an den Anbieter gingen |
+| **Tarif-Lock** | **S** | Neu, aus der SchreibZauber-Budget-Diskussion. `costTier`-Flag je Stimme/Modell, Bestätigungsdialog vor einem Wechsel auf eine teurere Option - schützt vor Versehen, nicht vor Absicht. Betrag bleibt beim Anbieter gedeckelt, nicht in der App |
 | **Mitmachmodus mit KI-Stimme** | **M** | Läuft heute bewusst immer über die Gerätestimme. Über Pausen-Tags lösbar (Gemini `[pause]`, Chirp 3 über `markup`) - eine Aufnahme, keine Mehrkosten. Text stückeln wäre die teure Alternative |
 | **Lange Texte stückeln** | **M** | Über `MAX_NEURAL_CHARS = 4000` (praktisch nur EPUB-Kapitel) fällt es auf die Gerätestimme zurück. An Satzenden in ~800-Zeichen-Stücke zerlegen, Wort-Offsets verschieben |
 | **Emotionen / Audio-Tags** | **M** | ✅ entschieden, Weg klar: `speechText`-Feld immer mitgenerieren (kein Zusatz-Call), `supportsTags`-Flag je Anbieter. Bei ElevenLabs Modell auf `eleven_v3` umstellen - **kostet seit GA nicht mehr als v2** |
@@ -129,6 +131,13 @@ Der größte Brocken im Projekt - dafür in Stufen geschnitten, die **einzeln li
 - `js/studio/*` liegt schon im Repo, ist aber **absichtlich noch nicht in `js/main.js`
   eingebunden** und steht deshalb auch nicht in der `APP_SHELL` von `sw.js`. Beides gehört
   zum ersten Schritt von Stufe 1.
+
+**✅ Entschieden (Sept. 2026): Werktyp-Pfade parallel statt sequenziell.** Kein "erst
+Bilderbuch, dann Arbeitsheft" mehr - Stufe 2+3 (Bilderbuch) und Stufe 4 (Arbeitsheft) sollen
+mit mehreren gleichzeitigen Claude-Code-Sitzungen parallel entwickelt werden, sobald Stufe 1
+steht. **Bedingung:** Stufe 1 zuerst fertig bauen und mergen - beide Pfade bauen darauf auf,
+nicht aufeinander, sonst laufen die Sitzungen auf unterschiedlichen Grundlagen auseinander.
+Details: `docs/KONZEPT-SchreibZauber.md`, TEIL G.
 
 ---
 

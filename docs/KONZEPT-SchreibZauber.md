@@ -553,21 +553,38 @@ bleibt richtig. Nur der Anspruch an Stufe 1 und 3 steigt von Anfang an.
 
 Diese Punkte sollten vor Umsetzungsbeginn geklärt werden:
 
-1. **Bild-API freigeschaltet?** Ist der bestehende Google-Account abrechnungsfähig? Falls nein:
-   Stufe 1 (ohne Bilder) bauen und Kinderzeichnungen fotografieren – das ist ohnehin charmanter.
+1. **Bild-API freigeschaltet? - noch offen, braucht eine Antwort vom Betreiber.**
+   Ist der bestehende Google-Account abrechnungsfähig? Erklärung, weil die Frage zunächst
+   unklar war: Die heutige App nutzt Gemini nur zum *Analysieren* vorhandener Fotos - dafür
+   reicht der bestehende kostenlose API-Key. Stufe 2 (Bilder) will Gemini dagegen neue Bilder
+   *erzeugen* - dafür verlangt Google in der Regel eine hinterlegte Zahlungsmethode am
+   Google-Cloud-Projekt, auch wenn der Preis pro Bild klein ist (~0,04 $, siehe
+   `COMIC-ADAPTION-TODO.md`). **Zu prüfen:** Hat das Google-Konto hinter dem aktuellen
+   API-Key eine Zahlungsmethode hinterlegt? Falls nein/unsicher: kein Blocker - Stufe 1
+   (ohne Bilder) bauen und Kinderzeichnungen fotografieren, das ist ohnehin charmanter.
 2. ~~**Zwei Icons oder eines?**~~ **✅ beantwortet (Sept. 2026): beides, als Stufen.** Stufe 1-5
    als Tab/Button in LeseZauber, Stufe 6 optional das zweite Homescreen-Icon
    (Icon-Idee: magischer Stift/Federkiel) - siehe Kernempfehlung Punkt 5 oben.
-3. **Welcher Werktyp zuerst?** Empfehlung: Bilderbuch. Alternativ Arbeitsheft, wenn der
-   Schulbezug aktuell wichtiger ist.
-4. **Budgetgrenze**: Welcher Betrag pro Projekt fühlt sich richtig an?
-5. ~~**Wer darf erstellen?**~~ **✅ beantwortet (Sept. 2026): hinter einer Erwachsenen-Schwelle.**
-   Löst sich über den neuen, allgemeinen "Kinder-/Elternbereich" (Profil-Rolle
-   `role: 'child' | 'adult'`, Default `'child'`) - siehe `docs/ROADMAP.md`, Große Brocken
-   Punkt 10. Kein SchreibZauber-eigener Mechanismus, sondern derselbe Schalter, der auch
-   die teuren TTS-Einstellungen sperrt.
+3. ~~**Welcher Werktyp zuerst?**~~ **✅ beantwortet (Sept. 2026): keine feste Reihenfolge -
+   nach Stufe 1 parallel.** Statt "erst Bilderbuch, dann Arbeitsheft" sollen die
+   Werktyp-Pfade mit mehreren gleichzeitigen Claude-Code-Sitzungen parallel entwickelt
+   werden. Funktioniert mit dieser Architektur gut: `js/actions/<name>.js` +
+   `js/render/<name>.js` pro Feature hält Parallel-Arbeit konfliktarm (praktisch erprobt
+   beim Zusammenführen von acht parallelen Zweigen dieses Projekts - die wenigen
+   Berührungspunkte waren `main.js`-Imports, `sw.js`-Dateiliste, `index.html`-Navigation,
+   alle klein und mechanisch lösbar). **Bedingung:** Stufe 1 (Fundament: Datenmodell, DB v3,
+   Werkstatt-Übersicht) zuerst fertig bauen und mergen, *bevor* parallele Sitzungen für
+   Stufe 2+3 (Bilderbuch-Pfad) und Stufe 4 (Arbeitsheft-Pfad) starten - beide Pfade bauen
+   auf Stufe 1 auf, nicht aufeinander, sonst laufen sie schnell auseinander.
+4. **Budgetgrenze - teilweise beantwortet (Sept. 2026).** Der Betrag selbst wird persönlich
+   beim jeweiligen Anbieter gedeckelt (Google Cloud/ElevenLabs/OpenAI-Ausgabenlimit), nicht
+   in der App - die App kann ohne Server ohnehin keine harte Grenze durchsetzen. **Neue Idee
+   daraus, aufgenommen:** ein Tarif-Lock, der vor einem *versehentlichen* Wechsel in eine
+   teurere Preisstufe warnt (z.B. eine teurere Stimmen-Kategorie oder Bildqualität) - siehe
+   `docs/ROADMAP.md`, Kleine Ideen. Betrifft nicht nur SchreibZauber, sondern auch die
+   bestehenden TTS-Einstellungen.
 
-Verbleibend offen: 1, 3 und 4.
+Verbleibend offen: nur noch 1 (Zahlungsmethode am Google-Konto).
 
 ---
 
