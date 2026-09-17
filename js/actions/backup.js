@@ -1,10 +1,11 @@
 import { app } from '../core.js';
 
 Object.assign(app.actions, {
-    // NEU: einzelnes Buch herunterladen. Gleiches Format wie der
-    // Bibliotheks-Export - die Datei lässt sich später über
-    // "Importieren" wieder einlesen und ist dann genauso bearbeitbar
-    // wie jedes andere Buch (Seiten löschen/verschieben, Cover ändern usw.).
+    // NEU: einzelnes Buch herunterladen - die Datei enthält nur dieses eine
+    // Buch-Objekt (der Bibliotheks-Export dagegen eine Sammlung). "Importieren"
+    // erkennt beide Formate, die Datei lässt sich also wieder einlesen und ist
+    // dann genauso bearbeitbar wie jedes andere Buch (Seiten löschen/
+    // verschieben, Cover ändern usw.).
     downloadBook(bookId) {
         const book = app.library[bookId];
         if (!book) return;
