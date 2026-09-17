@@ -209,15 +209,22 @@ Object.assign(app.utils, {
     // Reihenfolge wichtig: "z.b." vor "b." o.ä. gibt es hier nicht, aber
     // längere Abkürzungen stehen trotzdem vor kürzeren, falls sich das mal
     // überschneidet.
+    // FIX: hier stand ursprünglich überall ein \b hinter dem abschließenden
+    // Punkt. Eine Wortgrenze setzt aber einen Wechsel zwischen Wort- und
+    // Nicht-Wort-Zeichen voraus - nach "." folgt fast immer ein Leerzeichen,
+    // also zwei Nicht-Wort-Zeichen, und die Regel hat NIE gegriffen. Der
+    // Lookahead (?=\s|$) prüft stattdessen genau das, was gemeint war:
+    // hinter der Abkürzung kommt Leerraum oder das Textende. Ohne diesen
+    // Abschluss würde "ca." auch mitten in "Cache" ersetzt.
     _SPEECH_ABBREVIATIONS: [
-        [/\bz\.\s*b\.\b/gi, 'zum Beispiel'],
-        [/\bu\.\s*a\.\b/gi, 'unter anderem'],
-        [/\bd\.\s*h\.\b/gi, 'das heißt'],
-        [/\busw\.\b/gi, 'und so weiter'],
-        [/\bca\.\b/gi, 'circa'],
-        [/\bnr\.\b/gi, 'Nummer'],
-        [/\bbzw\.\b/gi, 'beziehungsweise'],
-        [/\betc\.\b/gi, 'et cetera']
+        [/\bz\.\s*b\.(?=\s|$)/gi, 'zum Beispiel'],
+        [/\bu\.\s*a\.(?=\s|$)/gi, 'unter anderem'],
+        [/\bd\.\s*h\.(?=\s|$)/gi, 'das heißt'],
+        [/\busw\.(?=\s|$)/gi, 'und so weiter'],
+        [/\bca\.(?=\s|$)/gi, 'circa'],
+        [/\bnr\.(?=\s|$)/gi, 'Nummer'],
+        [/\bbzw\.(?=\s|$)/gi, 'beziehungsweise'],
+        [/\betc\.(?=\s|$)/gi, 'et cetera']
     ],
 
     // NEU: glättet den (für die Anzeige exakten, gedruckten) Text für die
