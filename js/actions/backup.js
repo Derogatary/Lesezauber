@@ -110,14 +110,36 @@ Object.assign(app.actions, {
                 throw new Error('Ungültiges Format');
             }
 
+            // FIX: "Buch herunterladen" speichert EIN Buch-Objekt, der
+            // Bibliotheks-Export dagegen eine Sammlung {buchId: buch}.
+            // Beides landete hier ungeprüft in Object.values() - bei einer
+            // Einzelbuch-Datei wurden dadurch nicht Bücher, sondern deren
+            // Felder (Titel, Autor, Seiten-Array...) als eigenständige
+            // "Bücher" gespeichert. Ergebnis: Datenmüll in der Bibliothek
+            // und eine Ansicht, die danach gar nicht mehr aufging. Ein
+            // echtes Buch erkennt man zuverlässig an id + pages-Array.
+            const isSingleBook = typeof imported.id === 'string' && Array.isArray(imported.pages);
+            const importedBooks = isSingleBook ? [imported] : Object.values(imported);
+
+            // Zusätzlich jeden Eintrag prüfen, damit eine fremde/kaputte
+            // JSON-Datei nicht trotzdem halbe Datensätze hereinschleust.
+            const validBooks = importedBooks.filter(b =>
+                b && typeof b === 'object' && typeof b.id === 'string' && Array.isArray(b.pages)
+            );
+            if (validBooks.length === 0) throw new Error('Keine Bücher in der Datei gefunden');
+
+            const skipped = importedBooks.length - validBooks.length;
+            if (skipped > 0) {
+                console.warn(`${skipped} Eintrag/Einträge übersprungen (kein gültiges Buch).`);
+            }
+
             // NEU: jedes importierte Buch einzeln über dbOps.saveBook
             // speichern - das übernimmt automatisch die richtige
             // Speicher-Engine (IndexedDB), ohne dass diese Datei wissen
             // muss, wie/wo genau gespeichert wird.
-            const importedBooks = Object.values(imported);
-            importedBooks.forEach(book => app.dbOps.saveBook(book));
+            validBooks.forEach(book => app.dbOps.saveBook(book));
 
-            app.ui.toast(`${importedBooks.length} Buch/Bücher importiert.`, '📥');
+            app.ui.toast(`${validBooks.length} Buch/Bücher importiert.`, '📥');
             app.nav.go('lib');
         } catch (err) {
             console.error('Import fehlgeschlagen:', err);

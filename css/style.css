@@ -15,9 +15,26 @@
 
     /* Flächen / Karten */
     .bg-white { background-color: #1e293b !important; }
-    .bg-slate-50 { background-color: #0f172a !important; }
+    /* FIX: war identisch zur Seiten-Hintergrundfarbe (siehe body-Regel
+       unten). Für den App-Rahmen selbst fiel das nie auf (er deckt am
+       Handy die komplette Fläche ab, man sieht den body dahinter also nie).
+       Genau dieselbe Klasse wird aber auch als "eingelassene" Füllung von
+       Eingabefeldern/Dropdowns auf weißen Karten benutzt (z.B. die
+       Einstellungen-Felder) - dort verschmolz das Feld dadurch optisch
+       komplett mit der Seite dahinter und war praktisch nicht mehr zu
+       erkennen. Jetzt ein eigener, etwas hellerer Ton: dunkler als die
+       Karte (#1e293b), aber klar heller als der reine Seitenhintergrund. */
+    .bg-slate-50 { background-color: #172236 !important; }
     .bg-slate-100 { background-color: #334155 !important; }
     .bg-slate-200 { background-color: #334155 !important; }
+
+    /* FIX: Tailwind-Klassen MIT Transparenzangabe (z.B. "bg-slate-50/95")
+       sind für CSS eigene Klassennamen und wurden von den Regeln darüber
+       NICHT miterfasst - die klebende Kopfzeile im Reader blieb dadurch
+       im Dark-Modus fast weiß, während der Rest dunkel war. Farbwert an
+       die obige .bg-slate-50-Anpassung angeglichen, damit die Kopfzeile
+       beim Scrollen weiter nahtlos mit der Seite dahinter verschmilzt. */
+    .bg-slate-50\/95 { background-color: rgba(23, 34, 54, 0.95) !important; }
 
     /* Text */
     .text-slate-900 { color: #f1f5f9 !important; }
@@ -50,9 +67,25 @@
     .text-emerald-700, .text-emerald-800, .text-emerald-900 { color: #6ee7b7 !important; }
     .text-purple-800, .text-purple-900, .text-purple-950 { color: #d8b4fe !important; }
 
+    /* FIX: die etwas kräftigeren *-200-Töne werden ausschließlich als
+       Hover-Farbe genutzt (z.B. "hover:bg-indigo-200"). Ohne diese Zeilen
+       sprang ein Knopf im Dark-Modus beim Überfahren auf helles Pastell,
+       während seine Schrift durch die Regeln oben hell blieb - die
+       Beschriftung war dann für einen Moment praktisch unlesbar. */
+    .bg-indigo-200 { background-color: rgba(99, 102, 241, 0.3) !important; }
+    .bg-amber-200 { background-color: rgba(245, 158, 11, 0.3) !important; }
+    .bg-emerald-200 { background-color: rgba(16, 185, 129, 0.3) !important; }
+
+    /* FIX: Erstleser-Textfeld (bg-indigo-50/50) - siehe Hinweis zu
+       bg-slate-50/95 oben: heller Kasten mit hellem Text war die Folge. */
+    .bg-indigo-50\/50 { background-color: rgba(99, 102, 241, 0.12) !important; }
+
     .border-indigo-100 { border-color: rgba(99, 102, 241, 0.3) !important; }
     .border-amber-200 { border-color: rgba(245, 158, 11, 0.3) !important; }
     .border-emerald-100, .border-emerald-300 { border-color: rgba(16, 185, 129, 0.3) !important; }
+    /* FIX: fehlte als einziger der farbigen Rahmen - die Bildbeschreibungs-
+       Karte hatte dadurch einen grell hellen Rand auf dunklem Grund. */
+    .border-purple-100 { border-color: rgba(168, 85, 247, 0.3) !important; }
 }
 
 .view-hidden { display: none !important; }
@@ -66,7 +99,14 @@
     transition: background-color 0.1s ease;
 }
 @media (prefers-color-scheme: dark) {
-    .speech-word.speech-highlight { background-color: #ca8a04; color: #fff; }
+    /* FIX: hier stand vorher eine fest verdrahtete Farbe (#ca8a04). Dadurch
+       war die Farbauswahl aus den Einstellungen im Dark-Modus komplett
+       wirkungslos - man stellte etwas ein und sah abends keinen Unterschied.
+       Jetzt zählt dieselbe Variable wie im hellen Modus; der gedämpfte
+       Amber-Ton bleibt nur noch Rückfall, falls nie eine Farbe gewählt
+       wurde. Die dunkle Schriftfarbe der Grundregel passt zu allen zur
+       Auswahl stehenden (hellen) Markierfarben. */
+    .speech-word.speech-highlight { background-color: var(--speech-highlight-color, #ca8a04); }
 }
 .view-transition { transition: opacity 0.25s ease-in-out, transform 0.25s ease-in-out; }
 

@@ -17,7 +17,10 @@ Object.assign(app.actions, {
                 word: key,
                 displayWord: String(item.word).trim(),
                 emoji: item.emoji,
-                count: existing ? existing.count + 1 : 1
+                // FIX: bei einem Alt-Eintrag ohne count wurde hier
+                // "undefined + 1" = NaN gespeichert - der Zähler war danach
+                // dauerhaft kaputt und ließ sich auch nicht mehr erholen.
+                count: (existing?.count || 0) + 1
             };
             app.dbOps.saveVocabEntry(entry);
         });

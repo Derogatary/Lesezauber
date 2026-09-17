@@ -141,7 +141,7 @@ main.js                  Bindet alle Module zusammen und startet die App
 
 - Alle Daten liegen im Browser des jeweiligen Geräts (IndexedDB) – kein automatischer Abgleich zwischen mehreren Geräten. Für den Umzug auf ein neues Gerät: Export/Import unter ⚙️ nutzen.
 - Der Gemini-API-Key liegt im Klartext im Browser des Geräts (kein eigener Server dazwischen).
-- Kein Offline-Modus (Tailwind-CSS und die KI-Analyse brauchen eine Internetverbindung).
+- Neue Seiten scannen/analysieren braucht Internet (die KI-Auswertung läuft über Gemini bzw. Mistral). Die App selbst und bereits analysierte Bücher funktionieren dank Service Worker auch offline - Tailwind liegt seit dem eigenen Build lokal mit im Cache.
 - iOS Safari kann Website-Speicher (auch IndexedDB) nach langer Inaktivität automatisch löschen, wenn die Seite nicht zum Homescreen hinzugefügt wurde – regelmäßiger Export ist deshalb weiterhin empfehlenswert.
 
 ## 🗺 Mögliche nächste Schritte

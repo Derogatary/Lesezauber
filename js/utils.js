@@ -64,11 +64,6 @@ Object.assign(app.utils, {
         return null;
     },
 
-    // NEU: findet EINE vorhandene Textversion einer Seite - bevorzugt die
-    // angegebene Persona, fällt aber auf jede andere bereits vorhandene
-    // zurück. Sinnvoll für Fälle wie den Druck, wo der Original-Text
-    // ohnehin persona-unabhängig sein sollte, aber vielleicht nur für eine
-    // ANDERE Persona schon erzeugt wurde.
     // NEU: liefert ein echtes Profil für ein NEU erstelltes Buch. Ist
     // gerade der "Alle Profile"-Filter aktiv, würde das Buch sonst dem
     // ungültigen Wert "__all__" zugeordnet und wäre danach in keinem
@@ -81,6 +76,11 @@ Object.assign(app.utils, {
         return app.profiles[0]?.id || 'default';
     },
 
+    // NEU: findet EINE vorhandene Textversion einer Seite - bevorzugt die
+    // angegebene Persona, fällt aber auf jede andere bereits vorhandene
+    // zurück. Sinnvoll für Fälle wie den Druck, wo der Original-Text
+    // ohnehin persona-unabhängig sein sollte, aber vielleicht nur für eine
+    // ANDERE Persona schon erzeugt wurde.
     resolveAnyVariant(page, preferredPersonaId) {
         const preferred = this.resolvePageVariant(page, preferredPersonaId);
         if (preferred) return preferred;

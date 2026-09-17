@@ -6,7 +6,12 @@ Object.assign(app.render, {
         // stehen. Ergänzt man dort eine Persona, erscheint sie automatisch
         // hier - ohne diese Datei anzufassen.
         const personaSelect = document.getElementById('selectPersona');
-        personaSelect.innerHTML = app.personas.map(p => `<option value="${p.id}">${p.label}</option>`).join('');
+        // FIX: als einzige Stelle fehlte hier das sanitize() - die
+        // Reader-Auswahl in render/reader.js macht es bereits. Personas
+        // stammen zwar aus config.js und sind damit ungefährlich, aber die
+        // Regel "vor innerHTML immer sanitize" soll ausnahmslos gelten,
+        // damit sie beim nächsten Mal nicht versehentlich reißt.
+        personaSelect.innerHTML = app.personas.map(p => `<option value="${p.id}">${app.utils.sanitize(p.label)}</option>`).join('');
 
         document.getElementById('inputApiKey').value = app.settings.apiKey;
         document.getElementById('inputMistralKey').value = app.settings.mistralApiKey;

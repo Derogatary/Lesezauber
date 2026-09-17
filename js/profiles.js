@@ -35,7 +35,15 @@ function saveProfiles() {
 }
 
 app.profiles = loadProfiles();
-app.state.currentProfileId = localStorage.getItem(ACTIVE_PROFILE_KEY) || app.profiles[0].id;
+
+// FIX: ein gespeicherter Profil-Wert kann veraltet sein (Profil wurde auf
+// einem anderen Gerät gelöscht, Backup eingespielt o.ä.). Stand dann eine
+// unbekannte ID im Speicher, war die Bibliothek dauerhaft leer, ohne dass
+// erkennbar war warum. Der Sonderwert "Alle Profile" bleibt gültig.
+const storedProfileId = localStorage.getItem(ACTIVE_PROFILE_KEY);
+const storedIsValid = storedProfileId === ALL_PROFILES_ID
+    || app.profiles.some(p => p.id === storedProfileId);
+app.state.currentProfileId = storedIsValid ? storedProfileId : app.profiles[0].id;
 
 Object.assign(app.actions, {
     switchProfile(profileId) {

@@ -29,7 +29,18 @@ Object.assign(app.tts, {
     },
 
     speak(text, onEnd, highlightElementId) {
-        if (!this.synth || !text) return;
+        // FIX: hier wurde vorher einfach abgebrochen. Beim automatischen
+        // Vorlesen hängen aber mehrere speak()-Aufrufe als Kette aneinander
+        // (Text -> Bildbeschreibung -> Rätselfrage -> nächste Seite). Fehlte
+        // ein Baustein (z.B. eine Seite ohne Antworttext, oder ein Browser
+        // ganz ohne Sprachausgabe), wurde onEnd nie aufgerufen und das
+        // Vorlesen blieb ohne jede Meldung stehen - der Knopf zeigte weiter
+        // "stoppen", es passierte aber nichts mehr. Jetzt wird der nächste
+        // Schritt trotzdem angestoßen und die Kette läuft weiter.
+        if (!this.synth || !text) {
+            if (onEnd) onEnd();
+            return;
+        }
         this.synth.cancel();
 
         let cleanText;

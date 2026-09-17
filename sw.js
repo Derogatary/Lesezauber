@@ -1,7 +1,7 @@
 // Bei jeder inhaltlichen Änderung an einer dieser Dateien diese Nummer
 // erhöhen - sonst bekommen wiederkehrende Besucher weiter die alte
 // zwischengespeicherte Version ausgeliefert.
-const CACHE_NAME = 'lesezauber-shell-v13';
+const CACHE_NAME = 'lesezauber-shell-v15';
 
 // Nur die eigenen, lokalen Dateien werden zwischengespeichert (die
 // "App-Hülle"). Die Gemini-/Mistral-APIs werden absichtlich NICHT
@@ -64,8 +64,9 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
     const url = new URL(event.request.url);
 
-    // Fremde Anfragen (Tailwind-CDN, Google-Gemini-API) unangetastet lassen
-    // - dafür ist dieser Service Worker nicht zuständig.
+    // Fremde Anfragen (Google-Gemini-API, Mistral-API) unangetastet lassen
+    // - dafür ist dieser Service Worker nicht zuständig. (Tailwind kommt
+    // seit dem eigenen Build aus css/tailwind.css, also von hier.)
     if (url.origin !== self.location.origin) {
         return;
     }
