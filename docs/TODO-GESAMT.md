@@ -66,11 +66,9 @@ Details: [`docs/ROADMAP.md`](ROADMAP.md)
 
 | Punkt | Aufwand | Anmerkung |
 |---|---|---|
-| **Stimmen-Speicher auf 300 MB erhöhen** | **S** | ✅ entschieden - eine Konstante in `js/db.js` (`TTS_CACHE_MAX_BYTES`). Eviction-Logik existiert bereits |
 | **Speechify als 5. Anbieter ergänzen** | **S** | ✅ entschieden - $6-10/Mio. Zeichen statt ElevenLabs' ~$100/Mio., ebenfalls exakte Wort-Zeitstempel, Deutsch unterstützt. Neuer Eintrag in `js/ttsProviders.js` |
 | **Vorlese-Aufbereitung des erkannten Texts** | **S** | Eigene Funktion neben `app.utils.stripEmojiForSpeech()`; Trennstrich + Zeilenumbruch zusammenziehen, Abkürzungen ausschreiben. Nur fürs Ohr, Anzeige bleibt |
 | **Mehr Stimmen freischalten** | **S** | In `js/ttsProviders.js` ist nur eine Vorauswahl eingetragen (Gemini hat 30, OpenAI 11+) |
-| **„Buch hörfertig machen"** | **S** | Knopf, der alle Seiten vorab in den `ttsCache` legt - danach ohne Wartezeit und offline |
 | **Stimme pro Profil** | **S** | `app.settings.ttsVoices` müsste pro Profil statt global gespeichert werden |
 | **Kosten-Anzeige** | **S** | Rein lokal geschätzt mitzählen, wie viele Zeichen im Monat an den Anbieter gingen |
 | **Tarif-Lock** | **S** | Neu, aus der SchreibZauber-Budget-Diskussion. `costTier`-Flag je Stimme/Modell, Bestätigungsdialog vor einem Wechsel auf eine teurere Option - schützt vor Versehen, nicht vor Absicht. Betrag bleibt beim Anbieter gedeckelt, nicht in der App |
@@ -224,5 +222,7 @@ Diese Punkte standen früher auf den Listen und sind jetzt erledigt - nicht erne
 - **Heft-Modus** für Übungshefte inkl. **Kontrolle bearbeiteter Blätter** per Foto
 - **Fortschritt und Belohnungen** (geschaffte Bücher/Hefte)
 - **KI-Stimmen** (Gemini, Google Cloud Chirp 3 HD, ElevenLabs, OpenAI) inkl. Stimmen-Speicher
+- **Stimmen-Speicher auf 300 MB erhöht** (`TTS_CACHE_MAX_BYTES` in `js/db.js`)
+- **„Buch hörfertig machen"** - Knopf in der Buchansicht, legt alle Seiten vorab in den `ttsCache`
 - **Mistral-Fallback fürs Buch-Quiz** (war der letzte Aufruf ohne Fallback)
 - **Dark-Mode-Lücken** geschlossen, Einzelbuch-Reimport repariert

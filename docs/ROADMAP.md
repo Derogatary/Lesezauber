@@ -57,7 +57,7 @@ wird:
   erlaubt, ist nicht zu 100% verifiziert (keine gegenteiligen Hinweise gefunden) - im
   Praxistest bestätigen.
 
-**2. Stimmen-Speicher: 300 MB statt 100 MB.** (entschieden, Sept. 2026)
+**2. Stimmen-Speicher: 300 MB statt 100 MB.** (entschieden, Sept. 2026 - **umgesetzt**)
 
 Faktor 3 als Mittelweg: bei Gemini (~1 MB/Seite) wächst die Reichweite von ~100 auf
 ~300 Seiten, bei den MP3-Anbietern (~40 KB/Seite) greift das Limit ohnehin kaum. Moderne
