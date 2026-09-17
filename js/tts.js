@@ -44,15 +44,22 @@ Object.assign(app.tts, {
         });
     },
 
-    // NEU: bereitet den Text fürs Vorlesen auf - Emojis raus (sonst
+    // NEU: bereitet den Text fürs Vorlesen auf - erst Trennstriche/
+    // Zeilenumbrüche/Abkürzungen glätten (prepareTextForSpeech, klingt für
+    // JEDE Stimme sauberer, siehe docs/ROADMAP.md), dann Emojis raus (sonst
     // versucht die Stimme, sie auszusprechen) und, falls ein Textfeld
-    // angegeben ist, ein <span> pro Wort für die Hervorhebung. Beide
-    // Sprechwege (Gerät und KI-Stimme) nutzen danach denselben Text, damit
-    // die Hervorhebung in beiden Fällen zu den Zeichenpositionen passt.
+    // angegeben ist, ein <span> pro Wort für die Hervorhebung. Die
+    // Glättung muss VOR der Wort-Hervorhebung laufen, sonst würden
+    // Zeilenumbrüche/Trennstriche als eigene "Wörter" hervorgehoben, obwohl
+    // sie nie ausgesprochen werden. Beide Sprechwege (Gerät und KI-Stimme)
+    // nutzen danach denselben Text, damit die Hervorhebung in beiden
+    // Fällen zu den Zeichenpositionen passt. Die Reader-Anzeige selbst
+    // bleibt unangetastet - hier wird nur die Kopie fürs Vorlesen gebaut.
     _prepare(text, highlightElementId) {
-        if (!highlightElementId) return app.utils.stripEmojiForSpeech(text);
+        const prepared = app.utils.prepareTextForSpeech(text);
+        if (!highlightElementId) return app.utils.stripEmojiForSpeech(prepared);
 
-        const { clean, html } = app.utils.buildSpeechHighlightHtml(text);
+        const { clean, html } = app.utils.buildSpeechHighlightHtml(prepared);
         const el = document.getElementById(highlightElementId);
         if (el) el.innerHTML = html;
         return clean;
@@ -179,7 +186,11 @@ Object.assign(app.tts, {
         this.stop();
         const myGen = this.speakGeneration;
 
-        const parts = app.utils.splitBySpeechEmoji(erstleserText);
+        // NEU: gleiche Glättung wie beim normalen Vorlesen (Trennstriche/
+        // Zeilenumbrüche/Abkürzungen) - läuft VOR splitBySpeechEmoji(), das
+        // die Emoji-Positionen erst danach aus dem Text ermittelt, betrifft
+        // also nicht die Emoji-Erkennung selbst.
+        const parts = app.utils.splitBySpeechEmoji(app.utils.prepareTextForSpeech(erstleserText));
         const container = highlightElementId ? document.getElementById(highlightElementId) : null;
 
         // Kompletten Text (inkl. Emojis) sofort anzeigen, in Wort-Spans

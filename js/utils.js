@@ -203,6 +203,53 @@ Object.assign(app.utils, {
         return data;
     },
 
+    // NEU: gängige Abkürzungen, die die Stimme sonst buchstabiert oder falsch
+    // betont vorliest - Liste bewusst kurz gehalten (nur was in Kinderbuch-
+    // /Heft-Texten tatsächlich vorkommt), Erweiterung bei Bedarf hier.
+    // Reihenfolge wichtig: "z.b." vor "b." o.ä. gibt es hier nicht, aber
+    // längere Abkürzungen stehen trotzdem vor kürzeren, falls sich das mal
+    // überschneidet.
+    _SPEECH_ABBREVIATIONS: [
+        [/\bz\.\s*b\.\b/gi, 'zum Beispiel'],
+        [/\bu\.\s*a\.\b/gi, 'unter anderem'],
+        [/\bd\.\s*h\.\b/gi, 'das heißt'],
+        [/\busw\.\b/gi, 'und so weiter'],
+        [/\bca\.\b/gi, 'circa'],
+        [/\bnr\.\b/gi, 'Nummer'],
+        [/\bbzw\.\b/gi, 'beziehungsweise'],
+        [/\betc\.\b/gi, 'et cetera']
+    ],
+
+    // NEU: glättet den (für die Anzeige exakten, gedruckten) Text für die
+    // Sprachausgabe - siehe docs/ROADMAP.md "Vorlese-Aufbereitung". Läuft
+    // VOR stripEmojiForSpeech()/buildSpeechHighlightHtml(), damit deren
+    // Wort-Zerlegung (für die Hervorhebung) schon auf dem geglätteten Text
+    // arbeitet und nicht selbst noch Zeilenumbrüche als "Wörter" zählt.
+    // Verändert NUR den an die Sprachausgabe gehenden Text, NIE die im
+    // Reader angezeigten/gespeicherten Seitentexte.
+    prepareTextForSpeech(text) {
+        if (!text) return text;
+        let result = text
+            // Trennstrich am Zeilenende + Zeilenumbruch zusammenziehen, aber
+            // NUR wenn danach ein Kleinbuchstabe folgt ("Kinder-\nwagen" ->
+            // "Kinderwagen") - eine echte Bindestrich-Verbindung wie
+            // "Ost-West" hat keinen Zeilenumbruch und bleibt unangetastet,
+            // ein Bindestrich vor einem neuen, großgeschriebenen Wort
+            // ("Satzende-\nNächster Satz") wird bewusst NICHT zusammengezogen.
+            .replace(/(\p{L})-\s*\r?\n\s*(\p{Ll})/gu, '$1$2')
+            // übrige harte Zeilenumbrüche mitten im Satz sind fürs Ohr nur
+            // eine Pause, keine neue Zeile - werden zu einem Leerzeichen.
+            .replace(/\r?\n/g, ' ');
+
+        this._SPEECH_ABBREVIATIONS.forEach(([re, replacement]) => {
+            result = result.replace(re, replacement);
+        });
+
+        // mehrfache Leerzeichen (auch durch die Ersetzungen oben entstanden)
+        // und Leerzeilen zu je einem einzigen Leerzeichen normalisieren.
+        return result.replace(/\s+/g, ' ').trim();
+    },
+
     // NEU: entfernt Emojis vor dem Vorlesen (Browser würden sonst versuchen,
     // sie als Wort auszusprechen) und ersetzt sie durch ein Komma als
     // kleine, natürliche Sprechpause.
