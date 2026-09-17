@@ -16,9 +16,12 @@ import { app } from './core.js';
 const GEMINI_TTS_MODEL = 'gemini-3.1-flash-tts-preview';
 const GEMINI_TTS_FALLBACK_MODEL = 'gemini-2.5-flash-preview-tts';
 
-// Mehrsprachiges ElevenLabs-Modell - nur die mehrsprachigen Modelle
-// sprechen sauberes Deutsch, die reinen englischen Modelle nicht.
-const ELEVEN_MODEL = 'eleven_multilingual_v2';
+// NEU (Audio-Tags, Entscheidung Sept. 2026): eleven_v3 ist seit der
+// allgemeinen Verfügbarkeit (März 2026) genauso teuer wie v2, versteht
+// aber zusätzlich Audio-Tags mitten im Satz ([flüstert], [lacht], ...) -
+// ersetzt v2 komplett, kein Parallelbetrieb. Weiterhin mehrsprachig,
+// spricht also sauberes Deutsch.
+const ELEVEN_MODEL = 'eleven_v3';
 
 const OPENAI_TTS_MODEL = 'gpt-4o-mini-tts';
 
@@ -324,6 +327,10 @@ Object.assign(app.ttsProviders, {
             ],
             defaultVoice: 'Kore',
             supportsStyle: true,
+            // NEU (Audio-Tags): Gemini kennt über 200 Inline-Tags mitten im
+            // Satz ([whispers], [laughs], [excited], ...) - wird genutzt,
+            // wenn eine Seite ein speechText hat (siehe js/tts.js).
+            supportsTags: true,
             synthesize: geminiSynthesize
         },
         {
@@ -348,6 +355,11 @@ Object.assign(app.ttsProviders, {
             defaultVoice: 'de-DE-Chirp3-HD-Achernar',
             supportsStyle: false,
             supportsRate: true,
+            // NEU (Audio-Tags): Chirp 3 kennt nur Tempo-/Pausen-Tags über
+            // ein eigenes "markup"-Feld, keine Emotions-Tags im normalen
+            // Text - ein [flüstert] mitten im "text"-Feld würde buchstäblich
+            // vorgelesen. speechText wird deshalb hier NICHT genutzt.
+            supportsTags: false,
             synthesize: googleCloudSynthesize
         },
         {
@@ -371,6 +383,9 @@ Object.assign(app.ttsProviders, {
             defaultVoice: '21m00Tcm4TlvDq8ikWAM',
             supportsStyle: false,
             supportsVoiceFetch: true,
+            // NEU (Audio-Tags): eleven_v3 (siehe ELEVEN_MODEL oben) versteht
+            // Audio-Tags mitten im Satz, seit GA zum selben Preis wie v2.
+            supportsTags: true,
             synthesize: elevenSynthesize
         },
         {
@@ -394,6 +409,10 @@ Object.assign(app.ttsProviders, {
             defaultVoice: 'nova',
             supportsStyle: true,
             supportsRate: true,
+            // NEU (Audio-Tags): OpenAI hat nur das globale "instructions"-Feld
+            // für den GANZEN Text (siehe styleHintFor), keine Inline-Tags
+            // mitten im Satz.
+            supportsTags: false,
             synthesize: openaiSynthesize
         }
     ],

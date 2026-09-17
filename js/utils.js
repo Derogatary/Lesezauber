@@ -136,7 +136,13 @@ Object.assign(app.utils, {
             // Vorlesen blendet das dann einfach aus.
             desc: result.hasIllustration === false ? null : (result.imageDescription || null),
             quizQ: result.quizQuestion || (result.hasIllustration === false ? 'Worum ging es auf dieser Seite?' : 'Was siehst du auf dem Bild?'),
-            quizA: result.quizAnswer || 'Schau genau hin!'
+            quizA: result.quizAnswer || 'Schau genau hin!',
+            // NEU (Audio-Tags): nur fürs Vorlesen gedacht, NIE für die
+            // Anzeige - siehe app.tts._pickSpeechVariant(). Ist bei
+            // bekanntem PDF-Text (s.o.) kein eigener speechText sinnvoll,
+            // weil dort auch "text" schon feststeht statt von der KI erzeugt
+            // zu werden - dann bleibt es beim normalen Text.
+            speechText: page.pdfSourceText ? null : (result.speechText || null)
         };
     },
 
@@ -213,6 +219,16 @@ Object.assign(app.utils, {
             .replace(/,\s*,/g, ',')
             .replace(/\s+/g, ' ')
             .trim();
+    },
+
+    // NEU (Audio-Tags): entfernt Sprech-Anweisungen in eckigen Klammern
+    // (z.B. "[flüstert]", "[lacht]") aus speechText. Sicherheitsnetz für
+    // Anbieter ohne supportsTags (js/ttsProviders.js) bzw. die
+    // Gerätestimme - sonst würde buchstäblich "eckige Klammer lacht"
+    // vorgelesen.
+    stripSpeechTags(text) {
+        if (!text) return text;
+        return text.replace(/\[[^[\]]{1,40}\]/g, '').replace(/\s+/g, ' ').trim();
     },
 
     // NEU: zerlegt einen (bereits emoji-bereinigten) Text in Wörter mit
