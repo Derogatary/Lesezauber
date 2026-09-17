@@ -63,7 +63,16 @@ Object.assign(app.actions, {
                 // Legt bereits gecachten Text NICHT erneut an - _getAudio in
                 // ttsNeural.js prüft den Zwischenspeicher zuerst (siehe
                 // CLAUDE.md "Jede Aufnahme kostet Geld/Kontingent").
-                await app.ttsNeural.renderAudio(variant.text, { personaId });
+                //
+                // FIX (Zusammenführung mit den Audio-Tags): hier stand fest
+                // variant.text. Der Cache-Schlüssel hängt aber am Text, und
+                // beim Vorlesen geht bei einem Anbieter mit supportsTags die
+                // GETAGGTE Fassung an die Synthese. Vorbereitet wurde also die
+                // eine Fassung, gebraucht die andere - das Buch war trotz
+                // "hörfertig" nicht fertig und jede Seite kostete doppelt.
+                // Dieselbe Weiche wie in app.tts.speak() benutzen.
+                const { plain, tagged } = app.tts._pickSpeechVariant(variant);
+                await app.ttsNeural.renderAudio(tagged || plain, { personaId });
                 prepared++;
             } catch (e) {
                 console.error(`Vorbereiten von Seite ${i + 1} fehlgeschlagen:`, e);
