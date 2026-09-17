@@ -114,20 +114,30 @@ Zusatznutzen für vorab erzeugte Vorlese-Dateien, deshalb nicht aufgenommen.
 - **Sicherheitsnetz Pflicht:** Tags nur an Anbieter schicken, die sie kennen (neues Flag `supportsTags` in `js/ttsProviders.js`), sonst herausfiltern - sonst liest die Stimme "eckige Klammer lacht" vor.
 - Alte Bücher haben kein `speechText` → dann einfach `text` nehmen (gleiche Rückwärtskompatibilität wie bei `variants`).
 
-### 2. 🙋 Mitmachmodus mit KI-Stimme (Rest-Aufgabe)
+### 2. 🙋 Mitmachmodus mit KI-Stimme
 
 **Die Gerätestimme kann das seit v0.12.0** - `app.tts.speakMitmach()` zerlegt den Erstleser-Text
 an den Emoji-Stellen und legt über `setTimeout` echte Rate-Pausen ein (das Emoji wird währenddessen
 optisch hervorgehoben).
 
-Offen ist nur noch der Weg für die **KI-Stimme**: Entweder Pausen-Tags mitschicken
-(Gemini `[pause]`, Chirp 3 über `markup`) - eine Aufnahme, keine Mehrkosten. Oder den Text in Stücke
-zerlegen - klingt gleichmäßiger, kostet aber je Stück einen Aufruf. **Tags bevorzugen.**
-Aktuell läuft der Mitmachmodus bewusst immer über die Gerätestimme.
+**✅ erledigt (Sept. 2026, v0.15.0-beta):** `app.ttsNeural.speakMitmach()` ersetzt die
+Emoji-Stellen durch eine `[pause]`-Sprechanweisung (dieselbe eckige-Klammer-Konvention wie bei
+den Emotions-Audio-Tags) und spricht den ganzen Text in EINER Aufnahme - keine Mehrkosten durch
+viele Kleinst-Aufrufe. Setzt `provider.supportsTags` voraus (Gemini, ElevenLabs); Chirp 3 (eigenes
+`markup`-Feld, keine Inline-Tags im normalen Text), OpenAI und Speechify fallen weiterhin auf die
+Gerätestimme zurück - dort wäre Text-Stückelung die teure Alternative, bewusst nicht gebaut.
 
 ### 3. ✂️ Lange Texte stückeln
 
-Aktuell gilt `MAX_NEURAL_CHARS = 4000` (in `js/ttsNeural.js`); längere Texte - praktisch nur EPUB-Kapitel - gehen an die Gerätestimme. Konzept: an Satzenden in Stücke von ~800 Zeichen zerlegen, nacheinander abspielen, Wort-Offsets je Stück verschieben. Jedes Stück wird einzeln zwischengespeichert. Aufwand mittel, Nutzen nur für EPUB-lastige Nutzung.
+**✅ erledigt (Sept. 2026, v0.15.0-beta):** `app.utils.splitTextIntoChunks()` zerlegt einen zu
+langen Text (über `MAX_NEURAL_CHARS = 4000` in `js/ttsNeural.js`) an Satzenden in Stücke von
+~800 Zeichen (`CHUNK_TARGET_CHARS`). `app.ttsNeural._speakChunked()` erzeugt und spielt sie
+nacheinander ab (nicht parallel, sonst Anbieter-Ratenlimits), jedes Stück landet einzeln im
+`ttsCache`. Die Hervorhebung (`_startHighlightingRange()`) rechnet die global gezählten
+Zeichenpositionen der Wort-Spans je Stück auf dessen eigene, bei 0 beginnende Zeitachse um. Ab
+`MAX_CHUNKED_CHARS = 20000` (absurd lange Texte) bleibt es beim Rückfall auf die Gerätestimme.
+Getaggte Texte (Audio-Tags) werden nicht gestückelt - eine Emotions-Anweisung bezieht sich auf
+den ganzen Textfluss.
 
 ### 4. 🔤 Vorlese-Aufbereitung des erkannten Texts
 
