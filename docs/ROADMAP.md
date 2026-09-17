@@ -37,10 +37,33 @@ Wichtig für alles Folgende:
 
 ---
 
+## Getroffene Entscheidungen
+
+**1. Video-Export: pro Buch UND pro Seite - Schwerpunkt pro Buch.** (entschieden, Sept. 2026)
+
+Gewünscht ist das ganze Buch als ein Film ("Hörbuch mit Bildern"). Pro Seite wird
+zusätzlich angeboten, kostet aber kaum Extra-Arbeit: Der Renderer bekommt von Anfang an
+einen **Seitenbereich**, pro Seite ist dann einfach der Bereich `[i, i]`. Ein eigener
+zweiter Weg entsteht dadurch nicht.
+
+Zwei Folgen, die aus dieser Entscheidung zwingend mitkommen:
+
+- **Die Architekturfrage ist damit auch entschieden: Weg B (WebCodecs).** `MediaRecorder`
+  (Weg A) nimmt in Echtzeit auf - bei einem ganzen Buch also 8-10 Minuten, in denen der Tab
+  sichtbar im Vordergrund bleiben muss. Für eine einzelne Seite ist das zumutbar, für ein
+  ganzes Buch nicht. Weg A bleibt allenfalls als Notnagel für Einzelseiten.
+- **Pro Seite bleibt die Einheit zum Verschicken.** Ein ganzes Buch ergibt 120-240 MB
+  (siehe unten) - das passt durch keinen E-Mail-Anhang. Die beiden Varianten haben damit
+  verschiedene Zwecke: pro Buch zum Behalten und Abspielen, pro Seite zum Weitergeben.
+
+Gut dazu passt, dass die App seit v0.12.0 Metadaten ansagt: Ein Buch-Film kann mit
+"Der Titel des Buchs ist ... geschrieben von ..." beginnen und neue Kapitel ankündigen -
+genau das, was ein durchgehender Film braucht und eine Einzelseite nicht hat.
+
+---
+
 ## Offene Entscheidungen (blockieren den nächsten Schritt)
 
-1. **Video-Export: ein Video pro Seite oder eins pro Buch?**
-   Pro Seite = kleine Dateien, einfach zu teilen, kein Kapitelsprung. Pro Buch = ein fertiges "Hörbuch mit Bildern", aber je nach Länge 100+ MB und lange Wartezeit.
 2. **ElevenLabs v3 (bezahlt) für Emotions-Tags?**
    Nur damit gibt es `[lacht]`, `[flüstert]` usw. bei ElevenLabs. Ohne Bezahltarif bleibt es bei `eleven_multilingual_v2`.
 3. **Reicht der Stimmen-Speicher mit 100 MB?**
@@ -74,9 +97,15 @@ Bild, Ton, Länge und Wortzeiten liegen damit vollständig vor - ohne erneute AP
 - `MediaRecorder` nimmt in **Echtzeit** auf: ein 10-Minuten-Buch braucht 10 Minuten Aufnahmezeit, in denen der Tab offen bleiben muss. Ein Fortschrittsbalken ist Pflicht, Abbrechen auch.
 - **Format:** Chrome/Android liefert `video/webm`. iOS/Safari kann WebM nicht zuverlässig - dort ggf. MP4 prüfen oder den Export auf Desktop/Android beschränken (und das ehrlich anzeigen, statt eine kaputte Datei zu erzeugen).
 - **Kein ffmpeg.wasm** ohne guten Grund: das wären ~25 MB zusätzlich, die bei einer PWA für Kinder schwer zu rechtfertigen sind. Erst den Browser-eigenen Weg ausreizen.
-- Dateigröße: grob 1-2 MB je Minute bei 720p.
+- Dateigröße: **15-30 MB je Minute** (2-4 Mbit/s), ein 8-Minuten-Buch also 120-240 MB.
+  (Hier stand früher "1-2 MB je Minute" - das entspräche 0,13-0,27 Mbit/s und ist für
+  720p um rund den Faktor 10 zu niedrig. Maßgeblich ist die Rechnung im Konzeptpapier.)
 
-**Empfehlung für den Einstieg:** eine einzelne Seite exportieren (Knopf im "⋮"-Menü der Seitenkarte), erst danach das ganze Buch.
+**Empfehlung für den Einstieg (angepasst an die Entscheidung oben):** den Renderer sofort
+mit einem Seitenbereich bauen, aber als Erstes mit einer einzelnen Seite testen - das ist
+derselbe Code mit Bereich `[i, i]` und in Sekunden statt Minuten durchgelaufen. Sobald das
+sauber ist, ist das ganze Buch nur noch ein anderer Bereich. **Nicht** zuerst einen
+Einzelseiten-Export bauen und das Buch später nachrüsten.
 
 ---
 

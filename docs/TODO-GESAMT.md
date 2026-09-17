@@ -81,13 +81,21 @@ Details: [`docs/konzept-video-und-multiformat.md`](konzept-video-und-multiformat
 | Punkt | Aufwand | Anmerkung |
 |---|---|---|
 | **Kino-Modus vollenden** | **S** | Nur noch Ken-Burns-Zoom (reines CSS) und Kreuzblende beim Seitenwechsel. **Der Textteil ist seit v0.12.0 erledigt** - das Konzeptpapier führt ihn noch als offen, das stimmt nicht mehr |
-| **Video-Export Weg A** (`MediaRecorder`) | **M** | Im Konzept mit „gering, ~1 Tag" veranschlagt. Preis: **Echtzeit-Aufnahme**, Tab muss sichtbar vorne bleiben. Kein Firefox. Als Prototyp brauchbar |
-| **Video-Export Weg B** (WebCodecs + Muxer) | **L** | „mittel, ~3-5 Tage inkl. Regie-Logik" - im Konzept ausdrücklich als **Zielarchitektur** empfohlen. Schneller als Echtzeit, Muxer-Bibliothek nur wenige KB nach `js/vendor/` |
+| **Video-Export Weg B** (WebCodecs + Muxer) | **L** | „mittel, ~3-5 Tage inkl. Regie-Logik". **Durch die Entscheidung „pro Buch" der einzig sinnvolle Weg** - siehe unten. Muxer-Bibliothek nur wenige KB nach `js/vendor/` |
+| ~~Weg A (`MediaRecorder`)~~ | — | **Für ganze Bücher ausgeschieden:** nimmt in Echtzeit auf, 8-10 Minuten mit sichtbarem Tab im Vordergrund. Höchstens noch Notnagel für Einzelseiten |
 | ~~Weg C (ffmpeg.wasm)~~ | — | **Bewusst verworfen.** 25-30 MB Zusatz-Download und auf GitHub Pages nur mit Service-Worker-Trick. Nicht neu aufrollen |
 
-**Reihenfolge-Empfehlung aus dem Konzept:** erst Kino-Modus (größter Effekt pro Aufwand),
-dann eine einzelne Seite exportieren, erst danach ganze Bücher. **Offene Entscheidung Nr. 1
-unten blockiert den Export.**
+**✅ Entschieden (Sept. 2026): beides, Schwerpunkt pro Buch.** Das ganze Buch als ein Film
+ist der Hauptfall; pro Seite fällt fast gratis ab, weil der Renderer ohnehin einen
+**Seitenbereich** bekommt (pro Seite = Bereich `[i, i]`).
+
+Daraus folgen zwei Dinge:
+- **Weg A scheidet für ganze Bücher aus** (Echtzeit-Aufnahme). Zielarchitektur ist Weg B.
+- **Pro Seite bleibt die Einheit zum Verschicken** - ein Buch-Film hat 120-240 MB und passt
+  durch keinen E-Mail-Anhang. Die beiden Varianten haben verschiedene Zwecke.
+
+**Reihenfolge:** erst Kino-Modus (größter Effekt pro Aufwand), dann den Bereichs-Renderer -
+getestet an einer Einzelseite, ausgeliefert fürs ganze Buch.
 
 ---
 
@@ -170,7 +178,7 @@ Diese Punkte sind **nicht** technisch offen, sondern brauchen eine Ansage des Be
 
 | # | Entscheidung | Blockiert |
 |---|---|---|
-| 1 | **Video-Export: ein Video pro Seite oder eins pro Buch?** | den gesamten Video-Export |
+| ~~1~~ | ~~Video-Export: pro Seite oder pro Buch?~~ **✅ entschieden: beides, Schwerpunkt pro Buch** | — (siehe Video-Bereich) |
 | 2 | **ElevenLabs v3 (bezahlt) für Emotions-Tags?** | Audio-Tags bei ElevenLabs |
 | 3 | **Reicht der Stimmen-Speicher mit 100 MB?** | mehr Platz für Stimmen = weniger für Bücher |
 | 4 | **Welcher Anbieter wird der Familien-Standard?** | ob sich exakte Wort-Zeitstempel (nur ElevenLabs) oder Emotions-Tags (Gemini) lohnen |

@@ -255,6 +255,16 @@ Unabhängig vom gewählten Weg - das sind die Punkte, an denen der bestehende Co
 | Safari | ab 14.1 | Ton erst ab Safari 26 | ja |
 | Empfehlung | Schnellschuss/Prototyp | **Zielarchitektur** | Notnagel |
 
+> **Nachtrag (Sept. 2026, entschieden):** Der Export soll **das ganze Buch** als einen Film
+> liefern, Einzelseiten zusätzlich. Damit ist Weg A praktisch erledigt - seine
+> Echtzeit-Aufnahme hieße 8-10 Minuten mit sichtbarem Tab im Vordergrund. **Weg B ist
+> gesetzt.** Der Renderer bekommt von Anfang an einen Seitenbereich; eine Einzelseite ist
+> dann der Bereich `[i, i]` und braucht keinen zweiten Codeweg.
+>
+> Praktische Folge für die Bedienung: Ein Buch-Film liegt bei 120-240 MB und lässt sich
+> nicht mehr verschicken. Der Einzelseiten-Export ist damit nicht bloß ein Testfall,
+> sondern die Variante **zum Weitergeben** - beide bleiben dauerhaft sinnvoll.
+
 ---
 
 ## 5. Die Pipeline-Idee
