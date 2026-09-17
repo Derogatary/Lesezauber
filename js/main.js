@@ -63,6 +63,12 @@ app.init = async function () {
     // erst beim nächsten Wechsel)
     updateOnlineStatusDot();
 
+    // NEU: Vorlese-Stimme ist jetzt pro Profil gespeichert - die zum aktuell
+    // aktiven Profil gehörende Wahl gleich beim Start nach app.settings
+    // übernehmen (profiles.js selbst kann das noch nicht, weil es vor
+    // utils.js geladen wird, siehe resolveCreationProfileId dort).
+    app.utils.syncActiveProfileTtsSettings();
+
     // NEU: gespeicherte Hervorhebungsfarbe gleich anwenden, nicht erst
     // nach dem ersten Öffnen der Einstellungen
     document.documentElement.style.setProperty('--speech-highlight-color', app.settings.highlightColor);

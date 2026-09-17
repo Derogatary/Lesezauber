@@ -21,6 +21,20 @@ Object.assign(app.render, {
         const greetingEl = document.getElementById('libraryGreeting');
         if (greetingEl) greetingEl.innerText = profile ? `Hallo, ${profile.name}!` : 'Deine interaktive Kinderbuch-Welt';
 
+        // NEU: Rollen-Symbol (Kind/Erwachsen) - nur bei einem konkreten
+        // Profil sinnvoll, nicht beim "Alle Profile"-Filter.
+        const roleBadge = document.getElementById('profileRoleBadge');
+        if (roleBadge) {
+            roleBadge.classList.toggle('hidden', !profile);
+            if (profile) {
+                const isAdult = app.utils.resolveProfileRole(profile) === 'adult';
+                roleBadge.innerText = isAdult ? '🧑' : '🧒';
+                roleBadge.title = isAdult
+                    ? 'Erwachsenen-Profil - zu Kinderprofil wechseln (sperrt teure/heikle Einstellungen)'
+                    : 'Kinderprofil - zu Erwachsenen-Profil wechseln (schaltet alle Einstellungen frei)';
+            }
+        }
+
         // NEU: Auswahl "als was wird das nächste Buch angelegt" + Belohnungs-Zähler
         app.render.newBookTypeButtons();
         app.render.medalBadge();

@@ -55,8 +55,15 @@ Object.assign(app.settingsConfig, {
 
     // NEU: Anbieter der Vorlese-Stimme wechseln (Gerätestimme <-> KI-Stimme).
     // Wirkt sofort, ohne "Speichern" - so kann man direkt den Test-Knopf
-    // benutzen.
+    // benutzen. Die Auswahl wird pro Profil gespeichert (app.profileTtsMap,
+    // siehe js/profiles.js), nicht mehr global.
     changeTtsProvider(providerId) {
+        // FIX: Sicherheitsnetz - das Dropdown ist für Kinderprofile bereits
+        // per disabled gesperrt, aber z.B. ein noch offenes altes
+        // Einstellungen-Fenster könnte das umgehen. Steht bewusst VOR dem
+        // Tarif-Lock: ein Kinderprofil soll gar nicht erst gefragt werden.
+        if (app.utils.isSettingsLockedForActiveProfile()) return;
+
         const current = app.ttsProviders.current();
         const next = app.ttsProviders.get(providerId);
 
@@ -76,24 +83,42 @@ Object.assign(app.settingsConfig, {
         persistProviderKey(current);
 
         app.settings.ttsProvider = providerId;
-        localStorage.setItem('lz_tts_provider', providerId);
+        app.utils.setProfileTtsSettings(app.utils.resolveCreationProfileId(), {
+            ttsProvider: app.settings.ttsProvider,
+            ttsVoices: app.settings.ttsVoices
+        });
         // Ein neuer Anbieter darf es wieder versuchen, auch wenn der alte
         // wegen eines Fehlers abgeschaltet wurde.
         app.ttsNeural._disabledReason = null;
         app.render.settings();
     },
 
-    // NEU: Stimme des aktuellen Anbieters wählen (pro Anbieter gemerkt).
+    // NEU: Stimme des aktuellen Anbieters wählen (pro Anbieter gemerkt, und
+    // das Ganze wiederum pro Profil).
     changeTtsVoice(voiceId) {
         const provider = app.ttsProviders.current();
         app.settings.ttsVoices = { ...app.settings.ttsVoices, [provider.id]: voiceId };
-        localStorage.setItem('lz_tts_voices', JSON.stringify(app.settings.ttsVoices));
+        app.utils.setProfileTtsSettings(app.utils.resolveCreationProfileId(), {
+            ttsProvider: app.settings.ttsProvider,
+            ttsVoices: app.settings.ttsVoices
+        });
     },
 
+    // NEU: Teil der "Stimmen-Speicher-Verwaltung" - für Kinderprofile
+    // gesperrt (Kindersicherung, kein Passwortschutz), siehe render/settings.js.
     toggleTtsCache(enabled) {
+        if (app.utils.isSettingsLockedForActiveProfile()) return;
         app.settings.ttsCacheEnabled = enabled;
         localStorage.setItem('lz_tts_cache', enabled ? '1' : '0');
         app.ui.toast(enabled ? 'Stimmen werden gespeichert' : 'Stimmen werden nicht mehr gespeichert', enabled ? '💾' : '🚫');
+    },
+
+    // NEU: ebenfalls Teil der "Stimmen-Speicher-Verwaltung" - Leeren-Knopf
+    // im Reader/Einstellungen ruft bisher direkt app.dbOps.clearTtsCache()
+    // auf; dieser Wrapper ergänzt nur die Kindersperre davor.
+    clearTtsCache() {
+        if (app.utils.isSettingsLockedForActiveProfile()) return;
+        app.dbOps.clearTtsCache();
     },
 
     toggleTtsPersonaStyle(enabled) {
@@ -111,6 +136,7 @@ Object.assign(app.settingsConfig, {
     // NEU: eigene/geklonte Stimmen aus dem ElevenLabs-Konto holen, damit
     // man die kryptischen Stimmen-IDs nicht abtippen muss.
     async loadElevenVoices() {
+        if (app.utils.isSettingsLockedForActiveProfile()) return;
         persistProviderKey(app.ttsProviders.get('elevenlabs'));
         app.ui.toast('Stimmen werden geladen...', '⏳');
         try {
@@ -150,25 +176,34 @@ Object.assign(app.settingsConfig, {
     },
 
     save() {
-        const key = document.getElementById('inputApiKey').value.trim();
-        const mistralKey = document.getElementById('inputMistralKey').value.trim();
+        // FIX: Sicherheitsnetz - die Key-Felder sind für Kinderprofile per
+        // disabled gesperrt, ihr Wert bleibt dadurch ohnehin unverändert.
+        // Hier zusätzlich explizit übersprungen, damit ein gesperrtes Feld
+        // nie versehentlich überschrieben wird.
+        const locked = app.utils.isSettingsLockedForActiveProfile();
+
         const persona = document.getElementById('selectPersona').value;
         const voice = document.getElementById('selectVoice').value;
         const speechRate = parseFloat(document.getElementById('inputSpeechRate').value);
         const highlightColor = document.getElementById('inputHighlightColor').value;
 
-        // NEU: Key des gewählten Stimmen-Anbieters mitspeichern
-        persistProviderKey(app.ttsProviders.current());
+        if (!locked) {
+            const key = document.getElementById('inputApiKey').value.trim();
+            const mistralKey = document.getElementById('inputMistralKey').value.trim();
+            // NEU: Key des gewählten Stimmen-Anbieters mitspeichern
+            persistProviderKey(app.ttsProviders.current());
 
-        app.settings.apiKey = key;
-        app.settings.mistralApiKey = mistralKey;
+            app.settings.apiKey = key;
+            app.settings.mistralApiKey = mistralKey;
+            localStorage.setItem('lz_api_key', key);
+            localStorage.setItem('lz_mistral_key', mistralKey);
+        }
+
         app.settings.persona = persona;
         app.settings.voiceUri = voice;
         app.settings.speechRate = speechRate;
         app.settings.highlightColor = highlightColor;
 
-        localStorage.setItem('lz_api_key', key);
-        localStorage.setItem('lz_mistral_key', mistralKey);
         localStorage.setItem('lz_persona', persona);
         localStorage.setItem('lz_voice', voice);
         localStorage.setItem('lz_speech_rate', String(speechRate));

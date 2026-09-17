@@ -115,6 +115,10 @@ Object.assign(app.costMeter, {
     // bleiben als Verlauf erhalten, falls spaeter mal eine Historie-Ansicht
     // dazukommt.
     reset() {
+        // FIX: Sicherheitsnetz wie bei den anderen gesperrten Aktionen - der
+        // Knopf ist für Kinderprofile bereits disabled, ein altes offenes
+        // Einstellungen-Fenster könnte das aber umgehen.
+        if (app.utils.isSettingsLockedForActiveProfile()) return;
         const data = load();
         const month = monthKey();
         if (data.tts) delete data.tts[month];

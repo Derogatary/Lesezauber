@@ -21,6 +21,11 @@ Object.assign(app.settings, {
     // NEU: KI-Stimmen statt der maschinellen Gerätestimme.
     // 'device' = wie bisher die eingebaute Stimme (Standard, damit sich für
     // niemanden ungefragt etwas ändert und ohne Zusatz-Key alles läuft).
+    // FIX: seit den Profil-Rollen ist die Stimme pro Profil gespeichert
+    // (app.profileTtsMap, siehe js/profiles.js) statt global. Die beiden
+    // Werte hier dienen nur noch als Migrations-Ausgangswert (einmalig für
+    // alle Profile übernommen) und werden direkt danach von
+    // app.utils.syncActiveProfileTtsSettings() überschrieben.
     ttsProvider: localStorage.getItem('lz_tts_provider') || 'device',
     // Pro Anbieter eine eigene Stimme merken - die IDs sind nicht
     // untereinander austauschbar.
