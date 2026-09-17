@@ -10,8 +10,12 @@ Object.assign(app.render, {
 
         const provider = app.ttsProviders.current();
 
+        // NEU: Tarif-Lock - kleines Preis-Symbol je nach costTier, damit
+        // die teurere Stufe schon in der Auswahl selbst sichtbar ist, nicht
+        // erst nach dem Wechsel im Bestätigungsdialog.
+        const costBadge = { free: '', cheap: ' 💶', expensive: ' 💶💶' };
         select.innerHTML = app.ttsProviders.list
-            .map(p => `<option value="${p.id}">${app.utils.sanitize(p.label)}</option>`)
+            .map(p => `<option value="${p.id}">${app.utils.sanitize(p.label)}${costBadge[p.costTier] || ''}</option>`)
             .join('');
         select.value = provider.id;
 
@@ -51,7 +55,10 @@ Object.assign(app.render, {
         const voiceSelect = document.getElementById('selectTtsVoice');
         if (voiceRow) voiceRow.classList.toggle('hidden', !provider.neural);
         if (provider.neural && voiceSelect) {
-            const loaded = provider.id === 'elevenlabs' ? (app.settings.elevenVoices || []) : [];
+            // NEU: Speechify nachgeladene Stimmen genauso bevorzugen wie
+            // bei ElevenLabs (beide unterstützen supportsVoiceFetch).
+            const fetchedByProvider = { elevenlabs: app.settings.elevenVoices, speechify: app.settings.speechifyVoices };
+            const loaded = fetchedByProvider[provider.id] || [];
             const voices = loaded.length ? loaded : provider.voices;
             voiceSelect.innerHTML = voices
                 .map(v => `<option value="${app.utils.sanitize(v.id)}">${app.utils.sanitize(v.label)}</option>`)
@@ -63,7 +70,9 @@ Object.assign(app.render, {
         }
 
         const elevenBtn = document.getElementById('btnLoadElevenVoices');
-        if (elevenBtn) elevenBtn.classList.toggle('hidden', !provider.supportsVoiceFetch);
+        if (elevenBtn) elevenBtn.classList.toggle('hidden', provider.id !== 'elevenlabs' || !provider.supportsVoiceFetch);
+        const speechifyBtn = document.getElementById('btnLoadSpeechifyVoices');
+        if (speechifyBtn) speechifyBtn.classList.toggle('hidden', provider.id !== 'speechify' || !provider.supportsVoiceFetch);
 
         // Zusatz-Optionen (Persona-Stil, Stimmen-Speicher) sind nur bei
         // einer KI-Stimme sinnvoll.

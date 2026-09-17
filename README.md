@@ -79,17 +79,19 @@ Alles läuft weiterhin ohne eigenen Server: Die App holt die Audiodatei direkt b
 | **Gerätestimme** | kostenlos, offline | Standard. Wenn kein Internet da ist oder nichts extra eingerichtet werden soll. | – |
 | **Gemini KI-Stimme** | **Free Tier** (kostenlos, aber wenige Anfragen/Tag) | Zum Ausprobieren ohne neues Konto - nutzt denselben Key wie die Seitenanalyse. | vorhandener Gemini-Key |
 | **Google Cloud Chirp 3 HD** | 1 Mio. Zeichen/Monat gratis, danach ca. 30 $/Mio. Zeichen | Der Alltags-Tipp fürs ganze Buch: 1 Mio. Zeichen sind grob mehrere tausend Buchseiten. Braucht ein Google-Cloud-Projekt mit hinterlegter Zahlungsart. | eigener API-Key |
-| **ElevenLabs** | 10.000 Zeichen/Monat gratis (privat), bezahlt ab ca. 5 $/Monat | Beste Vorlese-Qualität und als einziger Anbieter zeichengenaue Zeitstempel → die Wort-Hervorhebung läuft exakt mit. | eigener API-Key |
+| **ElevenLabs** | 10.000 Zeichen/Monat gratis (privat), bezahlt ab ca. 5 $/Monat, danach ca. 100 $/Mio. Zeichen | Beste Vorlese-Qualität und zeichengenaue Zeitstempel → die Wort-Hervorhebung läuft exakt mit. Der teuerste Anbieter hier. | eigener API-Key |
 | **OpenAI** | kein Gratis-Kontingent, ca. 1,3 Cent je Minute Audio | Günstig und gut steuerbar - die Erzähler-Persona wird als Sprechanweisung mitgeschickt. | eigener API-Key |
+| **Speechify** | 50.000 Zeichen/Monat gratis, danach ca. 6-10 $/Mio. Zeichen | Ähnlich günstig wie OpenAI, aber ebenfalls zeichengenaue Zeitstempel wie ElevenLabs - grob 10-15× günstiger. | eigener API-Key |
 
-Faustregel: **Gemini** zum kostenlosen Reinschnuppern, **Google Cloud Chirp 3 HD** für den Dauerbetrieb, **ElevenLabs**, wenn es besonders schön klingen soll.
+Faustregel: **Gemini** zum kostenlosen Reinschnuppern, **Google Cloud Chirp 3 HD** für den Dauerbetrieb, **Speechify**, wenn die Wort-Hervorhebung exakt sitzen soll ohne ElevenLabs' Preis, **ElevenLabs**, wenn es unbedingt die beste Qualität sein soll.
 
 ### Was die App dabei mitmacht
 
 - **Stimmen-Speicher:** Jede erzeugte Aufnahme landet in der lokalen Datenbank. Dieselbe Seite ein zweites Mal vorlesen kostet dann kein Kontingent mehr und startet sofort. Abschaltbar; Belegung und "Leeren"-Knopf stehen direkt darunter.
 - **Vorbereitung im Hintergrund:** Während eine Seite vorgelesen wird, entsteht die Audiodatei der nächsten Seite schon - so bleibt beim Umblättern keine Stille.
 - **Rückfall:** Kein Internet, Tageslimit erreicht oder Key falsch? Dann springt automatisch die Gerätestimme ein, mit einem kurzen Hinweis - das Vorlesen bricht nie einfach ab.
-- **Wort-Hervorhebung:** Läuft auch bei KI-Stimmen mit. Bei ElevenLabs zeichengenau, bei den übrigen Anbietern anhand der Audiolänge geschätzt.
+- **Wort-Hervorhebung:** Läuft auch bei KI-Stimmen mit. Bei ElevenLabs und Speechify zeichengenau, bei den übrigen Anbietern anhand der Audiolänge geschätzt.
+- **Tarif-Lock:** Beim Wechsel in eine teurere Preisstufe (z.B. von Gemini zu ElevenLabs) fragt die App vorher noch einmal nach - schützt vor einem Versehen, nicht vor Absicht.
 - **Persona-Stimmlage:** Bei Gemini und OpenAI wird die gewählte Erzähler-Persona als Sprechanweisung mitgeschickt - die "Gute-Nacht-Fee" klingt dann tatsächlich sanfter als der "Weise Professor".
 - **Vorbereitet für den Video-Export:** Die Aufnahmen liegen als echte Dateien inklusive Länge und Wort-Zeitpunkten vor (`app.ttsNeural.renderAudio()` / `renderPageSegments()`). Damit lässt sich später ein Video aus Buchseite + Stimme + mitlaufenden Untertiteln bauen, ohne dass dafür noch einmal Kontingent verbraucht wird. Mit der Gerätestimme geht das nicht - die spricht direkt über den Lautsprecher und gibt keine Datei heraus.
 
