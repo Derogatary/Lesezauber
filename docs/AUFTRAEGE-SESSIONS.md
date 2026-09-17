@@ -16,32 +16,102 @@ diese Datei ist nur die Aufteilung in Arbeitspakete.
 
 ---
 
-## Regeln fürs Parallel-Arbeiten
+## Stand (Oktober 2026)
 
-| Regel | Warum |
-|---|---|
-| Jede Sitzung bekommt einen **eigenen Branch** (steht im jeweiligen Auftrag) | sonst überschreiben sich die Sitzungen gegenseitig |
-| **Gleichzeitig startbar:** 1, 2, 3, 4, 5, 6 | disjunkte Dateien |
-| **Erst nach dem Vorgänger:** 7 nach 6 · 8 nach 3 · 9 nach 8 · 11 nach 10 | gleiche Datei bzw. inhaltliche Abhängigkeit |
-| **Nr. 12 (SchreibZauber Stufe 1) allein laufen lassen** | ist die Grundlage für alle späteren Werktyp-Pfade (Entscheidung Sept. 2026) |
-| `sw.js` (`CACHE_NAME`) und `css/tailwind.css` fassen **alle** Aufträge an | dort sind triviale Merge-Konflikte zu erwarten: immer die höhere Versionsnummer nehmen, `tailwind.css` nach dem Merge einfach neu bauen |
+Die erste Welle ist gebaut. Was wo steht:
 
-## Übersicht
+| # | Auftrag | Stand | Branch |
+|---|---|---|---|
+| 1 | Vorlese-Aufbereitung | ✅ gebaut, im Merge | `claude/tts-textaufbereitung-k8u7ny` |
+| 2 | Stimmen-Speicher + „Buch hörfertig machen" | ✅ gebaut, im Merge | `claude/tts-cache-und-hoerfertig-mz2wh4` |
+| 3 | TTS-Anbieter-Paket | ✅ gebaut, im Merge | `claude/tts-anbieter-paket-jv1fa2` |
+| 4 | Stimme pro Profil + Kinder-/Elternbereich | ⚠️ **noch offen - kein Branch vorhanden** | - |
+| 5 | Kosten-Anzeige | ✅ gebaut, im Merge | `claude/kosten-anzeige-wocbcc` |
+| 6 | Kino-Modus vollenden | ✅ gebaut, im Merge | `claude/kino-modus-vollenden-laf4fs` |
+| 7 | Hörbuch-Export | 🔄 läuft | `claude/hoerbuch-export-*` |
+| 8-15 | siehe Reihenfolge unten | ⬜ offen | - |
+
+> **Nr. 4 ist durchgerutscht.** Für „Stimme pro Profil + Kinder-/Elternbereich" liegt kein
+> Branch auf dem Server. Der Auftragstext unten ist unverändert gültig - die Sitzung muss
+> nur noch gestartet werden.
+
+## Merge-Reihenfolge der fertigen Branches
+
+Die fünf fertigen Branches fassen teils dieselben Dateien an. In dieser Reihenfolge
+gemerged gibt es die wenigsten Konflikte - jeweils von der kleinsten zur größten
+Berührungsfläche:
+
+| Schritt | Branch | Berührt zusätzlich |
+|---|---|---|
+| 1 | `tts-textaufbereitung` | nur `js/utils.js`, `js/tts.js`, `js/ttsNeural.js` - keine Oberfläche |
+| 2 | `tts-cache-und-hoerfertig` | `js/db.js`, `js/render/book.js` - fasst niemand sonst an |
+| 3 | `tts-anbieter-paket` | `js/render/settings.js` (oberer Teil), `js/state.js`, `js/settingsConfig.js` |
+| 4 | `kino-modus-vollenden` | `js/render/settings.js` (Zeile ~123), `js/state.js`, `js/settingsConfig.js`, `css/style.css` |
+| 5 | `kosten-anzeige` | `js/render/settings.js` (Zeile ~88-130), `js/api.js`, `js/core.js`, `js/ttsNeural.js` |
+| 6 | `hoerbuch-export`, sobald fertig | - |
+
+Drei Dinge, die bei **jedem** dieser Merges auftauchen werden:
+
+- **`css/tailwind.css`** ist eine Bauartefakt-Datei. Konflikte dort **nicht von Hand lösen** -
+  irgendeine Seite nehmen und nach dem letzten Merge einmal neu bauen:
+  `npx @tailwindcss/cli -i ./css/tailwind-input.css -o ./css/tailwind.css --minify`
+- **`sw.js` (`CACHE_NAME`)** - immer die höhere Nummer nehmen, am Ende einmal auf einen
+  Wert über allen gemergten setzen. Und prüfen, dass **alle** neuen Dateien in `APP_SHELL`
+  stehen (`js/actions/prepareAudio.js`, `js/costMeter.js`).
+- **`docs/TODO-GESAMT.md`** - jede Sitzung hat ihren Punkt abgehakt. Konflikte hier sind
+  harmlos, aber die Datei sollte am Ende einmal ganz gelesen werden.
+
+Nach dem letzten Merge gehören die vier Sanity-Checks aus `CLAUDE.md` einmal über den
+zusammengeführten Stand gelaufen - **nicht nur über die einzelnen Branches.** Genau dafür
+ist Auftrag 13 da.
+
+---
+
+## Die neue Reihenfolge
+
+| Welle | Aufträge | Parallel? | Bedingung |
+|---|---|---|---|
+| **0 - jetzt** | Branches 1,2,3,5,6 mergen, dann **13** (Integrations-Pass + v0.13.0-beta) | nein, allein | - |
+| **1** | **4** (Profil-Rollen) · **8** (Audio-Tags) · **12** (SchreibZauber Stufe 1) | ✅ drei Sitzungen gleichzeitig | nach Welle 0 |
+| **2** | **9** (Texte stückeln + Mitmachmodus) · **10** (Heft-Generator API) | ✅ zwei gleichzeitig | beide nach **8** |
+| **3** | **11** (Heft-Generator Ansicht) · **14** (Video-Renderer, Einzelseite) | ✅ zwei gleichzeitig | 11 nach 10 · 14 nach **7** |
+| **4** | **15** (Video-Export fürs ganze Buch) | allein | nach **14** |
+| **5** | SchreibZauber Stufe 2+3 (Bilderbuch) ∥ Stufe 4 (Arbeitsheft) | ✅ zwei gleichzeitig | erst wenn **12** gemerged ist |
+
+**Warum 12 (SchreibZauber Stufe 1) schon in Welle 1 startet:** Es ist der längste Weg im
+ganzen Projekt und blockiert vier weitere Stufen. Es fasst fast nur neue Dateien an
+(`js/studio/*`, neue Ansicht) plus `js/db.js`, `js/nav.js`, `js/main.js` - und kollidiert
+damit kaum mit 4 oder 8. „Allein laufen lassen" heißt: **keine zweite SchreibZauber-Sitzung
+daneben**, nicht „gar nichts sonst".
+
+**Warum 8 (Audio-Tags) vor 10 (Heft-Generator) kommt:** Beide ändern `js/api.js`. Auftrag 8
+fasst dabei den zentralen Analyse-Prompt an, 10 hängt nur eine neue Funktion daneben - in
+dieser Reihenfolge ist der spätere Merge die triviale Seite. Außerdem hängt 9 an 8, und
+das ist der längere der beiden Stränge.
+
+**Wo die Wellen nicht eingehalten werden müssen:** Wenn Zeit für nur eine Sitzung da ist,
+ist **4 (Profil-Rollen)** der beste Einzelgriff - er ist klein, betrifft den Alltag mit den
+Kindern direkt und ist Voraussetzung für SchreibZauber Stufe 6.
+
+## Übersicht aller Aufträge
 
 | # | Auftrag | Bereich | Aufwand | Branch |
 |---|---|---|---|---|
-| 1 | Vorlese-Aufbereitung des erkannten Texts | Vorlesen | **S** | `claude/tts-textaufbereitung` |
-| 2 | Stimmen-Speicher 300 MB + „Buch hörfertig machen" | Vorlesen | **S** | `claude/tts-cache-und-hoerfertig` |
-| 3 | TTS-Anbieter-Paket (Speechify, mehr Stimmen, Tarif-Lock) | Vorlesen | **S** | `claude/tts-anbieter-paket` |
+| 1 | Vorlese-Aufbereitung des erkannten Texts | Vorlesen | **S** | ✅ `claude/tts-textaufbereitung` |
+| 2 | Stimmen-Speicher 300 MB + „Buch hörfertig machen" | Vorlesen | **S** | ✅ `claude/tts-cache-und-hoerfertig` |
+| 3 | TTS-Anbieter-Paket (Speechify, mehr Stimmen, Tarif-Lock) | Vorlesen | **S** | ✅ `claude/tts-anbieter-paket` |
 | 4 | Stimme pro Profil + Kinder-/Elternbereich | Plattform | **S+M** | `claude/profil-rollen-und-stimme` |
-| 5 | Kosten-Anzeige | Vorlesen | **S** | `claude/kosten-anzeige` |
-| 6 | Kino-Modus vollenden (Ken-Burns + Kreuzblende) | Video | **S** | `claude/kino-modus-vollenden` |
-| 7 | Hörbuch-Export | Video | **M** | `claude/hoerbuch-export` |
+| 5 | Kosten-Anzeige | Vorlesen | **S** | ✅ `claude/kosten-anzeige` |
+| 6 | Kino-Modus vollenden (Ken-Burns + Kreuzblende) | Video | **S** | ✅ `claude/kino-modus-vollenden` |
+| 7 | Hörbuch-Export | Video | **M** | 🔄 `claude/hoerbuch-export` |
 | 8 | Emotionen / Audio-Tags | Vorlesen | **M** | `claude/audio-tags` |
 | 9 | Lange Texte stückeln + Mitmachmodus mit KI-Stimme | Vorlesen | **M** | `claude/tts-stueckeln-mitmachmodus` |
 | 10 | Heft-Generator: API-Aufruf + Prompt | Übungshefte | **S** | `claude/heft-generator-api` |
 | 11 | Heft-Generator: Auswahl-Ansicht + Canvas | Übungshefte | **M** | `claude/heft-generator-ansicht` |
 | 12 | SchreibZauber Stufe 1 - Fundament | Eigene Werke | **L** | `claude/schreibzauber-stufe1` |
+| 13 | Integrations-Pass nach dem Merge + v0.13.0-beta | Plattform | **S** | `claude/integration-v0130` |
+| 14 | Video-Export Weg B, Teil 1: Renderer-Kern | Video | **M** | `claude/video-renderer-kern` |
+| 15 | Video-Export Weg B, Teil 2: ganzes Buch + Regie | Video | **M** | `claude/video-buch-export` |
 
 ---
 
@@ -304,20 +374,27 @@ Branch claude/hoerbuch-export pushen. Keinen Pull Request anlegen.
 
 ---
 
-## 8 · Emotionen / Audio-Tags (M) - *nach Nr. 3*
+## 8 · Emotionen / Audio-Tags (M) - *nach dem Merge von Nr. 3*
 
 ```
 Arbeite im Repo Lesezauber (LeseZauber Pro). Lies zuerst CLAUDE.md im Root, dann
 docs/ROADMAP.md (Abschnitt Emotionen/Audio-Tags), js/api.js, js/utils.js und
 js/ttsProviders.js.
 
+Vorbedingung, damit du nichts doppelt baust: js/ttsProviders.js wurde gerade
+überarbeitet (Speechify als 5. Anbieter, erweiterte Stimmenlisten, costTier je
+Anbieter für den Tarif-Lock). Ein Feld supportsTags gibt es dort NOCH NICHT, und
+ELEVEN_MODEL steht noch auf 'eleven_multilingual_v2'. Lies die Datei, bevor du
+etwas ergänzt.
+
 Der Weg ist bereits entschieden, nicht neu diskutieren:
 - Ein zusätzliches Feld speechText wird IMMER gleich mitgeneriert, im selben
   KI-Aufruf - kein zweiter API-Call.
-- Neues Flag supportsTags je Anbieter in js/ttsProviders.js. Anbieter ohne
-  Tag-Unterstützung bekommen den Text ohne Tags.
-- Bei ElevenLabs das Modell auf eleven_v3 umstellen - kostet seit GA (März 2026)
-  nicht mehr als v2.
+- Neues Flag supportsTags je Anbieter in js/ttsProviders.js, neben dem
+  vorhandenen supportsStyle und costTier. Anbieter ohne Tag-Unterstützung
+  bekommen den Text ohne Tags.
+- Bei ElevenLabs ELEVEN_MODEL auf eleven_v3 umstellen - kostet seit GA
+  (März 2026) nicht mehr als v2.
 
 Zu tun:
 - Analyse-Prompt in js/api.js um speechText erweitern (Vorlesefassung mit
@@ -332,10 +409,16 @@ Zu tun:
 - Anzeige im Reader bleibt der normale Text; Tags dürfen niemals sichtbar werden
   und niemals vorgelesen werden, wenn der Anbieter sie nicht versteht.
 - Die Wort-Hervorhebung muss weiter passen: die Tags zählen nicht als Wörter.
-  Prüfe _wordStartTimes() entsprechend.
+  Prüfe _wordStartTimes() entsprechend. Beachte, dass dort inzwischen auch die
+  neue Vorlese-Aufbereitung aus app.utils.prepareTextForSpeech() mitläuft -
+  Tags dürfen von ihr nicht zerlegt werden.
+- Der ttsCache muss Aufnahmen mit und ohne Tags auseinanderhalten, sonst spricht
+  eine alte gecachte Aufnahme weiter ohne Emotion. Sieh dir den Cache-Schlüssel
+  in js/ttsNeural.js an.
 
 Nicht tun: einen zweiten API-Aufruf für die Vorlesefassung einbauen, den
-Kontroll-Prompt für bearbeitete Blätter anfassen.
+Kontroll-Prompt für bearbeitete Blätter anfassen, am Tarif-Lock oder an der
+Kosten-Anzeige etwas ändern.
 
 Abschluss: die vier Sanity-Checks aus CLAUDE.md, Tailwind neu bauen, sw.js
 CACHE_NAME hochzählen. Committen und auf den Branch claude/audio-tags pushen.
@@ -461,7 +544,7 @@ claude/heft-generator-ansicht pushen. Keinen Pull Request anlegen.
 
 ---
 
-## 12 · SchreibZauber Stufe 1 - Fundament (L) - *allein laufen lassen*
+## 12 · SchreibZauber Stufe 1 - Fundament (L) - *keine zweite SchreibZauber-Sitzung daneben*
 
 ```
 Arbeite im Repo Lesezauber (LeseZauber Pro). Lies zuerst CLAUDE.md im Root, dann
@@ -508,11 +591,160 @@ auf den Branch claude/schreibzauber-stufe1 pushen. Keinen Pull Request anlegen.
 
 ---
 
+## 13 · Integrations-Pass nach dem Merge + v0.13.0-beta (S) - *zuerst, allein*
+
+```
+Arbeite im Repo Lesezauber (LeseZauber Pro). Lies zuerst CLAUDE.md im Root.
+
+Vorgeschichte: Fünf getrennte Sitzungen wurden gerade nach main gemerged -
+Vorlese-Aufbereitung, Stimmen-Speicher/"Buch hörfertig machen", TTS-Anbieter-Paket
+(Speechify, mehr Stimmen, Tarif-Lock), Kino-Modus (Ken-Burns/Kreuzblende) und
+Kosten-Anzeige. Jede Sitzung hat für sich funktioniert; keine hat den
+zusammengeführten Stand gesehen. Genau das ist deine Aufgabe.
+
+Zu tun:
+1. Die vier Sanity-Checks aus CLAUDE.md über den zusammengeführten Stand laufen
+   lassen (Syntax, getElementById-IDs, onclick-Aufrufe, sw.js-Dateiliste). Der
+   bekannte Fehlalarm "FEHLT: actions.xyz" aus einem Kommentar in main.js darf
+   stehen bleiben.
+2. sw.js prüfen: CACHE_NAME muss höher sein als in JEDEM der gemergten Branches,
+   und alle neuen Dateien müssen in APP_SHELL stehen - mindestens
+   js/actions/prepareAudio.js und js/costMeter.js. Prüfe auch, ob jede neue Datei
+   in js/main.js importiert wird; ohne Import lädt sie nie.
+3. css/tailwind.css einmal frisch bauen:
+   npx @tailwindcss/cli -i ./css/tailwind-input.css -o ./css/tailwind.css --minify
+   (die Datei ist ein Bauartefakt - was beim Merge dort entstanden ist, wird
+   überschrieben, das ist richtig so)
+4. Die Einstellungs-Seite durchsehen. Drei Sitzungen haben unabhängig
+   voneinander Blöcke in js/render/settings.js ergänzt: Tarif-Lock, Kosten-Anzeige
+   und der Kino-Modus-Schalter. Prüfe, ob die Reihenfolge noch Sinn ergibt, ob
+   nichts doppelt erklärt wird und ob die Abschnitte eine erkennbare Gliederung
+   haben. Das ist ausdrücklich Teil der Aufgabe - niemand hat die Seite bisher
+   als Ganzes gesehen.
+5. Zusammenspiel prüfen, das keine Einzelsitzung testen konnte:
+   - "Buch hörfertig machen" (Auftrag 2) muss die Kosten-Anzeige (Auftrag 5)
+     korrekt hochzählen - aber NUR für Seiten, die wirklich synthetisiert werden,
+     nicht für Treffer aus dem ttsCache.
+   - Der Tarif-Lock (Auftrag 3) darf beim Wechsel auf Speechify oder ElevenLabs
+     greifen, ohne die Kosten-Anzeige durcheinanderzubringen.
+   - Die Vorlese-Aufbereitung (Auftrag 1) darf die Wort-Hervorhebung im
+     Kino-Modus (Auftrag 6) nicht verschieben.
+6. Version auf v0.13.0-beta hochzählen (Anzeige im App-Header in index.html).
+   README.md und docs/TODO-GESAMT.md entsprechend nachziehen: die in dieser Welle
+   erledigten Punkte aus den offenen Listen streichen und unten bei den fertigen
+   Punkten eintragen, damit nichts doppelt eingeplant wird.
+
+Melde am Ende klar, was du gefunden und was du repariert hast. Wenn ein Problem
+größer ist als ein Aufräum-Griff, NICHT auf eigene Faust umbauen - beschreiben
+und nachfragen.
+
+Nicht tun: neue Funktionen bauen, Features aus den gemergten Branches umdesignen.
+
+Abschluss: Sanity-Checks müssen sauber sein, committen und auf den Branch
+claude/integration-v0130 pushen. Keinen Pull Request anlegen.
+```
+
+---
+
+## 14 · Video-Export Weg B, Teil 1: Renderer-Kern an einer Einzelseite (M)
+
+```
+Arbeite im Repo Lesezauber (LeseZauber Pro). Lies zuerst CLAUDE.md im Root und
+docs/KONZEPT-Video.md KOMPLETT - besonders Abschnitt 4.6 (konkreter Bauplan
+Weg B) und Abschnitt 8 (empfohlene Reihenfolge). Ohne dieses Dokument nicht
+anfangen.
+
+Entscheidungslage, die NICHT neu diskutiert wird:
+- Weg B (Canvas + WebCodecs + kleiner Muxer) ist der einzige Weg. Weg A
+  (MediaRecorder, Echtzeit-Aufnahme) und Weg C (ffmpeg.wasm, 25-30 MB
+  Zusatz-Download) sind ausdrücklich verworfen - nicht neu aufrollen.
+- Export gibt es nur für Bücher mit origin: 'authored', damit niemand
+  versehentlich ein fremdes Bilderbuch als Video weitergibt.
+- Der Renderer bekommt IMMER einen Seitenbereich [von, bis]. Eine einzelne Seite
+  ist der Bereich [i, i]. Genau deshalb ist dieser Auftrag hier auf eine
+  Einzelseite beschränkt und der nächste liefert das ganze Buch, ohne dass etwas
+  umgebaut werden muss.
+
+Aufgabe: der Renderer-Kern, getestet an EINER Seite.
+
+Zu tun:
+- Muxer-Bibliothek nach js/vendor/ legen (laut Konzept nur wenige KB). Wie bei
+  PDF.js und JSZip: vendored, lazy geladen, NIE direkt bearbeiten.
+- Neue Datei js/actions/videoExport.js, in js/main.js importieren.
+- Fähigkeitsprüfung zuerst: gibt es VideoEncoder/AudioEncoder? Wenn nein, eine
+  verständliche Meldung statt eines Absturzes - das Feature ist opt-in.
+- Bild auf ein Canvas zeichnen, Ken-Burns-Bewegung dabei mitrendern (die
+  CSS-Variante aus dem Kino-Modus ist die optische Vorlage, im Canvas muss sie
+  aber gerechnet werden - schreib als Kommentar dazu, warum es zwei Umsetzungen
+  gibt).
+- Ton kommt aus app.ttsNeural.renderPageSegments() - Blob, Dauer und
+  Wort-Zeitpunkte sind bereits vorhanden, nichts davon neu bauen und vor allem
+  nichts neu synthetisieren, was schon im ttsCache liegt.
+- Untertitel mit mitlaufender Wort-Hervorhebung ins Bild rendern, gesteuert von
+  denselben Wort-Zeitpunkten.
+- Fortschrittsanzeige und Abbruch. Der Export läuft lange - die Oberfläche darf
+  nicht einfrieren.
+- Ergebnis als Download-Link.
+
+Nicht tun: das ganze Buch exportieren (das ist der nächste Auftrag), am
+Abspielweg oder am Kino-Modus etwas ändern, eine Bibliothek per CDN einbinden
+(das Projekt hat bewusst kein CDN).
+
+Wenn sich unterwegs herausstellt, dass der Bauplan aus dem Konzept an einer
+Stelle nicht aufgeht: aufschreiben und nachfragen, nicht still einen anderen Weg
+nehmen.
+
+Abschluss: die vier Sanity-Checks aus CLAUDE.md, Tailwind neu bauen, sw.js
+CACHE_NAME hochzählen und alle neuen Dateien in APP_SHELL eintragen. In
+docs/KONZEPT-Video.md den Stand nachziehen. Committen und auf den Branch
+claude/video-renderer-kern pushen. Keinen Pull Request anlegen.
+```
+
+---
+
+## 15 · Video-Export Weg B, Teil 2: ganzes Buch + Regie (M) - *nach Nr. 14*
+
+```
+Arbeite im Repo Lesezauber (LeseZauber Pro). Lies zuerst CLAUDE.md im Root und
+docs/KONZEPT-Video.md, besonders Abschnitt 4.6. Voraussetzung: der Renderer-Kern
+aus Auftrag 14 (Branch claude/video-renderer-kern) ist gemerged - bau darauf auf,
+nicht daneben.
+
+Aufgabe: aus dem Einzelseiten-Renderer den Buch-Export machen. Laut Entscheidung
+(Sept. 2026) ist "das ganze Buch als ein Film" der Hauptfall; pro Seite fällt
+gratis ab, weil der Renderer ohnehin einen Seitenbereich bekommt.
+
+Zu tun:
+- Seitenbereich [von, bis] durchlaufen, Seiten mit excluded=true überspringen.
+- Regie-Logik: Übergänge zwischen den Seiten (Kreuzblende wie im Kino-Modus),
+  Ken-Burns-Richtung je Seite variieren, kurze Pausen zwischen den Seiten.
+- Titelseite und Rückseite berücksichtigen, falls per Seiten-Rollen markiert
+  (titlePageId, backCoverPageId) - die App kennt diese Rollen bereits.
+- Beide Varianten in der Oberfläche anbieten: "Diese Seite als Video" und
+  "Ganzes Buch als Film". Sie haben verschiedene Zwecke - ein Buch-Film hat laut
+  Konzept 120-240 MB und passt durch keinen E-Mail-Anhang, die Einzelseite ist
+  die Einheit zum Verschicken. Sag dem Nutzer die ungefähre Größe VOR dem Start.
+- Speicher im Auge behalten: ein ganzes Buch darf nicht komplett im
+  Arbeitsspeicher liegen. Stückweise schreiben.
+- Fortschritt pro Seite anzeigen, jederzeit abbrechbar, angefangene Daten
+  aufräumen.
+- Weiterhin nur für Bücher mit origin: 'authored'.
+
+Nicht tun: neu synthetisieren, was schon im ttsCache liegt (ein Buch-Export mit
+120 Seiten wäre sonst richtig teuer), den Kino-Modus anfassen.
+
+Abschluss: die vier Sanity-Checks aus CLAUDE.md, Tailwind neu bauen, sw.js
+CACHE_NAME hochzählen. In docs/KONZEPT-Video.md Abschnitt 8 den Stand nachziehen
+und die Punkte in docs/TODO-GESAMT.md abhaken. Committen und auf den Branch
+claude/video-buch-export pushen. Keinen Pull Request anlegen.
+```
+
+---
+
 ## Bewusst **nicht** als Sitzungs-Auftrag
 
 | Punkt | Warum nicht |
 |---|---|
-| **Video-Export Weg B** (WebCodecs, **L**) | Sinnvoll erst nach Nr. 6 + 7 - und laut `CLAUDE.md` braucht ein Vorhaben dieser Größe vorher eine Abstimmung mit dem Betreiber. Konzept: [`docs/KONZEPT-Video.md`](KONZEPT-Video.md), Abschnitt 4.6 |
 | **Comic: zweiter Testlauf** (**S**) | Läuft in `tools/comic-gen/` lokal beim Betreiber, nicht in der App - braucht dessen API-Keys und dessen Urteil über das Ergebnis |
 | **Kontroll-Funktion im Alltag beobachten** (**S**) | Reine Beobachtung mit den Kindern, kein Code |
 | **Scroll-Verhalten am Bildschirmrand / Zoom-Unschärfe** | Nicht reproduzierbar - braucht erst einen Screenshot vom Nutzer |
