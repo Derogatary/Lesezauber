@@ -138,20 +138,20 @@ Der größte Brocken im Projekt - dafür in Stufen geschnitten, die **einzeln li
 | ~~**SchreibZauber Stufe 1 - Fundament**~~ | **L** | ✅ **erledigt** - Datenmodell, **DB v4**, Werkstatt-Übersicht, Idee/Bauplan/Geschichte, Platzhalter-Bilder, Export „ins Regal". `js/studio/*` ist seither in `js/main.js`/`sw.js` verdrahtet |
 | **SchreibZauber Stufe 2 - Bilder** | **L** | Stilkarte, Figuren-Bibel, Storyboard, Bildgenerierung, Kostenzähler. Ab hier kostet es echtes Geld - braucht vorher die Zahlungsmethode-Klärung aus `KONZEPT-SchreibZauber.md`, TEIL G, Punkt 1 |
 | **SchreibZauber Stufe 3 - Layout & Druck** | **M** | Textplatzierung, Silbenfarben, Doppelseiten-Druck. **Gleich druckfertige Exportformate mitdenken** (KDP-taugliche PDF/Auflösung/Bleed, Entscheidung 6) |
-| **SchreibZauber Stufe 4 - Arbeitsheft** | **L** | Lernziel, Progression, Aufgabenbaukasten, Lösungsteil |
+| ~~**SchreibZauber Stufe 4 - Arbeitsheft**~~ | **L** | ✅ **erledigt (Branch `claude/schreibzauber-stufe4-arbeitsheft`, noch nicht in `main`)** - Lernziel/Progression/Aufgabenbaukasten als eigener Wizard-Zweig (`js/studio/worksheet.js`, `js/render/studioWorkbookWizard.js`), 5 von 9 Aufgabentypen umgesetzt (Lückentext/Ankreuzen/Rechnen/Zuordnen/Frei schreiben - alle ohne Bildbedarf), Differenzierung (⭐/⭐⭐/⭐⭐⭐, auf Abruf nachgeneriert), automatischer Lösungsteil am Heftende, Export „ins Regal" mit `bookType: 'workbook'`. Details/offene Rest-Typen: `docs/KONZEPT-SchreibZauber.md`, Abschnitt „Stand nach Stufe 4" |
 | **SchreibZauber Stufe 5 - Comic** | **L** | Panel-Layouts, Sprechblasen-Overlay |
 | **SchreibZauber Stufe 6 - Politur** | **M** | Zweite Einstiegsseite `schreiben.html` (Icon-Idee: magischer Stift), projektübergreifende Figuren, Vorlagen. ✅ entschieden: kommt, keine reine Tab-Lösung auf Dauer |
 | **Comic-Generator-Werkzeug** | **L** | Bewusst **kein** App-Feature: eigenes Node-Werkzeug lokal beim Betreiber (`tools/comic-gen/`), weil Browser nur CORS-fähige Bild-Anbieter erreichen |
 
-**✅ Bedingung erfüllt: Stufe 1 ist gebaut und in `main`.** Damit ist die im Konzept
-genannte Voraussetzung für die parallelen Werktyp-Pfade erfüllt - **Stufe 2+3 (Bilderbuch)
-und Stufe 4 (Arbeitsheft) sind jetzt mit mehreren gleichzeitigen Claude-Code-Sitzungen
-startbar**, siehe `docs/KONZEPT-SchreibZauber.md`, Abschnitt „Stand nach Stufe 1" für die
-konkreten Andockpunkte (`app.studio.projects[id]`-Schema, `imageSource.providers`,
-`guardrailsBlock()`, `computeSpec()`/`trimToFormat()`, `projectTypes`). Einziger noch
-offener Blocker für Stufe 2 (echte Bildgenerierung): die Zahlungsmethode-Frage aus TEIL G,
-Punkt 1 - Stufe 3 (Layout/Druck) und Stufe 4 (Arbeitsheft) sind davon nicht betroffen und
-können unabhängig davon starten.
+**✅ Bedingung erfüllt: Stufe 1 ist gebaut und in `main`.** Damit war die im Konzept
+genannte Voraussetzung für die parallelen Werktyp-Pfade erfüllt - **Stufe 4 (Arbeitsheft)
+ist inzwischen fertig gebaut** (siehe Zeile oben, Branch noch nicht gemergt), **Stufe 2+3
+(Bilderbuch) läuft parallel in einer eigenen Sitzung**. Andockpunkte weiterhin in
+`docs/KONZEPT-SchreibZauber.md`, Abschnitt „Stand nach Stufe 1" (`app.studio.projects[id]`-
+Schema, `imageSource.providers`, `guardrailsBlock()`, `computeSpec()`/`trimToFormat()`,
+`projectTypes`). Einziger noch offener Blocker für Stufe 2 (echte Bildgenerierung): die
+Zahlungsmethode-Frage aus TEIL G, Punkt 1 - Stufe 4 (Arbeitsheft) war davon nicht betroffen
+und konnte unabhängig davon starten (keine Bildaufrufe nötig, siehe Konzept).
 
 ---
 

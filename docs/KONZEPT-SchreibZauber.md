@@ -497,7 +497,7 @@ Prompt muss nie neu erdacht werden. Anbietervergleich und Austausch-Mechanik im 
 | **1 – Fundament** | Projekt-Datenmodell, DB v3, Werkstatt-Übersicht, Stufen 1–3 (Idee, Bauplan, Geschichte), Platzhalter-Bilder, Prompt-Kopier-Knopf, Export „ins Regal“ mit Textseiten | Man kann eine eigene Geschichte schreiben lassen, aufteilen, vorlesen lassen. **Ohne einen einzigen Bildaufruf.** |
 | **2 – Bilder** | Stilkarte, Figuren-Bibel, Figurenblatt, Storyboard, Bildgenerierung pro Doppelseite, Kostenzähler | Das erste richtige, selbst gemachte Bilderbuch |
 | **3 – Layout & Druck** | Textplatzierung, Silbenfarben, Erstleser-Regelprofil, Doppelseiten-Druck | Ein Buch, das man ausdrucken und verschenken kann |
-| **4 – Arbeitsheft** | Lernziel, Progression, Aufgabenbaukasten, Differenzierung, Lösungsteil, s/w-Druck | Übungshefte passend zum aktuellen Schulstoff |
+| ~~**4 – Arbeitsheft**~~ | ✅ **gebaut** (Branch `claude/schreibzauber-stufe4-arbeitsheft`, noch nicht in `main`) - Lernziel, Progression, Aufgabenbaukasten (5 von 9 Typen), Differenzierung, Lösungsteil, s/w-Druck | Übungshefte passend zum aktuellen Schulstoff |
 | **5 – Comic** | Panel-Layouts, Sprechblasen-Overlay, Comic-Stilregeln | Eigene Comic-Hefte |
 | **6 – Politur** | Zweite Einstiegsseite `schreiben.html` + eigenes Manifest, projektübergreifende Figuren, Vorlagen („Gute-Nacht-Geschichte“, „Geburtstagsbuch“) | Fühlt sich wie eine eigene App an |
 
@@ -649,6 +649,75 @@ Bildgenerierung, Stilkarte-Auswahl in der UI, Druckansicht, Comic/Arbeitsheft-
 Wizard. Der Prompt-Kopier-Weg (`copyPrompt()`) ist zwar technisch nutzbar,
 aber in der Stufe-1-UI noch nicht verdrahtet - dafür fehlt bislang eine echte
 Bildidee pro Doppelseite (kommt erst mit dem Storyboard-Schritt in Stufe 2).
+
+---
+
+## Stand nach Stufe 4 (Arbeitsheft) - was steht, was fehlt noch
+
+Stufe 4 ist gebaut (Branch `claude/schreibzauber-stufe4-arbeitsheft`, Merge
+nach `main` steht noch aus - siehe CLAUDE.md "Arbeitsschritt-Varianten bei
+mehreren parallelen Aufträgen"). Umgesetzt genau entlang TEIL C.4: der
+normale 8-Stufen-Wizard wird für `project.type === 'workbook'` komplett durch
+einen eigenen Dreier-Ablauf ersetzt (Stufe 3' Lernziel -> Stufe 4' Progression
+-> Stufe 5' Aufgabenbaukasten, `project.stage` zählt dabei wie beim
+Bilderbuch-Pfad wieder bei 1 los).
+
+**Neue Dateien** (analog zum in D.2 skizzierten Plan):
+- `js/studio/worksheet.js` - Projekt-CRUD für Lernziel/Kapitel/Seiten/
+  Aufgaben, Differenzierung, Export "ins Regal"
+- `js/studio/worksheetCanvas.js` - eigenständiges Canvas-Druckbild pro Seite
+  bzw. für die Lösungsseite(n) - **keine** Wiederverwendung von
+  `js/actions/workbookGenerator.js` (anderer Weg zum selben `bookType`, siehe
+  dortiger Kommentar)
+- `js/render/studioWorkbookWizard.js` - die drei Stufen als eigene Ansicht,
+  analog `js/render/studioWizard.js`
+
+**Ergänzt statt neu gebaut:**
+- `js/studio/studioPrompts.js`/`studioApi.js` bekamen die Arbeitsheft-Prompts/
+  -Aufrufe dazu (Progression, Kapitel-Aufgaben, Niveau-Variante) - genau die
+  Stellen, die D.4 dafür schon vorgesehen hatte (`generateWorksheetPlan`/
+  `generateTasks`)
+- `app.utils.buildPageVariant()` (js/utils.js) wurde **nicht** verändert -
+  der `bookType: 'workbook'`-Zweig war laut CLAUDE.md-Datenmodell schon
+  vollständig für `taskText`/`taskExplained`/`taskType`/`materials`/
+  `helpSteps`/`solution` vorbereitet, der Export ruft ihn nur auf
+- `project.worksheet` (Konzept D.1) ist jetzt befüllt: `{goal, grade,
+  subject, chapters: [{id, title, goal, pages: [{id, goal, kind, tasks: [{id,
+  type, instruction, explanation, data, solution, activeLevel, altLevels}]}]}]}`
+  - `kind: 'neu'|'wiederholung'` und `activeLevel`/`altLevels` sind
+  Ergänzungen gegenüber dem knappen Beispiel in D.1, aber im selben Feld
+  verankert (`chapters[].pages[].tasks[]`)
+
+**Aufgabentypen: 5 von 9 aus der Tabelle in C.4 umgesetzt** - bewusst
+weniger als alle neun (siehe Auftrag: "lieber 2-3 Typen fertig als alle neun
+halbfertig"). Fertig: Lückentext ✏️, Ankreuzen ☑️, Rechnen ➕, Zuordnen 🔗
+(als "schreib den passenden Buchstaben in die Lücke" statt Linien-Ziehen -
+druckt sich auf Papier sauberer als eine gezeichnete Verbindungslinie),
+Frei schreiben 📝. Alle fünf sind **reine Text-/Schreibaufgaben ohne jeden
+Bildbedarf** - erfüllt die Druckregel (s/w-tauglich, viel Schreibfläche)
+ohne eine einzige Bildgenerierung oder einen Platzhalter-Aufruf.
+
+**Noch nicht umgesetzt** (bewusst zurückgestellt, keine der fünf Typen
+braucht sie): Nachspuren 〰️ (braucht eine Kontur-/Rasterschrift-Technik),
+Ausmalen nach Regel 🎨 und Schneiden & Kleben ✂️ (brauchen ein echtes
+Ausmalbild/Clipart), Suchsel/Rätsel 🔍 (braucht einen Buchstabengitter-
+Generator - eigener kleiner Algorithmus, kein Bildbedarf, aber eigener
+Aufwand). Sobald diese vier drankommen, ist `js/studio/imageSource.js` mit
+der `'placeholder'`-Quelle bzw. später einer echten Clipart-Anbindung
+(siehe `docs/KONZEPT-Bildquellen.md`, Abschnitt 1.5/5 Punkt 4) der richtige
+Andockpunkt für Ausmalen/Schneiden - `worksheetIllu` ist im Formatkatalog
+(`imageFormats.js`) dafür bereits reserviert.
+
+**Differenzierung:** pro Aufgabe ⭐/⭐⭐/⭐⭐⭐ - Niveau 2 (Standard) ist immer
+das direkt generierte Ergebnis, ⭐/⭐⭐⭐ werden **nur auf Klick** nachgeneriert
+(`task.altLevels[1|3]`, ein KI-Aufruf pro erstmals angesehenem Niveau) statt
+alle drei Niveaus vorab für jede Aufgabe zu erzeugen - gleiche Kostenlogik
+wie beim Storyboard-vor-Bildern-Prinzip aus C.2.
+
+**Selbstkontrolle:** der Lösungsteil am Heftende braucht **keinen eigenen
+KI-Aufruf** - jede Aufgabe trägt ihre Lösung schon seit der Aufgaben-
+Erzeugung (Stufe 5'), der Export sammelt sie nur ein und zeichnet sie als
+zusätzliche Buchseite(n) (`taskType: 'loesung'`).
 
 ---
 

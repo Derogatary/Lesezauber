@@ -59,28 +59,53 @@ async function callMistralText(prompt) {
     return parseModelJson(textResult);
 }
 
+// NEU (Ausbaustufe 4 - Arbeitsheft): gleiches Gemini-zuerst-dann-Mistral-
+// Muster wie generateManuscript() unten, aber als eigene Hilfsfunktion, da
+// jetzt DREI Arbeitsheft-Aufrufe (Progression, Kapitel-Aufgaben,
+// Niveau-Variante) dieselbe Fallback-Logik brauchen - Kopieren an drei
+// Stellen hätte die Wartung unnötig erschwert.
+async function callWithFallback(prompt) {
+    try {
+        return await callGeminiText(prompt);
+    } catch (geminiError) {
+        if (!app.settings.mistralApiKey) throw geminiError;
+
+        console.warn('Gemini fehlgeschlagen, versuche Mistral-Fallback:', geminiError.message);
+        try {
+            const result = await callMistralText(prompt);
+            app.ui.toast('Gemini nicht erreichbar - Mistral eingesprungen', '🔄');
+            return result;
+        } catch (mistralError) {
+            console.error('Auch Mistral-Fallback fehlgeschlagen:', mistralError);
+            throw geminiError;
+        }
+    }
+}
+
 Object.assign(app.studio, {
     api: {
         // brief/spec: siehe js/studio/studioCore.js (createDefaultProject).
         // Rückgabe: { title, spreads: [{text, pageTurnHook}] }
         async generateManuscript(brief, spec) {
-            const prompt = app.studio.prompts.buildManuscriptPrompt(brief, spec);
+            return callWithFallback(app.studio.prompts.buildManuscriptPrompt(brief, spec));
+        },
 
-            try {
-                return await callGeminiText(prompt);
-            } catch (geminiError) {
-                if (!app.settings.mistralApiKey) throw geminiError;
+        // Stufe 4' – Progression (Arbeitsheft). Rückgabe:
+        // { chapters: [{title, goal, pages: [{goal, kind}]}] }
+        async generateWorksheetPlan(worksheet) {
+            return callWithFallback(app.studio.prompts.buildProgressionPrompt(worksheet));
+        },
 
-                console.warn('Gemini fehlgeschlagen, versuche Mistral-Fallback:', geminiError.message);
-                try {
-                    const result = await callMistralText(prompt);
-                    app.ui.toast('Gemini nicht erreichbar - Mistral eingesprungen', '🔄');
-                    return result;
-                } catch (mistralError) {
-                    console.error('Auch Mistral-Fallback fehlgeschlagen:', mistralError);
-                    throw geminiError;
-                }
-            }
+        // Stufe 5' – Aufgabenbaukasten (Arbeitsheft), ein Aufruf pro
+        // Kapitel. Rückgabe: { pages: [{tasks: [...]}] }
+        async generateChapterTasks(worksheet, chapter) {
+            return callWithFallback(app.studio.prompts.buildChapterTasksPrompt(worksheet, chapter));
+        },
+
+        // Differenzierung (Arbeitsheft): dieselbe Aufgabe auf einem anderen
+        // Niveau. Rückgabe: {instruction, explanation, data, solution}
+        async generateTaskLevel(worksheet, chapter, task, targetLevel) {
+            return callWithFallback(app.studio.prompts.buildTaskLevelPrompt(worksheet, chapter, task, targetLevel));
         }
     }
 });

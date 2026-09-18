@@ -206,8 +206,24 @@ Seitenverhältnis, gleiche Textzone.
    in der App per `console.error()` + Toast gemeldet, nie stumm verschluckt. Live zu sehen
    in [`docs/platzhalter-vorschau.html`](platzhalter-vorschau.html) – dort hat jede Karte
    jetzt einen „📋 Prompt kopieren"-Knopf.
-4. **Clipart-Quelle fürs Arbeitsheft** – lohnt eine eigene kleine Recherche, sobald
-   Ausbaustufe 4 drankommt.
+4. **Clipart-Quelle fürs Arbeitsheft** – kleine Recherche nachgeholt (Sept. 2026, im Zuge
+   der Ausbaustufe 4). Ergebnis: **noch kein Blocker, weil noch kein Bild gebraucht wird.**
+   Die fünf in Stufe 4 umgesetzten Aufgabentypen (Lückentext, Ankreuzen, Rechnen, Zuordnen,
+   Frei schreiben) sind reine Text-/Schreibaufgaben - kein einziger Bildaufruf, keine
+   Clipart-Anbindung nötig (siehe `docs/KONZEPT-SchreibZauber.md`, Abschnitt "Stand nach
+   Stufe 4"). Die Frage wird erst relevant, sobald Ausmalen nach Regel 🎨 oder Schneiden &
+   Kleben ✂️ gebaut werden - dafür bleibt die Einschätzung aus Abschnitt 1.5 gültig:
+   **Openclipart** (openclipart.org, gemeinfrei/CC0, einfache REST-Suche nach Suchwort,
+   liefert SVG) ist der naheliegende erste Kandidat - kostenlos, rechtlich unproblematisch,
+   funktioniert naturgemäß in Graustufen (SVG-Konturen ohne Foto-Rauschen). Zwei Punkte
+   dabei noch offen, wenn es soweit ist: (a) Openclipart hat keine offizielle, stabile
+   JSON-API mehr (das alte API-Projekt ist eingestellt) - der Zugriff müsste über die
+   durchsuchbare Download-Oberfläche oder einen Drittanbieter-Mirror laufen, das braucht
+   dann doch wieder einen echten Live-Test außerhalb dieser Umgebung (gleiche Einschränkung
+   wie bei Pollinations, s.o.); (b) Bildqualität/Stilkonsistenz zwischen verschiedenen
+   Clipart-Autor:innen schwankt stark - für ein einzelnes Ausmalbild pro Aufgabe unkritisch,
+   für ein einheitliches Heft-Erscheinungsbild ggf. störend. Beides ist Sache der Ausbaustufe,
+   die Ausmalen/Schneiden tatsächlich baut, kein heutiger Blocker.
 
 ---
 

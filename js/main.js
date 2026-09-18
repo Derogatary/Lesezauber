@@ -50,6 +50,10 @@ import './studio/studioCore.js';
 import './studio/studioPrompts.js';
 import './studio/studioApi.js';
 import './studio/studioExport.js';
+// NEU (Ausbaustufe 4 - Arbeitsheft): eigener Werktyp-Pfad, siehe
+// docs/KONZEPT-SchreibZauber.md TEIL C.4. worksheet.js importiert
+// worksheetCanvas.js selbst mit, deshalb reicht hier ein Eintrag.
+import './studio/worksheet.js';
 
 import './render/library.js';
 import './render/book.js';
@@ -62,6 +66,7 @@ import './render/progress.js';
 import './render/checkWork.js';
 import './render/studioLibrary.js';
 import './render/studioWizard.js';
+import './render/studioWorkbookWizard.js';
 
 import './readerUI.js';
 import './settingsConfig.js';

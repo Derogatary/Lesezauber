@@ -20,18 +20,18 @@ import './imageSource.js';
 // zugreifen würde.
 app.studio.projects = app.studio.projects || {};
 
-// NEU: Werktypen der Werkstatt. Nur 'picturebook' ist in Stufe 1
-// vollständig gebaut (Idee -> Bauplan -> Geschichte -> Ins Regal). 'comic'
-// und 'workbook' stehen hier bereits als Zieltypen, weil das Datenmodell
-// (spreads[].balloons, worksheet) sie schon vorsieht - sie werden aber
-// erst in den späteren, parallel geplanten Ausbaustufen 4/5 freigeschaltet
-// (siehe docs/KONZEPT-SchreibZauber.md, TEIL G Punkt 3). "available: false"
-// blendet sie in der Werkstatt-Übersicht nur aus, ist aber KEIN Aufwand,
-// wenn eine spätere Sitzung sie anschaltet.
+// NEU: Werktypen der Werkstatt. 'picturebook' (Stufe 1) und jetzt auch
+// 'workbook' (Stufe 4, siehe docs/KONZEPT-SchreibZauber.md TEIL C.4/E) sind
+// freigeschaltet. 'comic' steht hier weiterhin nur als Zieltyp, weil das
+// Datenmodell (spreads[].balloons) ihn schon vorsieht - er kommt erst mit
+// der später geplanten Ausbaustufe 5. Der eigentliche Arbeitsheft-Wizard
+// (Lernziel -> Progression -> Aufgabenbaukasten) lebt komplett getrennt in
+// js/studio/worksheet.js + js/render/studioWorkbookWizard.js - hier wird
+// nur der Zugang freigeschaltet.
 app.studio.projectTypes = [
     { id: 'picturebook', label: '📕 Bilderbuch', hint: 'Doppelseiten mit Bild und Text, vorlesbar', available: true },
     { id: 'comic', label: '💥 Comic/Heft', hint: 'kommt in einer späteren Ausbaustufe', available: false },
-    { id: 'workbook', label: '📝 Arbeitsheft', hint: 'kommt in einer späteren Ausbaustufe', available: false }
+    { id: 'workbook', label: '📝 Arbeitsheft', hint: 'Lernziel, Aufgaben und Lösungsteil - druckfertig', available: true }
 ];
 
 // NEU: Wortbudget-Richtwerte für ein 32-seitiges Buch (12 Doppelseiten Text,

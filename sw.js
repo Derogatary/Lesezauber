@@ -1,7 +1,7 @@
 // Bei jeder inhaltlichen Änderung an einer dieser Dateien diese Nummer
 // erhöhen - sonst bekommen wiederkehrende Besucher weiter die alte
 // zwischengespeicherte Version ausgeliefert.
-const CACHE_NAME = 'lesezauber-shell-v28';
+const CACHE_NAME = 'lesezauber-shell-v29';
 
 // NEU (v28): Integrationspass - Heft-Generator und Video-Export zusammengeführt.
 // Beide Zweige hatten unabhängig voneinander bis v26/v27 hochgezählt, deshalb hier
@@ -77,8 +77,13 @@ const APP_SHELL = [
     './js/studio/studioPrompts.js',
     './js/studio/studioApi.js',
     './js/studio/studioExport.js',
+    // NEU (Ausbaustufe 4 - Arbeitsheft): eigener Werktyp-Pfad, siehe
+    // docs/KONZEPT-SchreibZauber.md TEIL C.4.
+    './js/studio/worksheet.js',
+    './js/studio/worksheetCanvas.js',
     './js/render/studioLibrary.js',
     './js/render/studioWizard.js',
+    './js/render/studioWorkbookWizard.js',
     './js/backgroundPregen.js',
     './js/keyboard.js',
     './js/gestures.js',
