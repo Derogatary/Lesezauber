@@ -30,7 +30,10 @@ function updateStepper(project) {
     // NEU (Stufe 2): drei weitere Stufen (4 Figuren, 5 Storyboard, 6 Bilder)
     // dazugekommen - Layout & Druck (7) und Fertig (8) bleiben spätere
     // Ausbaustufen, siehe docs/KONZEPT-SchreibZauber.md TEIL E.
-    [1, 2, 3, 4, 5, 6].forEach(n => {
+    // NEU (Ausbaustufe 3): Stufe 7 "Das Layout" dazugekommen - "Fertig" (8)
+    // bleibt weiterhin kein eigener Stufen-Bildschirm, "Ins Regal
+    // stellen"/Drucken sind bewusst überall (Stufe 3/6/7) erreichbar.
+    [1, 2, 3, 4, 5, 6, 7].forEach(n => {
         const btn = document.getElementById(`studioStep${n}`);
         if (!btn) return;
         const reached = n <= project.stage;
@@ -133,13 +136,16 @@ Object.assign(app.render, {
         document.getElementById('studioStageCharacters').classList.toggle('hidden', activeStage !== 4);
         document.getElementById('studioStageStoryboard').classList.toggle('hidden', activeStage !== 5);
         document.getElementById('studioStageImages').classList.toggle('hidden', activeStage !== 6);
+        // NEU (Ausbaustufe 3): Stufe 7 "Das Layout" - siehe render/studioLayout.js
+        document.getElementById('studioStageLayout').classList.toggle('hidden', activeStage !== 7);
 
         if (activeStage === 1) fillBriefStage(project);
         else if (activeStage === 2) fillSpecStage(project);
         else if (activeStage === 3) fillStoryStage(project);
         else if (activeStage === 4) app.render.studioCharacters(project);
         else if (activeStage === 5) app.render.studioStoryboard(project);
-        else app.render.studioImages(project);
+        else if (activeStage === 6) app.render.studioImages(project);
+        else app.render.studioLayout(project);
     },
 
     // Liest das Bauplan-Formular aus und aktualisiert NUR die Vorschau

@@ -1,7 +1,12 @@
 // Bei jeder inhaltlichen Änderung an einer dieser Dateien diese Nummer
 // erhöhen - sonst bekommen wiederkehrende Besucher weiter die alte
 // zwischengespeicherte Version ausgeliefert.
-const CACHE_NAME = 'lesezauber-shell-v30';
+const CACHE_NAME = 'lesezauber-shell-v31';
+
+// NEU (v31): SchreibZauber Ausbaustufe 3 (Layout & Druck) - Textplatzierung/
+// Silbenfarben (js/studio/studioLayout.js + js/render/studioLayout.js) und
+// der davon unabhängige Doppelseiten-Druck (js/studio/studioPrint.js) dazu.
+// Siehe docs/KONZEPT-SchreibZauber.md, Abschnitt "Stand nach Stufe 3".
 
 // NEU (v30): Integrationspass Welle 5 - Video-Restpunkte (Auftrag 18),
 // SchreibZauber Stufe 2 (Bilder, Auftrag 16) und Ausbaustufe 4 (Arbeitsheft,
@@ -87,6 +92,10 @@ const APP_SHELL = [
     './js/studio/studioCharacters.js',
     './js/studio/studioStoryboard.js',
     './js/studio/studioImages.js',
+    // NEU (Ausbaustufe 3 - Layout & Druck): siehe
+    // docs/KONZEPT-SchreibZauber.md, Abschnitt "Stand nach Stufe 3".
+    './js/studio/studioLayout.js',
+    './js/studio/studioPrint.js',
     // NEU (Ausbaustufe 4 - Arbeitsheft): eigener Werktyp-Pfad, siehe
     // docs/KONZEPT-SchreibZauber.md TEIL C.4.
     './js/studio/worksheet.js',
@@ -96,6 +105,7 @@ const APP_SHELL = [
     './js/render/studioCharacters.js',
     './js/render/studioStoryboard.js',
     './js/render/studioImages.js',
+    './js/render/studioLayout.js',
     './js/render/studioWorkbookWizard.js',
     './js/backgroundPregen.js',
     './js/keyboard.js',

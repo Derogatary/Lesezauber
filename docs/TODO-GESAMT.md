@@ -137,20 +137,20 @@ Der größte Brocken im Projekt - dafür in Stufen geschnitten, die **einzeln li
 | **Comic: zweiter Testlauf** | **S** | Ein Testbild hat zwei Prompt-Probleme aufgedeckt; der korrigierte Wortlaut ist noch nicht erprobt. Steht vor allem Weiteren |
 | ~~**SchreibZauber Stufe 1 - Fundament**~~ | **L** | ✅ **erledigt** - Datenmodell, **DB v4**, Werkstatt-Übersicht, Idee/Bauplan/Geschichte, Platzhalter-Bilder, Export „ins Regal". `js/studio/*` ist seither in `js/main.js`/`sw.js` verdrahtet |
 | ~~**SchreibZauber Stufe 2 - Bilder**~~ | **L** | ✅ **erledigt** - Stilkarte, Figuren-Bibel (inkl. KI-Vorschlag), Storyboard/Daumenkino (inkl. KI-Bildideen, verschieben/zusammenfassen/löschen), Bildgenerierung pro Doppelseite, Kostenzähler. Läuft weiterhin komplett über die kostenlose Platzhalter-Quelle - die echte Gemini-Bildgenerierung ist gebaut (`imageSource.js`, Quelle `gemini`), aber bewusst hinter einer expliziten Bestätigung in den Einstellungen (`app.settingsConfig.toggleStudioImageGen`), bis die Zahlungsmethode-Frage aus `KONZEPT-SchreibZauber.md` TEIL G Punkt 1 beantwortet ist. Details: Abschnitt „Stand nach Stufe 2" im Konzept |
-| **SchreibZauber Stufe 3 - Layout & Druck** | **M** | Textplatzierung, Silbenfarben, Doppelseiten-Druck. **Gleich druckfertige Exportformate mitdenken** (KDP-taugliche PDF/Auflösung/Bleed, Entscheidung 6) |
+| ~~**SchreibZauber Stufe 3 - Layout & Druck**~~ | **M** | ✅ **erledigt** - Textplatzierung/Schriftgröße/Silbenfarben pro Doppelseite editierbar (Wizard-Stufe 7, `js/studio/studioLayout.js` + `js/render/studioLayout.js`), Erstleser-Regelprofil (Sinnschritte an Satzgrenzen), eigener Doppelseiten-Druck (`js/studio/studioPrint.js`, randabfallend oder mit Rand, Papierformat aus dem Bauplan). KDP-Vorgaben recherchiert und dokumentiert (300dpi/CMYK/3mm-Bleed/0,25"-Sicherheitsabstand/Einzelseiten-Pflicht/ISBN) - der gebaute Export ist bewusst NUR für den eigenen Drucker/PDF, noch NICHT KDP-fertig (echter Bleed-Übermaßzuschlag, Doppelseite→zwei KDP-Einzelseiten, ISBN-Freifläche auf dem Umschlag bleiben offene Folgeschritte). Details: `docs/KONZEPT-SchreibZauber.md`, Abschnitt „Stand nach Stufe 3" |
 | ~~**SchreibZauber Stufe 4 - Arbeitsheft**~~ | **L** | ✅ **erledigt** - Lernziel/Progression/Aufgabenbaukasten als eigener Wizard-Zweig (`js/studio/worksheet.js`, `js/render/studioWorkbookWizard.js`), 5 von 9 Aufgabentypen umgesetzt (Lückentext/Ankreuzen/Rechnen/Zuordnen/Frei schreiben - alle ohne Bildbedarf), Differenzierung (⭐/⭐⭐/⭐⭐⭐, auf Abruf nachgeneriert), automatischer Lösungsteil am Heftende, Export „ins Regal" mit `bookType: 'workbook'`. Details/offene Rest-Typen: `docs/KONZEPT-SchreibZauber.md`, Abschnitt „Stand nach Stufe 4" |
 | **SchreibZauber Stufe 5 - Comic** | **L** | Panel-Layouts, Sprechblasen-Overlay |
 | **SchreibZauber Stufe 6 - Politur** | **M** | Zweite Einstiegsseite `schreiben.html` (Icon-Idee: magischer Stift), projektübergreifende Figuren, Vorlagen. ✅ entschieden: kommt, keine reine Tab-Lösung auf Dauer |
 | **Comic-Generator-Werkzeug** | **L** | Bewusst **kein** App-Feature: eigenes Node-Werkzeug lokal beim Betreiber (`tools/comic-gen/`), weil Browser nur CORS-fähige Bild-Anbieter erreichen |
 
 **✅ Bedingung erfüllt: Stufe 1 ist gebaut und in `main`.** Damit war die im Konzept
-genannte Voraussetzung für die parallelen Werktyp-Pfade erfüllt - **Stufe 2 (Bilder) und
-Stufe 4 (Arbeitsheft) sind beide fertig gebaut** und in diesem Integrationspass (Welle 5)
-zusammengeführt. Andockpunkte für die nächste Ausbaustufe (Stufe 3 - Layout & Druck)
-stehen in `docs/KONZEPT-SchreibZauber.md`, Abschnitte „Stand nach Stufe 1" und „Stand nach
-Stufe 2" (`app.studio.projects[id]`-Schema, `imageSource.providers`, `guardrailsBlock()`,
-`computeSpec()`/`trimToFormat()`, `projectTypes`). Einziger noch offener Punkt aus Stufe 2:
-die Zahlungsmethode-Frage aus TEIL G, Punkt 1 - bis dahin bleibt die echte
+genannte Voraussetzung für die parallelen Werktyp-Pfade erfüllt - **Stufe 2 (Bilder), Stufe 3
+(Layout & Druck) und Stufe 4 (Arbeitsheft) sind jetzt alle fertig gebaut** (Stufe 2+4 im
+Integrationspass Welle 5 zusammengeführt, Stufe 3 danach in einer eigenen, nicht-parallelen
+Sitzung obendrauf). Nur Stufe 5 (Comic) und Stufe 6 (Politur) bleiben offen, siehe
+`docs/KONZEPT-SchreibZauber.md`, Abschnitte „Stand nach Stufe 1"/„Stand nach Stufe 2"/„Stand
+nach Stufe 3"/„Stand nach Stufe 4" für alle Andockpunkte. Einziger noch offener Punkt aus
+Stufe 2: die Zahlungsmethode-Frage aus TEIL G, Punkt 1 - bis dahin bleibt die echte
 Gemini-Bildgenerierung hinter der expliziten Bestätigung in den Einstellungen, die App
 funktioniert vollständig mit der kostenlosen Platzhalter-Quelle. Stufe 4 war davon nicht
 betroffen und ist bereits ohne Einschränkung nutzbar (keine Bildaufrufe nötig).

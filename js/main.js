@@ -55,6 +55,11 @@ import './studio/studioExport.js';
 import './studio/studioCharacters.js';
 import './studio/studioStoryboard.js';
 import './studio/studioImages.js';
+// NEU (Ausbaustufe 3 - Layout & Druck): Textplatzierung/Silbenfarben
+// (studioLayout.js) und der davon unabhängige Doppelseiten-Druck
+// (studioPrint.js) - siehe docs/KONZEPT-SchreibZauber.md TEIL E.
+import './studio/studioLayout.js';
+import './studio/studioPrint.js';
 // NEU (Ausbaustufe 4 - Arbeitsheft): eigener Werktyp-Pfad, siehe
 // docs/KONZEPT-SchreibZauber.md TEIL C.4. worksheet.js importiert
 // worksheetCanvas.js selbst mit, deshalb reicht hier ein Eintrag.
@@ -74,6 +79,7 @@ import './render/studioWizard.js';
 import './render/studioCharacters.js';
 import './render/studioStoryboard.js';
 import './render/studioImages.js';
+import './render/studioLayout.js';
 import './render/studioWorkbookWizard.js';
 
 import './readerUI.js';

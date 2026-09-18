@@ -557,6 +557,45 @@ bleibt richtig. Nur der Anspruch an Stufe 1 und 3 steigt von Anfang an.
 
 ---
 
+## Nachtrag: KDP-Druckvorgaben recherchiert (Sept. 2026, vor dem Bau von Ausbaustufe 3)
+
+Wie oben angekündigt vor dem Bau des Doppelseiten-Drucks recherchiert (Webrecherche, Stand
+September 2026, keine eigene Testeinreichung bei KDP). Ergebnis - jetzt konkret, nicht mehr
+"vermutet":
+
+- **Auflösung:** mindestens 300 dpi bei der finalen Druckgröße. Unterhalb davon lehnt KDP
+  entweder ab oder das Ergebnis wirkt sichtbar verpixelt - bei den großformatigen,
+  randabfallenden Bildern eines Bilderbuchs besonders auffällig.
+- **Farbraum:** KDP empfiehlt CMYK (das Druckverfahren selbst arbeitet in CMYK); viele
+  Selfpublisher liefern trotzdem RGB, KDP konvertiert dann selbst - Ergebnis kann sich in
+  Nuancen leicht vom Bildschirm unterscheiden.
+- **Bleed (Beschnittzugabe):** 0,125 Zoll (≈ 3 mm) auf allen Seiten, an denen ein Bild bis zum
+  Papierrand reichen soll - das Dokument muss also 3 mm größer angelegt werden als das
+  spätere Trimm-Format, und randnahe Bildinhalte müssen diese Zugabe mit abdecken.
+- **Sicherheitsabstand für Text:** mindestens 0,25 Zoll (≈ 6,4 mm) vom Trimm-Rand entfernt -
+  wichtig für die Textzonen-Platzierung in Stufe 7 ("Das Layout").
+- **Seitenformat der Einreichung:** KDP erwartet **Einzelseiten**, keine Doppelseiten-Spreads
+  als eine PDF-Seite. Eine im Bilderbuch als EIN Bild angelegte Doppelseite muss für eine
+  KDP-Einreichung also in zwei Einzelseiten (links/rechts) aufgeteilt werden, deren
+  Bildinhalt über den Bundsteg hinweg optisch zusammenpasst.
+- **Format/Dateityp:** eingebettete Schriften, PDF ohne Bleed lässt KDP auch aus DOC/DOCX/RTF
+  konvertieren - mit Bleed (also praktisch bei jedem Bilderbuch mit randabfallenden Bildern)
+  wird ein fertiges PDF erwartet.
+- **ISBN:** vergibt KDP beim Veröffentlichen kostenlos selbst (keine eigene Beschaffung nötig) -
+  die genaue Pflicht-Platzierung auf dem Umschlag (Barcode-Zone hinten unten) wurde in dieser
+  Recherche nicht bis ins letzte Detail (exakte mm-Zone/Freifläche) verifiziert.
+
+**Konsequenz für Ausbaustufe 3 (siehe "Stand nach Stufe 3" unten):** Der jetzt gebaute
+Doppelseiten-Druck liefert einen soliden Export fürs eigene/private Ausdrucken bzw.
+"als PDF speichern" - bewusst **noch nicht** KDP-fertig. Was für eine echte KDP-Einreichung
+zusätzlich fehlt, ist jetzt konkret benennbar (statt vage "muss noch geprüft werden"):
+1. echter 3 mm-Übermaßzuschlag statt nur eines optischen Randabfallend/Mit-Rand-Umschalters,
+2. Aufteilung jeder Doppelseite in zwei einzelne Trimm-Seiten für die Einreichung,
+3. Umschlag-Vorlage mit ISBN-Barcode-Freifläche.
+Diese drei Punkte sind ein klar umrissener Folgeschritt, kein offenes Rätsel mehr.
+
+---
+
 # TEIL G – Offene Fragen an den Nutzer
 
 Diese Punkte sollten vor Umsetzungsbeginn geklärt werden:
@@ -812,6 +851,73 @@ Blocker für ein vollständiges erstes selbst gemachtes Bilderbuch.
 
 ---
 
+## Stand nach Stufe 3 (Layout & Druck) - was steht, was ist bewusst offen geblieben
+
+Ausbaustufe 3 ist gebaut, genau die vier in TEIL E genannten Bausteine (Textplatzierung,
+Silbenfarben, Erstleser-Regelprofil, Doppelseiten-Druck), plus die in TEIL F vorab verlangte
+KDP-Recherche (siehe Nachtrag oben). Diese Sitzung lief NICHT parallel zu einer zweiten
+SchreibZauber-Sitzung (Stufe 5/6 blieben laut Auftrag gesperrt), deshalb hier keine
+Integrationspass-Besonderheiten wie bei Welle 5.
+
+**Wizard-Stufe 7 "Das Layout"** (`js/studio/studioLayout.js` + `js/render/studioLayout.js`):
+- `spread.layout` (`textPos`/`fontScale`/`syllableColors`) - existierte als Datenfeld bereits
+  seit Stufe 1 mit Standardwerten (siehe `studioCore.js`, `createDefaultProject()`/
+  `addSpread()`/`applyManuscript()` - **unverändert gelassen**, wie im Auftrag verlangt) - ist
+  jetzt über drei Regler pro Doppelseite editierbar: Textposition (oben/unten/links/rechts),
+  Schriftgröße (80-150%), Silbenfarben (An/Aus).
+- `app.studio.layout.buildOverlayHtml(text, layout, readingLevel, baseSize, unit)` ist die EINE
+  Stelle, die aus Manuskripttext + Layout-Feldern eine fertige, sanitierte HTML-Textebene baut -
+  genutzt sowohl von der Live-Vorschau im Wizard-Kärtchen als auch vom Druck
+  (`studioPrint.js`), damit beide garantiert dasselbe zeigen. Der Text liegt dabei als absolut
+  positioniertes `<div>` ÜBER dem (unveränderten) Bild, nie im Bild selbst - dieselbe Regel wie
+  überall sonst im Projekt (Konzept A.5 Prinzip 6, D.4, Comic-Sprechblasen).
+- **Silbenfarben-Heuristik** (`splitSyllables()`): eine zusammenhängende Vokalfolge (deckt
+  Diphthonge wie "au"/"ei"/"ie" automatisch mit ab) zählt als ein Silbenkern; bei mehreren
+  Konsonanten zwischen zwei Kernen bleibt nur der/die letzte(n) - inklusive der unzertrennlichen
+  Verbindungen "ch"/"sch"/"ph"/"th" - bei der folgenden Silbe, der Rest bei der vorigen. Kein
+  Wörterbuch, keine KI, rein regelbasiert - reicht laut Auftrag für selbst geschriebene
+  Kinderbuchtexte (an den üblichen Lehrbuchbeispielen wie "Fenster"→"Fens-ter",
+  "Kirche"→"Kir-che", "waschen"→"wa-schen" geprüft, kein Anspruch auf Vollständigkeit bei
+  Fremdwörtern/Komposita-Fugen-s). Zwei fest verdrahtete, alternierende Farben, die Abfolge
+  läuft über den GESAMTEN Seitentext durch (nicht pro Wort neu bei Farbe 1 beginnend).
+- **Erstleser-Regelprofil** ("Sinnschritte", Konzept A.2): bei `project.brief.readingLevel ===
+  'erstleser'` wird der Text automatisch an Satzgrenzen (. ! ?) in eigene Zeilen zerlegt - "ein
+  Satz = eine Zeile". Bei `'vorlesen'`/`'selbstleser'` bleibt der Text ein durchgehender Block.
+  Das ist an `readingLevel` gekoppelt (globale Werkstatt-Einstellung aus Stufe 1), unabhängig
+  vom PRO-SEITE einstellbaren `syllableColors`-Schalter.
+- **Bekannte Lücke, bewusst nicht in dieser Stufe behoben:** Die vom Bild-Prompt freigehaltene
+  "ruhige Fläche" (`imageSource.js buildPrompt()`, `fmt.textZone`) hängt am BILDFORMAT (z.B.
+  "unteres Viertel" bei `spreadLandscape`), nicht an der hier neu editierbaren
+  `spread.layout.textPos`. Wählt man "oben"/"links"/"rechts", kann die HTML-Textebene also über
+  einem Bildbereich liegen, der nicht extra freigehalten wurde - der halbtransparente weiße
+  Textkasten (siehe `textPosStyle()`) fängt das optisch ab, ist aber ein Kompromiss. Eine echte
+  Behebung müsste `imageSource.js`/die Bild-Prompts anfassen (Stufe 2-Gebiet) und war laut
+  Auftrag ausdrücklich nicht Teil dieser Sitzung.
+
+**Doppelseiten-Druck** (`js/studio/studioPrint.js`, `app.studio.printSpreads(bleed)`):
+- Eigene Funktion (kein Umbau von `app.actions.printBook()`), orientiert an dessen Konventionen
+  (`window.open()` → `document.write()` → `setTimeout(print)`), aber mit eigenen Druckregeln:
+  Papierformat aus dem Bauplan (`project.spec.trim` → A5 quer 210×148mm / A5 hoch 148×210mm /
+  A4 hoch 210×297mm über `@page { size }`), Wahl zwischen randabfallendem Bild
+  (`object-fit: cover`) und Bild mit 8mm weißem Rand (`object-fit: contain`, Standard - sicherer
+  für Heimdrucker ohne echten Randlos-Druck), Textzone über `buildOverlayHtml()` freigehalten,
+  simple Titelseite (Werktitel + Profil-Name als Autor) vorangestellt.
+- **Bewusst NICHT KDP-fertig** - siehe die drei konkreten Folgepunkte im KDP-Nachtrag oben
+  (echter 3mm-Bleed-Übermaßzuschlag statt nur optischem Randabfallend/Mit-Rand-Umschalter,
+  Aufteilung jeder Doppelseite in zwei KDP-Einzelseiten, Umschlag mit ISBN-Freifläche). Der Text
+  in Stufe 7 und die Zusammenfassung im Konzept-Nachtrag verweisen ausdrücklich dorthin, statt
+  stillschweigend so zu tun, als sei der Export bereits einreichungsfertig.
+
+**Was eine spätere Sitzung vorfindet:**
+- `app.studio.layout` (Namespace) und `app.studio.printSpreads()` sind die Andockpunkte für
+  einen künftigen "echten" KDP-Export - der müsste laut obigem Nachtrag hauptsächlich eine
+  zweite `printSpreads()`-Variante (oder einen Modus-Parameter) ergänzen, der Bleed als echtes
+  Übermaß statt als optischen Schalter behandelt und jede Doppelseite in zwei Einzelseiten
+  aufteilt - `buildOverlayHtml()` selbst bräuchte dafür keine Änderung.
+- Stufe 5 (Comic) und Stufe 6 (Politur) bleiben wie in TEIL E beschrieben zurückgestellt.
+
+---
+
 ## Quellen
 
 Bilderbuch- und Verlagsworkflow:
@@ -847,3 +953,9 @@ Bildgenerierung (technisch):
 - [Gemini 3.1 Flash Image – Google Cloud Documentation](https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/gemini/3-1-flash-image)
 - [Generate images with Gemini – Google Cloud Documentation](https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/capabilities/image-generation)
 - [Generating Consistent Imagery with Gemini – Google Codelabs](https://codelabs.developers.google.com/gemini-consistent-imagery-notebook)
+
+Amazon-KDP-Druckvorgaben (recherchiert für Ausbaustufe 3, Sept. 2026):
+- [Picture Book Illustration Specs for Print-on-Demand – ebookpbook](https://www.ebookpbook.com/2026/04/23/childrens-picture-book-illustration-specs/)
+- [Set Trim Size, Bleed, and Margins – Kindle Direct Publishing (offizielle KDP-Hilfe)](https://kdp.amazon.com/en_US/help/topic/GVBQ3CMEQW3W2VL6)
+- [Paperback Submission Guidelines – Kindle Direct Publishing (offizielle KDP-Hilfe)](https://kdp.amazon.com/en_US/help/topic/G201857950)
+- [Children's Book Trim Sizes: Complete Chart + KDP Bleed Guide – kidillus](https://kidillus.com/learn/book-trim-sizes-bleed-margins)
