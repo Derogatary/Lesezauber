@@ -94,7 +94,12 @@ Object.assign(app.ttsNeural, {
 
     // Holt die Sprachaufnahme - erst aus dem Zwischenspeicher, sonst vom
     // Anbieter (und legt sie dann ab).
-    async _getAudio(text, { provider, voice, rate, personaId, needDuration = false }) {
+    // NEU (Ton in der Film-Vorschau): cacheOnly=true erlaubt AUSDRÜCKLICH
+    // keinen neuen Synthese-Aufruf - ein Cache-Fehltreffer liefert dann
+    // einfach null zurück, statt Kontingent zu verbrauchen. Für die
+    // Vorschau darf das bloße Öffnen nichts kosten (siehe
+    // docs/KONZEPT-Video.md, "Noch offen").
+    async _getAudio(text, { provider, voice, rate, personaId, needDuration = false, cacheOnly = false }) {
         const key = this._cacheKey(text, provider, voice, rate, personaId);
         const useCache = app.settings.ttsCacheEnabled !== false;
 
@@ -116,6 +121,8 @@ Object.assign(app.ttsNeural, {
                 };
             }
         }
+
+        if (cacheOnly) return null;
 
         const styleHint = provider.supportsStyle ? app.ttsProviders.styleHintFor(personaId) : null;
         const result = await provider.synthesize(text, { voice, rate, styleHint });
@@ -556,9 +563,15 @@ Object.assign(app.ttsNeural, {
 
     // Erzeugt (oder holt aus dem Zwischenspeicher) die Audiodatei zu einem
     // Text und liefert sie zusammen mit Länge und Wort-Zeitpunkten zurück.
-    async renderAudio(rawText, { personaId } = {}) {
+    // NEU (Ton in der Film-Vorschau): cacheOnly=true liefert null statt
+    // eines Fehlers, wenn nichts im Zwischenspeicher liegt - siehe
+    // _getAudio() oben. Alle Prüfungen unten (keine KI-Stimme, leerer/zu
+    // langer Text) geben in diesem Fall ebenfalls einfach null zurück, statt
+    // eine Ausnahme zu werfen, die der Aufrufer sonst abfangen müsste.
+    async renderAudio(rawText, { personaId, cacheOnly = false } = {}) {
         const provider = app.ttsProviders.current();
         if (!provider.neural || !provider.synthesize) {
+            if (cacheOnly) return null;
             throw new TtsError('Dafür muss in den Einstellungen eine KI-Stimme gewählt sein (die Gerätestimme liefert keine Audiodatei).', { fatal: true, code: 'NO_NEURAL' });
         }
 
@@ -568,19 +581,26 @@ Object.assign(app.ttsNeural, {
         // app.tts._prepare(), damit Wort-Zeitpunkte unten zum tatsächlich
         // synthetisierten Text passen.
         const text = app.utils.stripEmojiForSpeech(app.utils.prepareTextForSpeech(rawText));
-        if (!text) throw new TtsError('Kein Text zum Vorlesen vorhanden.', { code: 'EMPTY' });
+        if (!text) {
+            if (cacheOnly) return null;
+            throw new TtsError('Kein Text zum Vorlesen vorhanden.', { code: 'EMPTY' });
+        }
         if (text.length > MAX_NEURAL_CHARS) {
+            if (cacheOnly) return null;
             throw new TtsError(`Text ist mit ${text.length} Zeichen zu lang (Grenze: ${MAX_NEURAL_CHARS}).`, { code: 'TOO_LONG' });
         }
 
         const usedPersona = personaId || app.state.readingPersonaId || app.settings.persona;
-        const { blob, alignment, durationSec } = await this._getAudio(text, {
+        const audioData = await this._getAudio(text, {
             provider,
             voice: app.ttsProviders.voiceFor(provider),
             rate: app.settings.speechRate || 0.9,
             personaId: usedPersona,
-            needDuration: true
+            needDuration: true,
+            cacheOnly
         });
+        if (!audioData) return null; // nur erreichbar mit cacheOnly=true und Cache-Fehltreffer
+        const { blob, alignment, durationSec } = audioData;
 
         // Wort-Zeitpunkte: bei ElevenLabs exakt, sonst über die Textlänge
         // geschätzt - dieselbe Berechnung wie die Hervorhebung im Reader.
@@ -599,7 +619,13 @@ Object.assign(app.ttsNeural, {
     // eine Videospur. Erzeugt nur, was noch nicht im Zwischenspeicher liegt
     // - trotzdem kostet ein kompletter Buch-Export Kontingent, deshalb
     // nichts davon automatisch aufrufen.
-    async renderPageSegments(bookId, pageIdx, { includeDescription = true, includeQuiz = false, personaId, onProgress } = {}) {
+    // NEU (Ton in der Film-Vorschau): cacheOnly=true gibt an renderAudio()
+    // durch - ein Häppchen ohne Cache-Treffer fällt dann einfach aus dem
+    // Ergebnis raus, statt die ganze Seite mit einem Fehler abzubrechen. Der
+    // Aufrufer (js/actions/videoTimeline.js über _findSegment) behandelt ein
+    // fehlendes Häppchen ohnehin schon wie "noch nicht vertont" und schätzt
+    // dafür die Länge - kein Sonderfall nötig.
+    async renderPageSegments(bookId, pageIdx, { includeDescription = true, includeQuiz = false, personaId, onProgress, cacheOnly = false } = {}) {
         const book = app.library[bookId];
         if (!book) throw new TtsError('Buch nicht gefunden.', { code: 'NO_BOOK' });
 
@@ -608,7 +634,10 @@ Object.assign(app.ttsNeural, {
 
         const usedPersona = personaId || app.state.readingPersonaId || app.settings.persona;
         const variant = app.utils.resolveAnyVariant(page, usedPersona);
-        if (!variant) throw new TtsError('Diese Seite ist noch nicht analysiert.', { code: 'NO_VARIANT' });
+        if (!variant) {
+            if (cacheOnly) return { imgUrl: page.imgUrl, totalDurationSec: 0, segments: [] };
+            throw new TtsError('Diese Seite ist noch nicht analysiert.', { code: 'NO_VARIANT' });
+        }
 
         const planned = [{ kind: 'text', text: variant.text }];
         if (includeDescription && variant.desc) planned.push({ kind: 'desc', text: variant.desc });
@@ -623,8 +652,8 @@ Object.assign(app.ttsNeural, {
         for (let i = 0; i < planned.length; i++) {
             const part = planned[i];
             if (onProgress) onProgress(i + 1, planned.length, part.kind);
-            const rendered = await this.renderAudio(part.text, { personaId: usedPersona });
-            segments.push({ kind: part.kind, ...rendered });
+            const rendered = await this.renderAudio(part.text, { personaId: usedPersona, cacheOnly });
+            if (rendered) segments.push({ kind: part.kind, ...rendered });
         }
 
         return {

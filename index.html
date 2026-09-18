@@ -171,9 +171,10 @@
                     </button>
                     <!-- NEU: Film-Vorschau des ganzen Buchs (Video-Export Weg B,
                          Teil 1 - Renderer-Kern, siehe app.actions.openVideoPreview()).
-                         Kostet nichts: es wird nichts synthetisiert und nichts
-                         gespeichert, nur gezeichnet. -->
-                    <button onclick="app.actions.openVideoPreview(app.state.currentBookId)" aria-label="Film-Vorschau des Buchs" title="Film-Vorschau (stumm, Video-Datei folgt)" class="text-xs text-violet-700 hover:text-violet-900 bg-violet-50 hover:bg-violet-100 px-2.5 py-1.5 rounded-lg font-bold transition">
+                         Kostet nichts: es wird nie neu synthetisiert, nichts
+                         gespeichert. Liegt der Ton schon im ttsCache, spielt
+                         die Vorschau ihn ab - sonst bleibt sie stumm. -->
+                    <button onclick="app.actions.openVideoPreview(app.state.currentBookId)" aria-label="Film-Vorschau des Buchs" title="Film-Vorschau (Ton nur, wenn schon vorgelesen/exportiert)" class="text-xs text-violet-700 hover:text-violet-900 bg-violet-50 hover:bg-violet-100 px-2.5 py-1.5 rounded-lg font-bold transition">
                         🎬 Film
                     </button>
                     <button onclick="app.actions.confirmDeleteBook(app.state.currentBookId)" class="text-xs text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 px-2.5 py-1.5 rounded-lg font-bold transition">
@@ -525,9 +526,12 @@
 
         <!-- ================= FILM-VORSCHAU (Video-Export Weg B, Teil 1) =================
              Prüfstand für den Canvas-Renderer aus js/render/cinema.js: zeigt
-             Bild + Untertitel-Balken mit mitlaufender Wort-Hervorhebung genau
-             so, wie sie später in die Videodatei kodiert werden. Noch ohne Ton
-             und ohne Datei (siehe docs/KONZEPT-Video.md, Abschnitt 4.3). -->
+             Bild + Untertitel-Balken/Quiz-Karte mit mitlaufender Wort-
+             Hervorhebung genau so, wie sie später in die Videodatei kodiert
+             werden. Ton nur, wenn schon vollständig im ttsCache vorhanden
+             (kein neuer Synthese-Aufruf), sonst stumm mit geschätzten Zeiten.
+             Noch ohne Datei - die entsteht erst beim Export (siehe
+             docs/KONZEPT-Video.md, Abschnitt 4.3/4.7). -->
         <div id="viewVideoPreview" class="hidden absolute inset-0 z-40 bg-black flex flex-col">
             <div class="p-3 flex items-center justify-between gap-2 bg-gradient-to-b from-black/80 to-transparent">
                 <button onclick="app.actions.closeVideoPreview()" aria-label="Film-Vorschau schließen" class="w-10 h-10 flex-shrink-0 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center text-white active:scale-90 transition">✕</button>

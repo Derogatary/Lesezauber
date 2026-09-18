@@ -165,14 +165,17 @@ Object.assign(app.actions, {
             // 2. Ton holen. renderPageSegments() nimmt zuerst den ttsCache -
             // schon vorgelesene Seiten kosten also nichts (bei 120 Seiten
             // wäre alles andere richtig teuer).
-            const pages = [...new Set(dry.scenes.filter(s => s.kind === 'page').map(s => s.pageIdx))];
-            const { segmentsByPage, failed } = await collectAudio(bookId, pages, dry);
+            const pages = [...new Set(dry.scenes.filter(s => s.kind === 'page' || s.kind === 'quiz').map(s => s.pageIdx))];
+            const { segmentsByPage, failed, titleAudio } = await collectAudio(bookId, pages, dry);
             if (app.state.cancelAnalysis) { app.ui.toast('Film abgebrochen.', '🚫'); return; }
 
             // 3. Zeitplan neu bauen - jetzt mit echten Längen und
             // Wort-Zeitpunkten, dadurch sitzt die Hervorhebung auf dem Wort.
+            // titleAudio: die Metadaten-Ansage für die Titelkarte, falls eine
+            // vorliegt (siehe collectAudio unten) - vorher lief sie stumm mit
+            // fester Länge (docs/KONZEPT-Video.md, "Noch offen").
             timeline = app.cinema.buildTimeline(bookId, {
-                fromIdx, toIdx, formatId: fmt.id, includeDescription, includeQuiz, segmentsByPage
+                fromIdx, toIdx, formatId: fmt.id, includeDescription, includeQuiz, segmentsByPage, titleAudio
             });
             if (!timeline.scenes.some(s => s.kind === 'page')) {
                 app.ui.toast('Kein Ton erzeugt - ist eine KI-Stimme eingerichtet?', '❌');
@@ -299,7 +302,28 @@ async function collectAudio(bookId, pageIndices, dry) {
             failed.push(pageIdx);
         }
     }
-    return { segmentsByPage, failed };
+
+    // NEU: Metadaten-Ansage für die Titelkarte (siehe app.tts._buildBookIntro
+    // und docs/KONZEPT-Video.md, "Noch offen") - nur wenn der Buch-Film
+    // überhaupt eine Titelkarte hat und ein erkannter Titel vorliegt. Ein
+    // Fehlschlag lässt die Karte einfach wie bisher stumm laufen, statt den
+    // ganzen Export abzubrechen (dieselbe Haltung wie bei einer einzelnen
+    // Seite ohne Ton oben).
+    let titleAudio = null;
+    if (!app.state.cancelAnalysis && dry.scenes.some(s => s.kind === 'title')) {
+        const book = app.library[bookId];
+        const intro = book && app.tts._buildBookIntro(book);
+        if (intro) {
+            app.ui.showLoader('Film wird erstellt...', 'Ansage für die Titelkarte');
+            try {
+                titleAudio = await app.ttsNeural.renderAudio(intro, { personaId: dry.personaId });
+            } catch (e) {
+                console.error('Video-Export: Ansage für die Titelkarte fehlgeschlagen:', e);
+            }
+        }
+    }
+
+    return { segmentsByPage, failed, titleAudio };
 }
 
 // ---------------- Kodieren ----------------

@@ -435,24 +435,53 @@ sich (`MediaRecorder` vs. `VideoEncoder`/`AudioEncoder` + Muxer).
     "diese Seite als Video" (Reader) und "ganzes Buch als Film" (Buch-Ansicht)
     ohne zweiten Codeweg und ohne zweite Format-Auswahl.
 
-**Noch offen:**
+**Nachtrag (Branch `claude/video-restpunkte`): drei der Restpunkte sind erledigt.**
 
-- **Ton in der Vorschau.** Sie bleibt stumm (und sagt das). Der Zeitplan kann
-  echten Ton, aber die Vorschau würde dafür Kontingent verbrauchen; wer den Ton
-  hören will, exportiert. Wenn es doch kommen soll: Wiedergabe an
-  `audio.currentTime` hängen statt an die eigene Uhr.
-- **Metadaten-Ansage für die Titelkarte** (Titel/Autor, siehe
-  `app.tts._buildMetadataAnnouncements()`): `renderPageSegments()` kennt sie
-  nicht, die Titelkarte läuft deshalb stumm mit fester Länge.
+- **Ton in der Vorschau - erledigt.** Die Vorschau synthetisiert weiterhin
+  NIE selbst (siehe `app.ttsNeural._getAudio`/`renderAudio`/`renderPageSegments`,
+  neuer Parameter `cacheOnly`: ein Cache-Fehltreffer liefert einfach `null`
+  zurück statt eines API-Aufrufs). `js/actions/videoPreview.js`
+  (`_collectCachedAudio`) sieht damit kostenlos im `ttsCache` nach, ob für den
+  gezeigten Bereich (inklusive Titelkarten-Ansage) schon ALLES vorliegt
+  (`timeline.exact`). Ist das der Fall, baut `_buildPreviewTrack()` einmalig
+  eine zusammengesetzte WAV-Tonspur (jede Szene exakt auf ihre `startSec`
+  gesetzt, wie beim echten Export) und hängt die Wiedergabe wie hier
+  vorgeschlagen an `audio.currentTime` statt an die eigene Uhr
+  (`_videoPreviewTick`). Fehlt auch nur ein Häppchen im Cache, bleibt die
+  Vorschau wie bisher stumm mit geschätzten Zeiten - ein Mix aus Ton und
+  Stille innerhalb derselben Seite klänge kaputt.
+- **Metadaten-Ansage für die Titelkarte - erledigt.** Die Satzbildung aus
+  `app.tts._buildMetadataAnnouncements()` ist als `app.tts._buildBookIntro(book)`
+  ausgelagert (keine zweite Fassung an zweiter Stelle). `buildTimeline()`
+  bekommt das fertige Ergebnis als `titleAudio` von außen übergeben - der
+  Export rendert es echt (`js/actions/videoExport.js`, `collectAudio()`),
+  die Vorschau liest es nur aus dem Cache. Ohne Ansage (keine KI-Stimme,
+  Rendern fehlgeschlagen) bleibt die Karte wie bisher stumm mit fester Länge.
+- **Emoji-Sticker und Quiz-Denkpause - Quiz-Karte erledigt, Emoji-Sticker
+  bewusst ausgelassen.** Frage und Antwort laufen jetzt als eigene Karte
+  (`app.cinema._drawQuizCard()` in `js/render/cinema.js`, neuer Szenen-`kind`
+  `'quiz'` in `js/actions/videoTimeline.js`) statt im normalen
+  Untertitel-Balken. Die Denkpause braucht keinen eigenen Mechanismus: die
+  Frage-Karte bleibt nach dem letzten Wort einfach `QUIZ_THINK_PAUSE_SEC`
+  (3,5 s) länger stehen, bevor die Antwort-Karte folgt - dieselbe Regel wie
+  bei jeder anderen Pause zwischen zwei Häppchen (die Pause gehört zur Szene
+  davor). Die Emoji-Sticker aus Abschnitt 3 sind NICHT gebaut - eigenes,
+  unabhängiges Feature (Positionierung einzelner Sticker zur Wortzeit), das
+  den vorgegebenen Rahmen dieses Auftrags gesprengt hätte.
+
+**Weiterhin offen:**
+
 - **`showSaveFilePicker()`** auf Chrome-Desktop (spart das Kopieren aus dem
   OPFS in den Download-Ordner). Bewusst weggelassen: der Aufruf braucht eine
   frische Nutzer-Geste, die nach der Rückfrage und dem Ton-Sammeln nicht mehr
   sicher vorhanden ist.
 - **Höhere Bildauflösung** (`videoUrl`, ~2560 px) wie in 4.5 beschrieben; mit
   1600 px Vorlage und 1,12-fachem Zoom sieht 1080p bisher vertretbar aus.
-- **Emoji-Sticker und Quiz-Denkpause** aus der Regie-Liste in Abschnitt 3 -
-  die Rätselfrage ist als Häppchen zuschaltbar, hat aber noch keine eigene
-  Karte mit Denkpause.
+  Niedrigste Priorität laut Auftrag, deshalb hier ausgelassen - zusätzlich
+  würde eine dritte Bild-Variante die Bildgenerierung anfassen, an der
+  parallel die SchreibZauber-Stufe-2-Sitzung (`claude/schreibzauber-stufe2-bilder`)
+  arbeitet. Erst nach deren Merge angehen, sonst doppelte Arbeit an
+  denselben Stellen.
 
 ---
 

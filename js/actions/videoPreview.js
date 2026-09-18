@@ -14,10 +14,13 @@ import { app } from '../core.js';
 // als Erstes an einer einzelnen Seite testen".
 //
 // WICHTIG - was die Vorschau (noch) NICHT ist:
-// - kein Ton. Der Ton kostet echtes Kontingent (jede Synthese wird
-//   bezahlt), deshalb wird hier grundsätzlich nichts synthetisiert. Die
-//   Zeiten sind aus der Textlänge geschätzt; der Zeitplan nimmt echte
-//   Sprach-Segmente aber schon entgegen (siehe videoTimeline.js).
+// - kein NEUER Ton. Jede Synthese kostet echtes Kontingent, deshalb wird
+//   hier NIE synthetisiert. Liegt der nötige Ton (Seiten UND ggf. die
+//   Titelkarten-Ansage, siehe _buildBookIntro) aber schon vollständig im
+//   ttsCache - weil vorher schon einmal vorgelesen oder exportiert wurde -
+//   spielt die Vorschau ihn ab (_collectCachedAudio/_buildPreviewTrack
+//   unten). Fehlt auch nur ein Häppchen, bleibt es beim stummen
+//   Textlängen-Schätzwert wie bisher (siehe videoTimeline.js).
 // - keine Datei. Kodieren und Muxen ist Teil 2.
 
 // Anzeige höchstens 10x pro Sekunde aktualisieren - der Zeitbalken muss
@@ -61,14 +64,20 @@ Object.assign(app.actions, {
             lastTs: 0,
             lastUiTs: 0,
             canvas,
-            ctx: null
+            ctx: null,
+            // NEU (Ton in der Vorschau, siehe docs/KONZEPT-Video.md "Noch
+            // offen"): nur gesetzt, wenn wirklich Ton läuft - siehe
+            // rebuildVideoPreview()/_teardownPreviewAudio() unten.
+            audio: null,
+            audioUrl: null,
+            hasAudio: false
         };
         app.state.videoPreview = state;
 
         this._fillVideoPreviewFormats();
         overlay.classList.remove('hidden');
 
-        if (!this.rebuildVideoPreview()) {
+        if (!(await this.rebuildVideoPreview())) {
             this.closeVideoPreview();
             return;
         }
@@ -84,24 +93,40 @@ Object.assign(app.actions, {
 
     // Baut den Zeitplan neu (beim Öffnen und bei jeder Umschaltung).
     // Gibt false zurück, wenn nichts Vorlesbares im Bereich liegt.
-    rebuildVideoPreview() {
+    // NEU: async, weil jetzt zusätzlich (kostenlos) im ttsCache nachgesehen
+    // wird, ob für den Bereich bereits echter Ton vorliegt (siehe
+    // _collectCachedAudio unten und docs/KONZEPT-Video.md "Noch offen").
+    async rebuildVideoPreview() {
         const state = app.state.videoPreview;
         if (!state) return false;
+
+        // FIX: rebuildVideoPreview() ist jetzt async und wartet auf echte
+        // Dinge (Cache-Lesen, Ton-Zusammenbau) - eine laufende Wiedergabe
+        // (eigener rAF-Zeitschritt) würde in der Zwischenzeit ungebremst
+        // weiterlaufen und nach dem Umbau mit einer veralteten lastTs einen
+        // Sprung im Zeitbalken verursachen. Deshalb hier anhalten und danach
+        // über toggleVideoPreviewPlay() sauber neu starten (das synchronisiert
+        // auch den Ton neu).
+        const wasPlaying = state.playing;
+        if (state.playing) {
+            state.playing = false;
+            if (state.rafId) { cancelAnimationFrame(state.rafId); state.rafId = null; }
+            if (state.hasAudio && state.audio) state.audio.pause();
+        }
 
         const includeDescription = !!document.getElementById('videoPreviewDesc')?.checked;
         const includeQuiz = !!document.getElementById('videoPreviewQuiz')?.checked;
         const formatId = document.getElementById('videoPreviewFormat')?.value
             || state.timeline?.formatId
             || app.cinema.defaultFormatId();
+        const fromIdx = state.fromIdx === null ? 0 : state.fromIdx;
 
-        let timeline;
+        // 1. Trockenlauf ohne Ton, nur um zu wissen, welche Seiten/Karten
+        // überhaupt im Bereich liegen (für den Cache-Blick unten).
+        let dry;
         try {
-            timeline = app.cinema.buildTimeline(state.bookId, {
-                fromIdx: state.fromIdx === null ? 0 : state.fromIdx,
-                toIdx: state.toIdx,
-                includeDescription,
-                includeQuiz,
-                formatId
+            dry = app.cinema.buildTimeline(state.bookId, {
+                fromIdx, toIdx: state.toIdx, includeDescription, includeQuiz, formatId
             });
         } catch (e) {
             console.error('Zeitplan für die Film-Vorschau fehlgeschlagen:', e);
@@ -109,22 +134,167 @@ Object.assign(app.actions, {
             return false;
         }
 
-        if (!timeline.scenes.some(s => s.kind === 'page')) {
+        if (!dry.scenes.some(s => s.kind === 'page')) {
             app.ui.toast('Keine ausgelesenen Seiten in diesem Bereich - erst analysieren.', 'ℹ️');
             return false;
         }
 
-        // Alte Bilder freigeben, bevor der neue Zeitplan eigene lädt.
+        // 2. NUR aus dem ttsCache lesen (kein neuer Synthese-Aufruf, siehe
+        // docs/KONZEPT-Video.md "Noch offen") - liegt schon alles vor, bekommt
+        // die Vorschau echten Ton, sonst bleibt sie wie bisher stumm.
+        const { segmentsByPage, titleAudio } = await this._collectCachedAudio(dry);
+
+        let timeline;
+        try {
+            timeline = app.cinema.buildTimeline(state.bookId, {
+                fromIdx, toIdx: state.toIdx, includeDescription, includeQuiz, formatId,
+                segmentsByPage, titleAudio
+            });
+        } catch (e) {
+            console.error('Zeitplan für die Film-Vorschau fehlgeschlagen:', e);
+            app.ui.toast(e.message || 'Vorschau nicht möglich.', '❌');
+            return false;
+        }
+
+        // Alte Bilder/alten Ton freigeben, bevor der neue Zeitplan eigene lädt.
         if (state.timeline) app.cinema.release(state.timeline);
+        this._teardownPreviewAudio(state);
         state.timeline = timeline;
         state.timeSec = 0;
         state.ctx = app.cinema.prepareCanvas(state.canvas, timeline.formatId);
+
+        // NEU: nur bei VOLLSTÄNDIG echtem Ton (timeline.exact) auf
+        // Audio-Wiedergabe umschalten - ein Mix aus Ton und Stille innerhalb
+        // derselben Seite klänge kaputt, siehe _buildPreviewTrack().
+        if (timeline.exact) {
+            try {
+                const wav = await this._buildPreviewTrack(timeline);
+                if (wav) {
+                    state.audioUrl = URL.createObjectURL(wav);
+                    state.audio = new Audio(state.audioUrl);
+                    state.audio.preload = 'auto';
+                    state.hasAudio = true;
+                }
+            } catch (e) {
+                console.error('Ton-Spur für die Vorschau konnte nicht gebaut werden:', e);
+            }
+        }
 
         this._updateVideoPreviewHint();
         this._updateVideoPreviewExport();
         this._drawVideoPreviewFrame(true);
         this._updateVideoPreviewUi(true);
+
+        // War die Wiedergabe vor dem Umbau aktiv (siehe FIX oben), jetzt
+        // sauber neu starten - state.timeSec steht auf 0, das ist also ein
+        // normaler Start, kein Sonderfall.
+        if (wasPlaying) this.toggleVideoPreviewPlay();
+
         return true;
+    },
+
+    // Sammelt Sprach-Häppchen NUR aus dem ttsCache - ruft absichtlich NIE
+    // einen Anbieter auf (siehe cacheOnly-Parameter in js/ttsNeural.js). Ein
+    // Fehltreffer bleibt einfach aus (die Seite/Karte läuft dann geschätzt
+    // und stumm mit, wie bisher).
+    async _collectCachedAudio(dry) {
+        const segmentsByPage = {};
+        const pages = [...new Set(dry.scenes.filter(s => s.kind === 'page' || s.kind === 'quiz').map(s => s.pageIdx))];
+
+        for (const pageIdx of pages) {
+            try {
+                segmentsByPage[pageIdx] = await app.ttsNeural.renderPageSegments(dry.bookId, pageIdx, {
+                    includeDescription: dry.includeDescription,
+                    includeQuiz: dry.includeQuiz,
+                    personaId: dry.personaId,
+                    cacheOnly: true
+                });
+            } catch (e) {
+                console.warn(`Cache-Blick für Seite ${pageIdx + 1} übersprungen:`, e);
+            }
+        }
+
+        let titleAudio = null;
+        if (dry.scenes.some(s => s.kind === 'title')) {
+            const book = app.library[dry.bookId];
+            const intro = book && app.tts._buildBookIntro(book);
+            if (intro) {
+                try {
+                    titleAudio = await app.ttsNeural.renderAudio(intro, { personaId: dry.personaId, cacheOnly: true });
+                } catch (e) {
+                    console.warn('Cache-Blick für die Titelkarten-Ansage übersprungen:', e);
+                }
+            }
+        }
+
+        return { segmentsByPage, titleAudio };
+    },
+
+    // Fügt die Ton-Häppchen aller Szenen zu EINER Tonspur zusammen, exakt an
+    // ihrer scene.startSec platziert (Stille dazwischen/davor/danach) - genau
+    // wie es der fertige Export in js/actions/videoExport.js frameweise tut,
+    // hier aber einmalig vorab gerendert. Nur dadurch kann die Wiedergabe
+    // an EIN <audio>-Element gehängt werden (siehe docs/KONZEPT-Video.md
+    // "Noch offen": "Wiedergabe an audio.currentTime hängen statt an die
+    // eigene Uhr") - mit einem Blob pro Szene bräuchte es stattdessen eine
+    // eigene Umschaltlogik zwischen den einzelnen Häppchen.
+    async _buildPreviewTrack(timeline) {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return null;
+
+        const withAudio = timeline.scenes.filter(s => s.audio && s.audio.blob);
+        if (!withAudio.length) return null;
+
+        const ctx = new AudioCtx();
+        try {
+            const decoded = [];
+            for (const scene of withAudio) {
+                try {
+                    const arrayBuffer = await scene.audio.blob.arrayBuffer();
+                    decoded.push({ scene, buffer: await ctx.decodeAudioData(arrayBuffer) });
+                } catch (e) {
+                    console.warn('Ton einer Szene für die Vorschau nicht dekodierbar:', e);
+                }
+            }
+            if (!decoded.length) return null;
+
+            const sampleRate = ctx.sampleRate;
+            const numChannels = decoded.reduce((max, d) => Math.max(max, d.buffer.numberOfChannels), 1);
+            const totalSamples = Math.max(1, Math.round(timeline.totalDurationSec * sampleRate));
+
+            const offlineCtx = new OfflineAudioContext(numChannels, totalSamples, sampleRate);
+            decoded.forEach(({ scene, buffer }) => {
+                const source = offlineCtx.createBufferSource();
+                source.buffer = buffer;
+                source.connect(offlineCtx.destination);
+                source.start(scene.startSec);
+            });
+
+            const rendered = await offlineCtx.startRendering();
+            // Wiederverwendet statt dupliziert: derselbe kleine PCM16-WAV-
+            // Schreiber wie beim Hörbuch-Export (js/actions/audiobookExport.js).
+            return this._audioBufferToWav(rendered);
+        } finally {
+            ctx.close();
+        }
+    },
+
+    // Räumt eine evtl. vorhandene Ton-Spur weg (neuer Zeitplan, Vorschau
+    // geschlossen) - Pflicht, nicht Kosmetik: eine unfreigegebene Object-URL
+    // hält den ganzen WAV-Puffer im Speicher fest.
+    _teardownPreviewAudio(state) {
+        if (!state) return;
+        if (state.audio) {
+            state.audio.pause();
+            state.audio.removeAttribute('src');
+            state.audio.load();
+            state.audio = null;
+        }
+        if (state.audioUrl) {
+            URL.revokeObjectURL(state.audioUrl);
+            state.audioUrl = null;
+        }
+        state.hasAudio = false;
     },
 
     // Startet den Video-Export für genau das, was die Vorschau gerade zeigt
@@ -154,6 +324,7 @@ Object.assign(app.actions, {
         if (!state) return;
 
         if (state.rafId) cancelAnimationFrame(state.rafId);
+        this._teardownPreviewAudio(state);
         // Freigeben ist hier Pflicht, nicht Kosmetik: dekodierte Seitenbilder
         // belegen mehrere MB und werden nicht abgeräumt, solange der
         // Renderer sie in seinem Zwischenspeicher hält.
@@ -168,11 +339,24 @@ Object.assign(app.actions, {
         if (state.playing) {
             state.playing = false;
             if (state.rafId) { cancelAnimationFrame(state.rafId); state.rafId = null; }
+            if (state.hasAudio && state.audio) state.audio.pause();
         } else {
             // Am Ende stehend von vorn beginnen - sonst tut der Knopf nichts.
             if (state.timeSec >= state.timeline.totalDurationSec - 0.05) state.timeSec = 0;
             state.playing = true;
             state.lastTs = 0;
+            if (state.hasAudio && state.audio) {
+                // NEU: Uhr hängt jetzt an audio.currentTime (siehe
+                // _videoPreviewTick) - vor dem Start also auf die aktuelle
+                // Bildposition synchronisieren, nicht umgekehrt.
+                state.audio.currentTime = state.timeSec;
+                state.audio.play().catch(e => {
+                    // z.B. Autoplay-Sperre - die Vorschau bleibt trotzdem
+                    // nutzbar, nur eben wieder stumm mit der eigenen Uhr.
+                    console.error('Ton in der Vorschau nicht abspielbar:', e);
+                    state.hasAudio = false;
+                });
+            }
             state.rafId = requestAnimationFrame(ts => this._videoPreviewTick(ts));
         }
         this._updateVideoPreviewUi(true);
@@ -185,6 +369,7 @@ Object.assign(app.actions, {
         const ratio = Math.max(0, Math.min(1, Number(value) / 1000));
         state.timeSec = ratio * state.timeline.totalDurationSec;
         state.lastTs = 0;
+        if (state.hasAudio && state.audio) state.audio.currentTime = state.timeSec;
         this._drawVideoPreviewFrame(true);
         this._updateVideoPreviewUi(false);
     },
@@ -204,17 +389,28 @@ Object.assign(app.actions, {
         const state = app.state.videoPreview;
         if (!state || !state.playing) return;
 
-        // Echtzeit über die tatsächlich verstrichene Zeit, nicht über eine
-        // feste Bildrate: bei einem langsamen Gerät läuft der Film dann
-        // ruckeliger, aber nicht in Zeitlupe (und die Hervorhebung bleibt
-        // an der richtigen Stelle).
-        if (state.lastTs) state.timeSec += (ts - state.lastTs) / 1000;
+        if (state.hasAudio && state.audio) {
+            // NEU (Ton in der Vorschau): die Uhr hängt an audio.currentTime
+            // statt an der eigenen Zeitdifferenz (so im Konzept gefordert) -
+            // Bild und Ton laufen dadurch nie auseinander, ganz ohne eigene
+            // Drift-Korrektur. audio.ended kommt hier meist etwas VOR dem
+            // Timeline-Ende (die letzte Karte/Pause hat keinen eigenen Ton
+            // mehr), deshalb bestimmt weiterhin totalDurationSec das Ende.
+            state.timeSec = Math.min(state.audio.currentTime, state.timeline.totalDurationSec);
+        } else {
+            // Echtzeit über die tatsächlich verstrichene Zeit, nicht über
+            // eine feste Bildrate: bei einem langsamen Gerät läuft der Film
+            // dann ruckeliger, aber nicht in Zeitlupe (und die Hervorhebung
+            // bleibt an der richtigen Stelle).
+            if (state.lastTs) state.timeSec += (ts - state.lastTs) / 1000;
+        }
         state.lastTs = ts;
 
         if (state.timeSec >= state.timeline.totalDurationSec) {
             state.timeSec = state.timeline.totalDurationSec;
             state.playing = false;
             state.rafId = null;
+            if (state.hasAudio && state.audio) state.audio.pause();
             this._drawVideoPreviewFrame(false);
             this._updateVideoPreviewUi(true);
             return;
@@ -284,9 +480,16 @@ Object.assign(app.actions, {
         if (!state || !hint) return;
 
         const parts = [];
-        parts.push(state.timeline.exact
-            ? 'Zeiten aus echten Sprachaufnahmen.'
-            : 'Vorschau ohne Ton, Längen aus der Textlänge geschätzt - die Videodatei bekommt echten Ton und exakte Zeiten.');
+        // NEU: drei statt zwei Zustände - vollständig echter Ton (aus dem
+        // Zwischenspeicher, kostet nichts extra), exakte Zeiten aber ohne
+        // Ton (Cache unvollständig), oder geschätzt+stumm wie ursprünglich.
+        if (state.hasAudio) {
+            parts.push('Ton aus dem Zwischenspeicher - so klingt später auch der fertige Film.');
+        } else if (state.timeline.exact) {
+            parts.push('Zeiten aus echten Sprachaufnahmen, aber (noch) ohne Ton in der Vorschau.');
+        } else {
+            parts.push('Vorschau ohne Ton, Längen aus der Textlänge geschätzt - die Videodatei bekommt echten Ton und exakte Zeiten.');
+        }
         if (state.timeline.skipped.length) {
             parts.push(`${state.timeline.skipped.length} Seite/n übersprungen (noch nicht ausgelesen).`);
         }

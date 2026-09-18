@@ -579,6 +579,22 @@ Object.assign(app.tts, {
         }
     },
 
+    // NEU: der eine Satz "Der Titel des Buchs ist ... geschrieben von ...".
+    // Ausgelagert aus _buildMetadataAnnouncements() (siehe unten), weil der
+    // Video-Export (js/actions/videoTimeline.js, js/actions/videoExport.js)
+    // ihn für die Titelkarten-Ansage GENAUSO braucht, aber unabhängig von
+    // einer konkreten Seite/pageIdx - eine zweite Fassung dieser Sätze an
+    // zweiter Stelle wäre genau die Art Dopplung, die laut CLAUDE.md
+    // vermieden werden soll. Liefert null, wenn kein erkannter Titel vorliegt.
+    _buildBookIntro(book) {
+        if (!book || !book.title || book.title === 'Neues Buch') return null;
+        let intro = `Der Titel des Buchs ist ${book.title}.`;
+        if (book.author && book.author !== 'Unbekannt') intro += ` Geschrieben von ${book.author}.`;
+        if (book.publisher) intro += ` Aus dem ${book.publisher}-Verlag.`;
+        if (book.series) intro += ` Gehört zur ${book.series}-Reihe.`;
+        return intro;
+    },
+
     // NEU: baut die Ansage-Sätze für Buch-/Kapitel-Metadaten, die die KI
     // beim Analysieren erkannt hat (siehe js/api.js Schema-Felder
     // "title"/"author"/"publisher"/"series"/"chapterTitle"/"tocEntries").
@@ -589,12 +605,9 @@ Object.assign(app.tts, {
 
         // Buchvorstellung nur auf der allerersten Seite, und nur, wenn
         // überhaupt ein erkannter Titel vorliegt (kein "Neues Buch" mehr).
-        if (pageIdx === 0 && book.title && book.title !== 'Neues Buch') {
-            let intro = `Der Titel des Buchs ist ${book.title}.`;
-            if (book.author && book.author !== 'Unbekannt') intro += ` Geschrieben von ${book.author}.`;
-            if (book.publisher) intro += ` Aus dem ${book.publisher}-Verlag.`;
-            if (book.series) intro += ` Gehört zur ${book.series}-Reihe.`;
-            announcements.push(intro);
+        if (pageIdx === 0) {
+            const intro = this._buildBookIntro(book);
+            if (intro) announcements.push(intro);
         }
 
         // NEU: als Rückseite/Klappentext markierte Seite (siehe
