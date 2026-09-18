@@ -41,7 +41,7 @@
                     <p id="streakBadge" class="hidden text-xs font-bold text-amber-600 mt-0.5"></p>
                     <!-- NEU: Belohnung - Anzahl komplett geschaffter Bücher/Hefte -->
                     <p id="medalBadge" class="hidden text-xs font-bold text-emerald-600 mt-0.5"></p>
-                    <p class="text-[10px] text-slate-400 font-semibold mt-0.5">v0.20.0-beta</p>
+                    <p class="text-[10px] text-slate-400 font-semibold mt-0.5">v0.20.1-beta</p>
                 </div>
                 <div class="flex items-center gap-2 flex-shrink-0">
                     <button onclick="app.nav.go('help')" aria-label="Hilfe öffnen" title="Hilfe" class="w-10 h-10 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-600 hover:bg-slate-100 shadow-sm transition active:scale-95">
@@ -135,8 +135,8 @@
 
             <section>
                 <div class="mb-4 flex gap-2">
-                    <input id="librarySearch" type="text" oninput="app.actions.debounceLibrarySearch()" placeholder="🔍 Titel, Autor, Verlag, Reihe..." class="flex-grow text-sm bg-white border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500 shadow-sm">
-                    <select id="librarySort" onchange="app.render.library()" aria-label="Sortierung" class="text-sm bg-white border border-slate-200 rounded-xl px-2 py-2.5 focus:outline-none focus:border-indigo-500 shadow-sm">
+                    <input id="librarySearch" type="text" oninput="app.actions.debounceLibrarySearch()" placeholder="🔍 Titel, Autor, Verlag, Reihe..." class="flex-grow text-sm text-slate-900 bg-white border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500 shadow-sm">
+                    <select id="librarySort" onchange="app.render.library()" aria-label="Sortierung" class="text-sm text-slate-900 bg-white border border-slate-200 rounded-xl px-2 py-2.5 focus:outline-none focus:border-indigo-500 shadow-sm">
                         <option value="newest">Neueste</option>
                         <option value="oldest">Älteste</option>
                         <option value="title">A-Z</option>
@@ -224,19 +224,19 @@
                 <p class="text-[11px] font-bold uppercase tracking-wider text-slate-500">🏷️ Seiten-Rollen (optional, für bessere Ansagen)</p>
                 <label class="flex items-center gap-2 text-xs">
                     <span class="w-40 flex-shrink-0 text-slate-600">🏠 Titelseite</span>
-                    <select id="roleTitlePage" onchange="app.actions.setPageRole('titlePageId', this.value)" class="flex-grow bg-slate-50 border border-slate-300 rounded-lg px-2 py-1.5 focus:outline-none focus:border-indigo-500"></select>
+                    <select id="roleTitlePage" onchange="app.actions.setPageRole('titlePageId', this.value)" class="flex-grow text-slate-900 bg-slate-50 border border-slate-300 rounded-lg px-2 py-1.5 focus:outline-none focus:border-indigo-500"></select>
                 </label>
                 <label class="flex items-center gap-2 text-xs">
                     <span class="w-40 flex-shrink-0 text-slate-600">📖 Rückseite/Klappentext</span>
-                    <select id="roleBackCoverPage" onchange="app.actions.setPageRole('backCoverPageId', this.value)" class="flex-grow bg-slate-50 border border-slate-300 rounded-lg px-2 py-1.5 focus:outline-none focus:border-indigo-500"></select>
+                    <select id="roleBackCoverPage" onchange="app.actions.setPageRole('backCoverPageId', this.value)" class="flex-grow text-slate-900 bg-slate-50 border border-slate-300 rounded-lg px-2 py-1.5 focus:outline-none focus:border-indigo-500"></select>
                 </label>
                 <label class="flex items-center gap-2 text-xs">
                     <span class="w-40 flex-shrink-0 text-slate-600">📑 Inhaltsverzeichnis</span>
-                    <select id="roleTocPage" onchange="app.actions.setPageRole('tocPageId', this.value)" class="flex-grow bg-slate-50 border border-slate-300 rounded-lg px-2 py-1.5 focus:outline-none focus:border-indigo-500"></select>
+                    <select id="roleTocPage" onchange="app.actions.setPageRole('tocPageId', this.value)" class="flex-grow text-slate-900 bg-slate-50 border border-slate-300 rounded-lg px-2 py-1.5 focus:outline-none focus:border-indigo-500"></select>
                 </label>
                 <label class="flex items-center gap-2 text-xs">
                     <span class="w-40 flex-shrink-0 text-slate-600">🧑‍💼 Über den Autor</span>
-                    <select id="roleAuthorBioPage" onchange="app.actions.setPageRole('authorBioPageId', this.value)" class="flex-grow bg-slate-50 border border-slate-300 rounded-lg px-2 py-1.5 focus:outline-none focus:border-indigo-500"></select>
+                    <select id="roleAuthorBioPage" onchange="app.actions.setPageRole('authorBioPageId', this.value)" class="flex-grow text-slate-900 bg-slate-50 border border-slate-300 rounded-lg px-2 py-1.5 focus:outline-none focus:border-indigo-500"></select>
                 </label>
                 <!-- NEU: eigener Schalter, ob die "Über den Autor"-Seite beim
                      automatischen Vorlesen mit angesagt/vorgelesen wird -
@@ -306,7 +306,7 @@
             <!-- NEU: Persona nur fürs Lesen umschalten -->
             <div class="mb-3 flex items-center gap-2">
                 <label for="readerPersonaSelect" class="text-[11px] font-bold text-slate-500 flex-shrink-0">🎭 Erzähler:</label>
-                <select id="readerPersonaSelect" onchange="app.actions.switchReadingPersona(this.value)" class="flex-grow text-xs bg-white border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:border-indigo-500">
+                <select id="readerPersonaSelect" onchange="app.actions.switchReadingPersona(this.value)" class="flex-grow text-xs text-slate-900 bg-white border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:border-indigo-500">
                 </select>
             </div>
 
@@ -456,7 +456,7 @@
                                 <!-- Chat messages injected here -->
                             </div>
                             <div class="flex gap-2">
-                                <input id="chatInput" type="text" placeholder="Z.B. Was macht der Bär?" class="flex-grow text-xs bg-slate-100 border border-slate-300 rounded-xl px-3 py-2 focus:outline-none focus:border-indigo-500">
+                                <input id="chatInput" type="text" placeholder="Z.B. Was macht der Bär?" class="flex-grow text-xs text-slate-900 bg-slate-100 border border-slate-300 rounded-xl px-3 py-2 focus:outline-none focus:border-indigo-500">
                                 <!-- NEU: öffnet nur die Tastatur - gesprochen wird über deren
                                      eigene Mikrofon-Taste, die App hört selbst nicht zu -->
                                 <button onclick="app.actions.focusChatInput()" aria-label="Frage sprechen statt tippen" title="Frage sprechen statt tippen" class="bg-slate-100 border border-slate-300 text-slate-700 font-bold text-sm px-3 py-2 rounded-xl hover:bg-slate-200 transition flex-shrink-0">
@@ -732,12 +732,12 @@
             <section id="studioStageBrief" class="space-y-3">
                 <div>
                     <label class="text-xs font-bold text-slate-600 block mb-1">Arbeitstitel (optional - die KI schlägt sonst einen vor)</label>
-                    <input id="studioTitleInput" type="text" placeholder="Noch unbenannt" class="w-full text-sm bg-white border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500">
+                    <input id="studioTitleInput" type="text" placeholder="Noch unbenannt" class="w-full text-sm text-slate-900 bg-white border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500">
                 </div>
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="text-xs font-bold text-slate-600 block mb-1">Für welches Alter?</label>
-                        <select id="studioAudienceAge" class="w-full text-sm bg-white border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500">
+                        <select id="studioAudienceAge" class="w-full text-sm text-slate-900 bg-white border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500">
                             <option value="3-5">3-5 Jahre (Vorlesealter)</option>
                             <option value="6-7">6-7 Jahre</option>
                             <option value="8-10">8-10 Jahre</option>
@@ -745,7 +745,7 @@
                     </div>
                     <div>
                         <label class="text-xs font-bold text-slate-600 block mb-1">Lesesituation</label>
-                        <select id="studioReadingLevel" class="w-full text-sm bg-white border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500">
+                        <select id="studioReadingLevel" class="w-full text-sm text-slate-900 bg-white border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500">
                             <option value="vorlesen">Wird vorgelesen</option>
                             <option value="erstleser">Erstleser (liest mit)</option>
                             <option value="selbstleser">Liest schon allein</option>
@@ -754,16 +754,16 @@
                 </div>
                 <div>
                     <label class="text-xs font-bold text-slate-600 block mb-1">Worum soll es gehen? *</label>
-                    <textarea id="studioTopic" rows="3" placeholder="z.B. Ein kleiner Fuchs, der sich im Wald verläuft und einen neuen Freund findet" class="w-full text-sm bg-white border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500"></textarea>
+                    <textarea id="studioTopic" rows="3" placeholder="z.B. Ein kleiner Fuchs, der sich im Wald verläuft und einen neuen Freund findet" class="w-full text-sm text-slate-900 bg-white border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500"></textarea>
                 </div>
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="text-xs font-bold text-slate-600 block mb-1">Ton/Stimmung</label>
-                        <input id="studioTone" type="text" placeholder="z.B. lustig, beruhigend" class="w-full text-sm bg-white border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500">
+                        <input id="studioTone" type="text" placeholder="z.B. lustig, beruhigend" class="w-full text-sm text-slate-900 bg-white border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500">
                     </div>
                     <div>
                         <label class="text-xs font-bold text-slate-600 block mb-1">Was soll hängenbleiben?</label>
-                        <input id="studioMessage" type="text" placeholder="z.B. Mut haben ist gut" class="w-full text-sm bg-white border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500">
+                        <input id="studioMessage" type="text" placeholder="z.B. Mut haben ist gut" class="w-full text-sm text-slate-900 bg-white border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500">
                     </div>
                 </div>
                 <button onclick="app.render.studioCollectBrief()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl shadow-md transition">Weiter zum Bauplan ▶</button>
@@ -774,7 +774,7 @@
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="text-xs font-bold text-slate-600 block mb-1">Gesamtseitenzahl</label>
-                        <select id="studioTotalPages" onchange="app.render.studioSpecPreview()" class="w-full text-sm bg-white border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500">
+                        <select id="studioTotalPages" onchange="app.render.studioSpecPreview()" class="w-full text-sm text-slate-900 bg-white border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500">
                             <option value="16">16 Seiten</option>
                             <option value="24">24 Seiten</option>
                             <option value="32">32 Seiten (Vorgabe)</option>
@@ -783,7 +783,7 @@
                     </div>
                     <div>
                         <label class="text-xs font-bold text-slate-600 block mb-1">Format</label>
-                        <select id="studioTrim" class="w-full text-sm bg-white border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500">
+                        <select id="studioTrim" class="w-full text-sm text-slate-900 bg-white border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500">
                             <option value="a5-quer">A5 quer (Doppelseiten-Bild)</option>
                             <option value="a5-hoch">A5 hoch (Einzelseiten-Bild)</option>
                             <option value="a4-hoch">A4 hoch (groß, Einzelseiten-Bild)</option>
@@ -829,7 +829,7 @@
                     <div class="grid grid-cols-2 gap-3">
                         <div>
                             <label class="text-xs font-bold text-slate-600 block mb-1">Stilrichtung</label>
-                            <select id="studioStyleLook" class="w-full text-sm bg-white border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500">
+                            <select id="studioStyleLook" class="w-full text-sm text-slate-900 bg-white border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500">
                                 <option value="aquarell">Aquarell</option>
                                 <option value="buntstift">Buntstift</option>
                                 <option value="comic">Comic</option>
@@ -838,7 +838,7 @@
                         </div>
                         <div>
                             <label class="text-xs font-bold text-slate-600 block mb-1">Linienstärke</label>
-                            <select id="studioStyleLineWeight" class="w-full text-sm bg-white border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500">
+                            <select id="studioStyleLineWeight" class="w-full text-sm text-slate-900 bg-white border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500">
                                 <option value="weich">weich</option>
                                 <option value="kraeftig">kräftig</option>
                             </select>
@@ -854,7 +854,7 @@
                     </div>
                     <div>
                         <label class="text-xs font-bold text-slate-600 block mb-1">Zusätzlicher Stil-Hinweis (optional)</label>
-                        <textarea id="studioStyleExtraPrompt" rows="2" placeholder="z.B. verträumt, viele Details im Hintergrund" class="w-full text-sm bg-white border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500"></textarea>
+                        <textarea id="studioStyleExtraPrompt" rows="2" placeholder="z.B. verträumt, viele Details im Hintergrund" class="w-full text-sm text-slate-900 bg-white border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500"></textarea>
                     </div>
                     <button onclick="app.render.studioCollectStyle()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl shadow-md transition text-sm">Stilkarte speichern</button>
                 </div>
@@ -954,12 +954,12 @@
             <section id="studioStageGoal" class="space-y-3">
                 <div>
                     <label class="text-xs font-bold text-slate-600 block mb-1">Arbeitstitel (optional - die KI schlägt sonst einen vor)</label>
-                    <input id="wbTitleInput" type="text" placeholder="Noch unbenannt" class="w-full text-sm bg-white border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500">
+                    <input id="wbTitleInput" type="text" placeholder="Noch unbenannt" class="w-full text-sm text-slate-900 bg-white border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500">
                 </div>
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="text-xs font-bold text-slate-600 block mb-1">Klassenstufe</label>
-                        <select id="wbGrade" class="w-full text-sm bg-white border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500">
+                        <select id="wbGrade" class="w-full text-sm text-slate-900 bg-white border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500">
                             <option value="vorschule">Vorschule</option>
                             <option value="1">1. Klasse</option>
                             <option value="2">2. Klasse</option>
@@ -969,7 +969,7 @@
                     </div>
                     <div>
                         <label class="text-xs font-bold text-slate-600 block mb-1">Fach</label>
-                        <select id="wbSubject" class="w-full text-sm bg-white border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500">
+                        <select id="wbSubject" class="w-full text-sm text-slate-900 bg-white border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500">
                             <option value="deutsch">Deutsch</option>
                             <option value="mathematik">Mathematik</option>
                             <option value="sachunterricht">Sachunterricht</option>
@@ -979,7 +979,7 @@
                 </div>
                 <div>
                     <label class="text-xs font-bold text-slate-600 block mb-1">Lernziel *</label>
-                    <textarea id="wbGoal" rows="3" placeholder="z.B. Das Kind kann im Zahlenraum bis 20 addieren und subtrahieren" class="w-full text-sm bg-white border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500"></textarea>
+                    <textarea id="wbGoal" rows="3" placeholder="z.B. Das Kind kann im Zahlenraum bis 20 addieren und subtrahieren" class="w-full text-sm text-slate-900 bg-white border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500"></textarea>
                 </div>
                 <button onclick="app.render.studioCollectWorksheetGoal()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl shadow-md transition">Weiter zur Progression ▶</button>
             </section>
@@ -1033,15 +1033,15 @@
                 <p class="text-xs text-slate-500 font-semibold mb-1 px-1">Aus einem Thema und einem Lernziel schlägt die KI fertige Übungsblätter vor - Zählen, Ankreuzen, Nachspuren und Schreiben, ganz ohne Bildmaterial.</p>
                 <div>
                     <label class="text-xs font-bold text-slate-600 block mb-1">Thema/Geschichte *</label>
-                    <input id="heftGenStory" type="text" placeholder="z.B. Arche Noah" class="w-full text-sm bg-white border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500">
+                    <input id="heftGenStory" type="text" placeholder="z.B. Arche Noah" class="w-full text-sm text-slate-900 bg-white border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500">
                 </div>
                 <div>
                     <label class="text-xs font-bold text-slate-600 block mb-1">Lernziel *</label>
-                    <input id="heftGenGoal" type="text" placeholder="z.B. Mengen bis 10" class="w-full text-sm bg-white border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500">
+                    <input id="heftGenGoal" type="text" placeholder="z.B. Mengen bis 10" class="w-full text-sm text-slate-900 bg-white border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500">
                 </div>
                 <div>
                     <label class="text-xs font-bold text-slate-600 block mb-1">Anzahl Blätter</label>
-                    <select id="heftGenCount" class="w-full text-sm bg-white border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500">
+                    <select id="heftGenCount" class="w-full text-sm text-slate-900 bg-white border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500">
                         <option value="4">4 Blätter</option>
                         <option value="6" selected>6 Blätter</option>
                         <option value="8">8 Blätter</option>
@@ -1050,7 +1050,7 @@
                 </div>
                 <div>
                     <label class="text-xs font-bold text-slate-600 block mb-1">Eigener Text zur Geschichte (optional, empfohlen)</label>
-                    <textarea id="heftGenOwnText" rows="3" placeholder="z.B. eine gemeinfreie Bibelübersetzung - ohne eigenen Text hält sich die KI nur an allgemein Bekanntes, um nichts zu erfinden" class="w-full text-sm bg-white border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500"></textarea>
+                    <textarea id="heftGenOwnText" rows="3" placeholder="z.B. eine gemeinfreie Bibelübersetzung - ohne eigenen Text hält sich die KI nur an allgemein Bekanntes, um nichts zu erfinden" class="w-full text-sm text-slate-900 bg-white border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500"></textarea>
                 </div>
                 <button onclick="app.actions.generateWorksheetDraft()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl shadow-md transition">✨ Blätter vorschlagen lassen</button>
             </section>
@@ -1089,7 +1089,7 @@
                     <label class="block text-xs font-bold uppercase tracking-wider text-slate-500">
                         Google Gemini API Key
                     </label>
-                    <input id="inputApiKey" type="password" placeholder="AIzaSy..." class="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 font-mono focus:outline-none focus:border-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <input id="inputApiKey" type="password" placeholder="AIzaSy..." class="w-full text-sm text-slate-900 bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 font-mono focus:outline-none focus:border-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed">
                     <p id="apiKeyChildLockHint" class="hidden text-[11px] text-amber-600 font-semibold mt-1">🔒 Für Kinderprofile gesperrt - zum Ändern oben in der Bibliothek zu einem Erwachsenen-Profil wechseln.</p>
                     <div class="flex justify-between items-center pt-1">
                         <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-xs text-indigo-600 font-semibold hover:underline flex items-center gap-1">
@@ -1153,7 +1153,7 @@
                         Mistral-Fallback (optional)
                     </label>
                     <p class="text-[11px] text-slate-500">Springt nur ein, wenn Gemini mal ausfällt oder das Tageslimit erreicht ist.</p>
-                    <input id="inputMistralKey" type="password" placeholder="Mistral API Key (optional)" class="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 font-mono focus:outline-none focus:border-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <input id="inputMistralKey" type="password" placeholder="Mistral API Key (optional)" class="w-full text-sm text-slate-900 bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 font-mono focus:outline-none focus:border-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed">
                     <p id="mistralKeyChildLockHint" class="hidden text-[11px] text-amber-600 font-semibold mt-1">🔒 Für Kinderprofile gesperrt - zum Ändern oben in der Bibliothek zu einem Erwachsenen-Profil wechseln.</p>
                     <a href="https://console.mistral.ai/" target="_blank" class="text-xs text-indigo-600 font-semibold hover:underline flex items-center gap-1">
                         <span>🔑 Kostenlosen Mistral-Key holen</span>
@@ -1167,7 +1167,7 @@
                         Erzähler-Persona
                     </label>
                     <!-- Optionen werden jetzt dynamisch aus js/config.js befuellt (siehe render/settings.js) -->
-                    <select id="selectPersona" class="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500 font-medium">
+                    <select id="selectPersona" class="w-full text-sm text-slate-900 bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500 font-medium">
                     </select>
                 </div>
 
@@ -1178,13 +1178,13 @@
                     <label for="selectTtsProvider" class="block text-xs font-bold uppercase tracking-wider text-slate-500">
                         Vorlese-Stimme
                     </label>
-                    <select id="selectTtsProvider" onchange="app.settingsConfig.changeTtsProvider(this.value)" class="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500 font-medium disabled:opacity-50 disabled:cursor-not-allowed">
+                    <select id="selectTtsProvider" onchange="app.settingsConfig.changeTtsProvider(this.value)" class="w-full text-sm text-slate-900 bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500 font-medium disabled:opacity-50 disabled:cursor-not-allowed">
                     </select>
                     <p id="ttsProviderHint" class="text-[11px] text-slate-500"></p>
 
                     <div id="ttsKeyRow" class="hidden space-y-2">
                         <label id="ttsKeyLabel" for="inputProviderKey" class="block text-[11px] font-bold uppercase tracking-wider text-slate-500">API-Key</label>
-                        <input id="inputProviderKey" type="password" placeholder="API-Key des Anbieters" class="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 font-mono focus:outline-none focus:border-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <input id="inputProviderKey" type="password" placeholder="API-Key des Anbieters" class="w-full text-sm text-slate-900 bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 font-mono focus:outline-none focus:border-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed">
                     </div>
 
                     <!-- NEU: Direktlinks zum Anbieter - Key-Seite und Preisliste.
@@ -1202,7 +1202,7 @@
 
                     <div id="ttsVoiceRow" class="hidden space-y-2">
                         <label for="selectTtsVoice" class="block text-[11px] font-bold uppercase tracking-wider text-slate-500">Stimme</label>
-                        <select id="selectTtsVoice" onchange="app.settingsConfig.changeTtsVoice(this.value)" class="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500 font-medium">
+                        <select id="selectTtsVoice" onchange="app.settingsConfig.changeTtsVoice(this.value)" class="w-full text-sm text-slate-900 bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500 font-medium">
                         </select>
                         <div class="flex gap-2 pt-1">
                             <button onclick="app.settingsConfig.testTtsVoice()" class="flex-1 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 font-bold py-2.5 rounded-xl text-sm transition">
@@ -1262,7 +1262,7 @@
                     <label class="block text-xs font-bold uppercase tracking-wider text-slate-500">
                         Gerätestimme &amp; Darstellung
                     </label>
-                    <select id="selectVoice" class="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500 font-medium">
+                    <select id="selectVoice" class="w-full text-sm text-slate-900 bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500 font-medium">
                         <option value="">Standard-Systemstimme</option>
                     </select>
                     <p class="text-[11px] text-slate-500">Wird genutzt, wenn oben &quot;Gerätestimme&quot; gewählt ist - und als Rückfall, falls eine KI-Stimme mal nicht erreichbar ist. Zeigt alle auf deinem Gerät installierten Stimmen - auch andere Sprachen (z.B. US-/UK-Englisch), praktisch für fremdsprachige Bücher. Tipp: Auf iOS/Android lassen sich in den Systemeinstellungen weitere Stimmen herunterladen.</p>

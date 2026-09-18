@@ -1,7 +1,12 @@
 // Bei jeder inhaltlichen Änderung an einer dieser Dateien diese Nummer
 // erhöhen - sonst bekommen wiederkehrende Besucher weiter die alte
 // zwischengespeicherte Version ausgeliefert.
-const CACHE_NAME = 'lesezauber-shell-v31';
+const CACHE_NAME = 'lesezauber-shell-v32';
+
+// NEU (v32): drei Bugfixes aus Nutzer-Testfeedback zur Werkstatt (siehe
+// CLAUDE.md, Versionsstand) - keine neuen Dateien, nur geänderte
+// index.html/js/nav.js/js/studio/studioCore.js/js/studio/worksheet.js/
+// css/tailwind.css, deshalb trotzdem CACHE_NAME hochzählen.
 
 // NEU (v31): SchreibZauber Ausbaustufe 3 (Layout & Druck) - Textplatzierung/
 // Silbenfarben (js/studio/studioLayout.js + js/render/studioLayout.js) und

@@ -207,7 +207,15 @@ Object.assign(app.studio, {
             return;
         }
         const project = createDefaultProject(typeId);
-        app.dbOps.saveProject(project);
+        // NEU: NOCH NICHT in die Datenbank schreiben (Bugreport: eine leere
+        // Karteikarte blieb bisher auch nach "Zurück"/Abbrechen dauerhaft in
+        // der Werkstatt-Übersicht liegen, weil sie sofort gespeichert wurde).
+        // Erst im Speicher anlegen - der erste echte Speichervorgang ist
+        // saveBrief() bzw. saveWorksheetGoal() beim ersten "Weiter". Verlässt
+        // man den Wizard vorher wieder, räumt app.nav.go() diesen Entwurf
+        // automatisch weg (siehe dort, "_draft").
+        project._draft = true;
+        app.studio.projects[project.id] = project;
         app.state.currentStudioProjectId = project.id;
         app.nav.go('studioWizard');
     },
@@ -271,6 +279,7 @@ Object.assign(app.studio, {
             project.spec.wordBudget = wordBudget;
         }
         project.stage = Math.max(project.stage, 2);
+        delete project._draft;
         app.dbOps.saveProject(project);
         app.render.studioWizard(2);
     },

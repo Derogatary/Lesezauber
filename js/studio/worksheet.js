@@ -193,6 +193,7 @@ Object.assign(app.studio, {
         project.worksheet.grade = fields.grade;
         project.worksheet.subject = fields.subject;
         project.stage = Math.max(project.stage, 2);
+        delete project._draft;
         app.dbOps.saveProject(project);
         app.render.studioWorkbookWizard(2);
     },
