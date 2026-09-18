@@ -232,6 +232,24 @@ Ein Treffer `FEHLT: actions.xyz` beim dritten Check ist ein bekannter Fehlalarm 
 
 Kein CI/CD - der Nutzer lädt den kompletten Ordnerinhalt manuell über die GitHub-Weboberfläche hoch (Drag & Drop), GitHub Pages baut daraus automatisch `https://<username>.github.io/<repo>/`. Bei jeder Änderung an gecachten Dateien **`sw.js`'s `CACHE_NAME` hochzählen**, sonst bekommen wiederkehrende Nutzer alte Versionen aus dem Service-Worker-Cache ausgeliefert.
 
+## Arbeitsschritt-Varianten bei mehreren parallelen Aufträgen (Branches/PRs)
+
+Wenn mehrere Aufträge gleichzeitig laufen (mehrere Claude-Code-Sessions/Branches), vergleicht sich jeder Branch nur mit dem Stand von `main`, den er beim Abzweigen gesehen hat - nicht mit dem aktuellen. Zwei Branches vom selben Ausgangspunkt wissen nichts voneinander. Das führt zu zwei Arten von Kollision, wenn sie zusammengeführt werden:
+
+- **Sichtbare Konflikte** - beide Branches ändern dieselbe Zeile, Git meldet das von selbst (z. B. `CACHE_NAME`, Versionsnummer im Header, ein eigener Absatz in dieser Datei). Unangenehm, aber ungefährlich, weil Git danach fragt.
+- **Unsichtbare Brüche** - beide Branches ändern verschiedene Stellen, die inhaltlich zusammenhängen, ohne dass Git das merkt. Beispiel aus der Praxis: Ein Branch führte `book.origin` ein, ein zeitgleicher Branch legte neue Bücher an, ohne von diesem Feld zu wissen - kein Git-Konflikt, aber die neuen Bücher wären fälschlich vom Video-Export ausgeschlossen gewesen. Das findet nur ein Mensch (oder Claude) beim bewussten Draufschauen, nicht Git.
+
+**Zwei Vorgehen, je nach Lage:**
+
+1. **Nacheinander mergen** - passt, wenn die Branches klar getrennte Ecken der App betreffen. PR 1 mergen, PR 2 per "Update branch" auf den neuen `main`-Stand bringen, Konflikte lösen, mergen, PR 3 genauso.
+2. **Wellen mit Integrationspass** - passt besser, wenn mehrere Branches dieselben, oft angefassten Dateien berühren (bei diesem Projekt typisch: `index.html`, `sw.js`, `js/main.js`, diese Datei). Alle betroffenen Branches in einen Sammelzweig mergen, dort **einmal bewusst nach unsichtbaren Brüchen suchen** (nicht nur Git-Konflikte lösen), die Sanity-Checks laufen lassen, dann als ein geprüftes Paket nach `main`. In diesem Projekt bisher meist der richtige Weg, weil fast jedes Feature `main.js`/`sw.js`/die Versionsnummer anfasst.
+
+**Daraus folgende Regeln:**
+
+- Versionsnummer (`v0.X.Y-beta`) und `CACHE_NAME` **erst beim Zusammenführen** hochzählen, nicht schon in jedem einzelnen Auftrags-Branch - sonst vergeben zwei parallele Branches unabhängig voneinander dieselbe Nummer (ist schon passiert: zwei Branches beide "v0.16.0-beta").
+- Nach jedem Zusammenführen mehrerer Branches gezielt prüfen, ob neu eingeführte Felder/Konzepte (wie `book.origin`) auch von den *anderen* gerade gemergten Branches korrekt gesetzt werden, nicht nur von dem, der sie eingeführt hat.
+- Bereits gemergte Branches zeitnah löschen (lokal und auf GitHub), sonst sammeln sich alte Branches an und es wird unübersichtlich, welche noch echten, nicht gemergten Inhalt haben.
+
 ## Bekannte, bewusste Einschränkungen (nicht versehentlich "reparieren")
 
 - Kein Server, keine Accounts, keine automatische Cloud-Synchronisierung - bewusst so, siehe README "Mögliche nächste Schritte"
