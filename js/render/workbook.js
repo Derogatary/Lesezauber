@@ -11,6 +11,15 @@ const TASK_TYPE_LABELS = {
     schreiben: '📝 Schreiben',
     zuordnen:  '🧩 Zuordnen',
     suchen:    '🔍 Suchen',
+    // NEU (Ausbaustufe 4 - SchreibZauber-Arbeitsheft, js/studio/worksheet.js):
+    // die dort verwendeten taskType-Werte, damit die Hilfe-Karte nicht bei
+    // "sonstiges" landet, nur weil dieser Weg andere Bezeichnungen als der
+    // Heft-Generator benutzt.
+    luecke:    '✏️ Lückentext',
+    rechnen:   '➕ Rechnen',
+    frei:      '📝 Frei schreiben',
+    gemischt:  '🧩 Mehrere Aufgaben',
+    loesung:   '✅ Lösungen',
     sonstiges: '📋 Aufgabe'
 };
 

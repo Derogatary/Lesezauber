@@ -81,10 +81,28 @@ Object.assign(app.render, {
     // forceStage: optional - springt gezielt zu einer bereits erreichten
     // Stufe (siehe app.studio.saveBrief/saveSpec/generateStory, die nach
     // dem Speichern jeweils zur nächsten Stufe weiterschalten).
+    //
+    // NEU (Ausbaustufe 4 - Arbeitsheft): dieses Modul zeichnet NUR noch den
+    // Bilderbuch-Pfad (Stufe 1-3 Idee/Bauplan/Geschichte). Ein Arbeitsheft-
+    // Projekt hat einen komplett eigenen Stufenablauf (Lernziel/Progression/
+    // Aufgabenbaukasten, siehe js/render/studioWorkbookWizard.js) - die
+    // Weiche sitzt hier ganz vorne, damit index.html EINE gemeinsame
+    // Kopfzeile (Titel, Zurück-Knopf) für beide Werktypen benutzen kann,
+    // aber jeder Werktyp seine eigenen, unabhängig gebauten <section>-Blöcke
+    // ein-/ausblendet (siehe #studioPicturebookStages/#studioWorkbookStages
+    // in index.html).
     studioWizard(forceStage) {
         const project = app.studio.projects[app.state.currentStudioProjectId];
         if (!project) {
             app.nav.go('studio');
+            return;
+        }
+
+        const isWorkbook = project.type === 'workbook';
+        document.getElementById('studioPicturebookStages')?.classList.toggle('hidden', isWorkbook);
+        document.getElementById('studioWorkbookStages')?.classList.toggle('hidden', !isWorkbook);
+        if (isWorkbook) {
+            app.render.studioWorkbookWizard(forceStage);
             return;
         }
 

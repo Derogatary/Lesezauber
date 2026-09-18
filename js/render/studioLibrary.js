@@ -6,6 +6,12 @@ import { app } from '../core.js';
 // "Alle Profile"), genau wie die Bibliothek.
 
 const STAGE_LABEL = { 1: '💡 Idee', 2: '📐 Bauplan', 3: '✍️ Geschichte' };
+// NEU (Ausbaustufe 4 - Arbeitsheft): eigene Stufen-Beschriftung, project.stage
+// zählt beim Arbeitsheft-Pfad wieder bei 1 los (siehe js/studio/worksheet.js).
+const WORKBOOK_STAGE_LABEL = { 1: '🎯 Lernziel', 2: '📐 Progression', 3: '🧩 Aufgaben' };
+function stageLabel(project) {
+    return project.type === 'workbook' ? WORKBOOK_STAGE_LABEL[project.stage] : STAGE_LABEL[project.stage];
+}
 
 Object.assign(app.render, {
     studioLibrary() {
@@ -44,7 +50,7 @@ Object.assign(app.render, {
                     <button onclick="event.stopPropagation(); app.studio.deleteProject('${project.id}')" aria-label="Werk löschen" title="Werk löschen" class="absolute top-2 right-2 w-7 h-7 flex items-center justify-center text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-full transition">🗑️</button>
                     <span class="text-2xl mb-1">${type ? type.label.split(' ')[0] : '📕'}</span>
                     <h3 class="font-bold text-slate-900 text-sm line-clamp-1 pr-6">${app.utils.sanitize(project.title || 'Unbenanntes Werk')}</h3>
-                    <p class="text-[10px] text-slate-500 font-semibold mt-0.5">${STAGE_LABEL[project.stage] || ''}</p>
+                    <p class="text-[10px] text-slate-500 font-semibold mt-0.5">${stageLabel(project) || ''}</p>
                     ${exported ? `<p class="text-[10px] text-emerald-600 font-bold mt-1">📖 Im Regal</p>` : ''}
                 </div>`;
         }).join('');
