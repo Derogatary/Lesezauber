@@ -152,8 +152,9 @@ Drei Dinge tauchen bei **jedem** Merge auf:
 | ~~**2**~~ | ~~**9** (Texte stückeln + Mitmachmodus) · **10** (Heft-Generator API)~~ | ✅ zwei gleichzeitig | ✅ **erledigt**, alles in `main` |
 | ~~**3**~~ | ~~**11** (Heft-Generator Ansicht) · **14** (Video-Renderer, Einzelseite)~~ | ✅ zwei gleichzeitig | ✅ **erledigt**, alles in `main` |
 | ~~**4**~~ | ~~**15** (Video-Export fürs ganze Buch)~~ | allein | ✅ **erledigt**, in `main` |
-| **5 - jetzt startbar** | **16** (SchreibZauber Stufe 2 - Bilder) ∥ **17** (SchreibZauber Stufe 4 - Arbeitsheft) | ✅ zwei gleichzeitig | **12** ist gemergt - Bedingung erfüllt. **16** baut bis auf den letzten Schritt gegen Platzhalter, die echte Bildgenerierung braucht vorher noch die Zahlungsmethode-Klärung aus `KONZEPT-SchreibZauber.md` TEIL G, Punkt 1 |
-| **- jederzeit nebenher** | **18** (Video: Restpunkte) | allein, unabhängig | Keine Bedingung - reine Ergänzung am fertigen Video-Export, kollidiert mit nichts aus Welle 5 |
+| ~~**5**~~ | ~~**16** (SchreibZauber Stufe 2 - Bilder) ∥ **17** (SchreibZauber Stufe 4 - Arbeitsheft)~~ | ✅ zwei gleichzeitig | ✅ **erledigt**, alles in `main` (→ v0.19.0-beta) |
+| ~~**- jederzeit nebenher**~~ | ~~**18** (Video: Restpunkte)~~ | allein, unabhängig | ✅ **erledigt**, in `main` (→ v0.19.0-beta) |
+| **6 - jetzt startbar** | **19** (SchreibZauber Stufe 3 - Layout & Druck) | allein | **16** ist gemergt - Bedingung erfüllt. Keine zweite SchreibZauber-Sitzung daneben, Stufe 5/6 bleiben gesperrt |
 
 **Warum 12 (SchreibZauber Stufe 1) schon in Welle 1 startet:** Es ist der längste Weg im
 ganzen Projekt und blockiert vier weitere Stufen. Es fasst fast nur neue Dateien an
@@ -191,7 +192,8 @@ Kindern direkt und ist Voraussetzung für SchreibZauber Stufe 6.
 | 15 | Video-Export Weg B, Teil 2: ganzes Buch + Regie | Video | **M** | ✅ in `main` (Branch inzwischen gelöscht) |
 | 16 | SchreibZauber Stufe 2 - Bilder | Eigene Werke | **L** | ⬜ `claude/schreibzauber-stufe2-bilder` - *parallel zu 17* |
 | 17 | SchreibZauber Stufe 4 - Arbeitsheft | Eigene Werke | **L** | ⬜ `claude/schreibzauber-stufe4-arbeitsheft` - *parallel zu 16* |
-| 18 | Video: Restpunkte | Video | **S** | ⬜ `claude/video-restpunkte` - unabhängig, jederzeit startbar |
+| 18 | Video: Restpunkte | Video | **S** | ✅ in `main` (Branch inzwischen gelöscht) |
+| 19 | SchreibZauber Stufe 3 - Layout & Druck | Eigene Werke | **M** | ⬜ `claude/schreibzauber-stufe3-layout` - nach 16, allein |
 
 ---
 
@@ -1063,6 +1065,89 @@ nötig. In docs/KONZEPT-Video.md Abschnitt 4.7 den Stand nachziehen (erledigte
 Punkte aus "Noch offen" raus) und in docs/TODO-GESAMT.md die Zeile "Video:
 Restpunkte" abhaken. Committen und auf den Branch claude/video-restpunkte
 pushen. Keinen Pull Request anlegen.
+```
+
+---
+
+## 19 · SchreibZauber Stufe 3 - Layout & Druck (M) - *nach 16, allein*
+
+```
+Arbeite im Repo Lesezauber (LeseZauber Pro). Lies zuerst CLAUDE.md im Root, dann
+docs/KONZEPT-SchreibZauber.md KOMPLETT (inkl. TEIL C.2 Stufe 7, TEIL E, TEIL F
+und den Nachtrag "Veröffentlichung von Anfang an mitdenken"). Ohne dieses
+Dokument nicht anfangen.
+
+Voraussetzung: SchreibZauber Stufe 2 (Bilder) ist gemergt und in main -
+`project.spreads[].imgUrl`/`imageMeta` sind jetzt tatsächlich befüllt (echt
+oder Platzhalter), `project.spreads[].layout` (`textPos`, `fontScale`,
+`syllableColors`) existiert seit Stufe 1 mit Standardwerten, ist aber
+nirgends editierbar oder sichtbar gerendert - genau das ist deine Lücke.
+Siehe docs/KONZEPT-SchreibZauber.md, Abschnitt "Stand nach Stufe 2" für die
+genauen Andockpunkte.
+
+Läuft NICHT parallel zu einer zweiten SchreibZauber-Sitzung - Stufe 5/6
+bleiben bis auf Weiteres gesperrt (siehe TEIL E), Stufe 3 ist der einzige
+gerade offene Ausbaupfad.
+
+Aufgabe: SchreibZauber Ausbaustufe 3 (Layout & Druck) - und NUR Stufe 3, aus
+TEIL E: Textplatzierung, Silbenfarben, Erstleser-Regelprofil,
+Doppelseiten-Druck.
+
+Zu tun, in dieser Reihenfolge:
+
+1. Layout-Editor = Wizard-Stufe 7 ("Das Layout", TEIL C.2) - pro Doppelseite
+   editierbar: `textPos` (oben/unten/links/rechts), `fontScale`,
+   `syllableColors` (An/Aus). Defaults kommen bereits aus Stufe 1
+   (`syllableColors: project.brief.readingLevel === 'erstleser'` in
+   `js/studio/studioCore.js`, `createStorySpread()`/wo auch immer Spreads neu
+   angelegt werden) - nicht überschreiben, nur editierbar machen.
+2. Text-Rendering als HTML-Ebene ÜBER dem Bild, positioniert nach `textPos`,
+   NIE ins Bild gebrannt - das ist keine neue Regel, sondern dieselbe wie
+   überall sonst im Projekt (siehe Bilderbuch-Prompt in TEIL D.4: "Text
+   erscheint NICHT im Bild", Comic-Sprechblasen "Text bleibt HTML, nie im
+   Bild"). Die Bildgenerierung aus Stufe 2 lässt dafür laut Prompt bereits
+   eine ruhige Fläche in der `textPos`-Zone frei.
+3. Silbenfarben (Erstleser-Regelprofil, Konzept-Erwähnung "Silbenfarben,
+   Fibelschrift, Sinnschritte"): Bei `syllableColors: true` den Manuskripttext
+   in Silben zerlegen und abwechselnd einfärben (übliches Muster bei
+   Erstlesebüchern: zwei alternierende Farben je Silbe). **Es gibt dafür noch
+   KEINE Silbentrennungs-Logik im Projekt** (geprüft: das bestehende
+   "Erstleser"-Feature der Lese-App, `erstleserText`/Emoji-Vereinfachung in
+   `js/api.js`, ist etwas anderes - Textvereinfachung, keine Typografie) -
+   eine einfache, für deutsche Kinderbuchtexte brauchbare Heuristik reicht,
+   muss keine sprachwissenschaftlich exakte Trennung sein.
+4. Doppelseiten-Druck: Druckansicht/PDF-Export für Bilderbuch-Doppelseiten.
+   Orientiere dich an den Konventionen von `app.actions.printBook()`
+   (js/actions/backup.js), aber baue eine EIGENE Funktion - das ist ein
+   anderer Inhaltstyp (Bild+Text-Layout einer Doppelseite statt reiner Text
+   wie beim Übungsheft-Druck) und braucht eigene Druckregeln (Bild
+   randabfallend oder mit Rand, Textzone freihalten).
+5. **Vor dem Bau des KDP-tauglichen Exportformats**: TEIL F sagt ausdrücklich,
+   dass die technischen KDP-Vorgaben (vermutet 300 dpi, Bleed/Randabstand,
+   PDF-Exportformat, ISBN-Vergabe) beim Schreiben des Konzepts NICHT
+   abschließend verifiziert werden konnten. Recherchiere den AKTUELLEN Stand
+   (Amazon KDP Print-on-Demand-Vorgaben für Bilderbücher, Stand jetzt) bevor
+   du dich auf konkrete Zahlen festlegst, und trag das Ergebnis in
+   docs/KONZEPT-SchreibZauber.md nach (TEIL F entsprechend aktualisieren).
+   Falls die Recherche unklar bleibt: einen soliden Druck-Export fürs
+   eigene/private Ausdrucken zuerst fertigstellen und liefern, die
+   KDP-spezifischen Feinheiten (exaktes Bleed, ISBN-Platzierung) explizit als
+   offenen Punkt dokumentieren statt zu raten.
+
+Nicht tun: Stufe 4/5/6 anfassen, `js/actions/workbookGenerator.js` oder
+dessen Druckweg anfassen (anderer Inhaltstyp, siehe dortiger Kommentar),
+`app.actions.printBook()` selbst umbauen (nur als Vorbild nehmen).
+
+Wenn der Umfang größer wird als erwartet: lieber Layout-Editor +
+Silbenfarben fertig und geprüft liefern und den Doppelseiten-Druck/KDP-Teil
+als Teilstand melden, als beides halbfertig abzugeben.
+
+Abschluss: Tailwind neu bauen, die vier Sanity-Checks aus CLAUDE.md, sw.js
+CACHE_NAME hochzählen, alle neuen Dateien in APP_SHELL eintragen. In
+docs/KONZEPT-SchreibZauber.md den Stand nachziehen (neuer Abschnitt "Stand
+nach Stufe 3") und in docs/TODO-GESAMT.md abhaken. Committen und auf den
+Branch claude/schreibzauber-stufe3-layout pushen. Keinen Pull Request
+anlegen.
 ```
 
 ---
