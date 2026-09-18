@@ -167,6 +167,7 @@ Object.assign(app.render, {
                         <div>
                             <h3 class="font-bold text-slate-900 text-xs line-clamp-1">${app.utils.sanitize(book.title)}</h3>
                             <p class="text-[10px] text-slate-500 font-semibold">${app.utils.sanitize(book.author)}</p>
+                            ${book.series ? `<span class="inline-block mt-1 bg-indigo-50 text-indigo-700 text-[9px] font-bold px-2 py-0.5 rounded-full">📚 ${app.utils.sanitize(book.series)}</span>` : ''}
                             ${app.render.progressBadgeHtml(book)}
                         </div>
                     </div>

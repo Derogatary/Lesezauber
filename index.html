@@ -41,7 +41,7 @@
                     <p id="streakBadge" class="hidden text-xs font-bold text-amber-600 mt-0.5"></p>
                     <!-- NEU: Belohnung - Anzahl komplett geschaffter Bücher/Hefte -->
                     <p id="medalBadge" class="hidden text-xs font-bold text-emerald-600 mt-0.5"></p>
-                    <p class="text-[10px] text-slate-400 font-semibold mt-0.5">v0.21.0-beta</p>
+                    <p class="text-[10px] text-slate-400 font-semibold mt-0.5">v0.22.0-beta</p>
                 </div>
                 <div class="flex items-center gap-2 flex-shrink-0">
                     <button onclick="app.nav.go('help')" aria-label="Hilfe öffnen" title="Hilfe" class="w-10 h-10 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-600 hover:bg-slate-100 shadow-sm transition active:scale-95">
@@ -733,6 +733,17 @@
                 <div>
                     <label class="text-xs font-bold text-slate-600 block mb-1">Arbeitstitel (optional - die KI schlägt sonst einen vor)</label>
                     <input id="studioTitleInput" type="text" placeholder="Noch unbenannt" class="w-full text-sm text-slate-900 bg-white border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500">
+                </div>
+                <!-- NEU: Reihen-Zugehörigkeit (Bugreport: "Serien-Konsistenz/
+                     Datenbank") - <datalist> statt Dropdown, damit sowohl eine
+                     bestehende Reihe ausgewählt als auch eine neue eingetippt
+                     werden kann. Wählt man eine bestehende Reihe, übernimmt
+                     app.studio.saveBrief() automatisch deren Stilkarte/Figuren
+                     für Stufe 2 (siehe studioCore.js). -->
+                <div>
+                    <label class="text-xs font-bold text-slate-600 block mb-1">Gehört zu einer Reihe? (optional)</label>
+                    <input id="studioSeriesName" list="studioSeriesList" type="text" placeholder="Name der Reihe - leer lassen, wenn es keine ist" class="w-full text-sm text-slate-900 bg-white border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500">
+                    <datalist id="studioSeriesList"></datalist>
                 </div>
                 <div class="grid grid-cols-2 gap-3">
                     <div>

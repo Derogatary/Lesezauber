@@ -116,6 +116,10 @@ Object.assign(app.studio, {
             // js/tts.js _buildBookIntro()). Der Selbstverlags-Hinweis steht
             // stattdessen als Text auf der Autorenseite (studioMetaPages.js).
             if (project.meta?.publisher) book.publisher = project.meta.publisher;
+            // NEU: Reihen-Tag - macht das Buch über die bereits vorhandene
+            // Bibliothekssuche ("Titel, Autor, Verlag, Reihe...") und den
+            // Reihen-Chip auf der Bücherkarte (render/library.js) auffindbar.
+            if (project.seriesName) book.series = project.seriesName;
 
             app.dbOps.saveBook(book);
             return book;

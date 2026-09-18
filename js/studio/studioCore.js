@@ -184,6 +184,13 @@ function createDefaultProject(type) {
         // "brief" - das sind Publikations-, keine Geschichte-Angaben.
         meta: { authorBio: '', publisher: '', blurb: '' },
 
+        // NEU: freier Reihenname (wie book.series bei gescannten Büchern) -
+        // "Serien-Datenbank" ist bewusst KEIN eigener Objektspeicher (siehe
+        // listSeriesNames() unten), sondern nur die Liste der bereits
+        // benutzten Namen über alle Projekte/Bücher hinweg - ein neuer Name
+        // legt die "Reihe" einfach durch Benutzung an.
+        seriesName: '',
+
         spec: { totalPages, storySpreads, wordBudget, trim: 'a5-quer' },
 
         // Reserviert für Stufe 2 (Stilkarte) - bleibt in Stufe 1 leer.
@@ -239,6 +246,19 @@ Object.assign(app.studio, {
         app.studio.projects[project.id] = project;
         app.state.currentStudioProjectId = project.id;
         app.nav.go('studioWizard');
+    },
+
+    // NEU: die "Serien-Datenbank" - bewusst kein eigener Objektspeicher,
+    // sondern die Liste der bereits benutzten Reihennamen über alle
+    // Werkstatt-Projekte UND die normale Bibliothek hinweg (falls z.B. ein
+    // gescanntes Buch schon eine Reihe erkannt hatte), dedupliziert und
+    // alphabetisch sortiert. Speist das <datalist>-Vorschlagsfeld in Stufe 1
+    // (siehe render/studioWizard.js).
+    listSeriesNames() {
+        const names = new Set();
+        Object.values(app.studio.projects).forEach(p => { if (p.seriesName) names.add(p.seriesName.trim()); });
+        Object.values(app.library).forEach(b => { if (b.series) names.add(b.series.trim()); });
+        return [...names].sort((a, b) => a.localeCompare(b, 'de'));
     },
 
     openProject(projectId) {
@@ -298,6 +318,28 @@ Object.assign(app.studio, {
             publisher: (fields.publisher || '').trim(),
             blurb: (fields.blurb || '').trim()
         };
+        project.seriesName = (fields.seriesName || '').trim();
+        // NEU: Serien-Konsistenz - wählt man hier den Namen einer bereits
+        // bestehenden Reihe UND diese Sitzung hat selbst noch keine eigene
+        // Stilkarte/Figuren (sonst würde ein späteres Ändern der Reihe
+        // versehentlich schon Erarbeitetes überschreiben), Stilkarte UND
+        // Figuren-Bibel des jüngsten Geschwister-Projekts übernehmen - genau
+        // die "Verknüpfungsoption zur Wahrung der Konsistenz" aus dem
+        // Bugreport. Rein additiv: ohne Treffer oder ohne Reihenname passiert
+        // nichts, Stufe 2 startet wie bisher leer.
+        if (project.seriesName && !project.style.look && project.characters.length === 0) {
+            const sibling = Object.values(app.studio.projects)
+                .filter(p => p.id !== project.id
+                    && !p._draft
+                    && (p.seriesName || '').trim().toLowerCase() === project.seriesName.toLowerCase()
+                    && (p.style?.look || p.characters?.length))
+                .sort((a, b) => (b.updated || b.created || 0) - (a.updated || a.created || 0))[0];
+            if (sibling) {
+                project.style = { ...sibling.style };
+                project.characters = sibling.characters.map(c => ({ ...c }));
+                app.ui.toast(`Stil & Figuren aus der Reihe "${project.seriesName}" übernommen.`, '📚');
+            }
+        }
         // Bauplan neu berechnen, falls sich die Zielgruppe geändert hat -
         // aber nur, wenn noch keine Geschichte existiert (sonst würde ein
         // späteres Ändern der Idee stillschweigend das Wortbudget unter dem

@@ -60,6 +60,11 @@ function fillBriefStage(project) {
     document.getElementById('studioAuthorBio').value = m.authorBio || '';
     document.getElementById('studioPublisher').value = m.publisher || '';
     document.getElementById('studioBlurb').value = m.blurb || '';
+    // NEU: Reihenname + Vorschlagsliste bereits benutzter Reihen (siehe
+    // app.studio.listSeriesNames() in studioCore.js).
+    document.getElementById('studioSeriesName').value = project.seriesName || '';
+    document.getElementById('studioSeriesList').innerHTML = app.studio.listSeriesNames()
+        .map(name => `<option value="${app.utils.sanitize(name)}"></option>`).join('');
 }
 
 function fillSpecStage(project) {
@@ -176,7 +181,8 @@ Object.assign(app.render, {
             // NEU: optionale Verlags-/Impressum-Felder (siehe studioMetaPages.js)
             authorBio: document.getElementById('studioAuthorBio').value,
             publisher: document.getElementById('studioPublisher').value,
-            blurb: document.getElementById('studioBlurb').value
+            blurb: document.getElementById('studioBlurb').value,
+            seriesName: document.getElementById('studioSeriesName').value
         });
     },
 

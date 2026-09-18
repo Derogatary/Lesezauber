@@ -1,7 +1,12 @@
 // Bei jeder inhaltlichen Änderung an einer dieser Dateien diese Nummer
 // erhöhen - sonst bekommen wiederkehrende Besucher weiter die alte
 // zwischengespeicherte Version ausgeliefert.
-const CACHE_NAME = 'lesezauber-shell-v35';
+const CACHE_NAME = 'lesezauber-shell-v36';
+
+// NEU (v36): Reihen-Zugehörigkeit (project.seriesName/book.series) inkl.
+// Stil-/Figuren-Übernahme aus der jüngsten Geschwister-Doppelseite und
+// Reihen-Chip in der Bibliothek - keine neuen Dateien. Siehe CLAUDE.md,
+// Versionsstand.
 
 // NEU (v35): Meta-Seiten (Titel/Klappentext/Autor) beim "Ins Regal stellen"
 // - neue Datei js/studio/studioMetaPages.js, drei neue optionale Felder in
