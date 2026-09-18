@@ -213,6 +213,15 @@ Object.assign(app.render, {
         const twoPageToggle = document.getElementById('toggleTwoPageLayout');
         if (twoPageToggle) twoPageToggle.checked = app.settings.twoPageLayout;
 
+        // NEU (SchreibZauber Stufe 2): echte Bildgenerierung - Schalterstellung
+        // anzeigen, für Kinderprofile gesperrt wie der API-Key selbst (kostet
+        // Geld, siehe app.settingsConfig.toggleStudioImageGen).
+        const studioImgToggle = document.getElementById('toggleStudioImageGen');
+        if (studioImgToggle) {
+            studioImgToggle.checked = app.settings.studioImageGenEnabled;
+            studioImgToggle.disabled = locked;
+        }
+
         const bgStatus = document.getElementById('pregenStatus');
         if (bgStatus) {
             const missing = app.utils.countMissingVariants();

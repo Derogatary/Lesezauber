@@ -175,6 +175,69 @@ Antworte AUSSCHLIESSLICH in validem JSON, ohne Markdown-Blöcke, exakt in diesem
     {"text": "Der Text dieser Doppelseite.", "pageTurnHook": "Kurze Notiz, WAS hier zum Weiterblättern reizt (nicht Teil des Vorlesetexts) - bei der letzten Doppelseite leerer String."}
   ]
 }`;
+        },
+
+        // Stufe 4 – Die Figuren: aus dem bereits geschriebenen Manuskript
+        // Steckbrief-Vorschläge ableiten (Konzept D.4 "suggestCharacters").
+        // Liefert reine Textvorschläge - das Figurenblatt-BILD entsteht
+        // getrennt danach über die Bildquellen-Schicht (studioCharacters.js),
+        // nicht hier.
+        buildSuggestCharactersPrompt(project) {
+            const manuscript = project.spreads.map(s => s.text).filter(Boolean).join('\n');
+            return `Du bist eine erfahrene Kinderbuch-Redakteurin/ein erfahrener Kinderbuch-Redakteur und liest das folgende bereits fertige Manuskript einer Kinderbuch-Geschichte:
+
+"""
+${manuscript}
+"""
+
+${guardrailsBlock()}
+
+Leite daraus Steckbriefe für die wichtigsten (maximal 4) Figuren ab, die für ein Figurenblatt (Character Sheet) gebraucht werden - damit sie auf jeder Doppelseite gleich aussehen.
+
+Antworte AUSSCHLIESSLICH in validem JSON, ohne Markdown-Blöcke, exakt in diesem Format:
+{
+  "characters": [
+    {
+      "name": "Name der Figur",
+      "role": "kurze Rolle, z.B. Hauptfigur/bester Freund",
+      "age": "Altersangabe, kindgerecht, z.B. \\"5 Jahre\\" oder \\"weiß nicht, ist ein Fuchs\\"",
+      "kind": "Art, z.B. Kind, Tier, Fantasiewesen",
+      "look": "Aussehen in 1-2 Sätzen (Körperbau, Haare/Fell, Gesicht)",
+      "clothing": "Kleidung/Ausstattung in 1-2 Sätzen",
+      "colors": ["#hex1", "#hex2", "#hex3"],
+      "quirk": "EINE unverwechselbare Eigenart, an der man die Figur sofort erkennt"
+    }
+  ]
+}`;
+        },
+
+        // Stufe 5 – Das Daumenkino: Bildideen (Stichworte, KEIN
+        // ausformulierter Bild-Prompt) für jede Doppelseite vorschlagen
+        // (Konzept D.4 "suggestSketches" - AUSDRÜCKLICH ohne Bildaufruf,
+        // reiner Text). Die Doppelseite selbst entscheidet mit dem
+        // Storyboard-Knopf "🤖 Bildideen vorschlagen", ob sie übernommen wird.
+        buildSuggestSketchesPrompt(project) {
+            const spreadsList = project.spreads.map((s, i) =>
+                `${i + 1}. ${s.text || '(noch kein Text)'}`).join('\n');
+            const characterList = project.characters.length
+                ? project.characters.map(c => `${c.name}: ${c.sheetText}`).join(' | ')
+                : '(noch keine Figuren angelegt)';
+
+            return `Du bist eine Illustratorin/ein Illustrator, die/der ein Storyboard (Daumenkino) für ein Kinderbuch skizziert - noch OHNE ein einziges fertiges Bild zu malen.
+
+Figuren: ${characterList}
+
+Doppelseiten der Geschichte:
+${spreadsList}
+
+${guardrailsBlock()}
+
+Schlage für JEDE Doppelseite EINE kurze Bildidee als Stichwort vor (max. 20 Wörter): welche Figur(en) tun WAS, WO, mit welcher Perspektive/Komposition. Kein ausformulierter Bild-Prompt, nur die Idee - der Bild-Prompt entsteht später automatisch daraus.
+
+Antworte AUSSCHLIESSLICH in validem JSON, ohne Markdown-Blöcke, exakt in diesem Format mit GENAU ${project.spreads.length} Einträgen:
+{
+  "sketches": ["Bildidee für Doppelseite 1", "Bildidee für Doppelseite 2"]
+}`;
         }
     }
 });

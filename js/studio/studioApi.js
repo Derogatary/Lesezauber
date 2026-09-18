@@ -59,12 +59,14 @@ async function callMistralText(prompt) {
     return parseModelJson(textResult);
 }
 
-// NEU (Ausbaustufe 4 - Arbeitsheft): gleiches Gemini-zuerst-dann-Mistral-
-// Muster wie generateManuscript() unten, aber als eigene Hilfsfunktion, da
-// jetzt DREI Arbeitsheft-Aufrufe (Progression, Kapitel-Aufgaben,
-// Niveau-Variante) dieselbe Fallback-Logik brauchen - Kopieren an drei
-// Stellen hätte die Wartung unnötig erschwert.
-async function callWithFallback(prompt) {
+// NEU (Stufe 2, um Ausbaustufe 4 - Arbeitsheft erweitert): gemeinsame
+// Gemini-zuerst-dann-Mistral-Fallback-Logik war bisher in
+// generateManuscript() fest eingebaut - jetzt als eigene Funktion mit
+// parametrisierbarer Toast-Meldung, damit suggestCharacters()/
+// suggestSketches() (Stufe 2) UND die drei Arbeitsheft-Aufrufe Progression/
+// Kapitel-Aufgaben/Niveau-Variante (Ausbaustufe 4) sie mitbenutzen können,
+// statt den Fallback fünfmal zu duplizieren.
+async function callTextWithFallback(prompt, fallbackToastMsg) {
     try {
         return await callGeminiText(prompt);
     } catch (geminiError) {
@@ -73,7 +75,7 @@ async function callWithFallback(prompt) {
         console.warn('Gemini fehlgeschlagen, versuche Mistral-Fallback:', geminiError.message);
         try {
             const result = await callMistralText(prompt);
-            app.ui.toast('Gemini nicht erreichbar - Mistral eingesprungen', '🔄');
+            app.ui.toast(fallbackToastMsg, '🔄');
             return result;
         } catch (mistralError) {
             console.error('Auch Mistral-Fallback fehlgeschlagen:', mistralError);
@@ -87,25 +89,43 @@ Object.assign(app.studio, {
         // brief/spec: siehe js/studio/studioCore.js (createDefaultProject).
         // Rückgabe: { title, spreads: [{text, pageTurnHook}] }
         async generateManuscript(brief, spec) {
-            return callWithFallback(app.studio.prompts.buildManuscriptPrompt(brief, spec));
+            const prompt = app.studio.prompts.buildManuscriptPrompt(brief, spec);
+            return callTextWithFallback(prompt, 'Gemini nicht erreichbar - Mistral eingesprungen');
         },
 
-        // Stufe 4' – Progression (Arbeitsheft). Rückgabe:
-        // { chapters: [{title, goal, pages: [{goal, kind}]}] }
+        // Stufe 4 – Figuren-Steckbriefe aus dem Manuskript ableiten.
+        // Rückgabe: { characters: [{name, role, age, kind, look, clothing, colors, quirk}] }
+        async suggestCharacters(project) {
+            const prompt = app.studio.prompts.buildSuggestCharactersPrompt(project);
+            return callTextWithFallback(prompt, 'Gemini nicht erreichbar - Mistral eingesprungen (Figuren)');
+        },
+
+        // Stufe 5 – Bildideen (Stichworte) fürs Storyboard, AUSDRÜCKLICH
+        // ohne Bildaufruf (Konzept D.4). Rückgabe: { sketches: ["...", ...] }
+        async suggestSketches(project) {
+            const prompt = app.studio.prompts.buildSuggestSketchesPrompt(project);
+            return callTextWithFallback(prompt, 'Gemini nicht erreichbar - Mistral eingesprungen (Bildideen)');
+        },
+
+        // NEU (Ausbaustufe 4 - Arbeitsheft): Stufe 4' – Progression.
+        // Rückgabe: { chapters: [{title, goal, pages: [{goal, kind}]}] }
         async generateWorksheetPlan(worksheet) {
-            return callWithFallback(app.studio.prompts.buildProgressionPrompt(worksheet));
+            const prompt = app.studio.prompts.buildProgressionPrompt(worksheet);
+            return callTextWithFallback(prompt, 'Gemini nicht erreichbar - Mistral eingesprungen (Progression)');
         },
 
         // Stufe 5' – Aufgabenbaukasten (Arbeitsheft), ein Aufruf pro
         // Kapitel. Rückgabe: { pages: [{tasks: [...]}] }
         async generateChapterTasks(worksheet, chapter) {
-            return callWithFallback(app.studio.prompts.buildChapterTasksPrompt(worksheet, chapter));
+            const prompt = app.studio.prompts.buildChapterTasksPrompt(worksheet, chapter);
+            return callTextWithFallback(prompt, 'Gemini nicht erreichbar - Mistral eingesprungen (Aufgaben)');
         },
 
         // Differenzierung (Arbeitsheft): dieselbe Aufgabe auf einem anderen
         // Niveau. Rückgabe: {instruction, explanation, data, solution}
         async generateTaskLevel(worksheet, chapter, task, targetLevel) {
-            return callWithFallback(app.studio.prompts.buildTaskLevelPrompt(worksheet, chapter, task, targetLevel));
+            const prompt = app.studio.prompts.buildTaskLevelPrompt(worksheet, chapter, task, targetLevel);
+            return callTextWithFallback(prompt, 'Gemini nicht erreichbar - Mistral eingesprungen (Niveau)');
         }
     }
 });

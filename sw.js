@@ -1,7 +1,13 @@
 // Bei jeder inhaltlichen Änderung an einer dieser Dateien diese Nummer
 // erhöhen - sonst bekommen wiederkehrende Besucher weiter die alte
 // zwischengespeicherte Version ausgeliefert.
-const CACHE_NAME = 'lesezauber-shell-v29';
+const CACHE_NAME = 'lesezauber-shell-v30';
+
+// NEU (v30): Integrationspass Welle 5 - Video-Restpunkte (Auftrag 18),
+// SchreibZauber Stufe 2 (Bilder, Auftrag 16) und Ausbaustufe 4 (Arbeitsheft,
+// Auftrag 17) waren drei parallel laufende, unabhängige Sitzungen auf
+// demselben main-Stand und sind hier zusammengeführt (siehe CLAUDE.md,
+// "Arbeitsschritt-Varianten bei mehreren parallelen Aufträgen").
 
 // NEU (v28): Integrationspass - Heft-Generator und Video-Export zusammengeführt.
 // Beide Zweige hatten unabhängig voneinander bis v26/v27 hochgezählt, deshalb hier
@@ -77,12 +83,19 @@ const APP_SHELL = [
     './js/studio/studioPrompts.js',
     './js/studio/studioApi.js',
     './js/studio/studioExport.js',
+    // NEU (Stufe 2 - Bilder): Stilkarte/Figuren-Bibel, Storyboard, Bildgenerierung.
+    './js/studio/studioCharacters.js',
+    './js/studio/studioStoryboard.js',
+    './js/studio/studioImages.js',
     // NEU (Ausbaustufe 4 - Arbeitsheft): eigener Werktyp-Pfad, siehe
     // docs/KONZEPT-SchreibZauber.md TEIL C.4.
     './js/studio/worksheet.js',
     './js/studio/worksheetCanvas.js',
     './js/render/studioLibrary.js',
     './js/render/studioWizard.js',
+    './js/render/studioCharacters.js',
+    './js/render/studioStoryboard.js',
+    './js/render/studioImages.js',
     './js/render/studioWorkbookWizard.js',
     './js/backgroundPregen.js',
     './js/keyboard.js',
