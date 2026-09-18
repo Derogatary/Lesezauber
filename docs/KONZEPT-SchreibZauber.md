@@ -498,7 +498,7 @@ Prompt muss nie neu erdacht werden. Anbietervergleich und Austausch-Mechanik im 
 | **2 – Bilder** | Stilkarte, Figuren-Bibel, Figurenblatt, Storyboard, Bildgenerierung pro Doppelseite, Kostenzähler | Das erste richtige, selbst gemachte Bilderbuch |
 | **3 – Layout & Druck** | Textplatzierung, Silbenfarben, Erstleser-Regelprofil, Doppelseiten-Druck | Ein Buch, das man ausdrucken und verschenken kann |
 | ~~**4 – Arbeitsheft**~~ | ✅ **gebaut** (Branch `claude/schreibzauber-stufe4-arbeitsheft`, noch nicht in `main`) - Lernziel, Progression, Aufgabenbaukasten (5 von 9 Typen), Differenzierung, Lösungsteil, s/w-Druck | Übungshefte passend zum aktuellen Schulstoff |
-| ~~**5 – Comic**~~ | ✅ **gebaut** (siehe "Stand nach Stufe 5" unten) - Sprechblasen-Overlay, Comic-Skript-Generierung, Figuren-Namensabgleich. Panel-Layouts (mehrere Panels/Seite) bewusst NICHT umgesetzt | Eigene Comic-Hefte |
+| ~~**5 – Comic**~~ | ✅ **gebaut** (siehe "Stand nach Stufe 5" unten) - echte Panel-Layouts (1-4/Seite), Sprechblasen pro Panel, Geräuschwörter, comicfähiger Druck (seit v0.28.0-beta) | Eigene Comic-Hefte, ausdruckbar |
 | **6 – Politur** | ⚠️ **teilweise gebaut** (siehe "Stand nach Stufe 5" unten) - Vorlagen und projektübergreifende Figuren fertig, zweite Einstiegsseite `schreiben.html` + eigenes Manifest bewusst NICHT umgesetzt | Fühlt sich wie eine eigene App an |
 
 Jede Stufe ist für sich benutzbar und lieferbar. Stufe 1 hat den besten Nutzen-pro-Aufwand
@@ -911,18 +911,20 @@ Einträge v0.24.0-beta und v0.26.0-beta).
   technisch/gestalterisch eigene Formate. Auf Nutzerwunsch zuerst nur der teurere,
   Panel-basierte westliche Stil - Webtoon/Manga wären eigene, spätere Ausbaustufen mit eigener
   Layout-Logik (anderes Seitenverhältnis/Leserichtung), kein Aufsatz auf diesem Panel-System.
+- **Comic-Druck ist seit v0.28.0-beta gebaut** (`studioPrint.js`) - eigener, von der
+  Reader-Umschaltung UNABHÄNGIGER "Sprechblasen mit einbrennen"-Umschalter direkt im
+  Druckblock (Standard AN, druckt die fertig geletterte Panel-Seite über
+  `bakePageWithBalloons()`; AUS druckt die "saubere" Fassung über `compositePage()`, z.B. für
+  eine spätere Übersetzung/eigenes Lettering von Hand). Details: siehe CLAUDE.md,
+  Versionsstand v0.28.0-beta.
 - **Bewusst NICHT umgesetzt:**
-  - **Comic-Druck** (mit echten Sprechblasen auf Papier, analog zu `studioPrint.js`) - noch
-    nicht gebaut und von der obigen Umstellung unberührt (`studioPrint.js` ist ohnehin noch
-    nicht Comic-fähig), `bakePageWithBalloons()` liefert aber bereits das fertige Seitenbild
-    dafür. Ein eigener "clean vs. mit Sprechblase"-Umschalter für einen künftigen Comic-Druck
-    wäre dort ein separater Programmpunkt, unabhängig vom Reader-Umschalter oben.
   - **Freies Ziehen (Drag&Drop)** der Sprechblasen - Stufe 7 bietet stattdessen X/Y/Breite als
     Prozent-Regler, reicht für die üblichen 1-3 Sprechblasen pro Panel.
 
 **Was eine spätere Sitzung vorfindet:** `app.studio.comicPanels` (Layout/Zusammensetzen/
-Einbrennen) und `app.studio.balloons` (Sprechblasen-CRUD/Vorschau-HTML) sind die Andockpunkte
-für einen künftigen Comic-Druck oder eine Webtoon/Manga-Ausbaustufe.
+Einbrennen, jetzt auch vom Druck in `studioPrint.js` genutzt) und `app.studio.balloons`
+(Sprechblasen-CRUD/Vorschau-HTML) sind die Andockpunkte für eine künftige Webtoon/
+Manga-Ausbaustufe.
 
 ### Stufe 6 (Politur) - zwei von drei Punkten umgesetzt
 

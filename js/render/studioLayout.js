@@ -131,5 +131,8 @@ Object.assign(app.render, {
         list.innerHTML = project.spreads.length
             ? project.spreads.map((s) => isComic ? comicLayoutCardHtml(s, s.index) : layoutCardHtml(s, project)).join('')
             : `<div class="col-span-full text-center py-10 text-slate-500 bg-white rounded-2xl border border-dashed border-slate-200"><span class="text-3xl block mb-2">📐</span><p class="text-xs font-semibold px-4">Noch keine Doppelseiten - erst in der Stufe "Geschichte" welche anlegen.</p></div>`;
+        // NEU (comicfähiger Druck): der Sprechblasen-Einbrenn-Umschalter im
+        // Druckblock ist nur beim Comic relevant (siehe js/studio/studioPrint.js).
+        document.getElementById('studioPrintBubbleRow')?.classList.toggle('hidden', !isComic);
     }
 });

@@ -1,7 +1,11 @@
 // Bei jeder inhaltlichen Änderung an einer dieser Dateien diese Nummer
 // erhöhen - sonst bekommen wiederkehrende Besucher weiter die alte
 // zwischengespeicherte Version ausgeliefert.
-const CACHE_NAME = 'lesezauber-shell-v41';
+const CACHE_NAME = 'lesezauber-shell-v42';
+
+// NEU (v42): Doppelseiten-Druck (studioPrint.js) ist jetzt comicfähig -
+// druckt die fertig geletterte Panel-Seite, Sprechblasen-Einbrennen per
+// Checkbox abschaltbar. Keine neuen Dateien. Siehe CLAUDE.md, Versionsstand.
 
 // NEU (v41): Comic-Sprechblasen sind jetzt IMMER Teil des Exports, ihre
 // Sichtbarkeit ist ein Umschalter im Reader (nicht mehr beim Erstellen).

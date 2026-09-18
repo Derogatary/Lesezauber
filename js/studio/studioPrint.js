@@ -33,32 +33,95 @@ const TRIM_PAPER_MM = {
 // Textzone zu sprengen.
 const PRINT_BASE_FONT_MM = 4.4;
 
-function pageHtml(spread, index, project, bleed) {
-    const layout = spread.layout || { textPos: 'unten', fontScale: 1, syllableColors: false };
-    // NEU: "randabfallend" (bleed) lässt das Bild die ganze Seite füllen
-    // (object-fit: cover schneidet dafür ggf. Ränder des Bildes ab),
-    // "mit Rand" (Standard - sicherer für Heimdrucker, die selten randlos
-    // drucken können) lässt das ganze Bild unbeschnitten mit 8mm Weißrand
-    // stehen (object-fit: contain).
-    const imgStyle = bleed
+// NEU (comicfähiger Druck): "randabfallend" (bleed) lässt das Bild die
+// ganze Seite füllen (object-fit: cover schneidet dafür ggf. Ränder des
+// Bildes ab), "mit Rand" (Standard - sicherer für Heimdrucker, die selten
+// randlos drucken können) lässt das ganze Bild unbeschnitten mit 8mm
+// Weißrand stehen (object-fit: contain) - für Bilderbuch- UND Comic-Seiten
+// identisch, deshalb jetzt ein gemeinsamer Baustein statt Dopplung.
+function imgStyleFor(bleed) {
+    return bleed
         ? 'position:absolute; inset:0; width:100%; height:100%; object-fit:cover;'
         : 'position:absolute; inset:8mm; width:calc(100% - 16mm); height:calc(100% - 16mm); object-fit:contain;';
+}
+
+function pageHtml(spread, index, project, bleed) {
+    const layout = spread.layout || { textPos: 'unten', fontScale: 1, syllableColors: false };
     const img = spread.imgUrl
-        ? `<img src="${spread.imgUrl}" style="${imgStyle}" alt="Doppelseite ${index + 1}">`
+        ? `<img src="${spread.imgUrl}" style="${imgStyleFor(bleed)}" alt="Doppelseite ${index + 1}">`
         : '';
     const overlay = app.studio.layout.buildOverlayHtml(spread.text || '', layout, project.brief.readingLevel, PRINT_BASE_FONT_MM, 'mm');
     return `<div class="sz-print-page">${img}${overlay}</div>`;
+}
+
+// NEU (comicfähiger Druck): eine Comic-Druckseite zeigt NUR das fertige,
+// bereits zusammengesetzte Seitenbild (Panels + Rahmen, siehe
+// app.studio.comicPanels) - KEINE zusätzliche HTML-Textebene wie beim
+// Bilderbuch. Der Dialog ist entweder schon Teil des Bildes (Sprechblasen/
+// Geräuschwörter eingebrannt, siehe printSpreads() unten) oder bewusst
+// abwesend (Checkbox "aus" - "saubere" Seiten z.B. für eine eigene
+// Übersetzung/eigenes Lettering von Hand).
+function comicPageHtml(imgUrl, index, bleed) {
+    const img = imgUrl
+        ? `<img src="${imgUrl}" style="${imgStyleFor(bleed)}" alt="Comic-Seite ${index + 1}">`
+        : '';
+    return `<div class="sz-print-page">${img}</div>`;
 }
 
 Object.assign(app.studio, {
     // bleed: true = Bild randabfallend, false (Standard) = mit weißem
     // Rand. Wird vom Kontrollkästchen in der Layout-Stufe übergeben (siehe
     // index.html #studioPrintBleed).
-    printSpreads(bleed = false) {
+    // NEU (comicfähiger Druck): bakeBubbles - NUR beim Comic relevant
+    // (#studioPrintBubbles, Standard AN) - AN druckt die fertig geletterte
+    // Seite (Sprechblasen + ggf. Geräuschwörter eingebrannt, genau wie ein
+    // echter gedruckter Comic), AUS druckt die "saubere" Fassung ohne Text
+    // im Bild. Die Funktion ist jetzt async, weil das Zusammensetzen/
+    // Einbrennen der Comic-Seiten Canvas-Bilder nachlädt (siehe
+    // app.studio.comicPanels) - das Pop-up-Fenster wird deshalb SOFORT,
+    // noch synchron zum Klick, geöffnet (sonst blockieren Safari/Chrome ein
+    // erst nach einem await geöffnetes Fenster) und danach mit dem
+    // fertigen Inhalt befüllt.
+    async printSpreads(bleed = false, bakeBubbles = true) {
         const project = app.studio.projects[app.state.currentStudioProjectId];
         if (!project) return;
         if (project.spreads.length === 0) {
             app.ui.toast('Noch keine Doppelseiten zum Drucken - erst in der Stufe "Geschichte" welche anlegen.', 'ℹ️');
+            return;
+        }
+
+        const printWindow = window.open('', '_blank');
+        if (!printWindow) {
+            app.ui.toast('Pop-up blockiert - bitte für diese Seite erlauben.', '⚠️');
+            return;
+        }
+        printWindow.document.write('<title>Wird vorbereitet …</title><body style="font-family:sans-serif;padding:2rem;color:#475569;">Seiten werden vorbereitet …</body>');
+
+        const isComic = project.type === 'comic';
+        let pagesHtml;
+        if (isComic) {
+            app.ui.showLoader('Comic-Seiten werden vorbereitet...', bakeBubbles ? 'Sprechblasen werden für den Druck eingebrannt' : 'Seiten werden zusammengesetzt');
+            try {
+                // NEU: fehlende Panel-Bilder (Seite noch nicht fertig
+                // generiert) ergeben null statt eines Fehlers - die Seite
+                // bleibt dann einfach leer (gleiches, permissives Verhalten
+                // wie beim Bilderbuch-Pfad ohne spread.imgUrl).
+                const images = await Promise.all(project.spreads.map((spread) => {
+                    if (!spread.panels.every((p) => p.imgUrl)) return Promise.resolve(null);
+                    return bakeBubbles
+                        ? app.studio.comicPanels.bakePageWithBalloons(spread, { showSoundEffects: project.comicShowSoundEffects })
+                        : app.studio.comicPanels.compositePage(spread);
+                }));
+                pagesHtml = project.spreads.map((s, i) => comicPageHtml(images[i]?.full, i, bleed)).join('');
+            } finally {
+                app.ui.hideLoader();
+            }
+        } else {
+            pagesHtml = project.spreads.map((s, i) => pageHtml(s, i, project, bleed)).join('');
+        }
+
+        if (printWindow.closed) {
+            app.ui.toast('Druckfenster wurde geschlossen.', '⚠️');
             return;
         }
 
@@ -70,14 +133,8 @@ Object.assign(app.studio, {
                 <h1 style="font-size:9mm; margin:0 0 6mm; font-family:sans-serif;">${app.utils.sanitize(project.title || 'Unbenanntes Werk')}</h1>
                 <p style="font-size:4.5mm; color:#475569; font-family:sans-serif;">von ${app.utils.sanitize(author)}</p>
             </div>`;
-        const pagesHtml = project.spreads.map((s, i) => pageHtml(s, i, project, bleed)).join('');
 
-        const printWindow = window.open('', '_blank');
-        if (!printWindow) {
-            app.ui.toast('Pop-up blockiert - bitte für diese Seite erlauben.', '⚠️');
-            return;
-        }
-
+        printWindow.document.open();
         printWindow.document.write(`
             <html>
             <head>
