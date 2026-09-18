@@ -71,7 +71,8 @@ Eine Web-App, mit der du Kinderbuch-Seiten mit dem Handy fotografierst (oder aus
 - 🔒 **Tarif-Lock:** vor dem Wechsel auf eine teurere Stimme fragt die App einmal nach - Schutz vor Versehen, keine Sperre (v0.13.0-beta)
 - 🎬 **Kino-Modus:** im Vollbild-Vorlesen zoomt das Seitenbild langsam (Ken-Burns) und blendet beim Seitenwechsel weich über; abschaltbar und respektiert "reduzierte Bewegung" (v0.13.0-beta)
 - 🎧 **Hörbuch-Export:** ein ganzes Buch als eine Audiodatei ausgeben, Bildbeschreibung und Quiz wahlweise mit - setzt eine KI-Stimme voraus (v0.13.0-beta)
-- 🎬 **Film-Vorschau:** zeigt ein Buch (oder eine einzelne Seite) als Film - Seitenbild mit langsamem Zoom, darunter der Text mit mitlaufender Wort-Hervorhebung, umschaltbar zwischen hochkant (Handy/Status), quer (Fernseher) und quadratisch. Erster Teil des Video-Exports: noch stumm und noch ohne Videodatei, kostet dafür nichts (v0.15.0-beta)
+- 🎬 **Film-Vorschau:** zeigt ein Buch (oder eine einzelne Seite) als Film - Seitenbild mit langsamem Zoom, darunter der Text mit mitlaufender Wort-Hervorhebung, umschaltbar zwischen hochkant (Handy/Status), quer (Fernseher) und quadratisch. Die Vorschau ist stumm und kostet nichts (v0.15.0-beta)
+- 🎞️ **Video-Export:** aus derselben Vorschau heraus eine echte MP4-Datei mit Ton - Titelkarte, Ken-Burns-Zoom, Kreuzblende, Untertitel mit Wort-Hervorhebung, Abspann. Ganzes Buch oder einzelne Seite (die Einzelseite ist die Variante zum Verschicken, ein Buch-Film hat leicht über 100 MB). Sagt die ungefähre Größe vorher, läuft schneller als Echtzeit, jederzeit abbrechbar. **Nur bei selbst geschriebenen Büchern** (SchreibZauber) - bei abfotografierten fremden Büchern wäre eine weitergegebene Videodatei eine Vervielfältigung. Setzt eine KI-Stimme und einen Browser mit WebCodecs voraus (Chrome/Edge, neueres Safari) (v0.16.0-beta)
 
 ## 🗣️ Echte KI-Stimmen statt Roboterstimme
 
@@ -189,6 +190,7 @@ js/
     audiobookExport.js     Ganzes Buch als eine Audiodatei
     videoTimeline.js       Zeitplan/"Regie" des Films (welche Szene wann)
     videoPreview.js        Film-Vorschau: spielt den Zeitplan auf dem Canvas ab
+    videoExport.js         Video-Export: kodiert den Film als MP4-Datei (mit Ton)
   render/
     library.js             Bibliotheks-Ansicht + Suche
     book.js                 Buch-Detail-Ansicht
@@ -204,6 +206,7 @@ js/
     placeholder.js          Platzhalter-Bilder, solange kein echtes Bild da ist
   vendor/
     pdfjs/                  PDF.js (Mozilla) - wird nur bei PDF-Import nachgeladen
+    mp4muxer/               mp4-muxer (MIT) - wird nur beim Video-Export nachgeladen
 main.js                  Bindet alle Module zusammen und startet die App
 docs/
   TODO-GESAMT.md           Alle offenen Punkte auf einen Blick (Einstieg)
@@ -236,7 +239,7 @@ docs/
 - 🎨 KI-generierte Illustrationen für textlastige EPUB-Kapitel ohne eigenes Bild, optional im Comic-Stil (Gemini kann mittlerweile auch Bilder erzeugen, gleicher Key wie bisher) - Cover-Bild-Sonderfall erstmal nicht nötig
 - 📱 Native App / Android-Store-Verpackung (Capacitor) - verpackt den bestehenden Code weitgehend unverändert
 - 📝 **Heft-Generator**: Übungsblätter von der KI erstellen lassen (Geschichte + Lernziel auswählen) - Entwurf und offene Punkte in `docs/KONZEPT-Uebungshefte.md`
-- 🎬 **Video-Export** (Seite UND ganzes Buch als Film, Schwerpunkt Buch - bereits entschieden). Vorarbeit ist erledigt: Audiodatei, Länge und Wort-Zeitpunkte je Seite liefert `app.ttsNeural.renderPageSegments()`, das Seitenbild liegt ohnehin vor. **Der Renderer-Kern steht seit v0.15.0-beta** (Canvas-Bild + Untertitel mit Wort-Hervorhebung, sichtbar als "🎬 Film"-Vorschau). Offen ist noch das Kodieren zur Datei (`WebCodecs` + MP4-Muxer) und der Ton im Film. Setzt eine KI-Stimme voraus. Ausführliches Konzept dazu (Sprach-API, Video/MP4, Hörbuch, Mehrformat - was, wie und warum): [`docs/KONZEPT-Video.md`](docs/KONZEPT-Video.md)
+- 🎬 **Video-Export** - **seit v0.16.0-beta gebaut** (Seite UND ganzes Buch, siehe Funktionsliste oben). Offen sind nur noch Kleinigkeiten: Ton auch in der Vorschau, eine gesprochene Ansage auf der Titelkarte, eine eigene Karte mit Denkpause für die Rätselfrage und eine höhere Bildauflösung für die Vorlage. Setzt eine KI-Stimme voraus. Ausführliches Konzept dazu (Sprach-API, Video/MP4, Hörbuch, Mehrformat - was, wie und warum): [`docs/KONZEPT-Video.md`](docs/KONZEPT-Video.md)
 
 **Bräuchte einen eigenen Server** (aktuell bewusst zurückgestellt):
 - API-Key über ein Backend absichern

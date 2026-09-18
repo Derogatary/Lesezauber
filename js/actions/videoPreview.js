@@ -121,9 +121,31 @@ Object.assign(app.actions, {
         state.ctx = app.cinema.prepareCanvas(state.canvas, timeline.formatId);
 
         this._updateVideoPreviewHint();
+        this._updateVideoPreviewExport();
         this._drawVideoPreviewFrame(true);
         this._updateVideoPreviewUi(true);
         return true;
+    },
+
+    // Startet den Video-Export für genau das, was die Vorschau gerade zeigt
+    // (Seitenbereich, Format, zugeschaltete Häppchen). Der Export selbst
+    // liegt in js/actions/videoExport.js.
+    async exportVideoFromPreview() {
+        const state = app.state.videoPreview;
+        if (!state || !state.timeline) return;
+
+        // Wiedergabe anhalten: das Kodieren braucht die Rechenzeit, und ein
+        // im Hintergrund weiterlaufender Animationsschritt würde nur bremsen.
+        if (state.playing) this.toggleVideoPreviewPlay();
+
+        const timeline = state.timeline;
+        await this.exportVideo(timeline.bookId, {
+            fromIdx: timeline.fromIdx,
+            toIdx: timeline.toIdx,
+            formatId: timeline.formatId,
+            includeDescription: timeline.includeDescription,
+            includeQuiz: timeline.includeQuiz
+        });
     },
 
     closeVideoPreview() {
@@ -172,6 +194,8 @@ Object.assign(app.actions, {
         if (!state || !state.timeline) return;
         app.cinema.setTimelineFormat(state.timeline, formatId);
         state.ctx = app.cinema.prepareCanvas(state.canvas, state.timeline.formatId);
+        // Die Größenschätzung auf dem Export-Knopf hängt am Format.
+        this._updateVideoPreviewExport();
         this._drawVideoPreviewFrame(true);
     },
 
@@ -262,11 +286,35 @@ Object.assign(app.actions, {
         const parts = [];
         parts.push(state.timeline.exact
             ? 'Zeiten aus echten Sprachaufnahmen.'
-            : 'Stumme Vorschau, Längen aus der Textlänge geschätzt (Ton und Datei kommen mit dem Video-Export).');
+            : 'Vorschau ohne Ton, Längen aus der Textlänge geschätzt - die Videodatei bekommt echten Ton und exakte Zeiten.');
         if (state.timeline.skipped.length) {
             parts.push(`${state.timeline.skipped.length} Seite/n übersprungen (noch nicht ausgelesen).`);
         }
+        // Geht der Export gerade nicht (fremdes Buch, kein WebCodecs, keine
+        // KI-Stimme), steht der Grund hier - ein Knopf, der einfach fehlt,
+        // wäre für den Betreiber nicht erklärbar.
+        const blocker = app.actions.videoExportBlocker(app.library[state.bookId]);
+        if (blocker) parts.push(`Kein Video-Export: ${blocker}`);
         hint.innerText = parts.join(' ');
+    },
+
+    _updateVideoPreviewExport() {
+        const state = app.state.videoPreview;
+        const btn = document.getElementById('videoPreviewExportBtn');
+        if (!state || !btn) return;
+
+        const blocked = !!app.actions.videoExportBlocker(app.library[state.bookId]);
+        btn.classList.toggle('hidden', blocked);
+
+        const label = document.getElementById('videoPreviewExportLabel');
+        if (label && !blocked) {
+            // Die ungefähre Größe gleich auf den Knopf: ein Buch-Film mit
+            // 200 MB soll niemanden überraschen (die Rückfrage vor dem Start
+            // nennt sie noch einmal, aus derselben Rechnung).
+            const bytes = app.actions.estimateVideoBytes(state.timeline.formatId, state.timeline.totalDurationSec);
+            const mb = Math.max(1, Math.round(bytes / 1_000_000));
+            label.innerText = `Als Videodatei speichern (ca. ${mb} MB)`;
+        }
     },
 
     _fillVideoPreviewFormats() {

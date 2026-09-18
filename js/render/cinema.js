@@ -64,6 +64,10 @@ const KEN_BURNS = [
     { dx: 0.02, dy: 0.015 }
 ];
 const KEN_BURNS_ZOOM = 0.12;
+// Kreuzblende beim Szenenwechsel (Sekunden). Optische Vorlage ist der
+// Kino-Modus (css/style.css, 1.1s Opacity-Übergang); im Video ist sie
+// kürzer, weil dort jede Szene wirklich nur ein paar Sekunden steht.
+const CROSSFADE_SEC = 0.6;
 // Unter dieser Szenenlänge wird der Zoom anteilig zurückgenommen: 12% Zoom
 // in 2 Sekunden wäre eine Fahrt, kein Ken-Burns-Effekt.
 const KEN_BURNS_FULL_SEC = 12;
@@ -252,10 +256,51 @@ Object.assign(app.cinema, {
         ctx.fillStyle = COLOR_BG;
         ctx.fillRect(0, 0, fmt.width, fmt.height);
 
-        const scene = this.sceneAt(timeline, timeSec);
+        const idx = this.sceneIndexAt(timeline, timeSec);
+        const scene = idx >= 0 ? timeline.scenes[idx] : null;
         if (!scene) { ctx.restore(); return; }
 
-        const local = Math.max(0, timeSec - scene.startSec);
+        // Kreuzblende: am Anfang einer Szene liegt die vorige noch darunter
+        // und wird überblendet - derselbe Eindruck wie im Kino-Modus, nur
+        // hier gerechnet statt per CSS (im Video gibt es kein DOM und keine
+        // Opacity-Animation, es gibt nur diesen einen Frame).
+        const previous = idx > 0 ? timeline.scenes[idx - 1] : null;
+        const alpha = this._crossfadeAlpha(scene, previous, timeSec);
+
+        if (alpha < 1 && previous) {
+            // Die alte Szene in ihrem Endzustand darunter legen (also mit
+            // vollem Ken-Burns-Zoom und ihrem letzten Untertitel-Block).
+            this._paintScene(ctx, fmt, metrics, previous, previous.endSec - 0.001);
+        }
+
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        this._paintScene(ctx, fmt, metrics, scene, timeSec);
+        ctx.restore();
+
+        ctx.restore();
+    },
+
+    // Deckkraft der NEUEN Szene: 1 = fertig eingeblendet.
+    _crossfadeAlpha(scene, previous, timeSec) {
+        if (!previous || !this._effectsOn()) return 1;
+        // Nur blenden, wenn sich das Bild wirklich ändert. Zwischen Text und
+        // Bildbeschreibung derselben Seite steht dasselbe Bild - eine Blende
+        // wäre dort nur ein sinnloses Aufflackern.
+        if (previous.imgUrl === scene.imgUrl && previous.kind === scene.kind) return 1;
+        // Ohne fertiges Bild der alten Szene gäbe die Blende nur ein
+        // "Bild wird geladen..." unter dem neuen Bild frei - dann harter Schnitt.
+        if (previous.imgUrl && !this.bitmapFor(previous)) return 1;
+
+        const local = timeSec - scene.startSec;
+        if (local >= CROSSFADE_SEC) return 1;
+        return Math.max(0, Math.min(1, local / CROSSFADE_SEC));
+    },
+
+    // Eine einzelne Szene zu einem Zeitpunkt zeichnen (ohne Hintergrundfläche
+    // und ohne Blende) - von drawFrame() ein- oder zweimal aufgerufen.
+    _paintScene(ctx, fmt, metrics, scene, timeSec) {
+        const local = Math.max(0, Math.min(scene.durationSec, timeSec - scene.startSec));
         const progress = scene.durationSec > 0 ? Math.min(1, local / scene.durationSec) : 1;
 
         this._drawBackdrop(ctx, scene, fmt);
@@ -266,8 +311,14 @@ Object.assign(app.cinema, {
         } else {
             this._drawCard(ctx, scene, fmt, metrics, progress);
         }
+    },
 
-        ctx.restore();
+    // Bewegung/Blenden erlaubt? Dieselben zwei Schalter wie im Kino-Modus:
+    // die Einstellung und die Betriebssystem-Vorgabe "reduzierte Bewegung".
+    _effectsOn() {
+        if (app.settings.focusEffectsEnabled === false) return false;
+        if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return false;
+        return true;
     },
 
     // Bequemlichkeit für Vorschau und (später) Export: setzt die
@@ -418,8 +469,7 @@ Object.assign(app.cinema, {
     // Einstellung und die Betriebssystem-Vorgabe "reduzierte Bewegung".
     _kenBurns(scene, progress) {
         const still = { scale: 1, dx: 0, dy: 0 };
-        if (app.settings.focusEffectsEnabled === false) return still;
-        if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return still;
+        if (!this._effectsOn()) return still;
 
         const dir = KEN_BURNS[(scene.kenBurns || 0) % KEN_BURNS.length];
         // Kurze Szenen bekommen anteilig weniger Zoom (siehe KEN_BURNS_FULL_SEC).

@@ -39,7 +39,7 @@ Object.assign(app.actions, {
                 id, title: 'Neues Buch', author: 'Unbekannt', created: Date.now(),
                 // NEU: ein als Übungsheft importiertes PDF wird auch als
                 // Übungsheft ausgewertet (Aufgabe/Hilfe/Lösung statt Erzähltext).
-                profileId: app.utils.resolveCreationProfileId(), bookType: app.state.newBookType, pages: []
+                profileId: app.utils.resolveCreationProfileId(), bookType: app.state.newBookType, origin: 'scan', pages: []
             };
             app.library[id] = newBook;
             app.state.currentBookId = id;

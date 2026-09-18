@@ -59,6 +59,10 @@ Object.assign(app.studio, {
             book.title = project.title || 'Unbenanntes Werk';
             book.author = author;
             book.bookType = 'story';
+            // NEU: selbst geschrieben - erst dadurch wird der Video-Export
+            // überhaupt angeboten (siehe app.utils.resolveBookOrigin und
+            // docs/KONZEPT-Video.md, Abschnitt 7 zum Urheberrecht).
+            book.origin = 'authored';
             // NEU: informative Rückverknüpfung zum Werkstatt-Projekt - rein
             // deklarativ, kein anderer Code liest dieses Feld in Stufe 1,
             // aber spätere Stufen (z.B. "Bild jetzt generieren" direkt aus

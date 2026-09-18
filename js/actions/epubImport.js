@@ -129,7 +129,7 @@ Object.assign(app.actions, {
             const newBook = {
                 id: newBookId, title, author, created: Date.now(),
                 // NEU: siehe pdfImport.js - die gewählte Buchart gilt auch hier.
-                profileId: app.utils.resolveCreationProfileId(), bookType: app.state.newBookType, pages: []
+                profileId: app.utils.resolveCreationProfileId(), bookType: app.state.newBookType, origin: 'scan', pages: []
             };
             app.library[newBookId] = newBook;
             app.state.currentBookId = newBookId;

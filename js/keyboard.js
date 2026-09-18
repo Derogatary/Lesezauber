@@ -11,7 +11,11 @@ document.addEventListener('keydown', (e) => {
 
     // NEU: Escape schließt auch die Film-Vorschau (gleiches Muster wie
     // beim Vollbild-Vorlese-Modus, sie liegt ebenfalls als Overlay oben).
-    if (e.key === 'Escape' && app.state.videoPreview) {
+    // FIX: nicht währenddessen, wenn gerade ein Film kodiert wird
+    // (app.state.apiBusy) - das Schließen gibt die dekodierten Seitenbilder
+    // frei, die der Export gerade braucht. Abgebrochen wird dann über den
+    // "Vorgang abbrechen"-Knopf der Ladeanzeige.
+    if (e.key === 'Escape' && app.state.videoPreview && !app.state.apiBusy) {
         app.actions.closeVideoPreview();
         return;
     }

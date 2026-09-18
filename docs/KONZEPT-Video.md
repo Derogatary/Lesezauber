@@ -6,13 +6,15 @@
 > Kino-Modus** (Abschnitt 3, Stufe 1) umgesetzt - der eigentliche Video-**Export**
 > ist weiterhin offen. Einzelne Stellen tragen deshalb einen Nachtrag.
 >
-> **Nachtrag (17.09.2026, v0.15.0-beta): Weg B, Teil 1 ist gebaut.** Der
-> **Renderer-Kern** steht: `js/render/cinema.js` zeichnet einen Frame zu einem
-> Zeitpunkt t (Seitenbild mit Ken-Burns + Untertitel-Balken mit mitlaufender
-> Wort-Hervorhebung), `js/actions/videoTimeline.js` legt den Zeitplan über
-> einen **Seitenbereich**, `js/actions/videoPreview.js` spielt das Ganze als
-> "🎬 Film"-Vorschau auf einem sichtbaren Canvas ab. Offen bleiben Ton im
-> Film und das Kodieren zur Datei (Teil 2/3) - Details unten in Abschnitt 4.7.
+> **Nachtrag (17./18.09.2026, v0.16.0-beta): Weg B ist gebaut - Teil 1 und Teil 2.**
+> `js/render/cinema.js` zeichnet einen Frame zu einem Zeitpunkt t (Seitenbild mit
+> Ken-Burns + Untertitel-Balken mit mitlaufender Wort-Hervorhebung, Kreuzblende
+> beim Szenenwechsel), `js/actions/videoTimeline.js` legt den Zeitplan über einen
+> **Seitenbereich** (inkl. Seiten-Rollen und Pausen), `js/actions/videoPreview.js`
+> spielt das als "🎬 Film"-Vorschau ab, und `js/actions/videoExport.js` kodiert
+> daraus mit `VideoEncoder`/`AudioEncoder` und `js/vendor/mp4muxer/` eine echte
+> **MP4-Datei** - für eine Einzelseite wie fürs ganze Buch, nur bei
+> `origin: 'authored'`. Stand und Entscheidungen: Abschnitt 4.7.
 >
 > **Zusammengeführt (Sept. 2026):** Die Video-Inhalte aus `docs/ROADMAP.md` (dort
 > ursprünglich dupliziert) sind jetzt hier eingearbeitet - `ROADMAP.md` ist seitdem
@@ -351,15 +353,17 @@ Das ist bewusst **Weg-unabhängig** formuliert: Schritte 1-3 sind für Weg A (Pr
 Einzelseite) und Weg B (Zielarchitektur, ganzes Buch) identisch, nur Schritt 4 unterscheidet
 sich (`MediaRecorder` vs. `VideoEncoder`/`AudioEncoder` + Muxer).
 
-### 4.7 Stand von Weg B: was Teil 1 entschieden und gebaut hat
+### 4.7 Stand von Weg B: was gebaut ist und was dabei entschieden wurde
 
-**Gebaut (v0.15.0-beta), drei Module:**
+**Gebaut (v0.15.0-beta Teil 1, v0.16.0-beta Teil 2), vier Module plus Muxer:**
 
 | Datei | Rolle |
 |---|---|
-| `js/render/cinema.js` (`app.cinema`) | Der Renderer. Kann genau eines: `drawFrame(ctx, timeline, timeSec)`. Dazu Formate, Bild-Dekodierung, Schrift-Bereitschaft, Zeilenumbruch, Ken-Burns |
-| `js/actions/videoTimeline.js` (`app.cinema.buildTimeline`) | Die "Regie": welche Szene läuft wann, mit welchem Text und welchen Wort-Zeitpunkten - über einen **Seitenbereich** |
-| `js/actions/videoPreview.js` (`app.actions.openVideoPreview`) | Prüfstand: spielt den Zeitplan in Echtzeit auf einem sichtbaren Canvas ab, mit Zeitbalken und Formatwechsel |
+| `js/render/cinema.js` (`app.cinema`) | Der Renderer. Kann genau eines: `drawFrame(ctx, timeline, timeSec)`. Dazu Formate, Bild-Dekodierung, Schrift-Bereitschaft, Zeilenumbruch, Ken-Burns, Kreuzblende |
+| `js/actions/videoTimeline.js` (`app.cinema.buildTimeline`) | Die "Regie": welche Szene läuft wann, mit welchem Text, welchen Wort-Zeitpunkten und welcher Tonspur - über einen **Seitenbereich**, inkl. Seiten-Rollen und Pausen |
+| `js/actions/videoPreview.js` (`app.actions.openVideoPreview`) | Prüfstand: spielt den Zeitplan in Echtzeit auf einem sichtbaren Canvas ab, mit Zeitbalken und Formatwechsel. Kostet nichts |
+| `js/actions/videoExport.js` (`app.actions.exportVideo`) | Der Export: Ton holen, Frames kodieren, muxen, Datei ausliefern - mit Fortschritt, Abbruch und Größenschätzung vorab |
+| `js/vendor/mp4muxer/mp4-muxer.mjs` | Der Muxer (mp4-muxer 5.2.2, MIT, 69 KB). Wie PDF.js/JSZip vendored und **lazy** geladen, nicht in der `APP_SHELL` - NIE bearbeiten |
 
 **Entscheidungen, die dabei gefallen sind** (damit sie nicht neu diskutiert werden):
 
@@ -395,23 +399,60 @@ sich (`MediaRecorder` vs. `VideoEncoder`/`AudioEncoder` + Muxer).
    geschätzt sind. Eine Vorschau, die beim Öffnen Kontingent verbraucht, wäre
    beim Entwickeln unbenutzbar - und für die Familie eine Kostenfalle.
 
-**Offen für Teil 2 (Ton + Datei):**
+**Entscheidungen aus Teil 2 (Ton, Kodieren, Datei):**
 
-- Ton in die Vorschau: `renderPageSegments()` liefern und über
-  `segmentsByPage` in `buildTimeline()` geben - der Zeitplan nimmt echte
-  Segmente schon entgegen, nutzt dann deren Länge und Wort-Zeitpunkte und
-  setzt `timeline.exact = true`. Die Wiedergabe müsste sich dann an
-  `audio.currentTime` hängen statt an der eigenen Uhr.
-- Metadaten-Ansage für die Titelkarte (Titel/Autor/Kapitel, siehe
+10. **Der Zeitplan bestimmt Bild UND Ton.** Der Export legt die Tonspur jeder
+    Szene exakt auf `scene.startSec` und füllt Pausen mit Stille. Dadurch ist
+    Bild/Ton-Gleichlauf keine Frage von sorgfältig gepflegten Pausen-Konstanten,
+    sondern strukturell gegeben - im Test sind Video- und Tonspur der fertigen
+    Datei auf die Millisekunde gleich lang.
+11. **Codec-Leiter statt festem Codec** (wie in 4.2 gefordert): H.264+AAC im
+    MP4 (überall abspielbar) → H.264+Opus → VP9+Opus → AV1+Opus. Geprüft wird
+    mit `isConfigSupported()` in der Zielauflösung. Reicht es nur für einen
+    Rückfall, sagt die App das vor dem Start und noch einmal danach - eine
+    Datei, die nur auf dem eigenen Rechner läuft, soll niemanden überraschen.
+12. **Ausgabe über OPFS**, nicht als Blob im Arbeitsspeicher: die Datei wächst
+    beim Kodieren auf die Platte (siehe Abschnitt 7 zum Speicher). Ohne OPFS
+    fällt der Export auf einen Speicher-Puffer zurück. Reste eines
+    abgebrochenen Durchlaufs werden beim nächsten Start weggeräumt.
+13. **`fastStart: false`** (Verwaltungsdaten ans Dateiende). Die Variante mit
+    reserviertem Platz am Dateianfang bräuchte eine Vorab-Schätzung der
+    Päckchen-Anzahl und würde bei einer zu knappen Schätzung den ganzen Export
+    verlieren. Lokale Player kommen mit Daten am Ende klar; falls sich beim
+    Verschicken doch Probleme zeigen, ist das die erste Stelle zum Umstellen.
+14. **Seiten-Rollen wirken als Regie** (nur beim Buch-Film, nicht bei der
+    Einzelseite): die per `titlePageId` markierte Seite wird zur Titelkarte und
+    läuft nicht zusätzlich als normale Seite, die per `backCoverPageId` markierte
+    wandert ans Ende vor den Abspann. Wer die Rückseite zuerst fotografiert hat,
+    bekäme sonst einen Film, der mit dem Klappentext anfängt.
+15. **`book.origin` ist jetzt da** (`'scan' | 'authored'`, gelesen über
+    `app.utils.resolveBookOrigin()`): SchreibZauber-Bücher sind `authored`,
+    alles Abfotografierte/Importierte ist `scan`, und **alles ohne Feld gilt als
+    `scan`** - im Zweifel kein Export. Nur die Videodatei ist gesperrt; Vorschau
+    und Kino-Modus bleiben für jedes Buch offen (Vorlesen im eigenen Wohnzimmer).
+16. **Ein Knopf, ein Bereich:** Der Export sitzt in der Vorschau und nimmt
+    genau den Bereich und das Format, die dort zu sehen sind. Damit gibt es
+    "diese Seite als Video" (Reader) und "ganzes Buch als Film" (Buch-Ansicht)
+    ohne zweiten Codeweg und ohne zweite Format-Auswahl.
+
+**Noch offen:**
+
+- **Ton in der Vorschau.** Sie bleibt stumm (und sagt das). Der Zeitplan kann
+  echten Ton, aber die Vorschau würde dafür Kontingent verbrauchen; wer den Ton
+  hören will, exportiert. Wenn es doch kommen soll: Wiedergabe an
+  `audio.currentTime` hängen statt an die eigene Uhr.
+- **Metadaten-Ansage für die Titelkarte** (Titel/Autor, siehe
   `app.tts._buildMetadataAnnouncements()`): `renderPageSegments()` kennt sie
-  nicht, die Titelkarte läuft deshalb bisher stumm mit fester Länge.
-- Kreuzblende zwischen zwei Szenen (im Kino-Modus vorhanden, im Renderer
-  noch nicht - der Szenenwechsel ist ein harter Schnitt).
-- `VideoEncoder`/`AudioEncoder` + Muxer, OPFS-Ausgabe, Fähigkeiten-Prüfung
-  (`VideoEncoder.isConfigSupported()`) und das Ausblenden des Knopfes, wo es
-  nicht geht - alles wie in 4.3/4.5 beschrieben.
-- Höhere Bildauflösung (`videoUrl`, ~2560 px) bleibt wie in 4.5 offen; mit
+  nicht, die Titelkarte läuft deshalb stumm mit fester Länge.
+- **`showSaveFilePicker()`** auf Chrome-Desktop (spart das Kopieren aus dem
+  OPFS in den Download-Ordner). Bewusst weggelassen: der Aufruf braucht eine
+  frische Nutzer-Geste, die nach der Rückfrage und dem Ton-Sammeln nicht mehr
+  sicher vorhanden ist.
+- **Höhere Bildauflösung** (`videoUrl`, ~2560 px) wie in 4.5 beschrieben; mit
   1600 px Vorlage und 1,12-fachem Zoom sieht 1080p bisher vertretbar aus.
+- **Emoji-Sticker und Quiz-Denkpause** aus der Regie-Liste in Abschnitt 3 -
+  die Rätselfrage ist als Häppchen zuschaltbar, hat aber noch keine eigene
+  Karte mit Denkpause.
 
 ---
 
@@ -514,8 +555,9 @@ eigenen Wohnzimmer und damit unkritisch.
    (siehe Nachtrag in Abschnitt 3).
 3. ~~**Hörbuch-Export**~~ **✅ erledigt** - fast geschenkt, die Bausteine aus Schritt 1
    standen bereits bereit.
-4. **Video-Export via WebCodecs (Weg B)** - opt-in, mit Fähigkeitsprüfung, nur für
-   `origin: 'authored'`. Konkreter Bauplan: Abschnitt 4.6.
+4. ~~**Video-Export via WebCodecs (Weg B)**~~ **✅ erledigt (v0.15.0/v0.16.0-beta)** -
+   opt-in, mit Fähigkeitsprüfung (Codec-Leiter), nur für `origin: 'authored'`, Ausgabe
+   über OPFS. Renderer, Zeitplan, Vorschau und Export: Abschnitt 4.7.
 5. **Schreiben + Comic** - eigenes Projekt, eigene Abstimmung, deutlich größer als 1-4
    zusammen. Details: `KONZEPT-SchreibZauber.md`, `KONZEPT-Comic.md`.
 
@@ -524,8 +566,12 @@ eigenen Wohnzimmer und damit unkritisch.
 beschreibung/Quiz abwählbar, Seiten mit `excluded` werden übersprungen).
 Die Segmente werden über `AudioContext`/`OfflineAudioContext` neu gerendert statt
 per Blob-Concat zusammengefügt - Begründung dafür direkt im Code (unterschiedliche
-Container/Abtastraten je Anbieter). Der nächste sinnvolle Schritt ist **4
-(Video-Export)** - der baut direkt auf denselben KI-Stimmen-Bausteinen auf.
+Container/Abtastraten je Anbieter). **Stand 18.09.2026:** Auch Schritt 4 ist erledigt - der Video-Export
+liefert eine MP4-Datei für eine Einzelseite wie fürs ganze Buch
+(`js/actions/videoExport.js`), und er baut wie vorhergesagt vollständig auf den
+KI-Stimmen-Bausteinen auf, ohne dass dort etwas geändert werden musste. Damit ist
+von 1-4 alles gebaut; offen bleibt nur noch Schritt **5 (Schreiben + Comic)** plus
+die Restpunkte am Ende von Abschnitt 4.7.
 
 ---
 

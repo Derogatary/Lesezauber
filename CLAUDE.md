@@ -94,14 +94,15 @@ import './actions/meineNeueDatei.js';
 | `js/render/progress.js` | Fortschrittsbalken, Erledigt-Knopf, Belohnungs-Banner |
 | `js/render/cinema.js` | Video-Export Weg B, Teil 1: der Canvas-Renderer (`app.cinema`). Zeichnet EINEN Frame zu einem Zeitpunkt t - Seitenbild mit Ken-Burns plus Untertitel-Balken mit mitlaufender Wort-Hervorhebung. Verwaltet absichtlich keine Zeit und spielt nichts ab |
 | `js/actions/videoTimeline.js` | Der Zeitplan/die "Regie" dazu (`app.cinema.buildTimeline`): welche Szene über welchem **Seitenbereich** wann läuft. Nimmt echte Sprach-Segmente aus `renderPageSegments()` entgegen, schätzt die Längen sonst aus der Textlänge |
-| `js/actions/videoPreview.js` | Film-Vorschau ("🎬 Film"): spielt den Zeitplan in Echtzeit auf einem sichtbaren Canvas ab. Noch stumm, erzeugt noch keine Datei - und synthetisiert bewusst nichts |
+| `js/actions/videoPreview.js` | Film-Vorschau ("🎬 Film"): spielt den Zeitplan in Echtzeit auf einem sichtbaren Canvas ab. Bewusst stumm und ohne jede Synthese - kostet also nichts |
+| `js/actions/videoExport.js` | Video-Export Weg B, Teil 2: Ton aus `renderPageSegments()`, Frames per `VideoEncoder`, Ton per `AudioEncoder`, Datei per `mp4-muxer` über OPFS. Codec-Leiter statt festem Codec, Fortschritt + Abbruch, Größenschätzung vorab. **Nur bei `origin: 'authored'`** |
 | `js/studio/studioCore.js` | SchreibZauber: `app.studio`-Projekt-CRUD, Stufen-Logik (Idee/Bauplan/Geschichte), Platzhalter-Aufruf pro Doppelseite |
 | `js/studio/studioPrompts.js` | SchreibZauber: alle Prompt-Bausteine inkl. `guardrailsBlock()` (Veröffentlichungs-Leitplanken, siehe Entscheidung 6) |
 | `js/studio/studioApi.js` | SchreibZauber: eigener Gemini/Mistral-Textaufruf fürs Manuskript (gleiche Keys wie `js/api.js`, aber getrennte Funktionen) |
 | `js/studio/studioExport.js` | SchreibZauber: Projekt → normales Buch in `app.library` ("Ins Regal stellen") |
 | `js/studio/imageFormats.js`, `placeholder.js`, `imageSource.js` | SchreibZauber: Bildformat-Katalog, Platzhalter-Erzeugung, Bildquellen-Adapter (`{full, thumb, meta}`) - Details `docs/KONZEPT-Bildquellen.md` |
 | `js/render/studioLibrary.js`, `render/studioWizard.js` | SchreibZauber: Werkstatt-Übersicht bzw. die Stufen-Ansicht |
-| `js/vendor/` | PDF.js und JSZip - NIE direkt bearbeiten, nur austauschen/aktualisieren |
+| `js/vendor/` | PDF.js, JSZip und mp4-muxer (MIT, für den Video-Export) - NIE direkt bearbeiten, nur austauschen/aktualisieren. Alle drei werden lazy geladen und stehen deshalb NICHT in der `APP_SHELL` von `sw.js` |
 | `sw.js` | Service Worker - **`CACHE_NAME`-Version bei jeder Datei-Änderung hochzählen**, neue Dateien zur `APP_SHELL`-Liste hinzufügen |
 
 ## Datenmodell (zentral, viel hängt davon ab)
@@ -113,6 +114,12 @@ import './actions/meineNeueDatei.js';
   coverPageId,       // Seiten-ID (nicht Index!) des gewählten Covers (nur Anzeige, Bibliotheks-Thumbnail)
   bookType,          // 'story' (Standard) | 'workbook' - fehlt bei alten Büchern,
                      // IMMER über app.utils.resolveBookType(book) lesen
+  origin,            // 'scan' (abfotografiert/importiert) | 'authored' (SchreibZauber) -
+                     // fehlt bei alten Büchern, IMMER über app.utils.resolveBookOrigin(book)
+                     // lesen. Steuert NUR den Video-Export: eine weitergegebene Videodatei
+                     // eines fremden Kinderbuchs wäre eine Vervielfältigung, deshalb gilt
+                     // alles ohne ausdrückliches 'authored' als 'scan' (siehe
+                     // docs/KONZEPT-Video.md, Abschnitt 7)
   publisher, series, // optional: von der KI auf der Titelseite erkannt (siehe analyzePage)
   titlePageId, backCoverPageId, tocPageId, authorBioPageId,  // optional: Seiten-IDs, manuell
                      // per "Seiten-Rollen" markiert (siehe app.actions.setPageRole) - ersetzen die
@@ -232,7 +239,7 @@ Nutzer, nicht einfach lospreschen):
 
 | Vorhaben | Konzept |
 |---|---|
-| 🎬 Video-Export Teil 2: Ton im Film + Kodieren zur Datei (`WebCodecs` + MP4-Muxer). Der Renderer-Kern (Teil 1) ist gebaut, siehe `js/render/cinema.js` und Abschnitt 4.7 des Konzepts | [`docs/KONZEPT-Video.md`](docs/KONZEPT-Video.md) |
+| 🎬 Video: nur noch Restpunkte (Ton in der Vorschau, Ansage auf der Titelkarte, Quiz-Karte mit Denkpause, höhere Bildauflösung) - Renderer UND Export sind gebaut, siehe Abschnitt 4.7 des Konzepts | [`docs/KONZEPT-Video.md`](docs/KONZEPT-Video.md) |
 | 🪄 "SchreibZauber" - eigener Schreib-/Generierungs-Bereich für eigene Werke | [`docs/KONZEPT-SchreibZauber.md`](docs/KONZEPT-SchreibZauber.md), [`docs/KONZEPT-Bildquellen.md`](docs/KONZEPT-Bildquellen.md) |
 | 📝 Heft-Generator - Übungsblätter von der KI erstellen lassen | [`docs/KONZEPT-Uebungshefte.md`](docs/KONZEPT-Uebungshefte.md) |
 | 🎨 KI-generierte Illustrationen (Comic-Stil), für Text-only-EPUB-Kapitel UND als SchreibZauber-Werktyp | [`docs/KONZEPT-Comic.md`](docs/KONZEPT-Comic.md) |
@@ -279,14 +286,16 @@ Feste Regeln dabei:
 
 ## Versionsstand
 
-Aktuell `v0.15.0-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Zähl die Version bei größeren Änderungen entsprechend hoch (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).
+Aktuell `v0.16.0-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Zähl die Version bei größeren Änderungen entsprechend hoch (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).
 
-Seit v0.15.0-beta gibt es den **Renderer-Kern des Video-Exports** (Weg B, Teil 1):
-`js/render/cinema.js` + `js/actions/videoTimeline.js` + `js/actions/videoPreview.js`,
-eigener `app.cinema`-Namespace. Sichtbar als "🎬 Film"-Vorschau in der Buch-Ansicht bzw.
-"🎬 Film-Vorschau dieser Seite" im Reader - noch stumm und ohne Videodatei. Die dabei
-gefallenen Entscheidungen (9:16 als Standard, Untertitel in Blöcken, wer die dekodierten
-Bilder besitzt, warum die Vorschau nichts synthetisiert) stehen in
-`docs/KONZEPT-Video.md`, Abschnitt 4.7 - **vor dem Bau von Teil 2 dort nachlesen.**
+Seit v0.15.0/v0.16.0-beta ist der **Video-Export** gebaut (Weg B, Teil 1 + 2):
+`js/render/cinema.js` + `js/actions/videoTimeline.js` + `js/actions/videoPreview.js` +
+`js/actions/videoExport.js`, eigener `app.cinema`-Namespace, Muxer in
+`js/vendor/mp4muxer/`. Sichtbar als "🎬 Film"-Vorschau in der Buch-Ansicht bzw.
+"🎬 Film-Vorschau dieser Seite" im Reader; darin der Knopf "🎞️ Als Videodatei
+speichern" (nur bei `origin: 'authored'`). Alle dabei gefallenen Entscheidungen
+(9:16 als Standard, Untertitel in Blöcken, wer die dekodierten Bilder besitzt, warum
+die Vorschau stumm bleibt, Codec-Leiter, OPFS, Seiten-Rollen als Regie) stehen in
+`docs/KONZEPT-Video.md`, Abschnitt 4.7 - **vor jeder Arbeit daran dort nachlesen.**
 
 Seit v0.14.0-beta gibt es zusätzlich den **SchreibZauber**-Bereich (`js/studio/*`, `js/render/studio*.js`, eigener `app.studio`-Namespace, Object Store `projects` in `js/db.js`): eine Werkstatt, um eigene Kinderbuch-Werke von der KI schreiben zu lassen und als normales Buch "ins Regal zu stellen". Stufe 1 (Fundament: Idee → Bauplan → Geschichte, nur Platzhalter-Bilder, kein einziger Bildaufruf) ist gebaut - Hintergrund, Datenmodell und wo die nächsten Ausbaustufen andocken: `docs/KONZEPT-SchreibZauber.md`.

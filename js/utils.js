@@ -99,6 +99,19 @@ Object.assign(app.utils, {
         return app.bookTypes.some(t => t.id === type) ? type : 'story';
     },
 
+    // NEU: Herkunft eines Buches sicher lesen ('scan' | 'authored').
+    // Wofür: Der Video-Export ist laut docs/KONZEPT-Video.md Abschnitt 7
+    // nur bei SELBST GESCHRIEBENEN Büchern unproblematisch - ein
+    // exportiertes und weitergegebenes Video eines abfotografierten fremden
+    // Kinderbuchs wäre eine Vervielfältigung. Alles ohne ausdrückliches
+    // 'authored' gilt deshalb bewusst als 'scan': Bücher aus der Zeit vor
+    // diesem Feld kennen es nicht, und im Zweifel ist "kein Export" die
+    // richtige Antwort. Der Kino-Modus und die Film-VORSCHAU bleiben davon
+    // unberührt - das ist Vorlesen im eigenen Wohnzimmer.
+    resolveBookOrigin(book) {
+        return (book && book.origin === 'authored') ? 'authored' : 'scan';
+    },
+
     // NEU: baut aus einer KI-Antwort den Varianten-Datensatz einer Seite.
     // Liegt bewusst hier und nicht im Scanner: die Hintergrund-Vorbereitung
     // (backgroundPregen.js) braucht exakt dieselbe Umrechnung, und zwei

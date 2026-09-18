@@ -39,6 +39,7 @@ import './actions/audiobookExport.js';
 import './render/cinema.js';
 import './actions/videoTimeline.js';
 import './actions/videoPreview.js';
+import './actions/videoExport.js';
 
 // NEU: SchreibZauber (Werkstatt für eigene Werke) - siehe
 // docs/KONZEPT-SchreibZauber.md. studioCore.js importiert seinerseits
