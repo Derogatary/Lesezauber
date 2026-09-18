@@ -59,28 +59,49 @@ async function callMistralText(prompt) {
     return parseModelJson(textResult);
 }
 
+// NEU (Stufe 2): gemeinsame Gemini-zuerst-dann-Mistral-Fallback-Logik war
+// bisher in generateManuscript() fest eingebaut - jetzt als eigene
+// Funktion, damit suggestCharacters()/suggestSketches() sie mitbenutzen
+// können, statt den Fallback zweimal zu duplizieren.
+async function callTextWithFallback(prompt, fallbackToastMsg) {
+    try {
+        return await callGeminiText(prompt);
+    } catch (geminiError) {
+        if (!app.settings.mistralApiKey) throw geminiError;
+
+        console.warn('Gemini fehlgeschlagen, versuche Mistral-Fallback:', geminiError.message);
+        try {
+            const result = await callMistralText(prompt);
+            app.ui.toast(fallbackToastMsg, '🔄');
+            return result;
+        } catch (mistralError) {
+            console.error('Auch Mistral-Fallback fehlgeschlagen:', mistralError);
+            throw geminiError;
+        }
+    }
+}
+
 Object.assign(app.studio, {
     api: {
         // brief/spec: siehe js/studio/studioCore.js (createDefaultProject).
         // Rückgabe: { title, spreads: [{text, pageTurnHook}] }
         async generateManuscript(brief, spec) {
             const prompt = app.studio.prompts.buildManuscriptPrompt(brief, spec);
+            return callTextWithFallback(prompt, 'Gemini nicht erreichbar - Mistral eingesprungen');
+        },
 
-            try {
-                return await callGeminiText(prompt);
-            } catch (geminiError) {
-                if (!app.settings.mistralApiKey) throw geminiError;
+        // Stufe 4 – Figuren-Steckbriefe aus dem Manuskript ableiten.
+        // Rückgabe: { characters: [{name, role, age, kind, look, clothing, colors, quirk}] }
+        async suggestCharacters(project) {
+            const prompt = app.studio.prompts.buildSuggestCharactersPrompt(project);
+            return callTextWithFallback(prompt, 'Gemini nicht erreichbar - Mistral eingesprungen (Figuren)');
+        },
 
-                console.warn('Gemini fehlgeschlagen, versuche Mistral-Fallback:', geminiError.message);
-                try {
-                    const result = await callMistralText(prompt);
-                    app.ui.toast('Gemini nicht erreichbar - Mistral eingesprungen', '🔄');
-                    return result;
-                } catch (mistralError) {
-                    console.error('Auch Mistral-Fallback fehlgeschlagen:', mistralError);
-                    throw geminiError;
-                }
-            }
+        // Stufe 5 – Bildideen (Stichworte) fürs Storyboard, AUSDRÜCKLICH
+        // ohne Bildaufruf (Konzept D.4). Rückgabe: { sketches: ["...", ...] }
+        async suggestSketches(project) {
+            const prompt = app.studio.prompts.buildSuggestSketchesPrompt(project);
+            return callTextWithFallback(prompt, 'Gemini nicht erreichbar - Mistral eingesprungen (Bildideen)');
         }
     }
 });

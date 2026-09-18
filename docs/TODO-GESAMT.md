@@ -136,7 +136,7 @@ Der größte Brocken im Projekt - dafür in Stufen geschnitten, die **einzeln li
 |---|---|---|
 | **Comic: zweiter Testlauf** | **S** | Ein Testbild hat zwei Prompt-Probleme aufgedeckt; der korrigierte Wortlaut ist noch nicht erprobt. Steht vor allem Weiteren |
 | ~~**SchreibZauber Stufe 1 - Fundament**~~ | **L** | ✅ **erledigt** - Datenmodell, **DB v4**, Werkstatt-Übersicht, Idee/Bauplan/Geschichte, Platzhalter-Bilder, Export „ins Regal". `js/studio/*` ist seither in `js/main.js`/`sw.js` verdrahtet |
-| **SchreibZauber Stufe 2 - Bilder** | **L** | Stilkarte, Figuren-Bibel, Storyboard, Bildgenerierung, Kostenzähler. Ab hier kostet es echtes Geld - braucht vorher die Zahlungsmethode-Klärung aus `KONZEPT-SchreibZauber.md`, TEIL G, Punkt 1 |
+| ~~**SchreibZauber Stufe 2 - Bilder**~~ | **L** | ✅ **erledigt** - Stilkarte, Figuren-Bibel (inkl. KI-Vorschlag), Storyboard/Daumenkino (inkl. KI-Bildideen, verschieben/zusammenfassen/löschen), Bildgenerierung pro Doppelseite, Kostenzähler. Läuft weiterhin komplett über die kostenlose Platzhalter-Quelle - die echte Gemini-Bildgenerierung ist gebaut (`imageSource.js`, Quelle `gemini`), aber bewusst hinter einer expliziten Bestätigung in den Einstellungen (`app.settingsConfig.toggleStudioImageGen`), bis die Zahlungsmethode-Frage aus `KONZEPT-SchreibZauber.md` TEIL G Punkt 1 beantwortet ist. Details: Abschnitt „Stand nach Stufe 2" im Konzept |
 | **SchreibZauber Stufe 3 - Layout & Druck** | **M** | Textplatzierung, Silbenfarben, Doppelseiten-Druck. **Gleich druckfertige Exportformate mitdenken** (KDP-taugliche PDF/Auflösung/Bleed, Entscheidung 6) |
 | **SchreibZauber Stufe 4 - Arbeitsheft** | **L** | Lernziel, Progression, Aufgabenbaukasten, Lösungsteil |
 | **SchreibZauber Stufe 5 - Comic** | **L** | Panel-Layouts, Sprechblasen-Overlay |
@@ -144,14 +144,14 @@ Der größte Brocken im Projekt - dafür in Stufen geschnitten, die **einzeln li
 | **Comic-Generator-Werkzeug** | **L** | Bewusst **kein** App-Feature: eigenes Node-Werkzeug lokal beim Betreiber (`tools/comic-gen/`), weil Browser nur CORS-fähige Bild-Anbieter erreichen |
 
 **✅ Bedingung erfüllt: Stufe 1 ist gebaut und in `main`.** Damit ist die im Konzept
-genannte Voraussetzung für die parallelen Werktyp-Pfade erfüllt - **Stufe 2+3 (Bilderbuch)
-und Stufe 4 (Arbeitsheft) sind jetzt mit mehreren gleichzeitigen Claude-Code-Sitzungen
-startbar**, siehe `docs/KONZEPT-SchreibZauber.md`, Abschnitt „Stand nach Stufe 1" für die
-konkreten Andockpunkte (`app.studio.projects[id]`-Schema, `imageSource.providers`,
-`guardrailsBlock()`, `computeSpec()`/`trimToFormat()`, `projectTypes`). Einziger noch
-offener Blocker für Stufe 2 (echte Bildgenerierung): die Zahlungsmethode-Frage aus TEIL G,
-Punkt 1 - Stufe 3 (Layout/Druck) und Stufe 4 (Arbeitsheft) sind davon nicht betroffen und
-können unabhängig davon starten.
+genannte Voraussetzung für die parallelen Werktyp-Pfade erfüllt - **Stufe 2 (Bilder) ist
+jetzt ebenfalls fertig gebaut** (eigener Branch `claude/schreibzauber-stufe2-bilder`, noch
+nicht in `main` gemergt), parallel dazu lief eine zweite Sitzung an Stufe 4 (Arbeitsheft) -
+siehe `docs/KONZEPT-SchreibZauber.md`, Abschnitt „Stand nach Stufe 2" für die konkreten
+Andockpunkte für Stufe 3 (Layout & Druck). Einziger noch offener Punkt aus Stufe 2: die
+Zahlungsmethode-Frage aus TEIL G, Punkt 1 - bis dahin bleibt die echte Gemini-Bildgenerierung
+hinter der expliziten Bestätigung in den Einstellungen, die App funktioniert vollständig mit
+der kostenlosen Platzhalter-Quelle.
 
 ---
 

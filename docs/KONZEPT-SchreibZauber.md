@@ -652,6 +652,96 @@ Bildidee pro Doppelseite (kommt erst mit dem Storyboard-Schritt in Stufe 2).
 
 ---
 
+## Stand nach Stufe 2 (Bilder) - was steht, wo dockt Stufe 3 (Layout & Druck) an
+
+Stufe 2 ist gebaut (Branch `claude/schreibzauber-stufe2-bilder`, noch nicht in `main`
+gemergt - parallel dazu lief eine zweite, unabhängige Sitzung an Stufe 4/Arbeitsheft
+auf demselben `main`-Stand, siehe CLAUDE.md "Arbeitsschritt-Varianten bei mehreren
+parallelen Aufträgen"). Umgesetzt genau die vier in TEIL E für Stufe 2 genannten
+Bausteine, alle über die bereits vorhandene Bildquellen-Schicht (`imageSource.js`)
+und damit **weiterhin komplett ohne einen einzigen kostenpflichtigen Bildaufruf**,
+solange die Bestätigung in den Einstellungen nicht gesetzt ist:
+
+- **Stilkarte** (`project.style`) - eigenes Formular in der neuen Wizard-Stufe 4
+  ("Die Figuren"), `app.studio.buildStyleText()` (studioCore.js) baut daraus den
+  Textblock, der in JEDEN Bild-Prompt einfließt (Figurenblatt UND Doppelseite).
+- **Figuren-Bibel** (`project.characters[]`) - Steckbrief-Formular (Name, Rolle,
+  Alter, Art, Aussehen, Kleidung, drei Farbwerte, Eigenart) plus Figurenblatt-Bild
+  im Format `characterSheet`. Zusätzlich `app.studio.suggestCharacters()` - leitet
+  Vorschläge aus dem bereits geschriebenen Manuskript ab (reiner Text, kein
+  Bildaufruf), Figurenblatt-Bild entsteht danach weiterhin einzeln.
+- **Storyboard/Daumenkino** = neue Wizard-Stufe 5 (`js/studio/studioStoryboard.js`,
+  `js/render/studioStoryboard.js`): Miniatur-Raster mit Text-Auszug + Bildidee
+  (`spread.sketchPrompt`), verschieben (Tausch mit Nachbar statt Drag&Drop - robuster
+  auf dem Handy), zusammenfassen, löschen (bestehendes `deleteSpread()` wiederverwendet).
+  `app.studio.suggestSketches()` schlägt Bildideen für alle Doppelseiten auf einmal vor,
+  ausdrücklich als reiner Text-Aufruf ohne Bildgenerierung (Konzept D.4).
+- **Bildgenerierung** = neue Wizard-Stufe 6 (`js/studio/studioImages.js`,
+  `js/render/studioImages.js`): `app.studio.generateSpreadImage()` erzeugt EIN Bild
+  einer Doppelseite, einzeln anstoßbar, nie automatisch fürs ganze Buch (gleiche
+  Zurückhaltung wie beim Persona-System). "Figur veraltet": ändert sich ein
+  Figurenblatt NACH bereits generierten (nicht-Platzhalter-)Seiten, werden nur
+  `spread.imageStale` gesetzt und ein "🔄 Neu zeichnen"-Knopf angeboten - KEINE
+  automatische Neugenerierung (`regenerateCharacterSheet()` in studioCharacters.js).
+  `app.studio.replaceAllPlaceholders()` läuft über alle Seiten mit
+  `imageMeta.source === 'placeholder'` und schickt GENAU den dort bereits
+  gespeicherten Prompt (`spread.imagePrompt`) an die echte Quelle - kein neu
+  erdachter Prompt (`spec.rawPrompt` in `imageSource.js`).
+- **Kostenzähler** (`project.costLog`) - `app.studio.trackImageCost()` (studioCore.js)
+  zählt NUR echte Bildaufrufe (Quelle `'gemini'`, GESCHÄTZT 0,07 $/Bild wie in C.2),
+  der kostenlose Platzhalter bleibt bei 0. Sichtbar in der Werkstatt-Übersicht
+  (`js/render/studioLibrary.js`) und in der Bilder-Stufe selbst.
+
+**Die echte Bildgenerierung ist gebaut, aber bewusst nicht scharf**: `imageSource.js`
+hat jetzt einen `gemini`-Eintrag in `providers` (Modell `gemini-3.1-flash-image`,
+Referenzbilder der auf der Seite vorkommenden Figuren als `inlineData`-Teile, siehe
+D.5 #1/#4). `app.studio.resolveImageSourceId()` (studioCore.js) ist die EINZIGE
+Weiche, die je `'gemini'` statt `'placeholder'` zurückgibt - und das nur, wenn
+`app.settings.studioImageGenEnabled` gesetzt ist. Diese Einstellung (Einstellungen →
+"🪄 Echte KI-Bilder in der Werkstatt", `app.settingsConfig.toggleStudioImageGen()`)
+ist standardmäßig AUS und verlangt beim Einschalten eine Bestätigung per `confirm()`
+(Kostenhinweis + Zahlungsmethode-Hinweis) - **die Zahlungsmethode-Frage aus TEIL G
+Punkt 1 war beim Bau dieser Stufe weiterhin nicht beantwortet.** Sobald sie es ist,
+reicht das Einschalten dieser einen Einstellung, kein Code muss dafür angefasst werden.
+
+`app.studio.prompts.guardrailsBlock()` steckt jetzt zusätzlich in JEDEM Bild-Prompt
+(`imageSource.js buildPrompt()`, wörtlich unverändert übernommen wie in den beiden
+neuen Text-Prompts `buildSuggestCharactersPrompt()`/`buildSuggestSketchesPrompt()`
+in `studioPrompts.js`) - nicht nur in Text-Prompts wie bisher.
+
+**Was die Wizard-Stufen jetzt bedeuten** (Konzept C.2 nennt 8 Stufen, die App-Stufen
+1-6 sind jetzt gebaut): 1 Idee, 2 Bauplan, 3 Geschichte, 4 Figuren (Stilkarte +
+Figuren-Bibel), 5 Daumenkino/Storyboard, 6 Bilder. `project.stage` bleibt wie in
+Stufe 1 "wie weit am WEITESTEN gekommen", `app.studio.advanceStage(n)` ist der neue,
+generische Weiterschalter für die Stufen 4/5/6 (kein Pflichtfeld wie bei
+Idee/Bauplan, "die KI ist Vorschlag, nie Zwang" gilt auch hier - leer weiterschalten
+ist erlaubt). "Ins Regal stellen" bleibt bewusst überall erreichbar (Stufe 3 UND 6),
+nicht erst nach Stufe 6 gesperrt - ein reiner Text-Bilderbuch-Export ohne eigene
+Bilder soll weiterhin möglich bleiben (Stufe 1 sollte ja gerade OHNE Bilder
+vollständig sein).
+
+**Was die nächste Sitzung (Stufe 3 - Layout & Druck) vorfindet:**
+- `project.spreads[].imagePrompt`/`imageMeta`/`imgUrl`/`thumbUrl` sind jetzt
+  tatsächlich befüllt (nicht mehr nur reserviert wie nach Stufe 1) - Layout kann auf
+  echten (oder Platzhalter-)Bildern aufbauen.
+- `project.spreads[].layout` (`textPos`, `fontScale`, `syllableColors`) existiert
+  bereits seit Stufe 1 mit Standardwerten, ist aber noch nirgends editierbar - das
+  ist genau die Lücke, die Stufe 3 füllt.
+- `app.studio.computeSpec()`/`trimToFormat()` (studioCore.js) bleiben weiterhin die
+  einzigen Stellen, die Umfangsplanung und Papierform kennen - Stufe 3 sollte hier
+  andocken statt eigene Umrechnungen zu bauen (unverändert seit Stufe 1).
+- KDP-taugliche Exportformate (300 dpi, Bleed, PDF) aus dem Nachtrag "Veröffentlichung
+  von Anfang an mitdenken" sind weiterhin offen und noch nicht verifiziert (TEIL F).
+
+Bewusst NICHT in Stufe 2 enthalten (folgt mit den jeweiligen Ausbaustufen): Layout/
+Textplatzierung auf dem fertigen Bild, Silbenfarben-Darstellung, Erstleser-Regelprofil
+fürs Bild, Doppelseiten-Druck, "🎲 Nochmal"-Varianten (D.5 #5, max. 3 Alternativen
+pro Seite), Seed-artige Wiederverwendung des vorherigen Bilds derselben Figur als
+zusätzliche Referenz (D.5 #3) - beides wären sinnvolle Ergänzungen, aber kein
+Blocker für ein vollständiges erstes selbst gemachtes Bilderbuch.
+
+---
+
 ## Quellen
 
 Bilderbuch- und Verlagsworkflow:

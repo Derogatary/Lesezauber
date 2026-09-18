@@ -1,9 +1,14 @@
 import { app } from '../core.js';
 
 // ================= SchreibZauber: Die Werkstatt-Stufen =================
-// Bildet Stufe 1-3 aus docs/KONZEPT-SchreibZauber.md (C.2) als Ansicht ab:
+// Bildet Stufe 1-6 aus docs/KONZEPT-SchreibZauber.md (C.2) als Ansicht ab:
 // 1. Die Idee (Exposé) -> 2. Der Bauplan (Umfangsplanung) -> 3. Die
-// Geschichte (Manuskript + Text-Breakdown auf Doppelseiten).
+// Geschichte (Manuskript + Text-Breakdown auf Doppelseiten) -> 4. Die
+// Figuren (Stilkarte + Figuren-Bibel) -> 5. Das Daumenkino (Storyboard) ->
+// 6. Die Bilder. Dieses Modul bleibt bewusst nur der STUFEN-UMSCHALTER -
+// die Füll-Logik der neuen Stufen 4-6 liegt in eigenen Dateien
+// (js/render/studioCharacters.js/studioStoryboard.js/studioImages.js),
+// gleiches Muster wie Bibliothek/Buch-Ansicht.
 //
 // WICHTIG (siehe CLAUDE.md, Sanity-Check 2): alle Formularfelder mit fester
 // ID stehen STATISCH in index.html, genau wie bei den Einstellungen
@@ -22,7 +27,10 @@ let openProjectId = null;
 let activeStage = 1;
 
 function updateStepper(project) {
-    [1, 2, 3].forEach(n => {
+    // NEU (Stufe 2): drei weitere Stufen (4 Figuren, 5 Storyboard, 6 Bilder)
+    // dazugekommen - Layout & Druck (7) und Fertig (8) bleiben spätere
+    // Ausbaustufen, siehe docs/KONZEPT-SchreibZauber.md TEIL E.
+    [1, 2, 3, 4, 5, 6].forEach(n => {
         const btn = document.getElementById(`studioStep${n}`);
         if (!btn) return;
         const reached = n <= project.stage;
@@ -79,8 +87,8 @@ function fillStoryStage(project) {
 
 Object.assign(app.render, {
     // forceStage: optional - springt gezielt zu einer bereits erreichten
-    // Stufe (siehe app.studio.saveBrief/saveSpec/generateStory, die nach
-    // dem Speichern jeweils zur nächsten Stufe weiterschalten).
+    // Stufe (siehe app.studio.saveBrief/saveSpec/generateStory/advanceStage,
+    // die nach dem Speichern jeweils zur nächsten Stufe weiterschalten).
     studioWizard(forceStage) {
         const project = app.studio.projects[app.state.currentStudioProjectId];
         if (!project) {
@@ -100,10 +108,20 @@ Object.assign(app.render, {
         document.getElementById('studioStageBrief').classList.toggle('hidden', activeStage !== 1);
         document.getElementById('studioStageSpec').classList.toggle('hidden', activeStage !== 2);
         document.getElementById('studioStageStory').classList.toggle('hidden', activeStage !== 3);
+        // NEU (Stufe 2): drei weitere Stufen-Abschnitte, ihre Füll-Logik
+        // liegt (wie Bibliothek/Buch-Ansicht sonst auch) in eigenen
+        // Render-Dateien statt hier - dieses Modul bleibt der reine
+        // Stufen-Umschalter.
+        document.getElementById('studioStageCharacters').classList.toggle('hidden', activeStage !== 4);
+        document.getElementById('studioStageStoryboard').classList.toggle('hidden', activeStage !== 5);
+        document.getElementById('studioStageImages').classList.toggle('hidden', activeStage !== 6);
 
         if (activeStage === 1) fillBriefStage(project);
         else if (activeStage === 2) fillSpecStage(project);
-        else fillStoryStage(project);
+        else if (activeStage === 3) fillStoryStage(project);
+        else if (activeStage === 4) app.render.studioCharacters(project);
+        else if (activeStage === 5) app.render.studioStoryboard(project);
+        else app.render.studioImages(project);
     },
 
     // Liest das Bauplan-Formular aus und aktualisiert NUR die Vorschau

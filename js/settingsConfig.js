@@ -126,6 +126,28 @@ Object.assign(app.settingsConfig, {
         localStorage.setItem('lz_tts_persona_style', enabled ? '1' : '0');
     },
 
+    // NEU (SchreibZauber Stufe 2, docs/KONZEPT-SchreibZauber.md TEIL G
+    // Punkt 1): echte KI-Bildgenerierung kostet Geld und braucht eine
+    // hinterlegte Zahlungsmethode am Google-Konto - deshalb hinter einer
+    // ausdrücklichen Bestätigung, nicht automatisch mit dem vorhandenen
+    // Gemini-Key aktiv. Gleiche Haltung wie der Tarif-Lock oben: kein
+    // Passwort, keine harte Sperre, nur ein bewusstes Ja vor dem ersten
+    // kostenpflichtigen Aufruf.
+    toggleStudioImageGen(enabled) {
+        if (app.utils.isSettingsLockedForActiveProfile()) return;
+        if (enabled) {
+            const ok = confirm('Echte KI-Bilder in der Werkstatt kosten Geld (grob 0,07 $ pro Bild) und brauchen eine hinterlegte Zahlungsmethode am Google-Konto hinter deinem Gemini-Key - ohne Zahlungsmethode schlägt jeder Versuch mit einer Fehlermeldung fehl (Platzhalter funktionieren immer, kostenlos).\n\nWirklich aktivieren?');
+            if (!ok) {
+                const toggle = document.getElementById('toggleStudioImageGen');
+                if (toggle) toggle.checked = false;
+                return;
+            }
+        }
+        app.settings.studioImageGenEnabled = enabled;
+        localStorage.setItem('lz_studio_image_gen', enabled ? '1' : '0');
+        app.ui.toast(enabled ? 'Echte Bildgenerierung aktiviert' : 'Echte Bildgenerierung wieder ausgeschaltet', enabled ? '🎨' : '⏸️');
+    },
+
     // NEU: Probe-Anhören. Speichert vorher den eingetippten Key, damit man
     // ihn zum Testen nicht erst separat speichern muss.
     testTtsVoice() {

@@ -677,7 +677,7 @@
                 <h1 class="text-lg font-bold text-slate-900">🪄 SchreibZauber</h1>
                 <div class="w-8"></div>
             </header>
-            <p class="text-xs text-slate-500 font-semibold mb-4 text-center px-4">Eigene Geschichten schreiben lassen - von der Idee bis ins Bücherregal. (Noch ohne eigene Bilder - dafür mit Platzhaltern.)</p>
+            <p class="text-xs text-slate-500 font-semibold mb-4 text-center px-4">Eigene Geschichten schreiben lassen - von der Idee bis ins Bücherregal, inklusive Figuren, Storyboard und Bildern. (Bilder starten als kostenlose Platzhalter - echte KI-Bilder lassen sich in den Einstellungen bestätigen.)</p>
 
             <div class="mb-5">
                 <p class="text-[11px] font-bold text-slate-500 mb-2 px-1">Neues Werk beginnen:</p>
@@ -705,10 +705,14 @@
                 <div class="w-8 flex-shrink-0"></div>
             </header>
 
-            <div class="flex gap-1.5 mb-5">
+            <div class="flex gap-1.5 mb-5 overflow-x-auto">
                 <button id="studioStep1" onclick="app.render.studioWizard(1)" class="flex-1 text-[11px] font-bold py-2 rounded-xl border transition">💡 Idee</button>
                 <button id="studioStep2" onclick="app.render.studioWizard(2)" class="flex-1 text-[11px] font-bold py-2 rounded-xl border transition">📐 Bauplan</button>
                 <button id="studioStep3" onclick="app.render.studioWizard(3)" class="flex-1 text-[11px] font-bold py-2 rounded-xl border transition">✍️ Geschichte</button>
+                <!-- NEU (Stufe 2): Figuren, Storyboard, Bilder - siehe docs/KONZEPT-SchreibZauber.md TEIL E -->
+                <button id="studioStep4" onclick="app.render.studioWizard(4)" class="flex-1 text-[11px] font-bold py-2 rounded-xl border transition">🧑‍🎨 Figuren</button>
+                <button id="studioStep5" onclick="app.render.studioWizard(5)" class="flex-1 text-[11px] font-bold py-2 rounded-xl border transition">🎬 Daumenkino</button>
+                <button id="studioStep6" onclick="app.render.studioWizard(6)" class="flex-1 text-[11px] font-bold py-2 rounded-xl border transition">🎨 Bilder</button>
             </div>
 
             <!-- Stufe 1: Die Idee (Exposé) -->
@@ -797,7 +801,97 @@
                     <!-- Dynamic Doppelseiten get injected here -->
                 </div>
                 <button id="studioAddSpreadBtn" onclick="app.studio.addSpread()" class="w-full text-xs font-bold text-indigo-600 border border-dashed border-indigo-200 rounded-xl py-2.5 hover:bg-indigo-50 transition">+ Doppelseite von Hand hinzufügen</button>
+                <!-- NEU (Stufe 2): weiter zu Stilkarte + Figuren-Bibel, statt hier schon "fertig" zu sein -->
+                <button onclick="app.studio.advanceStage(4)" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl shadow-md transition">Weiter zu Stilkarte & Figuren ▶</button>
                 <button id="studioExportBtn" onclick="app.studio.exportToLibraryBook()" class="hidden w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl shadow-md transition">📖 Ins Regal stellen</button>
+            </section>
+
+            <!-- Stufe 4: Die Figuren (Stilkarte + Figuren-Bibel, Konzept C.3) -->
+            <!-- NEU (Stufe 2): alle Eingabefelder starten LEER im Markup und
+                 werden von js/render/studioCharacters.js per .value befüllt -
+                 siehe Kommentar dort, warum (kein Nutzertext in HTML-Attributen). -->
+            <section id="studioStageCharacters" class="space-y-4 hidden">
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 space-y-3">
+                    <h2 class="text-xs font-bold uppercase tracking-wider text-slate-500">🎨 Stilkarte <span class="normal-case font-normal text-slate-400">- gilt für jedes Bild dieses Werks</span></h2>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="text-xs font-bold text-slate-600 block mb-1">Stilrichtung</label>
+                            <select id="studioStyleLook" class="w-full text-sm bg-white border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500">
+                                <option value="aquarell">Aquarell</option>
+                                <option value="buntstift">Buntstift</option>
+                                <option value="comic">Comic</option>
+                                <option value="cutout">Cut-Out/Papercraft</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-slate-600 block mb-1">Linienstärke</label>
+                            <select id="studioStyleLineWeight" class="w-full text-sm bg-white border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500">
+                                <option value="weich">weich</option>
+                                <option value="kraeftig">kräftig</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-slate-600 block mb-1">Farbstimmung</label>
+                        <div class="flex gap-2">
+                            <input id="studioStyleColor1" type="color" class="w-12 h-10 rounded-lg border border-slate-200 cursor-pointer">
+                            <input id="studioStyleColor2" type="color" class="w-12 h-10 rounded-lg border border-slate-200 cursor-pointer">
+                            <input id="studioStyleColor3" type="color" class="w-12 h-10 rounded-lg border border-slate-200 cursor-pointer">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-slate-600 block mb-1">Zusätzlicher Stil-Hinweis (optional)</label>
+                        <textarea id="studioStyleExtraPrompt" rows="2" placeholder="z.B. verträumt, viele Details im Hintergrund" class="w-full text-sm bg-white border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500"></textarea>
+                    </div>
+                    <button onclick="app.render.studioCollectStyle()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl shadow-md transition text-sm">Stilkarte speichern</button>
+                </div>
+
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <h2 class="text-xs font-bold uppercase tracking-wider text-slate-500">🧑‍🎨 Figuren-Bibel</h2>
+                        <button onclick="app.studio.suggestCharacters()" class="text-xs font-bold text-indigo-600 hover:underline">🤖 Figuren vorschlagen</button>
+                    </div>
+                    <div id="studioCharacterEmptyState" class="hidden text-center py-8 text-slate-500 bg-white rounded-2xl border border-dashed border-slate-200 mb-2">
+                        <span class="text-3xl block mb-2">🧑‍🎨</span>
+                        <p class="text-xs font-semibold px-4">Noch keine Figur angelegt. Von Hand hinzufügen oder von der KI aus der Geschichte ableiten lassen.</p>
+                    </div>
+                    <div id="studioCharacterList" class="space-y-2"></div>
+                    <button onclick="app.studio.addCharacter()" class="w-full mt-2 text-xs font-bold text-indigo-600 border border-dashed border-indigo-200 rounded-xl py-2.5 hover:bg-indigo-50 transition">+ Figur von Hand hinzufügen</button>
+                </div>
+
+                <div class="flex gap-2">
+                    <button onclick="app.render.studioWizard(3)" class="flex-1 bg-white border border-slate-200 text-slate-600 font-bold py-3 rounded-xl hover:bg-slate-50 transition">◀ Zur Geschichte</button>
+                    <button onclick="app.studio.advanceStage(5)" class="flex-[2] bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl shadow-md transition">Weiter zum Daumenkino ▶</button>
+                </div>
+            </section>
+
+            <!-- Stufe 5: Das Daumenkino / Storyboard (Konzept C.2, "die Kostenbremse") -->
+            <section id="studioStageStoryboard" class="space-y-3 hidden">
+                <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-3 text-xs text-indigo-900">
+                    Hier wird nur die <strong>Bildidee</strong> pro Doppelseite festgelegt - noch ohne ein einziges echtes Bild. Reihenfolge/Zusammenfassen jetzt anpassen spart später teure Bildaufrufe.
+                </div>
+                <div class="flex justify-end">
+                    <button onclick="app.studio.suggestSketches()" class="text-xs font-bold text-indigo-600 hover:underline">🤖 Bildideen vorschlagen</button>
+                </div>
+                <div id="studioStoryboardList" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+                <div class="flex gap-2">
+                    <button onclick="app.render.studioWizard(4)" class="flex-1 bg-white border border-slate-200 text-slate-600 font-bold py-3 rounded-xl hover:bg-slate-50 transition">◀ Zu den Figuren</button>
+                    <button onclick="app.studio.advanceStage(6)" class="flex-[2] bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl shadow-md transition">Weiter zu den Bildern ▶</button>
+                </div>
+            </section>
+
+            <!-- Stufe 6: Die Bilder (Konzept C.2) -->
+            <section id="studioStageImages" class="space-y-3 hidden">
+                <p id="studioImageSourceHint" class="text-[11px] text-slate-500 bg-slate-50 border border-slate-200 rounded-xl p-3"></p>
+                <div class="flex items-center justify-between bg-white border border-slate-200 rounded-xl p-3">
+                    <span id="studioCostDisplay" class="text-xs font-bold text-slate-700"></span>
+                    <button id="studioReplacePlaceholdersBtn" onclick="app.studio.replaceAllPlaceholders()" class="hidden text-xs font-bold text-white bg-purple-600 hover:bg-purple-700 rounded-lg px-3 py-1.5 transition">✨ Alle Platzhalter ersetzen</button>
+                </div>
+                <div id="studioImageList" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+                <div class="flex gap-2">
+                    <button onclick="app.render.studioWizard(5)" class="flex-1 bg-white border border-slate-200 text-slate-600 font-bold py-3 rounded-xl hover:bg-slate-50 transition">◀ Zum Daumenkino</button>
+                    <button onclick="app.studio.exportToLibraryBook()" class="flex-[2] bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl shadow-md transition">📖 Ins Regal stellen</button>
+                </div>
             </section>
         </main>
 
@@ -898,6 +992,19 @@
                     </div>
                     <p class="text-[11px] text-slate-500">Erstellt automatisch fehlende Erzähler-Varianten und Buch-Quiz, wenn gerade nichts anderes läuft. Verbraucht zusätzliche KI-Anfragen im Hintergrund - bei knappem Tageslimit lieber ausgeschaltet lassen.</p>
                     <p id="pregenStatus" class="text-[11px] text-slate-500 font-semibold"></p>
+                </div>
+
+                <!-- NEU (SchreibZauber Stufe 2): echte Bildgenerierung ist bewusst
+                     NICHT der Standard - siehe docs/KONZEPT-SchreibZauber.md TEIL G
+                     Punkt 1 (Bild-Endpunkt braucht Zahlungsmethode am Google-Konto). -->
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-2">
+                    <div class="flex items-center justify-between">
+                        <label for="toggleStudioImageGen" class="text-xs font-bold uppercase tracking-wider text-slate-500">
+                            🪄 Echte KI-Bilder in der Werkstatt
+                        </label>
+                        <input id="toggleStudioImageGen" type="checkbox" onchange="app.settingsConfig.toggleStudioImageGen(this.checked)" class="w-5 h-5 accent-indigo-600">
+                    </div>
+                    <p class="text-[11px] text-slate-500">Solange ausgeschaltet, erzeugt SchreibZauber nur kostenlose Platzhalter-Bilder. Einschalten nutzt den echten Gemini-Bild-Endpunkt - der kostet Geld (grob 0,07 $ pro Bild) und braucht eine hinterlegte Zahlungsmethode am Google-Konto hinter deinem Gemini-Key.</p>
                 </div>
 
                 <!-- NEU: zweiseitiges Layout (Option) -->

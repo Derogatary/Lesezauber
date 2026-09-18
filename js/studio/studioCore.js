@@ -50,6 +50,76 @@ function trimToFormat(trim) {
     return trim === 'a5-quer' ? 'spreadLandscape' : 'pagePortrait';
 }
 
+// ===== Stufe 2 (Bilder): kleine, cross-cutting Hilfsfunktionen =====
+// Werden sowohl von studioCharacters.js (Figurenblatt) als auch von
+// studioImages.js (Doppelseiten-Bild) gebraucht - deshalb hier zentral
+// statt zweimal geschrieben, gleiche Begründung wie bei trimToFormat.
+
+// NEU: Klartext-Label je Stilrichtung (Konzept C.3 "Stilkarte") - fließt
+// in JEDEN Bild-Prompt (Figurenblatt UND Doppelseite) ein.
+const STYLE_LOOK_LABELS = {
+    aquarell: 'Aquarell, weiche Wasserfarben-Optik',
+    buntstift: 'Buntstiftzeichnung, sichtbare Strichführung',
+    comic: 'flächiger Comic-/Cartoon-Stil, klare Konturen',
+    cutout: 'Cut-Out/Papercraft-Optik, wie aus Papier ausgeschnitten'
+};
+
+// NEU: baut aus project.style EINEN Textblock für den Bild-Prompt - "als
+// wörtlich identischer Textblock in jedem Prompt" (Konzept D.5 #2), daher
+// eine einzige Funktion statt an jeder Aufrufstelle neu formuliert.
+function buildStyleText(style) {
+    if (!style) return '';
+    const parts = [
+        style.look ? `${STYLE_LOOK_LABELS[style.look] || style.look}.` : '',
+        `Linienführung: ${style.lineWeight === 'kraeftig' ? 'kräftige, klare Linien' : 'weiche, sanfte Linien'}.`,
+        (style.palette || []).filter(Boolean).length
+            ? `Farbpalette (durchgängig einhalten): ${style.palette.filter(Boolean).join(', ')}.`
+            : '',
+        style.extraPrompt ? style.extraPrompt.trim() : ''
+    ];
+    return parts.filter(Boolean).join(' ');
+}
+
+// NEU: welche Figuren-Referenzen zu einer Doppelseite gehören - liest
+// spread.characterIds und schlägt sie in project.characters nach. EIN Ort,
+// damit Storyboard-Vorschau, Bildgenerierung und "alle Platzhalter
+// ersetzen" garantiert dieselbe Auswahl sehen (Konzept D.5 #4: "nur die
+// Figuren referenzieren, die auf der Seite vorkommen").
+function characterRefsFor(project, spread) {
+    const ids = spread?.characterIds || [];
+    return ids.map(id => project.characters.find(c => c.id === id)).filter(Boolean);
+}
+
+// NEU: welche Bildquelle gerade tatsächlich benutzt werden soll. Solange
+// die echte Bildgenerierung nicht in den Einstellungen ausdrücklich
+// bestätigt wurde (siehe app.settingsConfig.toggleStudioImageGen,
+// docs/KONZEPT-SchreibZauber.md TEIL G Punkt 1 - Zahlungsmethode am
+// Google-Konto noch nicht bestätigt), bleibt es beim kostenlosen
+// Platzhalter. EIN Ort für diese Weiche, damit kein Aufrufer versehentlich
+// selbst "gemini" fest verdrahtet.
+function resolveImageSourceId() {
+    if (app.settings.studioImageGenEnabled && app.settings.apiKey) return 'gemini';
+    return 'placeholder';
+}
+
+// NEU: geschätzter USD-Preis pro ECHTEM Bildaufruf (docs/KONZEPT-SchreibZauber.md
+// C.2 "0,07 $ pro Bild bei 1K-Auflösung"). GESCHÄTZT, keine Anbieter-
+// Abrechnung - gleiche Haltung wie der bestehende app.costMeter
+// (js/costMeter.js): rein lokal, keine harte Grenze, weil die App ohne
+// Server ohnehin keine durchsetzen könnte.
+const GEMINI_IMAGE_PRICE_USD = 0.07;
+
+// NEU: zentrale Stelle, die project.costLog nach einem Bildaufruf
+// fortschreibt - genutzt von studioCharacters.js (Figurenblatt) UND
+// studioImages.js (Doppelseiten-Bild), damit beide garantiert denselben
+// Preis und dieselbe Rundung verwenden. Zählt NUR bei source 'gemini' -
+// der kostenlose Platzhalter bleibt bei 0, ein Upload sowieso.
+function trackImageCost(project, meta) {
+    if (!meta || meta.source !== 'gemini') return;
+    project.costLog.imageCalls += 1;
+    project.costLog.estimatedUsd = Math.round((project.costLog.estimatedUsd + GEMINI_IMAGE_PRICE_USD) * 100) / 100;
+}
+
 // NEU: Umfangsplanung (Konzept C.2, Stufe 2 "Der Bauplan"). totalPages
 // muss laut Konzept durch 16 bzw. mindestens durch 8 teilbar sein - die
 // Auswahl in der Wizard-UI bietet deshalb nur 16/24/32/40 an. 8 Seiten
@@ -120,6 +190,11 @@ Object.assign(app.studio, {
     genId,
     computeSpec,
     trimToFormat,
+    buildStyleText,
+    characterRefsFor,
+    resolveImageSourceId,
+    trackImageCost,
+    GEMINI_IMAGE_PRICE_USD,
 
     // ===== Projekt-CRUD (die onclick-Ebene - bewusst FLACH auf app.studio,
     // nicht app.studio.actions.xyz: der Sanity-Check 3 aus CLAUDE.md prüft
@@ -145,6 +220,19 @@ Object.assign(app.studio, {
 
     backToLibrary() {
         app.nav.go('studio');
+    },
+
+    // NEU (Stufe 2): "Weiter"-Knöpfe der Stufen 4/5/6 haben - anders als
+    // Idee/Bauplan - kein Pflichtfeld, das vorher validiert werden müsste
+    // (Stilkarte/Figuren/Storyboard dürfen leer bleiben, "die KI ist
+    // Vorschlag, nie Zwang"). Deshalb reicht ein generischer Weiterschalter
+    // statt je einer eigenen saveXyz()-Funktion wie bei saveBrief/saveSpec.
+    advanceStage(n) {
+        const project = app.studio.projects[app.state.currentStudioProjectId];
+        if (!project) return;
+        project.stage = Math.max(project.stage, n);
+        app.dbOps.saveProject(project);
+        app.render.studioWizard(n);
     },
 
     deleteProject(projectId) {
@@ -216,6 +304,11 @@ Object.assign(app.studio, {
             id: genId('spread'), index: project.spreads.length,
             text: '', pageTurnHook: '', sketchPrompt: '', imagePrompt: '',
             imgUrl: null, thumbUrl: null, imageMeta: null, imageStatus: 'idle',
+            // NEU (Stufe 2): true, wenn ein bereits generiertes Bild dieser
+            // Doppelseite nach einer Figurenblatt-Änderung nicht mehr zur
+            // aktuellen Figur passt (Konzept C.3 - "Figur veraltet", NIE
+            // automatisch neu gezeichnet, siehe studioCharacters.js).
+            imageStale: false,
             characterIds: [], layout: { textPos: 'unten', fontScale: 1, syllableColors: project.brief.readingLevel === 'erstleser' },
             balloons: []
         });
@@ -230,7 +323,12 @@ Object.assign(app.studio, {
         project.spreads.splice(spreadIndex, 1);
         project.spreads.forEach((s, i) => { s.index = i; });
         app.dbOps.saveProject(project);
-        app.render.studioWizard(3);
+        // NEU (Stufe 2): diese Aktion wird jetzt sowohl von der Stufe
+        // "Geschichte" (3) als auch vom Storyboard (5) aus aufgerufen - KEIN
+        // fester Stufenwechsel mehr, sondern einfach die gerade sichtbare
+        // Stufe neu zeichnen (studioWizard() ohne Parameter behält
+        // activeStage bei, siehe render/studioWizard.js).
+        app.render.studioWizard();
     },
 
     // Manuskripttext einer Doppelseite von Hand ändern - erneuert dabei den
@@ -261,9 +359,13 @@ Object.assign(app.studio, {
 
         const result = await app.studio.imageSource.request('placeholder', {
             formatId: trimToFormat(project.spec.trim),
-            sketch: spread.text || spread.sketchPrompt,
-            style: project.style?.look,
-            characters: [],
+            // NEU (Stufe 2): sobald das Storyboard eine eigene Bildidee
+            // (sketchPrompt) hat, ist DIE das eigentlich gewollte Bildmotiv -
+            // vorher (Stufe 1, ohne Storyboard) war der Manuskripttext der
+            // einzige verfügbare Anhaltspunkt.
+            sketch: spread.sketchPrompt || spread.text,
+            style: buildStyleText(project.style),
+            characters: characterRefsFor(project, spread),
             title: `Doppelseite ${spreadIndex + 1}`,
             index: spreadIndex
         });
@@ -272,8 +374,20 @@ Object.assign(app.studio, {
         spread.imgUrl = result.full;
         spread.thumbUrl = result.thumb;
         spread.imageMeta = result.meta;
+        // NEU (Stufe 2): der bereits beim Platzhalter mitgelieferte Prompt
+        // (siehe imageSource.js) wandert zusätzlich ins Konzept-Feld
+        // spread.imagePrompt - genau der Prompt, den "alle Platzhalter
+        // ersetzen" (studioImages.js) später wiederverwendet, ohne ihn neu
+        // zu erfinden.
+        spread.imagePrompt = result.meta.prompt || '';
         app.dbOps.saveProject(project);
-        app.render.studioWizard(3);
+        // FIX (Stufe 2): früher fest "app.render.studioWizard(3)" - seit
+        // diese Funktion auch vom Storyboard (Stufe 5, z.B.
+        // updateSketchPrompt()) und beim Zusammenfassen aufgerufen wird,
+        // würde ein fester Stufenwechsel die Person unerwartet zurück zur
+        // Geschichte springen lassen. Ohne Parameter bleibt die gerade
+        // sichtbare Stufe erhalten (siehe render/studioWizard.js).
+        app.render.studioWizard();
     },
 
     // Stufe 3 – Geschichte von der KI schreiben lassen. Ruft studioApi.js
@@ -319,6 +433,7 @@ Object.assign(app.studio, {
             text: s.text || '', pageTurnHook: s.pageTurnHook || '',
             sketchPrompt: '', imagePrompt: '',
             imgUrl: null, thumbUrl: null, imageMeta: null, imageStatus: 'idle',
+            imageStale: false, // siehe addSpread() weiter oben
             characterIds: [], layout: { textPos: 'unten', fontScale: 1, syllableColors: project.brief.readingLevel === 'erstleser' },
             balloons: []
         }));
