@@ -152,7 +152,8 @@ Drei Dinge tauchen bei **jedem** Merge auf:
 | ~~**2**~~ | ~~**9** (Texte stückeln + Mitmachmodus) · **10** (Heft-Generator API)~~ | ✅ zwei gleichzeitig | ✅ **erledigt**, alles in `main` |
 | ~~**3**~~ | ~~**11** (Heft-Generator Ansicht) · **14** (Video-Renderer, Einzelseite)~~ | ✅ zwei gleichzeitig | ✅ **erledigt**, alles in `main` |
 | ~~**4**~~ | ~~**15** (Video-Export fürs ganze Buch)~~ | allein | ✅ **erledigt**, in `main` |
-| **5 - jetzt startbar** | SchreibZauber Stufe 2+3 (Bilderbuch) ∥ Stufe 4 (Arbeitsheft) | ✅ zwei gleichzeitig | **12** ist gemergt - Bedingung erfüllt. Stufe 2 (Bildgenerierung) braucht vorher noch die Zahlungsmethode-Klärung aus `KONZEPT-SchreibZauber.md` TEIL G, Punkt 1 |
+| **5 - jetzt startbar** | **16** (SchreibZauber Stufe 2 - Bilder) ∥ **17** (SchreibZauber Stufe 4 - Arbeitsheft) | ✅ zwei gleichzeitig | **12** ist gemergt - Bedingung erfüllt. **16** baut bis auf den letzten Schritt gegen Platzhalter, die echte Bildgenerierung braucht vorher noch die Zahlungsmethode-Klärung aus `KONZEPT-SchreibZauber.md` TEIL G, Punkt 1 |
+| **- jederzeit nebenher** | **18** (Video: Restpunkte) | allein, unabhängig | Keine Bedingung - reine Ergänzung am fertigen Video-Export, kollidiert mit nichts aus Welle 5 |
 
 **Warum 12 (SchreibZauber Stufe 1) schon in Welle 1 startet:** Es ist der längste Weg im
 ganzen Projekt und blockiert vier weitere Stufen. Es fasst fast nur neue Dateien an
@@ -188,6 +189,9 @@ Kindern direkt und ist Voraussetzung für SchreibZauber Stufe 6.
 | 13 | Integrations-Pass nach dem Merge + v0.13.0-beta | Plattform | **S** | ✅ in Welle 0 gelaufen - **Vorlage für jedes Wellen-Ende**, seither zweimal wiederholt (→ v0.15.0-beta, → v0.18.0-beta) |
 | 14 | Video-Export Weg B, Teil 1: Renderer-Kern | Video | **M** | ✅ in `main` (Branch inzwischen gelöscht) |
 | 15 | Video-Export Weg B, Teil 2: ganzes Buch + Regie | Video | **M** | ✅ in `main` (Branch inzwischen gelöscht) |
+| 16 | SchreibZauber Stufe 2 - Bilder | Eigene Werke | **L** | ⬜ `claude/schreibzauber-stufe2-bilder` - *parallel zu 17* |
+| 17 | SchreibZauber Stufe 4 - Arbeitsheft | Eigene Werke | **L** | ⬜ `claude/schreibzauber-stufe4-arbeitsheft` - *parallel zu 16* |
+| 18 | Video: Restpunkte | Video | **S** | ⬜ `claude/video-restpunkte` - unabhängig, jederzeit startbar |
 
 ---
 
@@ -818,6 +822,247 @@ Abschluss: die vier Sanity-Checks aus CLAUDE.md, Tailwind neu bauen, sw.js
 CACHE_NAME hochzählen. In docs/KONZEPT-Video.md Abschnitt 8 den Stand nachziehen
 und die Punkte in docs/TODO-GESAMT.md abhaken. Committen und auf den Branch
 claude/video-buch-export pushen. Keinen Pull Request anlegen.
+```
+
+---
+
+## 16 · SchreibZauber Stufe 2 - Bilder (L) - *parallel zu 17*
+
+```
+Arbeite im Repo Lesezauber (LeseZauber Pro). Lies zuerst CLAUDE.md im Root, dann
+docs/KONZEPT-SchreibZauber.md KOMPLETT (inkl. TEIL C.2, C.3, TEIL E, TEIL G) und
+docs/KONZEPT-Bildquellen.md KOMPLETT. Ohne diese Dokumente nicht anfangen - dort
+stehen bereits gefallene Entscheidungen und verworfene Wege.
+
+Voraussetzung: SchreibZauber Stufe 1 (Fundament) ist gemergt und in main - das
+Projekt-Datenmodell (app.studio.projects[id]), die Werkstatt-Übersicht und der
+Bildquellen-Adapter (js/studio/imageSource.js) existieren bereits. Baue darauf
+auf, migriere nichts.
+
+⚠️ Läuft parallel zu Auftrag 17 (SchreibZauber Stufe 4 - Arbeitsheft). Beide
+Sitzungen bauen auf demselben main-Stand auf. Berührungspunkt ist
+js/studio/studioCore.js (dort projectTypes bzw. computeSpec) an
+unterschiedlichen Stellen - sollte beim Merge unproblematisch sein. Bei einer
+drohenden Kollision in einer gemeinsamen Datei: lieber eine eigene kleine
+Datei abspalten, als dieselbe Funktion parallel zu ändern.
+
+Wichtige Randbedingung, die NICHT neu diskutiert wird: Der Bild-Endpunkt der
+Gemini API ist nach aktuellem Stand NICHT im kostenlosen Kontingent - der
+Account braucht eine hinterlegte Zahlungsmethode. Diese Frage ist beim Start
+dieses Auftrags voraussichtlich noch NICHT beantwortet (KONZEPT-SchreibZauber.md
+TEIL G, Punkt 1). Baue deshalb ALLES bis auf den letzten Schritt gegen die
+bereits vorhandene 'placeholder'-Quelle, genau wie KONZEPT-Bildquellen.md unter
+"Platzhalter zuerst" vorschreibt. Die echte Bildgenerierung ('gemini' als
+neuer providers-Eintrag in imageSource.js) darfst du bauen, aber NICHT
+standardmäßig scharf schalten - sie bleibt hinter einer expliziten
+Bestätigung in den Einstellungen, bis der Betreiber die Zahlungsmethode
+bestätigt hat.
+
+Aufgabe: SchreibZauber Ausbaustufe 2 (Bilder) - und NUR Stufe 2, aus TEIL E:
+Stilkarte, Figuren-Bibel, Figurenblatt, Storyboard, Bildgenerierung pro
+Doppelseite, Kostenzähler.
+
+Zu tun, in dieser Reihenfolge (jede baut auf der vorigen auf):
+
+1. Stilkarte (project.style aus TEIL D.1): look/palette/lineWeight/extraPrompt
+   in der Wizard-UI wählbar machen, bevor die erste Bildidee entsteht - sie
+   fließt in JEDEN späteren Bild-Prompt mit ein.
+2. Figuren-Bibel (project.characters[], TEIL C.3): pro Figur Steckbrief-Text
+   (Name, Alter, Art, Aussehen, Kleidung, drei Farbwerte, eine unverwechselbare
+   Eigenart) plus ein generiertes Figurenblatt (Format characterSheet aus
+   js/studio/imageFormats.js). Vorerst über die Platzhalter-Quelle.
+3. Storyboard = Stufe 5 des 8-Stufen-Wizards (TEIL C.2): Miniatur-Raster aller
+   Doppelseiten mit Text + Bildidee als Stichwort (spread.sketchPrompt), noch
+   OHNE echte Bilder - verschieben/zusammenfassen/löschen muss möglich sein.
+   WICHTIG: Das Storyboard ist laut Konzept "die Kostenbremse" (Abschnitt
+   "Warum Stufe 5 vor Stufe 6 nicht übersprungen werden darf") - nicht
+   überspringen, auch wenn es verlockend wäre, direkt zu Bildern zu gehen.
+4. Bildgenerierung = Stufe 6 des Wizards: aus sketchPrompt + Stilkarte +
+   Figurenblatt-Referenzen wird spread.imagePrompt (ausformuliert) und dann
+   spread.imgUrl/thumbUrl. Einzeln anstoßbar pro Doppelseite, NICHT
+   automatisch fürs ganze Buch auf einmal (gleiche Philosophie wie beim
+   bestehenden Persona-System: keine stillen Massen-API-Aufrufe). Regel aus
+   TEIL C.3 beachten: ändert sich das Figurenblatt NACH bereits generierten
+   Seiten, werden diese nur als "Figur veraltet" markiert (Knopf "neu
+   zeichnen"), NICHT automatisch neu erzeugt.
+5. Kostenzähler (project.costLog): imageCalls/estimatedUsd sichtbar in der
+   Werkstatt, gleiche Haltung wie der bestehende app.costMeter - rein lokal
+   geschätzt, keine harte Grenze (die App kann ohne Server ohnehin keine
+   durchsetzen).
+
+app.studio.imageSource.request('placeholder', spec) liefert schon heute
+meta.prompt mit - der Bildprompt existiert also für JEDE Doppelseite, bevor je
+ein echter Bildaufruf passiert. "Alle Platzhalter ersetzen" ist ein reiner
+Durchlauf über spread.imageMeta.source === 'placeholder' mit demselben,
+bereits gespeicherten Prompt - nicht neu erfinden.
+
+app.studio.prompts.guardrailsBlock() (studioPrompts.js) MUSS in jeden neuen
+Prompt (Figurenblatt, Bildidee, Bild-Prompt) 1:1 eingebaut werden - das sind
+die Veröffentlichungs-Leitplanken aus Entscheidung 6, nicht optional.
+
+Nicht tun: Stufe 3 (Layout & Druck) oder Stufe 4/5 (Arbeitsheft/Comic)
+anfangen, das Projekt-Datenmodell aus Stufe 1 umbauen (nur die für Stufe 2
+vorgesehenen, bisher leeren Felder befüllen), einen zweiten Bildquellen-Weg
+statt eines providers-Eintrags in imageSource.js bauen, die
+Gemini-Bildgenerierung ungefragt zum Standard machen.
+
+Wenn der Umfang größer wird als erwartet: lieber Figuren-Bibel + Storyboard
+fertig und geprüft liefern und die Bildgenerierung selbst als Teilstand
+melden, als beides halbfertig abzugeben.
+
+Abschluss: Tailwind neu bauen, die vier Sanity-Checks aus CLAUDE.md, sw.js
+CACHE_NAME hochzählen, alle neuen Dateien in APP_SHELL eintragen. In
+docs/KONZEPT-SchreibZauber.md den Stand nachziehen (Abschnitt "Stand nach
+Stufe 1" erweitern oder einen neuen "Stand nach Stufe 2" ergänzen) und in
+docs/TODO-GESAMT.md abhaken. Committen und auf den Branch
+claude/schreibzauber-stufe2-bilder pushen. Keinen Pull Request anlegen.
+```
+
+---
+
+## 17 · SchreibZauber Stufe 4 - Arbeitsheft (L) - *parallel zu 16*
+
+```
+Arbeite im Repo Lesezauber (LeseZauber Pro). Lies zuerst CLAUDE.md im Root, dann
+docs/KONZEPT-SchreibZauber.md KOMPLETT (inkl. TEIL C.4, TEIL D.1, TEIL E). Ohne
+dieses Dokument nicht anfangen.
+
+Voraussetzung: SchreibZauber Stufe 1 (Fundament) ist gemergt und in main.
+
+⚠️ Läuft parallel zu Auftrag 16 (SchreibZauber Stufe 2 - Bilder). Beide
+Sitzungen bauen auf demselben main-Stand auf. Berührungspunkt ist
+js/studio/studioCore.js (dort projectTypes und ggf. computeSpec) - kleine,
+mechanische Änderungen an unterschiedlichen Stellen, sollte beim Merge
+unproblematisch sein.
+
+⚠️ Namensverwechslung vermeiden: Dieser Auftrag baut den SchreibZauber-Werktyp
+"Arbeitsheft" (eigene, von der KI komplett erfundene Übungshefte,
+project.type === 'workbook' in app.studio). Das ist NICHT dasselbe wie der
+bereits fertige "Heft-Generator" (js/actions/workbookGenerator.js) - der
+erzeugt aus einem Thema+Lernziel fertige Blätter für ein bestehendes Buch OHNE
+die SchreibZauber-Werkstatt. Beide Wege enden am Ende zwar im gleichen
+bookType: 'workbook' in app.library, aber der Weg dorthin ist komplett
+verschieden - nicht die bestehende Datei anfassen oder wiederverwenden,
+sondern eigene Dateien nach dem Studio-Muster (js/studio/*, js/render/studio*).
+
+Aufgabe: SchreibZauber Ausbaustufe 4 (Arbeitsheft) - und NUR Stufe 4, aus
+TEIL C.4 und TEIL E: Lernziel, Progression, Aufgabenbaukasten,
+Differenzierung, Lösungsteil, s/w-Druck.
+
+Erster Schritt: in js/studio/studioCore.js app.studio.projectTypes den
+Eintrag { id: 'workbook', ... } von available: false auf available: true
+setzen - der Kommentar direkt darüber beschreibt das bereits als
+vorgesehenen Freischalt-Punkt.
+
+Zu tun, entlang des Arbeitsheft-Wizard-Zweigs (ersetzt bei diesem Werktyp die
+Stufen 3-5 "Geschichte/Figuren/Daumenkino" aus dem normalen 8-Stufen-Gerüst):
+
+1. Stufe 3' - Lernziel: Klassenstufe, Fach, Kompetenz ("Zahlenraum bis 20",
+   "Wörter mit ie"), formuliert als "Das Kind kann ...". Landet in
+   project.worksheet.goal/grade/subject (Feld ist laut TEIL D.1 bereits
+   reserviert).
+2. Stufe 4' - Progression: die KI schlägt eine Kapitelfolge vor (vom Leichten
+   zum Schweren, mit Wiederholungsseiten) - eine Liste von Seitenzielen.
+   project.worksheet.chapters[].
+3. Stufe 5' - Aufgabenbaukasten: pro Seite 1-3 Aufgaben aus den festen Typen
+   aus TEIL C.4 (Zuordnen, Lückentext, Ankreuzen, Nachspuren, Ausmalen nach
+   Regel, Rechnen, Suchsel, Schneiden & Kleben, Frei schreiben) -
+   project.worksheet.chapters[].pages[].tasks[].
+4. Differenzierung: jede Seite in drei Niveaus (⭐/⭐⭐/⭐⭐⭐) erzeugbar.
+5. Selbstkontrolle: automatisch erzeugter Lösungsteil am Heftende
+   (tasks[].solution ist laut Datenmodell bereits vorgesehen).
+6. Druckregel: Arbeitsheftseiten s/w-tauglich mit ausreichend Schreibfläche
+   layouten. Bilder NUR als Dekoration/Ausmalvorlage, nie als
+   Informationsträger, der in Graustufen verschwindet - eine reine Text-/
+   Zeichenaufgabe braucht am Anfang KEIN Bild.
+
+Bildbedarf bewusst klein halten: Für die meisten Aufgabentypen reicht Text
+bzw. eine einfache Zeichnung (drawWorksheetCanvas() in js/actions/
+workbookGenerator.js ist die optische Vorlage fürs Canvas-Rendern, NICHT Code
+zum Wiederverwenden - andere Datei, anderer Zweck). Wo doch ein Bild nötig
+ist (Ausmalbild, Clipart-Icon): über js/studio/imageSource.js mit der
+'placeholder'-Quelle - für Arbeitsheft-Cliparts ist laut
+KONZEPT-Bildquellen.md Abschnitt 1.5 später ohnehin eine einfache
+Bilddatenbank vorgesehen (z.B. Openclipart), NICHT die teure
+Gemini-Bildgenerierung. Diese kleine Recherche (Abschnitt 5, Punkt 4 im
+Bildquellen-Konzept) darfst du mit erledigen, wenn Zeit bleibt - ist aber
+kein Blocker fürs Liefern.
+
+Export "ins Regal" (Stufe 8): eigener Export analog js/studio/
+studioExport.js, aber mit bookType: 'workbook' und den
+Übungsheft-Variantenfeldern aus CLAUDE.md (text = Aufgabenstellung,
+erstleserText = kindgerechte Erklärung, taskType, materials, helpSteps[],
+solution; quizQ/quizA bleiben null). app.utils.buildPageVariant() ist dafür
+bereits für bookType 'workbook' vorbereitet - dort ergänzen, nicht
+danebenbauen.
+
+Nicht tun: die Datei js/actions/workbookGenerator.js anfassen oder ihre Logik
+duplizieren, Stufe 2/3/5 (Bilder/Layout/Comic) anfangen, project.type
+'comic' anfassen.
+
+Wenn der Umfang größer wird als erwartet: lieber Lernziel + Progression +
+Aufgabenbaukasten für 2-3 Aufgabentypen fertig und geprüft liefern, als alle
+neun Typen halbfertig.
+
+Abschluss: Tailwind neu bauen, die vier Sanity-Checks aus CLAUDE.md, sw.js
+CACHE_NAME hochzählen, alle neuen Dateien in APP_SHELL eintragen. In
+docs/KONZEPT-SchreibZauber.md den Stand nachziehen und in docs/TODO-GESAMT.md
+abhaken. Committen und auf den Branch claude/schreibzauber-stufe4-arbeitsheft
+pushen. Keinen Pull Request anlegen.
+```
+
+---
+
+## 18 · Video: Restpunkte (S) - *unabhängig, kann jederzeit nebenherlaufen*
+
+```
+Arbeite im Repo Lesezauber (LeseZauber Pro). Lies zuerst CLAUDE.md im Root und
+docs/KONZEPT-Video.md, Abschnitt 4.7 ("Stand von Weg B") KOMPLETT, besonders
+den Unterabschnitt "Noch offen" am Ende. Ohne dieses Dokument nicht anfangen.
+
+Aufgabe: die in Abschnitt 4.7 als "noch offen" gelisteten kleinen Punkte am
+fertigen Video-Export (js/render/cinema.js, js/actions/videoTimeline.js,
+js/actions/videoPreview.js, js/actions/videoExport.js). Kein neues Feature,
+nur Lücken in einem bestehenden schließen.
+
+Zu tun, in der Reihenfolge größter Nutzen zuerst:
+
+1. Ansage auf der Titelkarte: app.tts._buildMetadataAnnouncements() kennt
+   Titel/Autor bereits (siehe js/tts.js) - renderPageSegments() aber nicht.
+   Die Titelkarte des Buch-Films läuft deshalb bisher stumm mit fester Länge.
+   Baue die Metadaten-Ansage als eigenes, kurzes Audio-Segment für die
+   Titelkarte (gleicher ttsCache-Weg wie jedes andere Segment).
+2. Ton in der Vorschau: Die Vorschau (app.actions.openVideoPreview) ist
+   bewusst stumm, weil sie sonst beim bloßen Öffnen Kontingent verbrauchen
+   würde. Löse das über echten Ton NUR wenn die Segmente bereits im ttsCache
+   liegen (kein neuer Synthese-Aufruf) - sonst bleibt es beim Stumm-Hinweis.
+   Wiedergabe an audio.currentTime hängen, nicht an eine eigene Uhr (steht so
+   im Konzept).
+3. Quiz-Karte mit Denkpause: aus der Regie-Liste in Abschnitt 3 - die
+   Rätselfrage ist zuschaltbar, hat aber noch keine eigene Karte mit
+   Denkpause vorm Auflösen der Antwort.
+4. Höhere Bildauflösung (videoUrl, ~2560 px statt der 1600px-Vorlage mit
+   1,12-fachem Zoom): nur bauen, wenn die drei Punkte oben fertig sind und
+   noch Zeit bleibt - im Konzept ausdrücklich als "bisher vertretbar" und
+   niedrigste Priorität eingestuft.
+
+NICHT bauen: showSaveFilePicker(). Das Konzept nennt das bewusst weggelassen
+(der Aufruf braucht eine frische Nutzer-Geste, die nach Rückfrage und
+Ton-Sammeln nicht mehr sicher vorhanden ist) - das ist keine vergessene
+Kleinigkeit, sondern eine bestehende Einschätzung. Nur anfassen, wenn du
+unterwegs einen sauberen Weg um das Geste-Problem herum siehst, und dann
+ausdrücklich als Abweichung im Commit vermerken.
+
+Nicht tun: am Renderer-Kern, an der Codec-Leiter oder an der Regie-Logik
+(Kreuzblende, Seiten-Rollen) etwas ändern - die sind fertig und laut Konzept
+bewusst so entschieden.
+
+Abschluss: die vier Sanity-Checks aus CLAUDE.md, Tailwind neu bauen (nur
+falls neue Tailwind-Klassen dazukommen), sw.js CACHE_NAME hochzählen falls
+nötig. In docs/KONZEPT-Video.md Abschnitt 4.7 den Stand nachziehen (erledigte
+Punkte aus "Noch offen" raus) und in docs/TODO-GESAMT.md die Zeile "Video:
+Restpunkte" abhaken. Committen und auf den Branch claude/video-restpunkte
+pushen. Keinen Pull Request anlegen.
 ```
 
 ---
