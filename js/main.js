@@ -65,6 +65,9 @@ import './studio/studioPrint.js';
 // docs/KONZEPT-SchreibZauber.md TEIL C.4. worksheet.js importiert
 // worksheetCanvas.js selbst mit, deshalb reicht hier ein Eintrag.
 import './studio/worksheet.js';
+// NEU (Ausbaustufe 5 - Comic): Sprechblasen-Overlay + -Verwaltung, siehe
+// docs/KONZEPT-SchreibZauber.md TEIL E.
+import './studio/studioBalloons.js';
 
 import './render/library.js';
 import './render/book.js';

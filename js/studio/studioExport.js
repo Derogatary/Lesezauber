@@ -13,6 +13,22 @@ import { app } from '../core.js';
 // gebaut wird, weil ein Übungsheft-Buch andere Variantenfelder braucht
 // (siehe js/utils.js buildPageVariant).
 
+// NEU (Ausbaustufe 5): der normale LeseZauber-Reader kennt keine
+// Sprechblasen (siehe js/studio/studioBalloons.js - die visuelle
+// Sprechblasen-Ebene existiert bewusst NUR in der Werkstatt-Vorschau/einem
+// künftigen Comic-Druck, nicht im gemeinsam genutzten Reader, um dessen
+// bestehende "kennt den Unterschied zwischen Werktypen gar nicht"-Trennung
+// nicht aufzuweichen). Für Anzeige/Vorlesen wird der Dialog deshalb als
+// normaler Text zusammengefasst ("Name: Zeile"), genau wie ein Hörbuch ein
+// Comic-Skript vorlesen würde.
+function spreadReadableText(spread, type) {
+    if (type !== 'comic') return spread.text;
+    const dialogueText = (spread.balloons || [])
+        .map(b => b.speaker ? `${b.speaker}: ${b.text}` : b.text)
+        .join('\n');
+    return [spread.text, dialogueText].filter(Boolean).join('\n');
+}
+
 Object.assign(app.studio, {
     export: {
         // Erzeugt (oder aktualisiert) das Bibliotheksbuch aus einem Projekt.
@@ -58,10 +74,13 @@ Object.assign(app.studio, {
                     // Erstleser-Variante - der Manuskripttext wurde je nach
                     // brief.readingLevel bereits passend geschrieben (siehe
                     // studioPrompts.js), erstleserText ist deshalb bewusst
-                    // identisch zu text statt ein zweiter KI-Durchlauf.
+                    // identisch zu text statt ein zweiter KI-Durchlauf. Beim
+                    // Comic ist das der zusammengefasste Dialog (siehe
+                    // spreadReadableText() oben), der Reader kennt keine
+                    // Sprechblasen.
                     [personaId]: {
-                        text: spread.text,
-                        erstleserText: spread.text,
+                        text: spreadReadableText(spread, project.type),
+                        erstleserText: spreadReadableText(spread, project.type),
                         desc: null,
                         // Kein Rätsel zu einer selbst erdachten Doppelseite -
                         // der Auto-Vorlese-Modus überspringt leere Fragen

@@ -53,12 +53,65 @@ function layoutCardHtml(spread, project) {
     </div>`;
 }
 
+// NEU (Ausbaustufe 5): Comic-Gegenstück zu layoutCardHtml() oben - statt
+// Textposition/Schriftgröße/Silbenfarben (die gelten nur für Fließtext)
+// zeigt Stufe 7 hier pro Sprechblase X/Y/Breite-Regler + Schwänzchen-
+// Richtung, direkt über app.studio.balloons.buildBalloonsHtml() live
+// vorgeschaut - dieselbe Funktion, die später auch der Comic-Export/-Druck
+// benutzen würde, Vorschau und Ergebnis zeigen also garantiert dasselbe.
+function comicLayoutCardHtml(spread, index) {
+    const balloonControls = spread.balloons.map(b => `
+        <div class="bg-slate-50 border border-slate-200 rounded-lg p-2 space-y-1.5">
+            <div class="flex items-center justify-between">
+                <span class="text-[10px] font-bold text-indigo-700">${app.utils.sanitize(b.speaker || 'Sprechblase')}</span>
+                <button onclick="app.studio.deleteBalloon(${index}, '${b.id}')" aria-label="Sprechblase löschen" class="text-slate-300 hover:text-red-500 text-xs">🗑️</button>
+            </div>
+            <div class="grid grid-cols-3 gap-1.5">
+                <div>
+                    <label class="text-[9px] font-bold text-slate-500 block">X (${b.x}%)</label>
+                    <input type="range" min="0" max="90" value="${b.x}" onchange="app.studio.updateBalloon(${index}, '${b.id}', {x: parseInt(this.value)})" class="w-full">
+                </div>
+                <div>
+                    <label class="text-[9px] font-bold text-slate-500 block">Y (${b.y}%)</label>
+                    <input type="range" min="0" max="90" value="${b.y}" onchange="app.studio.updateBalloon(${index}, '${b.id}', {y: parseInt(this.value)})" class="w-full">
+                </div>
+                <div>
+                    <label class="text-[9px] font-bold text-slate-500 block">Breite (${b.w}%)</label>
+                    <input type="range" min="20" max="80" value="${b.w}" onchange="app.studio.updateBalloon(${index}, '${b.id}', {w: parseInt(this.value)})" class="w-full">
+                </div>
+            </div>
+            <select onchange="app.studio.updateBalloon(${index}, '${b.id}', {tail: this.value})" class="w-full text-[10px] bg-white border border-slate-200 rounded-lg px-1.5 py-1 focus:outline-none focus:border-indigo-500">
+                <option value="unten-links" ${b.tail === 'unten-links' ? 'selected' : ''}>Schwänzchen unten-links</option>
+                <option value="unten-rechts" ${b.tail === 'unten-rechts' ? 'selected' : ''}>Schwänzchen unten-rechts</option>
+                <option value="oben-links" ${b.tail === 'oben-links' ? 'selected' : ''}>Schwänzchen oben-links</option>
+                <option value="oben-rechts" ${b.tail === 'oben-rechts' ? 'selected' : ''}>Schwänzchen oben-rechts</option>
+            </select>
+        </div>`).join('');
+
+    const img = spread.imgUrl
+        ? `<img src="${spread.imgUrl}" class="absolute inset-0 w-full h-full object-cover" alt="Comic-Seite ${index + 1}">`
+        : `<div class="absolute inset-0 w-full h-full bg-slate-100 flex items-center justify-center text-slate-300 text-2xl">🖼️</div>`;
+    const overlay = app.studio.balloons.buildBalloonsHtml(spread.balloons);
+
+    return `
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden p-3 space-y-3">
+        <span class="text-[10px] font-bold text-slate-400 uppercase">Seite ${index + 1}</span>
+        <div class="relative w-full mx-auto rounded-lg overflow-hidden border border-slate-200 bg-slate-50" style="max-width:280px; aspect-ratio:3/4;">
+            ${img}
+            ${overlay}
+        </div>
+        <div class="space-y-2">${balloonControls || '<p class="text-[11px] text-slate-400 italic">Noch keine Sprechblasen - in Stufe "Geschichte" hinzufügen.</p>'}</div>
+        <button onclick="app.studio.addBalloon(${index})" class="w-full text-[11px] font-bold text-indigo-600 border border-dashed border-indigo-200 rounded-lg py-1.5 hover:bg-indigo-50 transition">+ Sprechblase</button>
+    </div>`;
+}
+
 Object.assign(app.render, {
     studioLayout(project) {
         const list = document.getElementById('studioLayoutList');
         if (!list) return;
+        const isComic = project.type === 'comic';
         list.innerHTML = project.spreads.length
-            ? project.spreads.map((s) => layoutCardHtml(s, project)).join('')
+            ? project.spreads.map((s) => isComic ? comicLayoutCardHtml(s, s.index) : layoutCardHtml(s, project)).join('')
             : `<div class="col-span-full text-center py-10 text-slate-500 bg-white rounded-2xl border border-dashed border-slate-200"><span class="text-3xl block mb-2">📐</span><p class="text-xs font-semibold px-4">Noch keine Doppelseiten - erst in der Stufe "Geschichte" welche anlegen.</p></div>`;
     }
 });

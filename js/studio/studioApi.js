@@ -93,6 +93,13 @@ Object.assign(app.studio, {
             return callTextWithFallback(prompt, 'Gemini nicht erreichbar - Mistral eingesprungen');
         },
 
+        // NEU (Ausbaustufe 5): Comic-Gegenstück zu generateManuscript() -
+        // Rückgabe: { title, spreads: [{text, pageTurnHook, dialogue: [{speaker, line}]}] }
+        async generateComicScript(brief, spec) {
+            const prompt = app.studio.prompts.buildComicScriptPrompt(brief, spec);
+            return callTextWithFallback(prompt, 'Gemini nicht erreichbar - Mistral eingesprungen (Skript)');
+        },
+
         // Stufe 4 – Figuren-Steckbriefe aus dem Manuskript ableiten.
         // Rückgabe: { characters: [{name, role, age, kind, look, clothing, colors, quirk}] }
         async suggestCharacters(project) {

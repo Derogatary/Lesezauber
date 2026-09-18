@@ -1,7 +1,11 @@
 // Bei jeder inhaltlichen Änderung an einer dieser Dateien diese Nummer
 // erhöhen - sonst bekommen wiederkehrende Besucher weiter die alte
 // zwischengespeicherte Version ausgeliefert.
-const CACHE_NAME = 'lesezauber-shell-v37';
+const CACHE_NAME = 'lesezauber-shell-v38';
+
+// NEU (v38): SchreibZauber Ausbaustufe 5 (Comic) - Werktyp 'comic'
+// freigeschaltet, neue Datei js/studio/studioBalloons.js (Sprechblasen).
+// Siehe CLAUDE.md, Versionsstand.
 
 // NEU (v37): "Master-Prompt" fürs Komplett-Setup (Stufe 1) - keine neuen
 // Dateien. Siehe CLAUDE.md, Versionsstand.
@@ -126,6 +130,8 @@ const APP_SHELL = [
     // docs/KONZEPT-SchreibZauber.md TEIL C.4.
     './js/studio/worksheet.js',
     './js/studio/worksheetCanvas.js',
+    // NEU (Ausbaustufe 5 - Comic): Sprechblasen-Overlay + -Verwaltung.
+    './js/studio/studioBalloons.js',
     './js/render/studioLibrary.js',
     './js/render/studioWizard.js',
     './js/render/studioCharacters.js',

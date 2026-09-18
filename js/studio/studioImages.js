@@ -39,8 +39,8 @@ Object.assign(app.studio, {
         app.state.apiBusy = true;
         try {
             const result = await app.studio.imageSource.request(sourceId, {
-                formatId: app.studio.trimToFormat(project.spec.trim),
-                sketch: spread.sketchPrompt || spread.text,
+                formatId: app.studio.trimToFormat(project.spec.trim, project.type),
+                sketch: app.studio.spreadSceneHint(spread),
                 style: app.studio.buildStyleText(project.style),
                 characters: app.studio.characterRefsFor(project, spread),
                 characterImages: characterImagesFor(project, spread),
@@ -112,7 +112,7 @@ Object.assign(app.studio, {
                 app.ui.showLoader('Bilder werden erzeugt...', `${done + failed} von ${targets.length}`);
                 try {
                     const result = await app.studio.imageSource.request('gemini', {
-                        formatId: app.studio.trimToFormat(project.spec.trim),
+                        formatId: app.studio.trimToFormat(project.spec.trim, project.type),
                         rawPrompt: s.imagePrompt,
                         characterImages: characterImagesFor(project, s),
                         index: i

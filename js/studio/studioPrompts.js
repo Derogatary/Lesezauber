@@ -249,13 +249,50 @@ Antworte AUSSCHLIESSLICH in validem JSON, ohne Markdown-Blöcke, exakt in diesem
 }`;
         },
 
+        // NEU (Ausbaustufe 5) – Stufe 3 beim Comic: Skript statt Fließtext.
+        // Jede Doppelseite ist eine Comic-Seite mit Dialogzeilen statt
+        // erzählendem Text (Konzept C.1 "Comic/Heft" - "Script->Panels->
+        // Lettering"). Bewusst DIESELBE Grundform wie buildManuscriptPrompt
+        // (gleiche Zielgruppen-/Leitplanken-Bausteine, gleicher
+        // Umblätter-Moment), nur mit "dialogue" statt "text" im Ergebnis.
+        buildComicScriptPrompt(brief, spec) {
+            return `Du bist eine erfahrene Comic-Szenaristin/ein erfahrener Comic-Szenarist für Kinder.
+Zielgruppe: ${AGE_LABEL[brief.audienceAge] || brief.audienceAge}. ${readingLevelRule(brief.readingLevel)}
+Sprache: Deutsch.
+Thema: ${brief.topic}
+${brief.tone ? `Ton/Stimmung: ${brief.tone}` : ''}
+${brief.message ? `Das soll am Ende hängenbleiben: ${brief.message}` : ''}
+
+${guardrailsBlock()}
+
+Schreibe ein vollständiges Comic-Skript mit GENAU ${spec.storySpreads} Seiten. Jede Seite zeigt EINE Szene mit 1 bis 4 kurzen Sprechblasen-Zeilen (Dialog, keine erzählende Prosa - kurze, natürlich klingende Sätze, wie Kinder/Figuren wirklich sprechen). Halte dich an feste, wiederkehrende Figurennamen über das ganze Skript hinweg - erfinde nicht bei jeder Seite neue Namen für dieselbe Figur. Jede Seite außer der letzten endet mit einem kleinen Zug zum Weiterblättern (eine Frage, eine Überraschung, ein Cliffhanger).
+
+Antworte AUSSCHLIESSLICH in validem JSON, ohne Markdown-Blöcke, exakt in diesem Format mit GENAU ${spec.storySpreads} Einträgen in "spreads":
+{
+  "title": "Ein kurzer, kindgerechter Comic-Titel",
+  "spreads": [
+    {
+      "text": "Optionale, sehr kurze Regieanweisung/Bildunterschrift (darf leer sein \\"\\")",
+      "pageTurnHook": "Kurze Notiz, WAS hier zum Weiterblättern reizt - bei der letzten Seite leerer String.",
+      "dialogue": [
+        {"speaker": "Name der sprechenden Figur", "line": "Was sie sagt, kurz und natürlich."}
+      ]
+    }
+  ]
+}`;
+        },
+
         // Stufe 4 – Die Figuren: aus dem bereits geschriebenen Manuskript
         // Steckbrief-Vorschläge ableiten (Konzept D.4 "suggestCharacters").
         // Liefert reine Textvorschläge - das Figurenblatt-BILD entsteht
         // getrennt danach über die Bildquellen-Schicht (studioCharacters.js),
         // nicht hier.
         buildSuggestCharactersPrompt(project) {
-            const manuscript = project.spreads.map(s => s.text).filter(Boolean).join('\n');
+            // NEU (Ausbaustufe 5): beim Comic steckt die Handlung in den
+            // Dialogzeilen (balloons), nicht in spread.text - app.studio.
+            // spreadSceneHint() liefert für beide Werktypen die richtige
+            // Quelle (siehe js/studio/studioCore.js).
+            const manuscript = project.spreads.map(s => app.studio.spreadSceneHint(s)).filter(Boolean).join('\n');
             return `Du bist eine erfahrene Kinderbuch-Redakteurin/ein erfahrener Kinderbuch-Redakteur und liest das folgende bereits fertige Manuskript einer Kinderbuch-Geschichte:
 
 """
@@ -290,7 +327,7 @@ Antworte AUSSCHLIESSLICH in validem JSON, ohne Markdown-Blöcke, exakt in diesem
         // Storyboard-Knopf "🤖 Bildideen vorschlagen", ob sie übernommen wird.
         buildSuggestSketchesPrompt(project) {
             const spreadsList = project.spreads.map((s, i) =>
-                `${i + 1}. ${s.text || '(noch kein Text)'}`).join('\n');
+                `${i + 1}. ${app.studio.spreadSceneHint(s) || '(noch kein Text)'}`).join('\n');
             const characterList = project.characters.length
                 ? project.characters.map(c => `${c.name}: ${c.sheetText}`).join(' | ')
                 : '(noch keine Figuren angelegt)';

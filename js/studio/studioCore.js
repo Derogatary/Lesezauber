@@ -20,17 +20,18 @@ import './imageSource.js';
 // zugreifen würde.
 app.studio.projects = app.studio.projects || {};
 
-// NEU: Werktypen der Werkstatt. 'picturebook' (Stufe 1) und jetzt auch
-// 'workbook' (Stufe 4, siehe docs/KONZEPT-SchreibZauber.md TEIL C.4/E) sind
-// freigeschaltet. 'comic' steht hier weiterhin nur als Zieltyp, weil das
-// Datenmodell (spreads[].balloons) ihn schon vorsieht - er kommt erst mit
-// der später geplanten Ausbaustufe 5. Der eigentliche Arbeitsheft-Wizard
-// (Lernziel -> Progression -> Aufgabenbaukasten) lebt komplett getrennt in
-// js/studio/worksheet.js + js/render/studioWorkbookWizard.js - hier wird
-// nur der Zugang freigeschaltet.
+// NEU (Ausbaustufe 5): 'comic' ist jetzt freigeschaltet. Läuft durch
+// DASSELBE 8-Stufen-Gerüst wie das Bilderbuch (Konzept C.1 "alle drei
+// Werktypen, ein Gerüst") - nur Stufe 3 (Skript statt Fließtext, siehe
+// generateComicScript()/applyComicScript()) und Stufe 7 (Sprechblasen statt
+// Textposition, siehe js/studio/studioBalloons.js) unterscheiden sich
+// wirklich. Das Datenmodell (spreads[].balloons) sah das schon seit Stufe 1
+// vor. Der eigentliche Arbeitsheft-Wizard (Lernziel -> Progression ->
+// Aufgabenbaukasten) lebt weiterhin komplett getrennt in
+// js/studio/worksheet.js + js/render/studioWorkbookWizard.js.
 app.studio.projectTypes = [
     { id: 'picturebook', label: '📕 Bilderbuch', hint: 'Doppelseiten mit Bild und Text, vorlesbar', available: true },
-    { id: 'comic', label: '💥 Comic/Heft', hint: 'kommt in einer späteren Ausbaustufe', available: false },
+    { id: 'comic', label: '💥 Comic/Heft', hint: 'Sprechblasen-Dialoge statt Fließtext, als Panelseiten', available: true },
     { id: 'workbook', label: '📝 Arbeitsheft', hint: 'Lernziel, Aufgaben und Lösungsteil - druckfertig', available: true }
 ];
 
@@ -46,7 +47,11 @@ const REFERENCE_STORY_SPREADS = 12; // = (32 - 8) / 2
 // NEU: welches Bildformat (aus imageFormats.js) zu welcher Papierform
 // passt - EIN Ort für diese Zuordnung, damit Platzhalter, spätere echte
 // Bilder und Druckausgabe (Stufe 3) dieselbe Wahl treffen.
-function trimToFormat(trim) {
+// NEU (Ausbaustufe 5): eine Comic-Seite ist IMMER 'comicPage' - der
+// Bauplan-Trim (a5-quer/a5-hoch/a4-hoch) ist eine Bilderbuch-/Arbeitsheft-
+// Papierentscheidung, für Panelseiten ohne Bedeutung.
+function trimToFormat(trim, type) {
+    if (type === 'comic') return 'comicPage';
     return trim === 'a5-quer' ? 'spreadLandscape' : 'pagePortrait';
 }
 
@@ -94,14 +99,37 @@ function buildStyleText(style) {
     return parts.filter(Boolean).join(' ');
 }
 
+// NEU (Ausbaustufe 5): bei Comic-Projekten kommen sprechende Figuren zuerst
+// nur als reiner Name aus dem Skript (Stufe 3, VOR der Figuren-Bibel in
+// Stufe 4 - siehe balloons[].speaker). Statt einer eigenen manuellen
+// Zuordnungs-UI (wie beim Bilderbuch-Storyboard) werden sie automatisch
+// über den Namen mit project.characters abgeglichen, sobald die existieren.
+// NUR ein Rückfall, wenn noch keine bewusste manuelle Auswahl vorliegt.
+function resolveComicCharacterIds(project, spread) {
+    const speakers = new Set((spread.balloons || []).map(b => (b.speaker || '').trim().toLowerCase()).filter(Boolean));
+    if (speakers.size === 0) return [];
+    return project.characters.filter(c => speakers.has((c.name || '').trim().toLowerCase())).map(c => c.id);
+}
+
 // NEU: welche Figuren-Referenzen zu einer Doppelseite gehören - liest
 // spread.characterIds und schlägt sie in project.characters nach. EIN Ort,
 // damit Storyboard-Vorschau, Bildgenerierung und "alle Platzhalter
 // ersetzen" garantiert dieselbe Auswahl sehen (Konzept D.5 #4: "nur die
 // Figuren referenzieren, die auf der Seite vorkommen").
 function characterRefsFor(project, spread) {
-    const ids = spread?.characterIds || [];
+    let ids = spread?.characterIds || [];
+    if (ids.length === 0 && project.type === 'comic') ids = resolveComicCharacterIds(project, spread);
     return ids.map(id => project.characters.find(c => c.id === id)).filter(Boolean);
+}
+
+// NEU (Ausbaustufe 5): die Bildidee einer Doppelseite - beim Comic oft ohne
+// eigenen sketchPrompt/Bildunterschrift (die eigentliche Handlung steckt in
+// den Sprechblasen), deshalb als letzter Rückfall die Dialogzeilen selbst.
+function spreadSceneHint(spread) {
+    if (spread.sketchPrompt) return spread.sketchPrompt;
+    if (spread.text) return spread.text;
+    if (spread.balloons?.length) return spread.balloons.map(b => `${b.speaker ? b.speaker + ': ' : ''}${b.text}`).join(' / ');
+    return '';
 }
 
 // NEU: welche Bildquelle gerade tatsächlich benutzt werden soll. Solange
@@ -220,6 +248,7 @@ Object.assign(app.studio, {
     trimToFormat,
     buildStyleText,
     characterRefsFor,
+    spreadSceneHint,
     resolveImageSourceId,
     trackImageCost,
     GEMINI_IMAGE_PRICE_USD,
@@ -438,12 +467,14 @@ Object.assign(app.studio, {
         if (!spread) return;
 
         const result = await app.studio.imageSource.request('placeholder', {
-            formatId: trimToFormat(project.spec.trim),
+            formatId: trimToFormat(project.spec.trim, project.type),
             // NEU (Stufe 2): sobald das Storyboard eine eigene Bildidee
             // (sketchPrompt) hat, ist DIE das eigentlich gewollte Bildmotiv -
             // vorher (Stufe 1, ohne Storyboard) war der Manuskripttext der
-            // einzige verfügbare Anhaltspunkt.
-            sketch: spread.sketchPrompt || spread.text,
+            // einzige verfügbare Anhaltspunkt. NEU (Ausbaustufe 5): beim
+            // Comic fällt das notfalls weiter auf die Dialogzeilen zurück
+            // (siehe spreadSceneHint()).
+            sketch: spreadSceneHint(spread),
             style: buildStyleText(project.style),
             characters: characterRefsFor(project, spread),
             title: `Doppelseite ${spreadIndex + 1}`,
@@ -475,25 +506,35 @@ Object.assign(app.studio, {
         app.render.studioWizard();
     },
 
-    // Stufe 3 – Geschichte von der KI schreiben lassen. Ruft studioApi.js
-    // (eigener Gemini/Mistral-Aufruf, siehe Konzept D.4) und verteilt das
-    // Ergebnis über applyManuscript() auf die Doppelseiten.
+    // Stufe 3 – Geschichte/Skript von der KI schreiben lassen. Ruft
+    // studioApi.js (eigener Gemini/Mistral-Aufruf, siehe Konzept D.4) und
+    // verteilt das Ergebnis über applyManuscript()/applyComicScript() auf
+    // die Doppelseiten. NEU (Ausbaustufe 5): EINE Funktion für beide
+    // Werktypen (der "Von der KI schreiben lassen"-Knopf in index.html
+    // bleibt dadurch unverändert) - die Weiche sitzt hier, nicht im HTML.
     async generateStory() {
         const project = app.studio.projects[app.state.currentStudioProjectId];
         if (!project) return;
+        const isComic = project.type === 'comic';
 
-        if (project.spreads.length > 0 && !confirm('Es gibt bereits eine Geschichte für dieses Werk. Von der KI neu schreiben lassen und die aktuelle ersetzen?')) {
+        if (project.spreads.length > 0 && !confirm(`Es gibt bereits ${isComic ? 'ein Skript' : 'eine Geschichte'} für dieses Werk. Von der KI neu schreiben lassen und das aktuelle ersetzen?`)) {
             return;
         }
 
-        app.ui.showLoader('Schreibe die Geschichte...', 'Die KI denkt sich gerade etwas aus');
+        app.ui.showLoader(isComic ? 'Schreibe das Skript...' : 'Schreibe die Geschichte...', 'Die KI denkt sich gerade etwas aus');
         app.state.apiBusy = true;
         try {
-            const result = await app.studio.api.generateManuscript(project.brief, project.spec);
-            await app.studio.applyManuscript(project, result);
-            app.ui.toast('Geschichte fertig geschrieben!', '✨');
+            if (isComic) {
+                const result = await app.studio.api.generateComicScript(project.brief, project.spec);
+                await app.studio.applyComicScript(project, result);
+                app.ui.toast('Skript fertig geschrieben!', '✨');
+            } else {
+                const result = await app.studio.api.generateManuscript(project.brief, project.spec);
+                await app.studio.applyManuscript(project, result);
+                app.ui.toast('Geschichte fertig geschrieben!', '✨');
+            }
         } catch (e) {
-            console.error('Manuskript konnte nicht erzeugt werden:', e);
+            console.error('Manuskript/Skript konnte nicht erzeugt werden:', e);
             const msg = e.message === 'API_KEY_MISSING'
                 ? 'Bitte zuerst einen Gemini-API-Key in den Einstellungen eintragen.'
                 : e.message;
@@ -535,6 +576,40 @@ Object.assign(app.studio, {
         app.render.studioWizard(3);
     },
 
+    // NEU (Ausbaustufe 5): Comic-Gegenstück zu applyManuscript() oben -
+    // baut aus result.spreads[].dialogue die Sprechblasen (balloons) statt
+    // reinen Fließtext (siehe app.studio.balloons.fromDialogue(),
+    // js/studio/studioBalloons.js). spread.text bleibt eine KURZE optionale
+    // Regieanweisung/Bildunterschrift, oft leer - die eigentliche Handlung
+    // steckt in den Dialogzeilen, nicht im Fließtext.
+    async applyComicScript(project, result) {
+        if (!project.title && result.title) project.title = result.title;
+
+        const rawSpreads = Array.isArray(result.spreads) ? result.spreads : [];
+        project.spreads = rawSpreads.map((s, i) => ({
+            id: genId('spread'), index: i,
+            text: s.text || '', pageTurnHook: s.pageTurnHook || '',
+            sketchPrompt: '', imagePrompt: '',
+            imgUrl: null, thumbUrl: null, imageMeta: null, imageStatus: 'idle',
+            imageStale: false,
+            // NEU: kein textPos-Bedarf für Comic (die Textebene ist hier
+            // die Sprechblasen-Ebene, keine einzelne Textzone) - Standardwert
+            // bleibt trotzdem gesetzt, falls später doch eine Bildunterschrift
+            // (spread.text) über den normalen Layout-Regler gezeigt wird.
+            characterIds: [], layout: { textPos: 'unten', fontScale: 1, syllableColors: false },
+            balloons: app.studio.balloons.fromDialogue(s.dialogue)
+        }));
+
+        project.costLog.textCalls += 1;
+        project.stage = Math.max(project.stage, 3);
+        app.dbOps.saveProject(project);
+
+        for (let i = 0; i < project.spreads.length; i++) {
+            await app.studio.regenerateSpreadPlaceholder(i);
+        }
+        app.render.studioWizard(3);
+    },
+
     // Stufe 8 (Konzept) – "Ins Regal stellen". Die eigentliche Umwandlung
     // steckt in studioExport.js (JS-interne Logik, kein onclick-Ziel).
     exportToLibraryBook() {
@@ -544,8 +619,15 @@ Object.assign(app.studio, {
             app.ui.toast('Erst eine Geschichte schreiben, dann geht\'s ins Regal.', 'ℹ️');
             return;
         }
-        const missingText = project.spreads.some(s => !s.text || !s.text.trim());
-        if (missingText && !confirm('Mindestens eine Doppelseite hat noch keinen Text. Trotzdem ins Regal stellen?')) {
+        // NEU (Ausbaustufe 5): beim Comic steckt der Inhalt in balloons,
+        // spread.text ist dort meist ABSICHTLICH leer (siehe spreadReadableText()
+        // in studioExport.js) - sonst würde diese Warnung bei JEDEM Comic-Export
+        // fälschlich anschlagen.
+        const missingText = project.type === 'comic'
+            ? project.spreads.some(s => !s.balloons || s.balloons.length === 0)
+            : project.spreads.some(s => !s.text || !s.text.trim());
+        const missingLabel = project.type === 'comic' ? 'noch keine Sprechblase' : 'noch keinen Text';
+        if (missingText && !confirm(`Mindestens eine Doppelseite hat ${missingLabel}. Trotzdem ins Regal stellen?`)) {
             return;
         }
 

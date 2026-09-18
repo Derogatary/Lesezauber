@@ -59,16 +59,23 @@ const FORMATS = {
     comicPage: {
         label: 'Comic-Seite',
         aspect: '3:4',
+        // FIX (Ausbaustufe 5): "Freiraum ... für Sprechblasen" hat im
+        // Testlauf (docs/KONZEPT-Comic.md, Abschnitt 5) GENAU EINE gemalte
+        // Sprechblase erzeugt, obwohl das gar nicht gewollt war -
+        // Bildmodelle reagieren auf erwähnte Begriffe, nicht zuverlässig auf
+        // Verneinungen ODER Zweckbeschreibungen. Rein visuell beschreiben,
+        // den Zweck ("für Sprechblasen") nicht mehr nennen.
         genW: 1024, genH: 1344,
-        textZone: 'Freiraum oben und unten für Sprechblasen',
-        note: 'Sprechblasen werden NICHT ins Bild generiert, sondern als Ebene darübergelegt.'
+        textZone: 'oberes und unteres Fünftel als unbedeckter Hintergrund ohne Figuren/Objekte/Details',
+        note: 'Sprechblasen werden NICHT ins Bild generiert, sondern als Ebene darübergelegt (siehe js/studio/studioBalloons.js).'
     },
     comicPanel: {
         label: 'Comic-Einzelpanel',
         aspect: '4:3',
         genW: 1024, genH: 768,
-        textZone: 'obere Ecke frei für Blase',
-        note: 'Für selbst zusammengesetzte Panel-Raster.'
+        // FIX: gleicher Grund wie bei comicPage oben - "Blase" nicht nennen.
+        textZone: 'obere Ecke als unbedeckter Hintergrund ohne Figuren/Objekte/Details',
+        note: 'Für selbst zusammengesetzte Panel-Raster (noch nicht verdrahtet, siehe docs/KONZEPT-Comic.md Abschnitt 6).'
     },
     worksheetIllu: {
         label: 'Arbeitsheft-Bild / Ausmalbild',

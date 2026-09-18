@@ -498,7 +498,7 @@ Prompt muss nie neu erdacht werden. Anbietervergleich und Austausch-Mechanik im 
 | **2 – Bilder** | Stilkarte, Figuren-Bibel, Figurenblatt, Storyboard, Bildgenerierung pro Doppelseite, Kostenzähler | Das erste richtige, selbst gemachte Bilderbuch |
 | **3 – Layout & Druck** | Textplatzierung, Silbenfarben, Erstleser-Regelprofil, Doppelseiten-Druck | Ein Buch, das man ausdrucken und verschenken kann |
 | ~~**4 – Arbeitsheft**~~ | ✅ **gebaut** (Branch `claude/schreibzauber-stufe4-arbeitsheft`, noch nicht in `main`) - Lernziel, Progression, Aufgabenbaukasten (5 von 9 Typen), Differenzierung, Lösungsteil, s/w-Druck | Übungshefte passend zum aktuellen Schulstoff |
-| **5 – Comic** | Panel-Layouts, Sprechblasen-Overlay, Comic-Stilregeln | Eigene Comic-Hefte |
+| ~~**5 – Comic**~~ | ✅ **gebaut** (siehe "Stand nach Stufe 5" unten) - Sprechblasen-Overlay, Comic-Skript-Generierung, Figuren-Namensabgleich. Panel-Layouts (mehrere Panels/Seite) bewusst NICHT umgesetzt | Eigene Comic-Hefte |
 | **6 – Politur** | Zweite Einstiegsseite `schreiben.html` + eigenes Manifest, projektübergreifende Figuren, Vorlagen („Gute-Nacht-Geschichte“, „Geburtstagsbuch“) | Fühlt sich wie eine eigene App an |
 
 Jede Stufe ist für sich benutzbar und lieferbar. Stufe 1 hat den besten Nutzen-pro-Aufwand
@@ -851,6 +851,46 @@ Blocker für ein vollständiges erstes selbst gemachtes Bilderbuch.
 
 ---
 
+## Stand nach Stufe 5 (Comic) - was steht, was ist bewusst offen geblieben
+
+Auf Nutzerauftrag gebaut, NACHDEM Stufe 5/6 laut TEIL E ursprünglich zurückgestellt waren -
+Details zu den einzelnen Entscheidungen stehen ausführlich in `CLAUDE.md` (Versionsstand,
+Eintrag v0.24.0-beta), hier nur die Kurzfassung mit den wichtigsten Abgrenzungen.
+
+- Werktyp `'comic'` (`app.studio.projectTypes`) läuft durch DASSELBE 8-Stufen-Gerüst wie das
+  Bilderbuch (Konzept C.1) - nur Stufe 3 (Skript statt Fließtext, `generateComicScript()`/
+  `applyComicScript()`) und Stufe 7 (Sprechblasen-Editor statt Textposition, neue Datei
+  `js/studio/studioBalloons.js`) unterscheiden sich.
+- Figuren-Konsistenz: sprechende Namen kommen zuerst nur als Text aus dem Skript (Stufe 3, vor
+  der Figuren-Bibel in Stufe 4) - `resolveComicCharacterIds()` gleicht sie automatisch per
+  Namen mit `project.characters` ab, sobald die existieren, statt eine eigene manuelle
+  Zuordnungs-UI zu bauen.
+- Bild-Prompt-Fix aus `docs/KONZEPT-Comic.md` Abschnitt 5 übernommen: die Comic-Textzone
+  (`imageFormats.js`) beschreibt jetzt rein visuell ("unbedeckter Hintergrund ohne Figuren/
+  Objekte/Details"), OHNE das Wort "Sprechblase" zu nennen - der dortige Testlauf hatte
+  gezeigt, dass die reine Erwähnung des Begriffs eine gemalte Sprechblase auslöst.
+- **Bewusst NICHT umgesetzt:**
+  - **Panel-Layouts** (mehrere Panels pro Seite, Konzept D.2 ursprünglich `balloons.js` +
+    eine Vorlagen-Bibliothek, siehe `docs/KONZEPT-Comic.md` Abschnitt 6). Eine Comic-"Seite"
+    ist aktuell ein einzelnes, dicht komponiertes Bild - kein Panel-Raster. Die dort
+    beschriebene Vorlagen-Bibliothek ist selbst für das dortige separate Werkzeug noch nicht
+    entworfen (eigener TODO-Punkt dort), für SchreibZauber deshalb erst recht nicht vorgezogen.
+  - **Sichtbare Sprechblasen im normalen Reader.** Der Reader kennt bewusst KEINEN
+    Unterschied zwischen Werktypen (Kernprinzip seit Stufe 1) - eine exportierte Comic-Seite
+    zeigt dort das Bild plus den Dialog als normalen vorlesbaren Text ("Name: Zeile",
+    `spreadReadableText()` in `studioExport.js`). Die echte, positionierte Sprechblasen-
+    Ansicht existiert nur in der Werkstatt-Vorschau (Stufe 7). Ein eigener Comic-Druck (mit
+    echten Sprechblasen auf Papier, analog zu `studioPrint.js`) ist noch nicht gebaut -
+    `app.studio.balloons.buildBalloonsHtml()` ist der dafür bereits fertige Baustein.
+  - **Freies Ziehen (Drag&Drop)** der Sprechblasen - Stufe 7 bietet stattdessen X/Y/Breite als
+    Prozent-Regler, reicht für die üblichen 1-4 Sprechblasen pro Seite.
+
+**Was eine spätere Sitzung vorfindet:** `app.studio.balloons` ist der Andockpunkt für einen
+künftigen Comic-Druck; Panel-Layouts wären eine eigene, größere Ausbaustufe (Datenmodell
+müsste `spreads[]` um eine echte Panel-Liste pro Seite erweitern, nicht nur um `balloons[]`).
+
+---
+
 ## Stand nach Stufe 3 (Layout & Druck) - was steht, was ist bewusst offen geblieben
 
 Ausbaustufe 3 ist gebaut, genau die vier in TEIL E genannten Bausteine (Textplatzierung,
@@ -914,7 +954,8 @@ Integrationspass-Besonderheiten wie bei Welle 5.
   zweite `printSpreads()`-Variante (oder einen Modus-Parameter) ergänzen, der Bleed als echtes
   Übermaß statt als optischen Schalter behandelt und jede Doppelseite in zwei Einzelseiten
   aufteilt - `buildOverlayHtml()` selbst bräuchte dafür keine Änderung.
-- Stufe 5 (Comic) und Stufe 6 (Politur) bleiben wie in TEIL E beschrieben zurückgestellt.
+- Stufe 5 (Comic) ist inzwischen ebenfalls gebaut, siehe "Stand nach Stufe 5" oben. Stufe 6
+  (Politur) bleibt wie in TEIL E beschrieben zurückgestellt.
 
 ---
 

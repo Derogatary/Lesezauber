@@ -90,11 +90,43 @@ function spreadCardHtml(spread, index) {
     </div>`;
 }
 
+// NEU (Ausbaustufe 5): Comic-Gegenstück zu spreadCardHtml() oben - zeigt
+// Sprechblasen (Sprecher + Text, editierbar) statt eines Fließtext-Feldes.
+// CRUD läuft über app.studio.addBalloon()/updateBalloon()/deleteBalloon()
+// aus js/studio/studioBalloons.js - dieselben Funktionen, die auch die
+// Sprechblasen-Karten in Stufe 7 (render/studioLayout.js) benutzen.
+function comicSpreadCardHtml(spread, index) {
+    const balloonRows = spread.balloons.map(b => `
+        <div class="flex gap-1.5 items-start">
+            <input type="text" value="${app.utils.sanitize(b.speaker)}" placeholder="Wer?" oninput="app.studio.updateBalloon(${index}, '${b.id}', {speaker: this.value})" class="w-20 flex-shrink-0 text-xs font-bold text-indigo-700 bg-slate-50 border border-slate-200 rounded-lg px-1.5 py-1 focus:outline-none focus:border-indigo-500">
+            <input type="text" value="${app.utils.sanitize(b.text)}" placeholder="Sprechblasentext" oninput="app.studio.updateBalloon(${index}, '${b.id}', {text: this.value})" class="flex-grow text-xs bg-slate-50 border border-slate-200 rounded-lg px-1.5 py-1 focus:outline-none focus:border-indigo-500">
+            <button onclick="app.studio.deleteBalloon(${index}, '${b.id}')" aria-label="Sprechblase löschen" class="text-slate-300 hover:text-red-500 text-xs px-1 py-1">🗑️</button>
+        </div>`).join('');
+
+    return `
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex gap-3 p-3">
+        <div class="w-20 flex-shrink-0">
+            ${spread.thumbUrl ? `<img src="${spread.thumbUrl}" class="w-full aspect-[3/4] object-cover rounded-lg border border-slate-200" alt="Comic-Seite ${index + 1}">` : `<div class="w-full aspect-[3/4] bg-slate-100 rounded-lg flex items-center justify-center text-slate-300 text-xl">🖼️</div>`}
+        </div>
+        <div class="flex-grow min-w-0 space-y-1.5">
+            <div class="flex items-center justify-between">
+                <span class="text-[10px] font-bold text-slate-400 uppercase">Seite ${index + 1}</span>
+                <button onclick="app.studio.deleteSpread(${index})" aria-label="Seite löschen" class="text-slate-300 hover:text-red-500 text-xs">🗑️</button>
+            </div>
+            ${balloonRows || '<p class="text-[11px] text-slate-400 italic">Noch keine Sprechblasen.</p>'}
+            <button onclick="app.studio.addBalloon(${index})" class="w-full text-[11px] font-bold text-indigo-600 border border-dashed border-indigo-200 rounded-lg py-1.5 hover:bg-indigo-50 transition">+ Sprechblase</button>
+            ${spread.pageTurnHook ? `<p class="text-[10px] text-amber-700 italic">👉 Umblätter-Moment: ${app.utils.sanitize(spread.pageTurnHook)}</p>` : ''}
+        </div>
+    </div>`;
+}
+
 function fillStoryStage(project) {
+    const isComic = project.type === 'comic';
     const hasStory = project.spreads.length > 0;
     document.getElementById('studioGenerateStoryBtn').innerText = `✨ ${hasStory ? 'Neu von der KI schreiben lassen' : 'Von der KI schreiben lassen'}`;
     document.getElementById('studioSpreadEmptyState').classList.toggle('hidden', hasStory);
-    document.getElementById('studioSpreadList').innerHTML = project.spreads.map((s, i) => spreadCardHtml(s, i)).join('');
+    document.getElementById('studioSpreadList').innerHTML = project.spreads
+        .map((s, i) => isComic ? comicSpreadCardHtml(s, i) : spreadCardHtml(s, i)).join('');
     document.getElementById('studioExportBtn').classList.toggle('hidden', !hasStory);
 }
 
