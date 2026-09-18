@@ -1,7 +1,13 @@
 // Bei jeder inhaltlichen Änderung an einer dieser Dateien diese Nummer
 // erhöhen - sonst bekommen wiederkehrende Besucher weiter die alte
 // zwischengespeicherte Version ausgeliefert.
-const CACHE_NAME = 'lesezauber-shell-v42';
+const CACHE_NAME = 'lesezauber-shell-v43';
+
+// NEU (v43): echter KDP-Innenteil-Export (studioPrint.js, printSpreadsKdp())
+// mit tatsächlicher 3mm-Beschnittzugabe und 6,4mm-Sicherheitsabstand statt
+// nur eines optischen Randlos-Umschalters - nur für die Papierformate A5/A4
+// hoch. Liefert bewusst keinen Umschlag (KDPs eigener Cover-Ersteller).
+// Keine neuen Dateien. Siehe CLAUDE.md, Versionsstand.
 
 // NEU (v42): Doppelseiten-Druck (studioPrint.js) ist jetzt comicfähig -
 // druckt die fertig geletterte Panel-Seite, Sprechblasen-Einbrennen per

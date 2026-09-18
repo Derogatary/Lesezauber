@@ -33,6 +33,24 @@ const TRIM_PAPER_MM = {
 // Textzone zu sprengen.
 const PRINT_BASE_FONT_MM = 4.4;
 
+// NEU (KDP-Innenteil): die in docs/KONZEPT-SchreibZauber.md, Nachtrag "KDP-
+// Druckvorgaben recherchiert" (Sept. 2026) verifizierten Werte - 0,125 Zoll
+// Beschnittzugabe (Bleed), 0,25 Zoll Sicherheitsabstand für Text vom
+// Trimm-Rand. Nur diese beiden Werte sind eine echte physische Vergrößerung
+// der Dokumentseite (siehe printSpreadsKdp() unten) - der bisherige
+// "randlos"-Umschalter oben ist rein optisch (object-fit) und WAR nie
+// dasselbe wie echter Bleed, siehe dortiger Kommentar.
+const KDP_BLEED_MM = 3;
+const KDP_SAFE_MM = 6.4;
+
+// NEU (KDP-Innenteil): nur Papierformate, die tatsächlich als KDP-eigenes
+// Metrik-Trimm-Format geführt werden (A5 hoch = 148x210mm, A4 hoch =
+// 210x297mm sind beides gängige ISO-Formate in KDPs Formatliste). "A5 quer"
+// (Querformat) ist NICHT geprüft, ob/wie KDP ein Querformat-Bilderbuch
+// überhaupt trimmt - deshalb hier bewusst ausgeschlossen statt geraten, statt
+// stillschweigend ein evtl. falsches Format anzubieten.
+const KDP_ALLOWED_TRIMS = ['a5-hoch', 'a4-hoch'];
+
 // NEU (comicfähiger Druck): "randabfallend" (bleed) lässt das Bild die
 // ganze Seite füllen (object-fit: cover schneidet dafür ggf. Ränder des
 // Bildes ab), "mit Rand" (Standard - sicherer für Heimdrucker, die selten
@@ -66,6 +84,48 @@ function comicPageHtml(imgUrl, index, bleed) {
         ? `<img src="${imgUrl}" style="${imgStyleFor(bleed)}" alt="Comic-Seite ${index + 1}">`
         : '';
     return `<div class="sz-print-page">${img}</div>`;
+}
+
+// NEU (KDP-Innenteil): Bild füllt die GESAMTE, um die Bleed-Zugabe
+// vergrößerte Seite per object-fit:cover - die äußeren KDP_BLEED_MM sind
+// bewusst Überstand, der beim Druck weggeschnitten wird. Die Textebene
+// bekommt einen EIGENEN, weiter innen liegenden Container (inset:
+// safeInset) - buildOverlayHtml()s Prozent-Positionen (top/bottom/left/
+// right in %, siehe studioLayout.js textPosStyle) beziehen sich dadurch auf
+// diese sichere Fläche statt auf die volle Bleed-Seite, der Text bleibt so
+// unabhängig von seiner gewählten Zone garantiert mindestens KDP_SAFE_MM
+// vom Trimm-Rand entfernt.
+function kdpPageHtml(spread, index, project, safeInset) {
+    const layout = spread.layout || { textPos: 'unten', fontScale: 1, syllableColors: false };
+    const img = spread.imgUrl
+        ? `<img src="${spread.imgUrl}" style="position:absolute; inset:0; width:100%; height:100%; object-fit:cover;" alt="Doppelseite ${index + 1}">`
+        : '';
+    const overlay = app.studio.layout.buildOverlayHtml(spread.text || '', layout, project.brief.readingLevel, PRINT_BASE_FONT_MM, 'mm');
+    return `<div class="sz-print-page">${img}<div style="position:absolute; inset:${safeInset}mm;">${overlay}</div></div>`;
+}
+
+// NEU (KDP-Innenteil, Comic): bewusst KEIN Bleed/Überstand hier - die
+// Sprechblasen sind bereits pixelgenau auf die ursprüngliche Seitenfläche
+// gebrannt (app.studio.comicPanels.bakePageWithBalloons), ein Rand-Überstand
+// per object-fit:cover könnte sie unkontrolliert anschneiden. Das Bild liegt
+// stattdessen per object-fit:contain mit einem Rand von Bleed+Sicherheits-
+// abstand - der ist automatisch größer als die geforderte Sicherheitszone,
+// also ohne Anschneide-Risiko.
+function kdpComicPageHtml(imgUrl, index) {
+    const inset = KDP_BLEED_MM + KDP_SAFE_MM;
+    const img = imgUrl
+        ? `<img src="${imgUrl}" style="position:absolute; inset:${inset}mm; width:calc(100% - ${2 * inset}mm); height:calc(100% - ${2 * inset}mm); object-fit:contain;" alt="Comic-Seite ${index + 1}">`
+        : '';
+    return `<div class="sz-print-page">${img}</div>`;
+}
+
+function kdpTitlePageHtml(project, safeInset) {
+    const author = app.profiles.find((p) => p.id === project.profileId)?.name || 'Ich';
+    return `
+        <div class="sz-print-page" style="display:flex; align-items:center; justify-content:center; flex-direction:column; text-align:center; padding:${safeInset}mm;">
+            <h1 style="font-size:9mm; margin:0 0 6mm; font-family:sans-serif;">${app.utils.sanitize(project.title || 'Unbenanntes Werk')}</h1>
+            <p style="font-size:4.5mm; color:#475569; font-family:sans-serif;">von ${app.utils.sanitize(author)}</p>
+        </div>`;
 }
 
 Object.assign(app.studio, {
@@ -149,6 +209,97 @@ Object.assign(app.studio, {
             </head>
             <body>
                 ${coverHtml}
+                ${pagesHtml}
+            </body>
+            </html>
+        `);
+        printWindow.document.close();
+        printWindow.focus();
+        setTimeout(() => printWindow.print(), 400);
+    },
+
+    // NEU (KDP-Innenteil): liefert - über denselben Browser-Druckdialog wie
+    // printSpreads() oben ("Als PDF speichern") - ein Innenteil-PDF, das die
+    // recherchierten KDP-Vorgaben tatsächlich einhält (siehe
+    // docs/KONZEPT-SchreibZauber.md, Nachtrag "KDP-Druckvorgaben
+    // recherchiert"): echte 3mm-Beschnittzugabe (die Dokumentseite ist dafür
+    // tatsächlich größer als das Trimm-Format, nicht nur optisch
+    // randabfallend wie beim normalen Druck oben) und 6,4mm
+    // Sicherheitsabstand für Text vom Trimm-Rand. Bewusst eine EIGENE
+    // Funktion statt eines weiteren Parameters an printSpreads(): andere
+    // Regeln (immer Bleed bzw. immer "mit Rand" je nach Werktyp, andere
+    // Seitengröße, kein Sprechblasen-Umschalter, nur zwei erlaubte
+    // Papierformate) - keine sinnvoll gemeinsame Signatur mehr.
+    //
+    // Liefert NUR das Innenteil, KEINEN Umschlag - der Umschlag (Vorder-/
+    // Rückseite + Buchrücken samt ISBN-Barcode-Fläche) gehört in KDPs
+    // eigenen, kostenlosen Cover-Ersteller: der berechnet die Rückenbreite
+    // korrekt aus der finalen Seitenzahl, das hier ohne echte Testeinreichung
+    // nachzubauen wäre reines Raten (siehe Hinweistext in index.html).
+    async printSpreadsKdp() {
+        const project = app.studio.projects[app.state.currentStudioProjectId];
+        if (!project) return;
+        if (project.spreads.length === 0) {
+            app.ui.toast('Noch keine Doppelseiten zum Drucken - erst in der Stufe "Geschichte" welche anlegen.', 'ℹ️');
+            return;
+        }
+        if (!KDP_ALLOWED_TRIMS.includes(project.spec.trim)) {
+            app.ui.toast('KDP-Export gibt es nur für die Papierformate "A5 hoch"/"A4 hoch" - im Bauplan (Stufe 1) änderbar.', '⚠️');
+            return;
+        }
+
+        const printWindow = window.open('', '_blank');
+        if (!printWindow) {
+            app.ui.toast('Pop-up blockiert - bitte für diese Seite erlauben.', '⚠️');
+            return;
+        }
+        printWindow.document.write('<title>Wird vorbereitet …</title><body style="font-family:sans-serif;padding:2rem;color:#475569;">KDP-Innenteil wird vorbereitet …</body>');
+
+        const trim = TRIM_PAPER_MM[project.spec.trim];
+        const pageW = trim.w + 2 * KDP_BLEED_MM;
+        const pageH = trim.h + 2 * KDP_BLEED_MM;
+        const safeInset = KDP_BLEED_MM + KDP_SAFE_MM;
+        const isComic = project.type === 'comic';
+
+        let pagesHtml;
+        if (isComic) {
+            app.ui.showLoader('Comic-Seiten werden vorbereitet...', 'Sprechblasen werden für den Druck eingebrannt');
+            try {
+                // NEU: für den KDP-Innenteil IMMER die fertig geletterte
+                // Fassung - ein "sauberer" Export ohne Text wäre für eine
+                // Veröffentlichung ohnehin kein fertiges Werk.
+                const images = await Promise.all(project.spreads.map((spread) => {
+                    if (!spread.panels.every((p) => p.imgUrl)) return Promise.resolve(null);
+                    return app.studio.comicPanels.bakePageWithBalloons(spread, { showSoundEffects: project.comicShowSoundEffects });
+                }));
+                pagesHtml = project.spreads.map((s, i) => kdpComicPageHtml(images[i]?.full, i)).join('');
+            } finally {
+                app.ui.hideLoader();
+            }
+        } else {
+            pagesHtml = project.spreads.map((s, i) => kdpPageHtml(s, i, project, safeInset)).join('');
+        }
+
+        if (printWindow.closed) {
+            app.ui.toast('Druckfenster wurde geschlossen.', '⚠️');
+            return;
+        }
+
+        printWindow.document.open();
+        printWindow.document.write(`
+            <html>
+            <head>
+                <title>${app.utils.sanitize(project.title || 'Unbenanntes Werk')} - KDP-Innenteil</title>
+                <style>
+                    @page { size: ${pageW}mm ${pageH}mm; margin: 0; }
+                    * { box-sizing: border-box; }
+                    body { margin: 0; font-family: sans-serif; }
+                    .sz-print-page { position: relative; width: ${pageW}mm; height: ${pageH}mm; overflow: hidden; background: #fff; page-break-after: always; }
+                    .sz-print-page:last-child { page-break-after: auto; }
+                </style>
+            </head>
+            <body>
+                ${kdpTitlePageHtml(project, safeInset)}
                 ${pagesHtml}
             </body>
             </html>

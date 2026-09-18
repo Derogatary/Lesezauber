@@ -585,14 +585,41 @@ September 2026, keine eigene Testeinreichung bei KDP). Ergebnis - jetzt konkret,
   die genaue Pflicht-Platzierung auf dem Umschlag (Barcode-Zone hinten unten) wurde in dieser
   Recherche nicht bis ins letzte Detail (exakte mm-Zone/Freifläche) verifiziert.
 
-**Konsequenz für Ausbaustufe 3 (siehe "Stand nach Stufe 3" unten):** Der jetzt gebaute
-Doppelseiten-Druck liefert einen soliden Export fürs eigene/private Ausdrucken bzw.
-"als PDF speichern" - bewusst **noch nicht** KDP-fertig. Was für eine echte KDP-Einreichung
-zusätzlich fehlt, ist jetzt konkret benennbar (statt vage "muss noch geprüft werden"):
+**Konsequenz für Ausbaustufe 3 (siehe "Stand nach Stufe 3" unten):** Der zunächst gebaute
+Doppelseiten-Druck lieferte einen soliden Export fürs eigene/private Ausdrucken bzw.
+"als PDF speichern" - bewusst noch nicht KDP-fertig. Was für eine echte KDP-Einreichung
+zusätzlich fehlte, war konkret benennbar (statt vage "muss noch geprüft werden"):
 1. echter 3 mm-Übermaßzuschlag statt nur eines optischen Randabfallend/Mit-Rand-Umschalters,
-2. Aufteilung jeder Doppelseite in zwei einzelne Trimm-Seiten für die Einreichung,
+2. ~~Aufteilung jeder Doppelseite in zwei einzelne Trimm-Seiten für die Einreichung~~ -
+   **gegenstandslos:** eine "Doppelseite" ist in dieser Architektur von Anfang an bereits EINE
+   physische Druckseite (bei "A5 quer" ein Querformat-Blatt, sonst ein Hochformat-Blatt), kein
+   zwei Buchseiten überspannendes Bild. Es gibt nichts aufzuteilen - diese Vorab-Vermutung hat
+   sich beim tatsächlichen Bau als falsch herausgestellt.
 3. Umschlag-Vorlage mit ISBN-Barcode-Freifläche.
-Diese drei Punkte sind ein klar umrissener Folgeschritt, kein offenes Rätsel mehr.
+
+**Mit v0.29.0-beta umgesetzt:** Punkt 1 (`app.studio.printSpreadsKdp()` in
+`js/studio/studioPrint.js`, echte 3mm-Beschnittzugabe + 6,4mm Sicherheitsabstand als
+tatsächliche Seitenvergrößerung, nur für die KDP-eigenen Metrik-Trimm-Formate "A5/A4 hoch") -
+Details siehe CLAUDE.md, Versionsstand v0.29.0-beta.
+
+**Bewusst weiterhin nicht gebaut (Punkt 3):** ein eigener Umschlag-Generator. Der KDP-Umschlag
+(Vorder-/Rückseite + Buchrücken in einer PDF, Rückenbreite abhängig von der finalen
+Seitenzahl/Papierart, ISBN-Barcode-Freifläche) ist eine andere Aufgabe als das Innenteil - KDP
+stellt dafür einen eigenen, kostenlosen Cover-Ersteller bereit, der die Rückenbreite korrekt
+berechnet. Das ohne eine echte Testeinreichung nachzubauen wäre reines Raten der
+Rückenbreiten-Formel; im UI-Hinweistext wird stattdessen auf das KDP-eigene Werkzeug
+verwiesen. **Klarstellung, weil das beim Nutzer für Verwirrung sorgte:** "Kindle Create" ist
+NICHT dieses Werkzeug - das ist Amazons kostenloses Programm für **E-Books** (Kindle-Format),
+es baut kein druckfertiges Taschenbuch-Innenteil und kennt weder Bleed noch Trimm-Formate.
+
+**Neu erkannt, noch offen:** ob die KI-generierten Bilder KDPs empfohlene 300 dpi erreichen -
+rechnerisch eher 120-180 dpi je nach Format bei den aktuellen Bildmaßen (`imageFormats.js`) auf
+den A5/A4-Trimm-Größen. Das ist eine Frage der Bildgenerierungs-Auflösung (Kosten/Qualität-
+Abwägung bei der Bild-API), keine Druck-Layout-Frage, deshalb hier nicht "nebenbei" mitgelöst.
+Ebenso offen: der von KDP je nach Gesamtseitenzahl vorgeschriebene zusätzliche
+Bundsteg-Innenrand ("gutter margin") - nicht modelliert, da die App nicht zwischen linker/
+rechter (Recto/Verso-)Seite unterscheidet. Vor einer echten Veröffentlichung bleibt eine
+KDP-Testbestellung dringend empfohlen (steht auch im UI-Hinweistext).
 
 ---
 
