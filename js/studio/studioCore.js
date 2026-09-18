@@ -99,36 +99,44 @@ function buildStyleText(style) {
     return parts.filter(Boolean).join(' ');
 }
 
-// NEU (Ausbaustufe 5): bei Comic-Projekten kommen sprechende Figuren zuerst
-// nur als reiner Name aus dem Skript (Stufe 3, VOR der Figuren-Bibel in
-// Stufe 4 - siehe balloons[].speaker). Statt einer eigenen manuellen
-// Zuordnungs-UI (wie beim Bilderbuch-Storyboard) werden sie automatisch
-// über den Namen mit project.characters abgeglichen, sobald die existieren.
-// NUR ein Rückfall, wenn noch keine bewusste manuelle Auswahl vorliegt.
-function resolveComicCharacterIds(project, spread) {
-    const speakers = new Set((spread.balloons || []).map(b => (b.speaker || '').trim().toLowerCase()).filter(Boolean));
+// NEU (Ausbaustufe 5, Panels): bei Comic-Projekten kommen sprechende
+// Figuren zuerst nur als reiner Name aus dem Skript (Stufe 3, VOR der
+// Figuren-Bibel in Stufe 4 - siehe panel.balloons[].speaker). Statt einer
+// eigenen manuellen Zuordnungs-UI (wie beim Bilderbuch-Storyboard) werden
+// sie automatisch über den Namen mit project.characters abgeglichen,
+// sobald die existieren - PRO PANEL, nicht pro Seite, damit ein Panel nur
+// die Figur(en) als Referenz bekommt, die darin tatsächlich sprechen
+// (Konzept D.5 #4, für Panels sogar noch genauer als für ganze Seiten).
+function characterRefsForPanel(project, panel) {
+    const speakers = new Set((panel.balloons || []).map(b => (b.speaker || '').trim().toLowerCase()).filter(Boolean));
     if (speakers.size === 0) return [];
-    return project.characters.filter(c => speakers.has((c.name || '').trim().toLowerCase())).map(c => c.id);
+    return project.characters.filter(c => speakers.has((c.name || '').trim().toLowerCase()));
 }
 
-// NEU: welche Figuren-Referenzen zu einer Doppelseite gehören - liest
-// spread.characterIds und schlägt sie in project.characters nach. EIN Ort,
-// damit Storyboard-Vorschau, Bildgenerierung und "alle Platzhalter
-// ersetzen" garantiert dieselbe Auswahl sehen (Konzept D.5 #4: "nur die
-// Figuren referenzieren, die auf der Seite vorkommen").
+// NEU: welche Figuren-Referenzen zu einer Doppelseite gehören (Bilderbuch/
+// Arbeitsheft) - liest spread.characterIds und schlägt sie in
+// project.characters nach. EIN Ort, damit Storyboard-Vorschau,
+// Bildgenerierung und "alle Platzhalter ersetzen" garantiert dieselbe
+// Auswahl sehen (Konzept D.5 #4: "nur die Figuren referenzieren, die auf
+// der Seite vorkommen"). Comic-Panels haben ihren eigenen Weg, siehe
+// characterRefsForPanel() oben.
 function characterRefsFor(project, spread) {
-    let ids = spread?.characterIds || [];
-    if (ids.length === 0 && project.type === 'comic') ids = resolveComicCharacterIds(project, spread);
+    const ids = spread?.characterIds || [];
     return ids.map(id => project.characters.find(c => c.id === id)).filter(Boolean);
 }
 
-// NEU (Ausbaustufe 5): die Bildidee einer Doppelseite - beim Comic oft ohne
-// eigenen sketchPrompt/Bildunterschrift (die eigentliche Handlung steckt in
-// den Sprechblasen), deshalb als letzter Rückfall die Dialogzeilen selbst.
+// NEU (Ausbaustufe 5): die Bildidee einer Doppelseite/Comic-Seite - beim
+// Comic aus allen Panels zusammengesetzt (Bildidee + Dialogzeilen je
+// Panel), beim Bilderbuch der übliche sketchPrompt/Fließtext-Rückfall.
 function spreadSceneHint(spread) {
+    if (spread.panels?.length) {
+        return spread.panels.map(p => {
+            const dialogue = (p.balloons || []).map(b => `${b.speaker ? b.speaker + ': ' : ''}${b.text}`).join(' / ');
+            return [p.visual, dialogue].filter(Boolean).join(' - ');
+        }).filter(Boolean).join(' | ');
+    }
     if (spread.sketchPrompt) return spread.sketchPrompt;
     if (spread.text) return spread.text;
-    if (spread.balloons?.length) return spread.balloons.map(b => `${b.speaker ? b.speaker + ': ' : ''}${b.text}`).join(' / ');
     return '';
 }
 
@@ -219,6 +227,13 @@ function createDefaultProject(type) {
         // legt die "Reihe" einfach durch Benutzung an.
         seriesName: '',
 
+        // NEU (Ausbaustufe 5, Panels): nur für Comic-Projekte relevant -
+        // true = beim "Ins Regal stellen" werden die Sprechblasen fest ins
+        // Bild gebrannt ("fertiger Comic-Look"), false = die Bildseite
+        // bleibt "sauber" (Text separat, einfacher später zu übersetzen/
+        // zu bearbeiten). Siehe js/studio/studioExport.js toLibraryBook().
+        comicBakeText: true,
+
         spec: { totalPages, storySpreads, wordBudget, trim: 'a5-quer' },
 
         // Reserviert für Stufe 2 (Stilkarte) - bleibt in Stufe 1 leer.
@@ -248,6 +263,7 @@ Object.assign(app.studio, {
     trimToFormat,
     buildStyleText,
     characterRefsFor,
+    characterRefsForPanel,
     spreadSceneHint,
     resolveImageSourceId,
     trackImageCost,
@@ -506,6 +522,46 @@ Object.assign(app.studio, {
         app.render.studioWizard();
     },
 
+    // NEU (Ausbaustufe 5, Panels): Comic-Gegenstück zu
+    // regenerateSpreadPlaceholder() oben - erzeugt für JEDES Panel einer
+    // Comic-Seite einen lokalen, kostenlosen Platzhalter und setzt sie
+    // sofort zu einer Seite zusammen (js/studio/studioComicPanels.js), damit
+    // Stufe 3/7 direkt nach dem Skript-Schreiben schon etwas zeigen -
+    // exakt dasselbe "Notbetrieb ohne Bild-API"-Prinzip wie beim Bilderbuch.
+    async regenerateComicPanelPlaceholders(spreadIndex) {
+        const project = app.studio.projects[app.state.currentStudioProjectId];
+        const spread = project && project.spreads[spreadIndex];
+        if (!spread) return;
+
+        for (const panel of spread.panels) {
+            const result = await app.studio.imageSource.request('placeholder', {
+                formatId: 'comicPanel',
+                sketch: panel.visual || (panel.balloons || []).map(b => b.text).join(' / '),
+                style: buildStyleText(project.style),
+                characters: characterRefsForPanel(project, panel),
+                title: `Seite ${spreadIndex + 1}`,
+                index: spreadIndex
+            });
+            if (!result) continue;
+            panel.imgUrl = result.full;
+            panel.thumbUrl = result.thumb;
+            // NEU: wie bei regenerateSpreadPlaceholder() - der Prompt wandert
+            // mit, damit "alle Platzhalter ersetzen" (studioImages.js) ihn
+            // später wiederverwenden kann, ohne ihn neu zu erfinden.
+            panel.imagePrompt = result.meta.prompt || '';
+            panel.imageStatus = 'done';
+        }
+
+        const composited = await app.studio.comicPanels.compositePage(spread);
+        if (composited) {
+            spread.imgUrl = composited.full;
+            spread.thumbUrl = composited.thumb;
+            spread.imageStatus = 'done';
+        }
+        app.dbOps.saveProject(project);
+        app.render.studioWizard();
+    },
+
     // Stufe 3 – Geschichte/Skript von der KI schreiben lassen. Ruft
     // studioApi.js (eigener Gemini/Mistral-Aufruf, siehe Konzept D.4) und
     // verteilt das Ergebnis über applyManuscript()/applyComicScript() auf
@@ -582,61 +638,99 @@ Object.assign(app.studio, {
     // js/studio/studioBalloons.js). spread.text bleibt eine KURZE optionale
     // Regieanweisung/Bildunterschrift, oft leer - die eigentliche Handlung
     // steckt in den Dialogzeilen, nicht im Fließtext.
+    // NEU (überarbeitet nach Nutzer-Feedback "sonst ist es einfach ein
+    // Bilderbuch"): baut aus result.spreads[].panels ECHTE Panels statt
+    // eines einzelnen Seitenbilds mit lose schwebenden Sprechblasen. Jedes
+    // Panel bekommt sein EIGENES Bild (siehe generateComicPage() in
+    // studioImages.js) und seine EIGENEN, relativ zu SEINER Fläche
+    // positionierten Sprechblasen (js/studio/studioBalloons.js
+    // fromDialogue()). Die fertigen Panel-Bilder werden erst beim
+    // Zusammensetzen zu EINER Seite (js/studio/studioComicPanels.js
+    // compositePage()) verschmolzen.
     async applyComicScript(project, result) {
         if (!project.title && result.title) project.title = result.title;
 
         const rawSpreads = Array.isArray(result.spreads) ? result.spreads : [];
-        project.spreads = rawSpreads.map((s, i) => ({
-            id: genId('spread'), index: i,
-            text: s.text || '', pageTurnHook: s.pageTurnHook || '',
-            sketchPrompt: '', imagePrompt: '',
-            imgUrl: null, thumbUrl: null, imageMeta: null, imageStatus: 'idle',
-            imageStale: false,
-            // NEU: kein textPos-Bedarf für Comic (die Textebene ist hier
-            // die Sprechblasen-Ebene, keine einzelne Textzone) - Standardwert
-            // bleibt trotzdem gesetzt, falls später doch eine Bildunterschrift
-            // (spread.text) über den normalen Layout-Regler gezeigt wird.
-            characterIds: [], layout: { textPos: 'unten', fontScale: 1, syllableColors: false },
-            balloons: app.studio.balloons.fromDialogue(s.dialogue)
-        }));
+        project.spreads = rawSpreads.map((s, i) => {
+            const rawPanels = Array.isArray(s.panels) && s.panels.length ? s.panels : [{ visual: '', dialogue: [] }];
+            return {
+                id: genId('spread'), index: i,
+                text: '', pageTurnHook: s.pageTurnHook || '',
+                sketchPrompt: '', imagePrompt: '',
+                // NEU: imgUrl/thumbUrl sind hier die ZUSAMMENGESETZTE Seite
+                // (alle Panels zu einem Bild verschmolzen) - entstehen erst,
+                // sobald jedes Panel sein eigenes Bild hat, siehe
+                // studioImages.js generateComicPage().
+                imgUrl: null, thumbUrl: null, imageMeta: null, imageStatus: 'idle',
+                imageStale: false,
+                characterIds: [], layout: { textPos: 'unten', fontScale: 1, syllableColors: false },
+                balloons: [],
+                panels: rawPanels.map(p => ({
+                    id: genId('panel'),
+                    visual: (p.visual || '').trim(),
+                    imgUrl: null, thumbUrl: null, imageStatus: 'idle',
+                    balloons: app.studio.balloons.fromDialogue(Array.isArray(p.dialogue) ? p.dialogue : [])
+                }))
+            };
+        });
 
         project.costLog.textCalls += 1;
         project.stage = Math.max(project.stage, 3);
         app.dbOps.saveProject(project);
 
+        // Sofortige, kostenlose Platzhalter pro Seite - nacheinander, damit
+        // die Canvas-Arbeit die Oberfläche nicht kurz einfrieren lässt
+        // (gleiches Muster wie applyManuscript() beim Bilderbuch).
         for (let i = 0; i < project.spreads.length; i++) {
-            await app.studio.regenerateSpreadPlaceholder(i);
+            await app.studio.regenerateComicPanelPlaceholders(i);
         }
         app.render.studioWizard(3);
     },
 
+    // NEU (Ausbaustufe 5, Panels): "clean vs. mit Sprechblase"-Umschalter
+    // fürs Comic-"Ins Regal stellen" (siehe project.comicBakeText oben).
+    toggleComicBakeText(checked) {
+        const project = app.studio.projects[app.state.currentStudioProjectId];
+        if (!project) return;
+        project.comicBakeText = checked;
+        app.dbOps.saveProject(project);
+    },
+
     // Stufe 8 (Konzept) – "Ins Regal stellen". Die eigentliche Umwandlung
     // steckt in studioExport.js (JS-interne Logik, kein onclick-Ziel).
-    exportToLibraryBook() {
+    // NEU (Ausbaustufe 5, Panels): async, weil toLibraryBook() beim Comic
+    // die Sprechblasen ggf. per Canvas ins Bild brennt (siehe dort) - das
+    // lädt Bilder nach und kann nicht mehr synchron laufen.
+    async exportToLibraryBook() {
         const project = app.studio.projects[app.state.currentStudioProjectId];
         if (!project) return;
         if (project.spreads.length === 0) {
             app.ui.toast('Erst eine Geschichte schreiben, dann geht\'s ins Regal.', 'ℹ️');
             return;
         }
-        // NEU (Ausbaustufe 5): beim Comic steckt der Inhalt in balloons,
-        // spread.text ist dort meist ABSICHTLICH leer (siehe spreadReadableText()
-        // in studioExport.js) - sonst würde diese Warnung bei JEDEM Comic-Export
-        // fälschlich anschlagen.
+        // NEU (Ausbaustufe 5): beim Comic steckt der Inhalt in den
+        // Panel-Sprechblasen, spread.text ist dort ABSICHTLICH leer (siehe
+        // spreadReadableText() in studioExport.js) - sonst würde diese
+        // Warnung bei JEDEM Comic-Export fälschlich anschlagen.
         const missingText = project.type === 'comic'
-            ? project.spreads.some(s => !s.balloons || s.balloons.length === 0)
+            ? project.spreads.some(s => s.panels.every(p => !p.balloons || p.balloons.length === 0))
             : project.spreads.some(s => !s.text || !s.text.trim());
         const missingLabel = project.type === 'comic' ? 'noch keine Sprechblase' : 'noch keinen Text';
         if (missingText && !confirm(`Mindestens eine Doppelseite hat ${missingLabel}. Trotzdem ins Regal stellen?`)) {
             return;
         }
 
-        const book = app.studio.export.toLibraryBook(project);
-        project.exportedBookId = book.id;
-        app.dbOps.saveProject(project);
+        app.ui.showLoader('Buch wird zusammengestellt...', project.type === 'comic' ? 'Seiten werden fertig zusammengesetzt' : '');
+        try {
+            const book = await app.studio.export.toLibraryBook(project);
+            project.exportedBookId = book.id;
+            app.dbOps.saveProject(project);
 
-        app.ui.toast(`"${book.title}" steht jetzt im Regal!`, '🎉');
-        app.state.currentBookId = book.id;
-        app.nav.go('book');
+            app.ui.toast(`"${book.title}" steht jetzt im Regal!`, '🎉');
+            app.state.currentBookId = book.id;
+            app.nav.go('book');
+        } finally {
+            app.ui.hideLoader();
+        }
     }
 });

@@ -15,18 +15,20 @@ import { app } from '../core.js';
 // Overlay-Seite ist das natürlich unproblematisch, hier zeichnet kein
 // Bildmodell mehr mit.
 
-// NEU: einfaches Positionsraster statt freiem Ziehen (kein Drag&Drop) -
-// zwei Spalten, mehrere Zeilen, abwechselnd links/rechts. Reicht für die
-// meisten Panels (2-4 Sprechende) und bleibt in Stufe 7 trotzdem frei
-// nachjustierbar (x/y/Breite sind ganz normale Prozent-Regler).
+// NEU (überarbeitet für echte Panels, siehe js/studio/studioComicPanels.js):
+// x/y/w sind Prozent relativ zur FLÄCHE DES EINZELNEN PANELS, nicht mehr
+// zur ganzen Seite - ein Panel ist kleiner als eine Bilderbuch-Doppelseite
+// und hat meist nur 0-3 Sprechblasen. Einfaches von-oben-gestapeltes
+// Zickzack-Raster statt eines Links/Rechts-Spaltenrasters, reicht für den
+// Regelfall und bleibt in Stufe 7 trotzdem frei nachjustierbar (X/Y/Breite
+// sind ganz normale Prozent-Regler, kein Drag&Drop).
 function defaultBalloonPosition(index) {
-    const col = index % 2;
-    const row = Math.floor(index / 2);
+    const isEven = index % 2 === 0;
     return {
-        x: col === 0 ? 6 : 54,
-        y: 6 + row * 26,
-        w: 40,
-        tail: col === 0 ? 'unten-links' : 'unten-rechts'
+        x: isEven ? 4 : 32,
+        y: 4 + index * 24,
+        w: 60,
+        tail: isEven ? 'unten-links' : 'unten-rechts'
     };
 }
 
@@ -80,38 +82,76 @@ app.studio.balloons = {
 };
 
 Object.assign(app.studio, {
-    // Stufe 7 (Comic) - eine leere Sprechblase von Hand hinzufügen, für
-    // Fälle, in denen das Skript übersprungen oder von Hand nachgebessert
-    // wird (gleiche Haltung wie addSpread(): "die KI ist Vorschlag, nie Zwang").
-    addBalloon(spreadIndex) {
+    // NEU: Sprechblasen gehören jetzt zum PANEL (spread.panels[i].balloons),
+    // nicht mehr zur ganzen Seite - siehe js/studio/studioComicPanels.js für
+    // den Hintergrund. addBalloon() bleibt für Fälle, in denen das Skript
+    // übersprungen oder von Hand nachgebessert wird (gleiche Haltung wie
+    // addSpread(): "die KI ist Vorschlag, nie Zwang").
+    addBalloon(spreadIndex, panelIndex) {
         const project = app.studio.projects[app.state.currentStudioProjectId];
-        const spread = project && project.spreads[spreadIndex];
-        if (!spread) return;
-        const pos = defaultBalloonPosition(spread.balloons.length);
-        spread.balloons.push({ id: app.studio.genId('balloon'), speaker: '', text: '', ...pos });
+        const panel = project && project.spreads[spreadIndex]?.panels[panelIndex];
+        if (!panel) return;
+        const pos = defaultBalloonPosition(panel.balloons.length);
+        panel.balloons.push({ id: app.studio.genId('balloon'), speaker: '', text: '', ...pos });
         app.dbOps.saveProject(project);
-        app.render.studioWizard(7);
+        app.render.studioWizard();
     },
 
     // patch: Teilmenge von { speaker, text, x, y, w, tail } - ein onchange
     // schickt dadurch immer nur das gerade geänderte Feld (gleiches Muster
     // wie app.studio.updateSpreadLayout()).
-    updateBalloon(spreadIndex, balloonId, patch) {
+    updateBalloon(spreadIndex, panelIndex, balloonId, patch) {
         const project = app.studio.projects[app.state.currentStudioProjectId];
-        const spread = project && project.spreads[spreadIndex];
-        const balloon = spread && spread.balloons.find(b => b.id === balloonId);
+        const panel = project && project.spreads[spreadIndex]?.panels[panelIndex];
+        const balloon = panel && panel.balloons.find(b => b.id === balloonId);
         if (!balloon) return;
         Object.assign(balloon, patch);
         app.dbOps.saveProject(project);
-        app.render.studioWizard(7);
+        app.render.studioWizard();
     },
 
-    deleteBalloon(spreadIndex, balloonId) {
+    deleteBalloon(spreadIndex, panelIndex, balloonId) {
+        const project = app.studio.projects[app.state.currentStudioProjectId];
+        const panel = project && project.spreads[spreadIndex]?.panels[panelIndex];
+        if (!panel) return;
+        panel.balloons = panel.balloons.filter(b => b.id !== balloonId);
+        app.dbOps.saveProject(project);
+        app.render.studioWizard();
+    },
+
+    // Eigene Bildidee für ein von Hand hinzugefügtes/geändertes Panel.
+    updatePanelVisual(spreadIndex, panelIndex, visual) {
+        const project = app.studio.projects[app.state.currentStudioProjectId];
+        const panel = project && project.spreads[spreadIndex]?.panels[panelIndex];
+        if (!panel) return;
+        panel.visual = visual;
+        app.dbOps.saveProject(project);
+    },
+
+    // Ein leeres Panel von Hand anhängen (max. 4 pro Seite, siehe
+    // js/studio/studioComicPanels.js LAYOUTS).
+    addPanel(spreadIndex) {
         const project = app.studio.projects[app.state.currentStudioProjectId];
         const spread = project && project.spreads[spreadIndex];
         if (!spread) return;
-        spread.balloons = spread.balloons.filter(b => b.id !== balloonId);
+        if (spread.panels.length >= 4) {
+            app.ui.toast('Mehr als 4 Panels pro Seite werden nicht unterstützt.', 'ℹ️');
+            return;
+        }
+        spread.panels.push({ id: app.studio.genId('panel'), visual: '', imgUrl: null, thumbUrl: null, imageStatus: 'idle', balloons: [] });
         app.dbOps.saveProject(project);
-        app.render.studioWizard(7);
+        app.render.studioWizard();
+    },
+
+    deletePanel(spreadIndex, panelIndex) {
+        const project = app.studio.projects[app.state.currentStudioProjectId];
+        const spread = project && project.spreads[spreadIndex];
+        if (!spread || spread.panels.length <= 1) {
+            app.ui.toast('Eine Seite braucht mindestens ein Panel.', 'ℹ️');
+            return;
+        }
+        spread.panels.splice(panelIndex, 1);
+        app.dbOps.saveProject(project);
+        app.render.studioWizard();
     }
 });

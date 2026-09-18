@@ -1,7 +1,12 @@
 // Bei jeder inhaltlichen Änderung an einer dieser Dateien diese Nummer
 // erhöhen - sonst bekommen wiederkehrende Besucher weiter die alte
 // zwischengespeicherte Version ausgeliefert.
-const CACHE_NAME = 'lesezauber-shell-v39';
+const CACHE_NAME = 'lesezauber-shell-v40';
+
+// NEU (v40): Comic-Werktyp überarbeitet - echte Panels statt einer Seite
+// mit lose schwebenden Sprechblasen (Nutzer-Feedback: "sonst ist es
+// einfach ein Bilderbuch"). Neue Datei js/studio/studioComicPanels.js.
+// Siehe CLAUDE.md, Versionsstand.
 
 // NEU (v39): SchreibZauber Ausbaustufe 6 (Politur, Teilumsetzung) - feste
 // Vorlagen in Stufe 1, projektübergreifende Figuren-Übernahme in Stufe 4.
@@ -134,8 +139,10 @@ const APP_SHELL = [
     // docs/KONZEPT-SchreibZauber.md TEIL C.4.
     './js/studio/worksheet.js',
     './js/studio/worksheetCanvas.js',
-    // NEU (Ausbaustufe 5 - Comic): Sprechblasen-Overlay + -Verwaltung.
+    // NEU (Ausbaustufe 5 - Comic): Sprechblasen-Overlay + -Verwaltung,
+    // Panel-Layout/Zusammensetzen.
     './js/studio/studioBalloons.js',
+    './js/studio/studioComicPanels.js',
     './js/render/studioLibrary.js',
     './js/render/studioWizard.js',
     './js/render/studioCharacters.js',

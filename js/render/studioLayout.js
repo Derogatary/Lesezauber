@@ -53,55 +53,73 @@ function layoutCardHtml(spread, project) {
     </div>`;
 }
 
-// NEU (Ausbaustufe 5): Comic-Gegenstück zu layoutCardHtml() oben - statt
-// Textposition/Schriftgröße/Silbenfarben (die gelten nur für Fließtext)
-// zeigt Stufe 7 hier pro Sprechblase X/Y/Breite-Regler + Schwänzchen-
-// Richtung, direkt über app.studio.balloons.buildBalloonsHtml() live
-// vorgeschaut - dieselbe Funktion, die später auch der Comic-Export/-Druck
-// benutzen würde, Vorschau und Ergebnis zeigen also garantiert dasselbe.
-function comicLayoutCardHtml(spread, index) {
-    const balloonControls = spread.balloons.map(b => `
-        <div class="bg-slate-50 border border-slate-200 rounded-lg p-2 space-y-1.5">
-            <div class="flex items-center justify-between">
-                <span class="text-[10px] font-bold text-indigo-700">${app.utils.sanitize(b.speaker || 'Sprechblase')}</span>
-                <button onclick="app.studio.deleteBalloon(${index}, '${b.id}')" aria-label="Sprechblase löschen" class="text-slate-300 hover:text-red-500 text-xs">🗑️</button>
+// NEU (Ausbaustufe 5, Panels): Comic-Gegenstück zu layoutCardHtml() oben -
+// zeigt jetzt die ECHTE Panel-Anordnung (app.studio.comicPanels.layoutFor(),
+// dieselben Regionen, die auch beim Zusammensetzen/Einbrennen benutzt
+// werden - Vorschau und Export zeigen also garantiert dasselbe Layout) mit
+// jedem Panel-Bild an seiner Stelle plus seinen Sprechblasen als
+// HTML-Ebene (app.studio.balloons.buildBalloonsHtml(), PRO PANEL - die
+// Prozent-Koordinaten einer Sprechblase sind relativ zu IHREM Panel, nicht
+// zur ganzen Seite). Statt Textposition/Schriftgröße/Silbenfarben (die
+// gelten nur für Fließtext) gibt es hier pro Sprechblase X/Y/Breite-Regler
+// + Schwänzchen-Richtung.
+function balloonControlsHtml(spreadIndex, panelIndex, balloon) {
+    return `
+    <div class="bg-slate-50 border border-slate-200 rounded-lg p-2 space-y-1.5">
+        <div class="flex items-center justify-between">
+            <span class="text-[10px] font-bold text-indigo-700">${app.utils.sanitize(balloon.speaker || 'Sprechblase')}</span>
+            <button onclick="app.studio.deleteBalloon(${spreadIndex}, ${panelIndex}, '${balloon.id}')" aria-label="Sprechblase löschen" class="text-slate-300 hover:text-red-500 text-xs">🗑️</button>
+        </div>
+        <div class="grid grid-cols-3 gap-1.5">
+            <div>
+                <label class="text-[9px] font-bold text-slate-500 block">X (${balloon.x}%)</label>
+                <input type="range" min="0" max="90" value="${balloon.x}" onchange="app.studio.updateBalloon(${spreadIndex}, ${panelIndex}, '${balloon.id}', {x: parseInt(this.value)})" class="w-full">
             </div>
-            <div class="grid grid-cols-3 gap-1.5">
-                <div>
-                    <label class="text-[9px] font-bold text-slate-500 block">X (${b.x}%)</label>
-                    <input type="range" min="0" max="90" value="${b.x}" onchange="app.studio.updateBalloon(${index}, '${b.id}', {x: parseInt(this.value)})" class="w-full">
-                </div>
-                <div>
-                    <label class="text-[9px] font-bold text-slate-500 block">Y (${b.y}%)</label>
-                    <input type="range" min="0" max="90" value="${b.y}" onchange="app.studio.updateBalloon(${index}, '${b.id}', {y: parseInt(this.value)})" class="w-full">
-                </div>
-                <div>
-                    <label class="text-[9px] font-bold text-slate-500 block">Breite (${b.w}%)</label>
-                    <input type="range" min="20" max="80" value="${b.w}" onchange="app.studio.updateBalloon(${index}, '${b.id}', {w: parseInt(this.value)})" class="w-full">
-                </div>
+            <div>
+                <label class="text-[9px] font-bold text-slate-500 block">Y (${balloon.y}%)</label>
+                <input type="range" min="0" max="90" value="${balloon.y}" onchange="app.studio.updateBalloon(${spreadIndex}, ${panelIndex}, '${balloon.id}', {y: parseInt(this.value)})" class="w-full">
             </div>
-            <select onchange="app.studio.updateBalloon(${index}, '${b.id}', {tail: this.value})" class="w-full text-[10px] bg-white border border-slate-200 rounded-lg px-1.5 py-1 focus:outline-none focus:border-indigo-500">
-                <option value="unten-links" ${b.tail === 'unten-links' ? 'selected' : ''}>Schwänzchen unten-links</option>
-                <option value="unten-rechts" ${b.tail === 'unten-rechts' ? 'selected' : ''}>Schwänzchen unten-rechts</option>
-                <option value="oben-links" ${b.tail === 'oben-links' ? 'selected' : ''}>Schwänzchen oben-links</option>
-                <option value="oben-rechts" ${b.tail === 'oben-rechts' ? 'selected' : ''}>Schwänzchen oben-rechts</option>
-            </select>
-        </div>`).join('');
+            <div>
+                <label class="text-[9px] font-bold text-slate-500 block">Breite (${balloon.w}%)</label>
+                <input type="range" min="20" max="90" value="${balloon.w}" onchange="app.studio.updateBalloon(${spreadIndex}, ${panelIndex}, '${balloon.id}', {w: parseInt(this.value)})" class="w-full">
+            </div>
+        </div>
+        <select onchange="app.studio.updateBalloon(${spreadIndex}, ${panelIndex}, '${balloon.id}', {tail: this.value})" class="w-full text-[10px] bg-white border border-slate-200 rounded-lg px-1.5 py-1 focus:outline-none focus:border-indigo-500">
+            <option value="unten-links" ${balloon.tail === 'unten-links' ? 'selected' : ''}>Schwänzchen unten-links</option>
+            <option value="unten-rechts" ${balloon.tail === 'unten-rechts' ? 'selected' : ''}>Schwänzchen unten-rechts</option>
+            <option value="oben-links" ${balloon.tail === 'oben-links' ? 'selected' : ''}>Schwänzchen oben-links</option>
+            <option value="oben-rechts" ${balloon.tail === 'oben-rechts' ? 'selected' : ''}>Schwänzchen oben-rechts</option>
+        </select>
+    </div>`;
+}
 
-    const img = spread.imgUrl
-        ? `<img src="${spread.imgUrl}" class="absolute inset-0 w-full h-full object-cover" alt="Comic-Seite ${index + 1}">`
-        : `<div class="absolute inset-0 w-full h-full bg-slate-100 flex items-center justify-center text-slate-300 text-2xl">🖼️</div>`;
-    const overlay = app.studio.balloons.buildBalloonsHtml(spread.balloons);
+function comicLayoutCardHtml(spread, index) {
+    const layout = app.studio.comicPanels.layoutFor(spread.panels.length);
+
+    const panelBoxes = spread.panels.map((panel, pi) => {
+        const region = layout[pi];
+        if (!region) return '';
+        const style = `left:${region.x * 100}%; top:${region.y * 100}%; width:${region.w * 100}%; height:${region.h * 100}%; padding:0.4%;`;
+        const img = panel.imgUrl
+            ? `<img src="${panel.imgUrl}" class="absolute inset-0 w-full h-full object-cover rounded" alt="Panel ${pi + 1}">`
+            : `<div class="absolute inset-0 w-full h-full bg-slate-100 flex items-center justify-center text-slate-300 text-lg rounded">🖼️</div>`;
+        return `<div class="absolute" style="${style}"><div class="relative w-full h-full border border-slate-800 rounded overflow-hidden">${img}${app.studio.balloons.buildBalloonsHtml(panel.balloons)}</div></div>`;
+    }).join('');
+
+    const controls = spread.panels.map((panel, pi) => `
+        <div class="space-y-1.5">
+            <p class="text-[10px] font-bold text-slate-500 uppercase">Panel ${pi + 1}</p>
+            ${panel.balloons.map(b => balloonControlsHtml(index, pi, b)).join('') || '<p class="text-[11px] text-slate-400 italic">Keine Sprechblasen in diesem Panel.</p>'}
+            <button onclick="app.studio.addBalloon(${index}, ${pi})" class="w-full text-[11px] font-bold text-indigo-600 border border-dashed border-indigo-200 rounded-lg py-1.5 hover:bg-indigo-50 transition">+ Sprechblase</button>
+        </div>`).join('<hr class="border-slate-100">');
 
     return `
     <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden p-3 space-y-3">
         <span class="text-[10px] font-bold text-slate-400 uppercase">Seite ${index + 1}</span>
-        <div class="relative w-full mx-auto rounded-lg overflow-hidden border border-slate-200 bg-slate-50" style="max-width:280px; aspect-ratio:3/4;">
-            ${img}
-            ${overlay}
+        <div class="relative w-full mx-auto rounded-lg overflow-hidden bg-slate-50" style="max-width:280px; aspect-ratio:3/4;">
+            ${panelBoxes}
         </div>
-        <div class="space-y-2">${balloonControls || '<p class="text-[11px] text-slate-400 italic">Noch keine Sprechblasen - in Stufe "Geschichte" hinzufügen.</p>'}</div>
-        <button onclick="app.studio.addBalloon(${index})" class="w-full text-[11px] font-bold text-indigo-600 border border-dashed border-indigo-200 rounded-lg py-1.5 hover:bg-indigo-50 transition">+ Sprechblase</button>
+        <div class="space-y-2">${controls}</div>
     </div>`;
 }
 

@@ -853,41 +853,64 @@ Blocker für ein vollständiges erstes selbst gemachtes Bilderbuch.
 
 ## Stand nach Stufe 5 (Comic) - was steht, was ist bewusst offen geblieben
 
-Auf Nutzerauftrag gebaut, NACHDEM Stufe 5/6 laut TEIL E ursprünglich zurückgestellt waren -
-Details zu den einzelnen Entscheidungen stehen ausführlich in `CLAUDE.md` (Versionsstand,
-Eintrag v0.24.0-beta), hier nur die Kurzfassung mit den wichtigsten Abgrenzungen.
+Auf Nutzerauftrag gebaut, NACHDEM Stufe 5/6 laut TEIL E ursprünglich zurückgestellt waren.
+Die erste Fassung (v0.24.0-beta: eine Seite = ein Bild + lose schwebende Sprechblasen) wurde
+nach echtem Test-Feedback verworfen und durch eine Panel-Fassung ersetzt (v0.26.0-beta,
+"sonst ist es einfach ein Bilderbuch") - dieser Abschnitt beschreibt den AKTUELLEN
+(Panel-)Stand, Details zu den Entscheidungen stehen in `CLAUDE.md` (Versionsstand,
+Einträge v0.24.0-beta und v0.26.0-beta).
 
 - Werktyp `'comic'` (`app.studio.projectTypes`) läuft durch DASSELBE 8-Stufen-Gerüst wie das
-  Bilderbuch (Konzept C.1) - nur Stufe 3 (Skript statt Fließtext, `generateComicScript()`/
-  `applyComicScript()`) und Stufe 7 (Sprechblasen-Editor statt Textposition, neue Datei
-  `js/studio/studioBalloons.js`) unterscheiden sich.
-- Figuren-Konsistenz: sprechende Namen kommen zuerst nur als Text aus dem Skript (Stufe 3, vor
-  der Figuren-Bibel in Stufe 4) - `resolveComicCharacterIds()` gleicht sie automatisch per
-  Namen mit `project.characters` ab, sobald die existieren, statt eine eigene manuelle
-  Zuordnungs-UI zu bauen.
+  Bilderbuch (Konzept C.1) - nur Stufe 3 (Panel-Skript statt Fließtext, `generateComicScript()`/
+  `applyComicScript()`), Stufe 6 (ein Bildaufruf PRO PANEL statt pro Seite,
+  `generateComicPage()` in `studioImages.js`) und Stufe 7 (Panel-Raster + Sprechblasen-Editor
+  statt Textposition, `js/studio/studioBalloons.js` + `js/studio/studioComicPanels.js`)
+  unterscheiden sich.
+- **Echte Panels:** `spread.panels[]` (1-4 pro Seite, vom Skript vorgeschlagen, in Stufe 3 auch
+  von Hand hinzufügbar/löschbar) - jedes Panel hat eine eigene Bildidee (`panel.visual`), ein
+  eigenes generiertes Bild (`panel.imgUrl`, Format `comicPanel`, 4:3) und eigene Sprechblasen
+  (`panel.balloons[]`, Koordinaten relativ zur PANEL-Fläche). `js/studio/studioComicPanels.js`
+  setzt die Panel-Bilder per Canvas zu einer fertigen Seite zusammen (`compositePage()`) - eine
+  kleine, feste Auswahl an Layout-Vorlagen für 1/2/3/4 Panels (Regionen in 0-1-Koordinaten +
+  Gutter dazwischen), bewusst NICHT die im Konzept angedachte 10-15-Vorlagen-Bibliothek mit
+  Wichtigkeits-Tagging (Abschnitt 6 in `docs/KONZEPT-Comic.md`, dort selbst noch nicht
+  entworfen).
+- **Figuren-Konsistenz PRO PANEL:** sprechende Namen kommen zuerst nur als Text aus dem Skript
+  (Stufe 3, vor der Figuren-Bibel in Stufe 4) - `characterRefsForPanel()` gleicht sie
+  automatisch per Namen mit `project.characters` ab, sobald die existieren, statt eine eigene
+  manuelle Zuordnungs-UI zu bauen. Ein Panel bekommt dadurch NUR die Figuren als Bild-Referenz,
+  die darin tatsächlich sprechen - noch genauer als beim ursprünglichen Seiten-weiten Ansatz.
+- **"Clean vs. mit Sprechblase" beim Export:** `project.comicBakeText` (Checkbox in Stufe 3,
+  Standard AN) - AN brennt `app.studio.comicPanels.bakePageWithBalloons()` die Sprechblasen
+  fest in die exportierte Bilddatei (zweite bewusste Ausnahme von "Text nie ins Bild brennen",
+  weil das bei echten Comics/Mangas genau so gemacht wird), AUS exportiert die "saubere"
+  Fassung ohne Text im Bild (einfacher später neu zu übersetzen). Der Klartext für Vorlesen/
+  Suche bleibt in beiden Fällen identisch erhalten (`spreadReadableText()`).
 - Bild-Prompt-Fix aus `docs/KONZEPT-Comic.md` Abschnitt 5 übernommen: die Comic-Textzone
   (`imageFormats.js`) beschreibt jetzt rein visuell ("unbedeckter Hintergrund ohne Figuren/
   Objekte/Details"), OHNE das Wort "Sprechblase" zu nennen - der dortige Testlauf hatte
   gezeigt, dass die reine Erwähnung des Begriffs eine gemalte Sprechblase auslöst.
+- **Bewusst nur "Comic" (amerikanisch/europäisch), nicht Webtoon/Manga.** Recherche zu anderen
+  Comic-Readern (ComiXology Guided View, Webtoon-Vertikalscroll, Manga-Reader) zeigt: das sind
+  technisch/gestalterisch eigene Formate. Auf Nutzerwunsch zuerst nur der teurere,
+  Panel-basierte westliche Stil - Webtoon/Manga wären eigene, spätere Ausbaustufen mit eigener
+  Layout-Logik (anderes Seitenverhältnis/Leserichtung), kein Aufsatz auf diesem Panel-System.
 - **Bewusst NICHT umgesetzt:**
-  - **Panel-Layouts** (mehrere Panels pro Seite, Konzept D.2 ursprünglich `balloons.js` +
-    eine Vorlagen-Bibliothek, siehe `docs/KONZEPT-Comic.md` Abschnitt 6). Eine Comic-"Seite"
-    ist aktuell ein einzelnes, dicht komponiertes Bild - kein Panel-Raster. Die dort
-    beschriebene Vorlagen-Bibliothek ist selbst für das dortige separate Werkzeug noch nicht
-    entworfen (eigener TODO-Punkt dort), für SchreibZauber deshalb erst recht nicht vorgezogen.
   - **Sichtbare Sprechblasen im normalen Reader.** Der Reader kennt bewusst KEINEN
     Unterschied zwischen Werktypen (Kernprinzip seit Stufe 1) - eine exportierte Comic-Seite
-    zeigt dort das Bild plus den Dialog als normalen vorlesbaren Text ("Name: Zeile",
-    `spreadReadableText()` in `studioExport.js`). Die echte, positionierte Sprechblasen-
-    Ansicht existiert nur in der Werkstatt-Vorschau (Stufe 7). Ein eigener Comic-Druck (mit
-    echten Sprechblasen auf Papier, analog zu `studioPrint.js`) ist noch nicht gebaut -
-    `app.studio.balloons.buildBalloonsHtml()` ist der dafür bereits fertige Baustein.
+    zeigt dort das Bild (ggf. bereits MIT eingebrannten Sprechblasen, siehe oben) plus den
+    Dialog als normalen vorlesbaren Text ("Name: Zeile"). `comicBakeText` wirkt nur auf die
+    Bilddatei selbst, keine zusätzliche Reader-Fähigkeit.
+  - **Manga-Style Geräuschwörter/Tags** ("BOOM" etc.) - vom Nutzer selbst als "weniger
+    wichtig" eingestuft. `bakePageWithBalloons()` wäre der naheliegende Ort dafür.
+  - **Comic-Druck** (mit echten Sprechblasen auf Papier, analog zu `studioPrint.js`) - noch
+    nicht gebaut, `bakePageWithBalloons()` liefert aber bereits das fertige Seitenbild dafür.
   - **Freies Ziehen (Drag&Drop)** der Sprechblasen - Stufe 7 bietet stattdessen X/Y/Breite als
-    Prozent-Regler, reicht für die üblichen 1-4 Sprechblasen pro Seite.
+    Prozent-Regler, reicht für die üblichen 1-3 Sprechblasen pro Panel.
 
-**Was eine spätere Sitzung vorfindet:** `app.studio.balloons` ist der Andockpunkt für einen
-künftigen Comic-Druck; Panel-Layouts wären eine eigene, größere Ausbaustufe (Datenmodell
-müsste `spreads[]` um eine echte Panel-Liste pro Seite erweitern, nicht nur um `balloons[]`).
+**Was eine spätere Sitzung vorfindet:** `app.studio.comicPanels` (Layout/Zusammensetzen/
+Einbrennen) und `app.studio.balloons` (Sprechblasen-CRUD/Vorschau-HTML) sind die Andockpunkte
+für einen künftigen Comic-Druck oder eine Webtoon/Manga-Ausbaustufe.
 
 ### Stufe 6 (Politur) - zwei von drei Punkten umgesetzt
 

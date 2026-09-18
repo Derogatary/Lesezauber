@@ -113,18 +113,42 @@ function spreadCardHtml(spread, index) {
     </div>`;
 }
 
-// NEU (Ausbaustufe 5): Comic-Gegenstück zu spreadCardHtml() oben - zeigt
-// Sprechblasen (Sprecher + Text, editierbar) statt eines Fließtext-Feldes.
-// CRUD läuft über app.studio.addBalloon()/updateBalloon()/deleteBalloon()
-// aus js/studio/studioBalloons.js - dieselben Funktionen, die auch die
-// Sprechblasen-Karten in Stufe 7 (render/studioLayout.js) benutzen.
-function comicSpreadCardHtml(spread, index) {
-    const balloonRows = spread.balloons.map(b => `
+// NEU (Ausbaustufe 5, Panels): Comic-Gegenstück zu spreadCardHtml() oben -
+// zeigt die Seite als das, was sie jetzt wirklich ist: 1-4 PANELS, jedes
+// mit eigener Bildidee UND eigenen Sprechblasen (Sprecher+Text, editierbar) -
+// statt eines einzelnen Fließtext-Felds. CRUD läuft über
+// app.studio.addBalloon()/updateBalloon()/deleteBalloon()/addPanel()/
+// deletePanel()/updatePanelVisual() aus js/studio/studioBalloons.js -
+// dieselben Funktionen, die auch Stufe 7 (render/studioLayout.js) benutzt.
+function comicPanelCardHtml(spreadIndex, panel, panelIndex, panelCount) {
+    const balloonRows = panel.balloons.map(b => `
         <div class="flex gap-1.5 items-start">
-            <input type="text" value="${app.utils.sanitize(b.speaker)}" placeholder="Wer?" oninput="app.studio.updateBalloon(${index}, '${b.id}', {speaker: this.value})" class="w-20 flex-shrink-0 text-xs font-bold text-indigo-700 bg-slate-50 border border-slate-200 rounded-lg px-1.5 py-1 focus:outline-none focus:border-indigo-500">
-            <input type="text" value="${app.utils.sanitize(b.text)}" placeholder="Sprechblasentext" oninput="app.studio.updateBalloon(${index}, '${b.id}', {text: this.value})" class="flex-grow text-xs bg-slate-50 border border-slate-200 rounded-lg px-1.5 py-1 focus:outline-none focus:border-indigo-500">
-            <button onclick="app.studio.deleteBalloon(${index}, '${b.id}')" aria-label="Sprechblase löschen" class="text-slate-300 hover:text-red-500 text-xs px-1 py-1">🗑️</button>
+            <input type="text" value="${app.utils.sanitize(b.speaker)}" placeholder="Wer?" oninput="app.studio.updateBalloon(${spreadIndex}, ${panelIndex}, '${b.id}', {speaker: this.value})" class="w-16 flex-shrink-0 text-xs font-bold text-indigo-700 bg-white border border-slate-200 rounded-lg px-1.5 py-1 focus:outline-none focus:border-indigo-500">
+            <input type="text" value="${app.utils.sanitize(b.text)}" placeholder="Sprechblasentext" oninput="app.studio.updateBalloon(${spreadIndex}, ${panelIndex}, '${b.id}', {text: this.value})" class="flex-grow text-xs bg-white border border-slate-200 rounded-lg px-1.5 py-1 focus:outline-none focus:border-indigo-500">
+            <button onclick="app.studio.deleteBalloon(${spreadIndex}, ${panelIndex}, '${b.id}')" aria-label="Sprechblase löschen" class="text-slate-300 hover:text-red-500 text-xs px-1 py-1">🗑️</button>
         </div>`).join('');
+
+    return `
+    <div class="bg-slate-50 border border-slate-200 rounded-xl p-2 space-y-1.5">
+        <div class="flex gap-2 items-start">
+            <div class="w-14 flex-shrink-0">
+                ${panel.thumbUrl ? `<img src="${panel.thumbUrl}" class="w-full aspect-[4/3] object-cover rounded-lg border border-slate-200" alt="Panel ${panelIndex + 1}">` : `<div class="w-full aspect-[4/3] bg-slate-100 rounded-lg flex items-center justify-center text-slate-300 text-base">🖼️</div>`}
+            </div>
+            <div class="flex-grow min-w-0 space-y-1">
+                <div class="flex items-center justify-between">
+                    <span class="text-[9px] font-bold text-slate-400 uppercase">Panel ${panelIndex + 1}</span>
+                    ${panelCount > 1 ? `<button onclick="app.studio.deletePanel(${spreadIndex}, ${panelIndex})" aria-label="Panel löschen" class="text-slate-300 hover:text-red-500 text-xs">🗑️</button>` : ''}
+                </div>
+                <input type="text" value="${app.utils.sanitize(panel.visual)}" placeholder="Bildidee: wer/was/wo" onchange="app.studio.updatePanelVisual(${spreadIndex}, ${panelIndex}, this.value)" class="w-full text-xs bg-white border border-slate-200 rounded-lg px-1.5 py-1 focus:outline-none focus:border-indigo-500">
+            </div>
+        </div>
+        ${balloonRows}
+        <button onclick="app.studio.addBalloon(${spreadIndex}, ${panelIndex})" class="w-full text-[10px] font-bold text-indigo-600 border border-dashed border-indigo-200 rounded-lg py-1 hover:bg-indigo-100 transition">+ Sprechblase</button>
+    </div>`;
+}
+
+function comicSpreadCardHtml(spread, index) {
+    const panelCards = spread.panels.map((p, pi) => comicPanelCardHtml(index, p, pi, spread.panels.length)).join('');
 
     return `
     <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex gap-3 p-3">
@@ -133,11 +157,11 @@ function comicSpreadCardHtml(spread, index) {
         </div>
         <div class="flex-grow min-w-0 space-y-1.5">
             <div class="flex items-center justify-between">
-                <span class="text-[10px] font-bold text-slate-400 uppercase">Seite ${index + 1}</span>
+                <span class="text-[10px] font-bold text-slate-400 uppercase">Seite ${index + 1} · ${spread.panels.length} Panel${spread.panels.length === 1 ? '' : 's'}</span>
                 <button onclick="app.studio.deleteSpread(${index})" aria-label="Seite löschen" class="text-slate-300 hover:text-red-500 text-xs">🗑️</button>
             </div>
-            ${balloonRows || '<p class="text-[11px] text-slate-400 italic">Noch keine Sprechblasen.</p>'}
-            <button onclick="app.studio.addBalloon(${index})" class="w-full text-[11px] font-bold text-indigo-600 border border-dashed border-indigo-200 rounded-lg py-1.5 hover:bg-indigo-50 transition">+ Sprechblase</button>
+            ${panelCards}
+            <button onclick="app.studio.addPanel(${index})" class="w-full text-[11px] font-bold text-indigo-600 border border-dashed border-indigo-200 rounded-lg py-1.5 hover:bg-indigo-50 transition">+ Panel</button>
             ${spread.pageTurnHook ? `<p class="text-[10px] text-amber-700 italic">👉 Umblätter-Moment: ${app.utils.sanitize(spread.pageTurnHook)}</p>` : ''}
         </div>
     </div>`;
@@ -151,6 +175,9 @@ function fillStoryStage(project) {
     document.getElementById('studioSpreadList').innerHTML = project.spreads
         .map((s, i) => isComic ? comicSpreadCardHtml(s, i) : spreadCardHtml(s, i)).join('');
     document.getElementById('studioExportBtn').classList.toggle('hidden', !hasStory);
+    // NEU (Ausbaustufe 5, Panels): "clean vs. mit Sprechblase" - nur beim Comic sichtbar.
+    document.getElementById('studioComicBakeRow').classList.toggle('hidden', !isComic);
+    document.getElementById('studioComicBakeText').checked = project.comicBakeText !== false;
 }
 
 Object.assign(app.render, {

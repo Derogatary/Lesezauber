@@ -249,14 +249,15 @@ Antworte AUSSCHLIESSLICH in validem JSON, ohne Markdown-Blöcke, exakt in diesem
 }`;
         },
 
-        // NEU (Ausbaustufe 5) – Stufe 3 beim Comic: Skript statt Fließtext.
-        // Jede Doppelseite ist eine Comic-Seite mit Dialogzeilen statt
-        // erzählendem Text (Konzept C.1 "Comic/Heft" - "Script->Panels->
-        // Lettering"). Bewusst DIESELBE Grundform wie buildManuscriptPrompt
-        // (gleiche Zielgruppen-/Leitplanken-Bausteine, gleicher
-        // Umblätter-Moment), nur mit "dialogue" statt "text" im Ergebnis.
+        // NEU (Ausbaustufe 5, überarbeitet nach Nutzer-Feedback "sonst ist es
+        // einfach ein Bilderbuch") – Stufe 3 beim Comic: ECHTES
+        // Panel-Skript statt EINER Szene pro Seite. Jede Seite hat 1-4
+        // Panels (Konzept C.1 "Script->Panels->Lettering"), jedes Panel mit
+        // eigener Bildbeschreibung UND eigenen Dialogzeilen - erst DAS
+        // erzeugt später eine echte Panel-Anordnung (siehe
+        // js/studio/studioComicPanels.js) statt einer bloßen Bilderreihe.
         buildComicScriptPrompt(brief, spec) {
-            return `Du bist eine erfahrene Comic-Szenaristin/ein erfahrener Comic-Szenarist für Kinder.
+            return `Du bist eine erfahrene Comic-Szenaristin/ein erfahrener Comic-Szenarist für Kinder (amerikanisch/europäischer Comic-Stil, keine Manga-/Webtoon-Konventionen).
 Zielgruppe: ${AGE_LABEL[brief.audienceAge] || brief.audienceAge}. ${readingLevelRule(brief.readingLevel)}
 Sprache: Deutsch.
 Thema: ${brief.topic}
@@ -265,17 +266,21 @@ ${brief.message ? `Das soll am Ende hängenbleiben: ${brief.message}` : ''}
 
 ${guardrailsBlock()}
 
-Schreibe ein vollständiges Comic-Skript mit GENAU ${spec.storySpreads} Seiten. Jede Seite zeigt EINE Szene mit 1 bis 4 kurzen Sprechblasen-Zeilen (Dialog, keine erzählende Prosa - kurze, natürlich klingende Sätze, wie Kinder/Figuren wirklich sprechen). Halte dich an feste, wiederkehrende Figurennamen über das ganze Skript hinweg - erfinde nicht bei jeder Seite neue Namen für dieselbe Figur. Jede Seite außer der letzten endet mit einem kleinen Zug zum Weiterblättern (eine Frage, eine Überraschung, ein Cliffhanger).
+Schreibe ein vollständiges Comic-Skript mit GENAU ${spec.storySpreads} Seiten. JEDE Seite besteht aus 1 bis 4 Panels (die meisten Seiten 1-3 Panels - mehr Panels nur bei viel Dialog oder schneller Bewegung, ein einzelnes großes Panel für einen wichtigen/ruhigen Moment). Für JEDES Panel: eine kurze Bildbeschreibung (wer/was/wo, Kameraperspektive/Ausschnitt - KEIN Bild-Prompt, nur die Idee) UND 0 bis 3 kurze Sprechblasen-Zeilen (Dialog, keine erzählende Prosa - kurze, natürlich klingende Sätze). Halte dich an feste, wiederkehrende Figurennamen über das ganze Skript hinweg - erfinde nicht bei jeder Seite neue Namen für dieselbe Figur. Jede Seite außer der letzten endet mit einem kleinen Zug zum Weiterblättern (eine Frage, eine Überraschung, ein Cliffhanger).
 
 Antworte AUSSCHLIESSLICH in validem JSON, ohne Markdown-Blöcke, exakt in diesem Format mit GENAU ${spec.storySpreads} Einträgen in "spreads":
 {
   "title": "Ein kurzer, kindgerechter Comic-Titel",
   "spreads": [
     {
-      "text": "Optionale, sehr kurze Regieanweisung/Bildunterschrift (darf leer sein \\"\\")",
       "pageTurnHook": "Kurze Notiz, WAS hier zum Weiterblättern reizt - bei der letzten Seite leerer String.",
-      "dialogue": [
-        {"speaker": "Name der sprechenden Figur", "line": "Was sie sagt, kurz und natürlich."}
+      "panels": [
+        {
+          "visual": "Kurze Bildidee: wer/was/wo, Perspektive/Ausschnitt",
+          "dialogue": [
+            {"speaker": "Name der sprechenden Figur", "line": "Was sie sagt, kurz und natürlich."}
+          ]
+        }
       ]
     }
   ]

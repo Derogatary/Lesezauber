@@ -10,6 +10,12 @@ import { app } from '../core.js';
 // app.studio.resolveImageSourceId() (studioCore.js) anhand der
 // ausdrücklichen Bestätigung in den Einstellungen - dieses Modul fragt nie
 // selbst danach, ob "gemini" erlaubt ist.
+//
+// NEU (Ausbaustufe 5, Panels): beim Comic erzeugt dieses Modul NICHT ein
+// Bild pro Seite, sondern eins PRO PANEL (siehe generateComicPage() unten) -
+// mehr Bildaufrufe, aber erst das ergibt eine echte Panel-Anordnung statt
+// einer bloßen Bilderreihenfolge (Nutzer-Feedback: "sonst ist es einfach
+// ein Bilderbuch"). Bewusst so entschieden, auch mit höheren Kosten.
 
 function currentProject() {
     return app.studio.projects[app.state.currentStudioProjectId] || null;
@@ -25,14 +31,26 @@ function characterImagesFor(project, spread) {
         .filter(Boolean);
 }
 
+function characterImagesForPanel(project, panel) {
+    return app.studio.characterRefsForPanel(project, panel)
+        .map(c => c.sheetImgUrl)
+        .filter(Boolean);
+}
+
 Object.assign(app.studio, {
-    // Bild EINER Doppelseite (neu) erzeugen - der zentrale Knopf der
-    // Stufe 6. sketchPrompt (Stufe 5) ist die bevorzugte Bildidee, fällt auf
-    // den Manuskripttext zurück, falls das Storyboard übersprungen wurde.
+    // Bild EINER Doppelseite (Bilderbuch/Arbeitsheft) neu erzeugen - der
+    // zentrale Knopf der Stufe 6. sketchPrompt (Stufe 5) ist die bevorzugte
+    // Bildidee, fällt auf den Manuskripttext zurück, falls das Storyboard
+    // übersprungen wurde. Beim Comic übernimmt stattdessen
+    // generateComicPage() unten (eigenes Panel-Vorgehen).
     async generateSpreadImage(spreadIndex) {
         const project = currentProject();
         const spread = project && project.spreads[spreadIndex];
         if (!spread) return;
+        if (project.type === 'comic') {
+            await app.studio.generateComicPage(spreadIndex);
+            return;
+        }
 
         const sourceId = app.studio.resolveImageSourceId();
         app.ui.showLoader('Bild wird erzeugt...', sourceId === 'gemini' ? 'Das kann einige Sekunden dauern' : 'Platzhalter wird gezeichnet');
@@ -80,18 +98,79 @@ Object.assign(app.studio, {
         }
     },
 
+    // NEU (Ausbaustufe 5, Panels): erzeugt JEDES Panel einer Comic-Seite
+    // einzeln (eigener Bildaufruf pro Panel, siehe Dateikopf) und setzt sie
+    // danach zu EINER Seite zusammen (js/studio/studioComicPanels.js). Läuft
+    // über dieselbe resolveImageSourceId()-Weiche wie jedes andere Bild -
+    // ohne bestätigte Bildgenerierung bleibt es beim kostenlosen Platzhalter
+    // pro Panel (dann reicht auch regenerateComicPanelPlaceholders() in
+    // studioCore.js, diese Funktion hier ist für die ECHTE/gemischte Lage).
+    async generateComicPage(spreadIndex) {
+        const project = currentProject();
+        const spread = project && project.spreads[spreadIndex];
+        if (!spread) return;
+
+        const sourceId = app.studio.resolveImageSourceId();
+        app.state.apiBusy = true;
+        try {
+            for (let i = 0; i < spread.panels.length; i++) {
+                const panel = spread.panels[i];
+                app.ui.showLoader('Panels werden gezeichnet...', `${i + 1} von ${spread.panels.length}${sourceId === 'gemini' ? ' - das kann einige Sekunden dauern' : ''}`);
+                const result = await app.studio.imageSource.request(sourceId, {
+                    formatId: 'comicPanel',
+                    sketch: panel.visual || app.studio.spreadSceneHint(spread),
+                    style: app.studio.buildStyleText(project.style),
+                    characters: app.studio.characterRefsForPanel(project, panel),
+                    characterImages: characterImagesForPanel(project, panel),
+                    title: `Seite ${spreadIndex + 1}, Panel ${i + 1}`,
+                    index: spreadIndex * 10 + i
+                });
+                if (!result) continue;
+                panel.imgUrl = result.full;
+                panel.thumbUrl = result.thumb;
+                panel.imagePrompt = result.meta.prompt || '';
+                panel.imageStatus = 'done';
+                app.studio.trackImageCost(project, result.meta);
+            }
+
+            const composited = await app.studio.comicPanels.compositePage(spread);
+            if (composited) {
+                spread.imgUrl = composited.full;
+                spread.thumbUrl = composited.thumb;
+                spread.imageStatus = 'done';
+            }
+            app.dbOps.saveProject(project);
+            app.render.studioWizard(6);
+        } catch (e) {
+            console.error('Comic-Seite konnte nicht erzeugt werden:', e);
+            const msg = e.message === 'API_KEY_MISSING'
+                ? 'Bitte zuerst einen Gemini-API-Key in den Einstellungen eintragen.'
+                : e.message;
+            app.ui.toast(`Panel fehlgeschlagen: ${msg}`, '❌');
+            app.dbOps.saveProject(project);
+            app.render.studioWizard(6);
+        } finally {
+            app.state.apiBusy = false;
+            app.ui.hideLoader();
+        }
+    },
+
     // "Alle Platzhalter ersetzen" (docs/KONZEPT-Bildquellen.md Abschnitt 4 /
     // docs/KONZEPT-SchreibZauber.md D.6a): ein reiner Durchlauf über alle
-    // Seiten mit meta.source === 'placeholder', mit dem BEREITS
-    // gespeicherten Prompt (spread.imagePrompt) - der Prompt wird nicht neu
-    // erdacht, nur an die jetzt echte Quelle geschickt (spec.rawPrompt,
-    // siehe imageSource.js). Nur möglich, wenn die echte Bildgenerierung
-    // ausdrücklich bestätigt ist - sonst gäbe es nichts zu "ersetzen".
+    // Seiten/Panels mit source 'placeholder', mit dem BEREITS gespeicherten
+    // Prompt - der Prompt wird nicht neu erdacht, nur an die jetzt echte
+    // Quelle geschickt (spec.rawPrompt, siehe imageSource.js). Nur möglich,
+    // wenn die echte Bildgenerierung ausdrücklich bestätigt ist.
     async replaceAllPlaceholders() {
         const project = currentProject();
         if (!project) return;
         if (app.studio.resolveImageSourceId() !== 'gemini') {
             app.ui.toast('Echte Bildgenerierung ist noch nicht in den Einstellungen bestätigt.', 'ℹ️');
+            return;
+        }
+
+        if (project.type === 'comic') {
+            await replaceAllComicPanelPlaceholders(project);
             return;
         }
 
@@ -143,3 +222,64 @@ Object.assign(app.studio, {
         app.render.studioWizard(6);
     }
 });
+
+// NEU (Ausbaustufe 5, Panels): Comic-Gegenstück zu "alle Platzhalter
+// ersetzen" - läuft über ALLE Panels ALLER Seiten (nicht über Seiten
+// direkt), setzt betroffene Seiten danach neu zusammen.
+async function replaceAllComicPanelPlaceholders(project) {
+    const targets = [];
+    project.spreads.forEach((spread, spreadIndex) => {
+        spread.panels.forEach((panel, panelIndex) => {
+            if (panel.imgUrl && panel.imagePrompt) targets.push({ spread, panel, spreadIndex, panelIndex });
+        });
+    });
+    if (targets.length === 0) {
+        app.ui.toast('Keine Platzhalter zum Ersetzen gefunden.', 'ℹ️');
+        return;
+    }
+    if (!confirm(`${targets.length} Panel-Platzhalter durch echte KI-Bilder ersetzen? Das kostet ca. ${(targets.length * app.studio.GEMINI_IMAGE_PRICE_USD).toFixed(2)} $ (grobe Schätzung).`)) return;
+
+    app.ui.showLoader('Panels werden erzeugt...', `0 von ${targets.length}`);
+    app.state.apiBusy = true;
+    let done = 0, failed = 0;
+    const touchedSpreads = new Set();
+    try {
+        for (const { spread, panel, spreadIndex } of targets) {
+            app.ui.showLoader('Panels werden erzeugt...', `${done + failed} von ${targets.length}`);
+            try {
+                const result = await app.studio.imageSource.request('gemini', {
+                    formatId: 'comicPanel',
+                    rawPrompt: panel.imagePrompt,
+                    characterImages: characterImagesForPanel(project, panel),
+                    index: spreadIndex
+                });
+                if (result) {
+                    panel.imgUrl = result.full;
+                    panel.thumbUrl = result.thumb;
+                    app.studio.trackImageCost(project, result.meta);
+                    touchedSpreads.add(spread);
+                    done += 1;
+                } else {
+                    failed += 1;
+                }
+            } catch (e) {
+                console.error('Panel-Platzhalter konnte nicht ersetzt werden:', e);
+                failed += 1;
+            }
+        }
+        for (const spread of touchedSpreads) {
+            const composited = await app.studio.comicPanels.compositePage(spread);
+            if (composited) {
+                spread.imgUrl = composited.full;
+                spread.thumbUrl = composited.thumb;
+            }
+        }
+        app.dbOps.saveProject(project);
+    } finally {
+        app.state.apiBusy = false;
+        app.ui.hideLoader();
+    }
+
+    app.ui.toast(`${done} Panel(s) erzeugt${failed ? `, ${failed} fehlgeschlagen` : ''}`, failed ? '⚠️' : '🎉');
+    app.render.studioWizard(6);
+}
