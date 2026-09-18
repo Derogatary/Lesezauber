@@ -1,6 +1,7 @@
 # 🗺 Roadmap: Vorlesen & Stimmen
 
-**Stand: v0.12.0-beta, September 2026**
+**Stand: v0.18.0-beta, September 2026** (Versionsangabe zuletzt hier aktualisiert - der
+Inhalt selbst wurde laufend mit `erledigt`-Vermerken nachgezogen, siehe einzelne Punkte)
 
 Diese Datei ist der Einstiegspunkt für die nächsten Schritte **rund um Vorlesen und
 KI-Stimmen** - sowohl für den Betreiber als auch für eine **neue Claude-Sitzung**, die
@@ -148,9 +149,9 @@ Der Analyse-Prompt liefert bewusst den "exakten gedruckten Text" - richtig für 
 ## Kleine Ideen (jeweils unter einer Stunde)
 
 - ~~**Mehr Stimmen freischalten**~~ **erledigt (Sept. 2026):** `js/ttsProviders.js` hat jetzt alle 30 Gemini- und alle 13 OpenAI-Stimmen, bewährte zuerst.
-- **Stimme pro Profil:** Jedes Kind bekommt seine eigene Vorlese-Stimme - `app.settings.ttsVoices` müsste dafür pro Profil gespeichert werden.
-- **"Buch hörfertig machen":** Ein Knopf, der alle Seiten eines Buches vorab in den Stimmen-Speicher legt - danach läuft das Vorlesen ohne Wartezeit und offline.
-- **Kosten-Anzeige:** Mitzählen, wie viele Zeichen im Monat an den Anbieter gingen (rein lokal geschätzt).
+- ~~**Stimme pro Profil**~~ **erledigt (Sept. 2026):** Jedes Kind hat jetzt seine eigene Vorlese-Stimme - `app.profileTtsMap` in `js/profiles.js`, wird beim Profilwechsel eingespielt.
+- ~~**"Buch hörfertig machen"**~~ **erledigt:** Ein Knopf, der alle Seiten eines Buches vorab in den Stimmen-Speicher legt - danach läuft das Vorlesen ohne Wartezeit und offline.
+- ~~**Kosten-Anzeige**~~ **erledigt (v0.13.0-beta):** Zählt lokal geschätzt, wie viele Zeichen im Monat an den Anbieter gingen (`js/costMeter.js`).
 - ~~**Tarif-Lock**~~ **erledigt (Sept. 2026):** Jeder Anbieter in `js/ttsProviders.js` hat jetzt
   ein `costTier`-Feld (`free`/`cheap`/`expensive`); beim Wechsel auf eine teurere Stufe als die
   aktuell gewählte erscheint ein Bestätigungsdialog (`app.ttsProviders.isCostUpgrade()` in
@@ -187,4 +188,4 @@ Zusammenführen der Konzeptpapiere wurde das getrennt - hier nachgeschlagen wird
 |---|---|
 | Video-Export, Hörbuch, Mehrformat | `docs/KONZEPT-Video.md` (vorher hier dupliziert) |
 | KI-generierte Illustrationen (Comic-Stil) | `docs/KONZEPT-Comic.md` |
-| Native App via Capacitor, Kinder-/Elternbereich (Profil-Rollen), Server-Punkte (bewusst zurückgestellt) | `docs/TODO-GESAMT.md`, Bereich "App & Plattform" |
+| Native App via Capacitor, Server-Punkte (bewusst zurückgestellt) - Kinder-/Elternbereich (Profil-Rollen) ist inzwischen erledigt | `docs/TODO-GESAMT.md`, Bereich "App & Plattform" |

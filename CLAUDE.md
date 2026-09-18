@@ -267,10 +267,9 @@ Nutzer, nicht einfach lospreschen):
 | Vorhaben | Konzept |
 |---|---|
 | 🎬 Video: nur noch Restpunkte (Ton in der Vorschau, Ansage auf der Titelkarte, Quiz-Karte mit Denkpause, höhere Bildauflösung) - Renderer UND Export sind gebaut, siehe Abschnitt 4.7 des Konzepts | [`docs/KONZEPT-Video.md`](docs/KONZEPT-Video.md) |
-| 🪄 "SchreibZauber" - eigener Schreib-/Generierungs-Bereich für eigene Werke | [`docs/KONZEPT-SchreibZauber.md`](docs/KONZEPT-SchreibZauber.md), [`docs/KONZEPT-Bildquellen.md`](docs/KONZEPT-Bildquellen.md) |
+| 🪄 "SchreibZauber" - Stufe 1 (Fundament) ist fertig, **Stufe 2+3 (Bilderbuch) und Stufe 4 (Arbeitsheft) sind jetzt parallel mit mehreren Sitzungen startbar** - siehe Abschnitt "Stand nach Stufe 1" im Konzept | [`docs/KONZEPT-SchreibZauber.md`](docs/KONZEPT-SchreibZauber.md), [`docs/KONZEPT-Bildquellen.md`](docs/KONZEPT-Bildquellen.md) |
 | 🎨 KI-generierte Illustrationen (Comic-Stil), für Text-only-EPUB-Kapitel UND als SchreibZauber-Werktyp | [`docs/KONZEPT-Comic.md`](docs/KONZEPT-Comic.md) |
-| 🎭 Emotionen/Sprech-Anweisungen mitten im Satz (Audio-Tags) | [`docs/ROADMAP.md`](docs/ROADMAP.md) |
-| 🔐 Kinder-/Elternbereich (Profil-Rollen), 📱 Native Android-App via Capacitor | [`docs/TODO-GESAMT.md`](docs/TODO-GESAMT.md), Bereich "App & Plattform" |
+| 📱 Native Android-App via Capacitor | [`docs/TODO-GESAMT.md`](docs/TODO-GESAMT.md), Bereich "App & Plattform" |
 
 **Vor jeder Arbeit an einem dieser Themen erst das verlinkte Dokument lesen** - sonst werden
 Entscheidungen neu diskutiert, die schon gefallen sind, und bereits verworfene Wege erneut probiert.

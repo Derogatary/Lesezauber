@@ -1,6 +1,6 @@
 # 📋 Aufträge für einzelne Claude-Code-Sitzungen
 
-**Stand: v0.13.0-beta, September 2026**
+**Stand: v0.18.0-beta, September 2026**
 
 Diese Datei schneidet die offenen Punkte aus [`docs/TODO-GESAMT.md`](TODO-GESAMT.md) in
 **in sich abgeschlossene Aufträge**, die jeweils an eine eigene Claude-Code-Sitzung
@@ -16,9 +16,11 @@ diese Datei ist nur die Aufteilung in Arbeitspakete.
 
 ---
 
-## Stand (Oktober 2026)
+## Stand (September 2026, nach zwei weiteren Integrationspässen)
 
-**Welle 0 und Welle 1 sind in `main`.** Aktuelle Version: `v0.14.0-beta`.
+**Wellen 0, 1, 2, 3 und 4 sind vollständig in `main`.** Aktuelle Version: `v0.18.0-beta`.
+Alle 15 ursprünglich geplanten Aufträge sind gebaut und gemergt; alle Auftrags-Branches sind
+inzwischen gelöscht (siehe „Der Merge-Rhythmus" - gemergte Branches zeitnah aufräumen).
 
 | # | Auftrag | Stand |
 |---|---|---|
@@ -30,9 +32,30 @@ diese Datei ist nur die Aufteilung in Arbeitspakete.
 | 6 | Kino-Modus vollenden | ✅ in `main` |
 | 7 | Hörbuch-Export | ✅ in `main` |
 | 8 | Emotionen / Audio-Tags | ✅ in `main` |
+| 9 | Lange Texte stückeln + Mitmachmodus mit KI-Stimme | ✅ in `main` |
+| 10 | Heft-Generator: API-Aufruf + Prompt | ✅ in `main` |
+| 11 | Heft-Generator: Auswahl-Ansicht + Canvas (inkl. Druckqualität-Nachtrag) | ✅ in `main` |
 | 12 | SchreibZauber Stufe 1 | ✅ in `main` (DB-Version 3 → 4) |
-| 13 | Integrations-Pass | ✅ gelaufen, Vorlage für jedes Wellen-Ende |
-| 9, 10, 11, 14, 15 | Welle 2 und später | ⬜ offen |
+| 13 | Integrations-Pass (Welle 0) | ✅ gelaufen |
+| 14 | Video-Export Weg B, Teil 1: Renderer-Kern | ✅ in `main` |
+| 15 | Video-Export Weg B, Teil 2: ganzes Buch + Regie | ✅ in `main` |
+
+**Zwei weitere Integrationspässe seither** (analog zu Auftrag 13, gleiche Vorlage):
+Ein erster hat 9 (Texte stückeln/Mitmachmodus) zusammen mit 10 (Heft-Generator API)
+gemergt (→ v0.15.0-beta). Ein zweiter hat die beiden bis dahin größten offenen Zweige -
+11+Druckqualität (Heft-Generator fertig) und 14+15 (Video-Export komplett) - in einem
+Sammelzweig zusammengeführt (→ v0.18.0-beta) und dabei einen echten, von Git nicht
+erkannten Bruch gefunden: Der Heft-Generator-Zweig kannte `book.origin` noch nicht (kam
+erst mit dem Video-Zweig) und hätte generierte Hefte fälschlich vom Video-Export
+ausgeschlossen - jetzt in `js/actions/workbookGenerator.js` behoben. Genau das Muster,
+das CLAUDE.md unter „Arbeitsschritt-Varianten bei mehreren parallelen Aufträgen"
+beschreibt: sichtbare Git-Konflikte lösen sich von selbst, unsichtbare inhaltliche Brüche
+nur durch bewusstes Draufschauen beim Integrationspass.
+
+**Damit ist die im Konzept genannte Bedingung für Welle 5 erfüllt** (Stufe 1 fertig und
+gemergt) - Stufe 2+3 (Bilderbuch) und Stufe 4 (Arbeitsheft) von SchreibZauber sind ab
+jetzt mit mehreren gleichzeitigen Sitzungen parallel startbar, siehe „Die neue
+Reihenfolge" unten und `docs/KONZEPT-SchreibZauber.md`, Abschnitt „Stand nach Stufe 1".
 
 **Auftrag 4 lag doppelt vor.** Zwei Sitzungen hatten denselben Auftrag bearbeitet
 (`-hgcao9` und `-miityv`). Gemergt wurde `-hgcao9`: gleicher Funktionsumfang, aber mit der
@@ -126,10 +149,10 @@ Drei Dinge tauchen bei **jedem** Merge auf:
 |---|---|---|---|
 | ~~**0**~~ | ~~Branches 1,2,3,5,6,7 mergen, dann **13** (Integrations-Pass)~~ | - | ✅ **erledigt**, alles in `main` |
 | ~~**1**~~ | ~~**4** (Profil-Rollen) · **8** (Audio-Tags) · **12** (SchreibZauber Stufe 1)~~ | - | ✅ **erledigt**, alles in `main` |
-| **2 - jetzt** | **9** (Texte stückeln + Mitmachmodus) · **10** (Heft-Generator API) | ✅ zwei gleichzeitig | **8** ist in `main`, beide startbar |
-| **3** | **11** (Heft-Generator Ansicht) · **14** (Video-Renderer, Einzelseite) | ✅ zwei gleichzeitig | 11 nach 10 · 14 ist durch Welle 0 bereits frei |
-| **4** | **15** (Video-Export fürs ganze Buch) | allein | nach **14** |
-| **5** | SchreibZauber Stufe 2+3 (Bilderbuch) ∥ Stufe 4 (Arbeitsheft) | ✅ zwei gleichzeitig | **12** ist gemerged - startbar |
+| ~~**2**~~ | ~~**9** (Texte stückeln + Mitmachmodus) · **10** (Heft-Generator API)~~ | ✅ zwei gleichzeitig | ✅ **erledigt**, alles in `main` |
+| ~~**3**~~ | ~~**11** (Heft-Generator Ansicht) · **14** (Video-Renderer, Einzelseite)~~ | ✅ zwei gleichzeitig | ✅ **erledigt**, alles in `main` |
+| ~~**4**~~ | ~~**15** (Video-Export fürs ganze Buch)~~ | allein | ✅ **erledigt**, in `main` |
+| **5 - jetzt startbar** | SchreibZauber Stufe 2+3 (Bilderbuch) ∥ Stufe 4 (Arbeitsheft) | ✅ zwei gleichzeitig | **12** ist gemergt - Bedingung erfüllt. Stufe 2 (Bildgenerierung) braucht vorher noch die Zahlungsmethode-Klärung aus `KONZEPT-SchreibZauber.md` TEIL G, Punkt 1 |
 
 **Warum 12 (SchreibZauber Stufe 1) schon in Welle 1 startet:** Es ist der längste Weg im
 ganzen Projekt und blockiert vier weitere Stufen. Es fasst fast nur neue Dateien an
@@ -158,13 +181,13 @@ Kindern direkt und ist Voraussetzung für SchreibZauber Stufe 6.
 | 6 | Kino-Modus vollenden (Ken-Burns + Kreuzblende) | Video | **S** | ✅ `claude/kino-modus-vollenden` |
 | 7 | Hörbuch-Export | Video | **M** | ✅ in Welle 0 |
 | 8 | Emotionen / Audio-Tags | Vorlesen | **M** | ✅ in `main` |
-| 9 | Lange Texte stückeln + Mitmachmodus mit KI-Stimme | Vorlesen | **M** | `claude/tts-stueckeln-mitmachmodus` |
-| 10 | Heft-Generator: API-Aufruf + Prompt | Übungshefte | **S** | `claude/heft-generator-api` |
-| 11 | Heft-Generator: Auswahl-Ansicht + Canvas | Übungshefte | **M** | ✅ `claude/aufgabe-11-heft-generierung-sju4rb` |
+| 9 | Lange Texte stückeln + Mitmachmodus mit KI-Stimme | Vorlesen | **M** | ✅ in `main` (Branch inzwischen gelöscht) |
+| 10 | Heft-Generator: API-Aufruf + Prompt | Übungshefte | **S** | ✅ in `main` (Branch inzwischen gelöscht) |
+| 11 | Heft-Generator: Auswahl-Ansicht + Canvas | Übungshefte | **M** | ✅ in `main` (Branch inzwischen gelöscht) |
 | 12 | SchreibZauber Stufe 1 - Fundament | Eigene Werke | **L** | ✅ in `main` |
-| 13 | Integrations-Pass nach dem Merge + v0.13.0-beta | Plattform | **S** | ✅ in Welle 0 gelaufen - **Vorlage für jedes Wellen-Ende** |
-| 14 | Video-Export Weg B, Teil 1: Renderer-Kern | Video | **M** | `claude/video-renderer-kern` |
-| 15 | Video-Export Weg B, Teil 2: ganzes Buch + Regie | Video | **M** | `claude/video-buch-export` |
+| 13 | Integrations-Pass nach dem Merge + v0.13.0-beta | Plattform | **S** | ✅ in Welle 0 gelaufen - **Vorlage für jedes Wellen-Ende**, seither zweimal wiederholt (→ v0.15.0-beta, → v0.18.0-beta) |
+| 14 | Video-Export Weg B, Teil 1: Renderer-Kern | Video | **M** | ✅ in `main` (Branch inzwischen gelöscht) |
+| 15 | Video-Export Weg B, Teil 2: ganzes Buch + Regie | Video | **M** | ✅ in `main` (Branch inzwischen gelöscht) |
 
 ---
 
@@ -806,5 +829,5 @@ claude/video-buch-export pushen. Keinen Pull Request anlegen.
 | **Comic: zweiter Testlauf** (**S**) | Läuft in `tools/comic-gen/` lokal beim Betreiber, nicht in der App - braucht dessen API-Keys und dessen Urteil über das Ergebnis |
 | **Kontroll-Funktion im Alltag beobachten** (**S**) | Reine Beobachtung mit den Kindern, kein Code |
 | **Scroll-Verhalten am Bildschirmrand / Zoom-Unschärfe** | Nicht reproduzierbar - braucht erst einen Screenshot vom Nutzer |
-| **SchreibZauber Stufe 2-6** | Erst nach Nr. 12 (Stufe 1 gebaut und gemerged), sonst laufen die Sitzungen auf unterschiedlichen Grundlagen auseinander (Entscheidung Sept. 2026, TEIL G) |
+| **SchreibZauber Stufe 5-6 (Comic, Politur)** | Erst nach Stufe 2+3/4 (Welle 5), sonst fehlt die Grundlage (Bildgenerierung bzw. Arbeitsheft-Pfad). Stufe 2+3 ∥ 4 selbst sind **kein** Sperrpunkt mehr - Nr. 12 (Stufe 1) ist gebaut und gemergt, siehe „Die neue Reihenfolge", Welle 5 |
 | **Die drei XL-Punkte** (Backend, Cloud-Sync, Accounts) | Bewusst zurückgestellt - würden die serverlose Architektur des Projekts umdrehen |
