@@ -36,6 +36,16 @@ const PAGE_PAUSE_SEC = 1.1;
 const TAIL_PAUSE_SEC = 1.0;
 const TITLE_CARD_SEC = 4.5;
 const END_CARD_SEC = 3.5;
+// NEU (Quiz-Karte mit Denkpause, siehe docs/KONZEPT-Video.md, "Noch offen"):
+// Zeit zwischen der gesprochenen Frage und der aufgedeckten Antwort - lehnt
+// sich an die 4 Sekunden Denkpause aus js/tts.js (maybeAskQuiz) an, im Film
+// minimal kürzer, weil hier ohnehin ein sichtbarer Kartenwechsel folgt statt
+// nur eines Textwechsels auf derselben Ansicht.
+const QUIZ_THINK_PAUSE_SEC = 3.5;
+// NEU: Mindestlänge der Titelkarte auch MIT Ansage - die Karte soll nach dem
+// letzten Wort noch kurz stehen bleiben, bevor der Film mit der ersten Seite
+// weitergeht (dieselbe Überlegung wie TAIL_PAUSE_SEC am Buch-Ende).
+const TITLE_CARD_TAIL_SEC = 1.2;
 
 Object.assign(app.cinema, {
     // Baut den kompletten Zeitplan für einen Seitenbereich.
@@ -47,7 +57,14 @@ Object.assign(app.cinema, {
         includeQuiz = false,
         formatId = null,
         segmentsByPage = null,
-        withCards = null
+        withCards = null,
+        // NEU: fertig vertonte Metadaten-Ansage für die Titelkarte - ein
+        // Ergebnis von app.ttsNeural.renderAudio(app.tts._buildBookIntro(book), ...),
+        // holen die Aufrufer (js/actions/videoExport.js für den Export,
+        // js/actions/videoPreview.js mit cacheOnly:true für die Vorschau).
+        // buildTimeline() synthetisiert hier selbst nichts, sondern bekommt
+        // das Ergebnis fertig übergeben, genau wie segmentsByPage.
+        titleAudio = null
     } = {}) {
         const book = app.library[bookId];
         if (!book) throw new Error('Buch nicht gefunden.');
@@ -73,6 +90,14 @@ Object.assign(app.cinema, {
 
         if (cards) {
             const author = [book.author, book.publisher].filter(Boolean).join(' · ');
+            // NEU: Metadaten-Ansage auf der Titelkarte - vorher lief sie
+            // stumm mit fester Länge (siehe docs/KONZEPT-Video.md, "Noch
+            // offen"). Ohne Ansage (keine KI-Stimme aktiv, Text noch nicht
+            // im Cache, Rendern fehlgeschlagen) bleibt es beim bisherigen
+            // Verhalten: stumme Karte mit TITLE_CARD_SEC.
+            const cardDurationSec = titleAudio
+                ? Math.max(TITLE_CARD_SEC, titleAudio.durationSec + TITLE_CARD_TAIL_SEC)
+                : TITLE_CARD_SEC;
             scenes.push({
                 kind: 'title',
                 title: book.title || 'Ohne Titel',
@@ -81,12 +106,13 @@ Object.assign(app.cinema, {
                 // sonst das gewählte Cover (siehe _coverUrl).
                 imgUrl: titlePage ? titlePage.imgUrl : this._coverUrl(book),
                 words: [],
+                audio: titleAudio ? { blob: titleAudio.blob, mime: titleAudio.mime } : null,
                 kenBurns: 0,
                 startSec: 0,
-                durationSec: TITLE_CARD_SEC,
-                endSec: TITLE_CARD_SEC
+                durationSec: cardDurationSec,
+                endSec: cardDurationSec
             });
-            cursor = TITLE_CARD_SEC;
+            cursor = cardDurationSec;
         }
 
         planned.forEach((part, i) => {
@@ -97,25 +123,55 @@ Object.assign(app.cinema, {
             // legt die Tonspur exakt auf scene.startSec, wodurch Bild und Ton
             // unabhängig von der Pausenlänge zusammenpassen.
             let pause = TAIL_PAUSE_SEC;
-            if (next) pause = next.pageIdx === part.pageIdx ? SEGMENT_PAUSE_SEC : PAGE_PAUSE_SEC;
+            if (next && part.kind === 'quizQ' && next.kind === 'quizA' && next.pageIdx === part.pageIdx) {
+                // NEU: Denkpause vor der Auflösung - die Frage-Karte bleibt
+                // dafür nach dem letzten Wort einfach länger stehen (siehe
+                // Kommentar oben: die Pause gehört zur Szene davor).
+                pause = QUIZ_THINK_PAUSE_SEC;
+            } else if (next) {
+                pause = next.pageIdx === part.pageIdx ? SEGMENT_PAUSE_SEC : PAGE_PAUSE_SEC;
+            }
 
             const total = part.durationSec + pause;
             if (!part.exact) exact = false;
-            scenes.push({
-                kind: 'page',
-                segmentKind: part.kind,
-                pageIdx: part.pageIdx,
-                imgUrl: part.imgUrl,
-                text: part.text,
-                words: part.words,
-                audio: part.audio || null,
-                // Zoom-Richtung nach Seitenindex, damit zwei aufeinander
-                // folgende Seiten nie gleich schwenken.
-                kenBurns: part.pageIdx % 4,
-                startSec: cursor,
-                durationSec: total,
-                endSec: cursor + total
-            });
+
+            if (part.kind === 'quizQ' || part.kind === 'quizA') {
+                // NEU: eigene Karte statt Untertitel-Balken (siehe
+                // docs/KONZEPT-Video.md, "Noch offen") - gezeichnet in
+                // app.cinema._drawQuizCard(). Das Seitenbild bleibt nur als
+                // abgedunkelter Hintergrund sichtbar, damit die Frage groß
+                // und ruhig lesbar ist.
+                scenes.push({
+                    kind: 'quiz',
+                    quizRole: part.kind === 'quizQ' ? 'question' : 'answer',
+                    segmentKind: part.kind,
+                    pageIdx: part.pageIdx,
+                    imgUrl: part.imgUrl,
+                    text: part.text,
+                    words: part.words,
+                    audio: part.audio || null,
+                    kenBurns: part.pageIdx % 4,
+                    startSec: cursor,
+                    durationSec: total,
+                    endSec: cursor + total
+                });
+            } else {
+                scenes.push({
+                    kind: 'page',
+                    segmentKind: part.kind,
+                    pageIdx: part.pageIdx,
+                    imgUrl: part.imgUrl,
+                    text: part.text,
+                    words: part.words,
+                    audio: part.audio || null,
+                    // Zoom-Richtung nach Seitenindex, damit zwei aufeinander
+                    // folgende Seiten nie gleich schwenken.
+                    kenBurns: part.pageIdx % 4,
+                    startSec: cursor,
+                    durationSec: total,
+                    endSec: cursor + total
+                });
+            }
             cursor += total;
         });
 

@@ -308,6 +308,10 @@ Object.assign(app.cinema, {
         if (scene.kind === 'page') {
             this._drawPageImage(ctx, scene, fmt, metrics, progress);
             this._drawSubtitle(ctx, scene, fmt, metrics, local);
+        } else if (scene.kind === 'quiz') {
+            // NEU: Rätselfrage/-antwort als eigene Karte statt Untertitel-
+            // Balken (siehe docs/KONZEPT-Video.md, "Noch offen").
+            this._drawQuizCard(ctx, scene, fmt, metrics, local);
         } else {
             this._drawCard(ctx, scene, fmt, metrics, progress);
         }
@@ -687,6 +691,67 @@ Object.assign(app.cinema, {
         const cut = lines.slice(0, maxLines);
         cut[maxLines - 1] = `${cut[maxLines - 1].replace(/\s+\S*$/, '')}...`;
         return cut;
+    },
+
+    // ---------- Quiz-Karte mit Denkpause ----------
+    // NEU (docs/KONZEPT-Video.md, "Noch offen"): eigene Karte für Frage und
+    // Antwort, statt sie wie Seitentext im Untertitel-Balken durchlaufen zu
+    // lassen - ein Rätsel soll auffallen, nicht nebenbei vorbeiziehen. Die
+    // Denkpause selbst braucht hier keinen eigenen Code: sie steckt in der
+    // Länge der Frage-Szene (siehe QUIZ_THINK_PAUSE_SEC in
+    // js/actions/videoTimeline.js) - die Frage bleibt nach dem letzten Wort
+    // einfach länger stehen, bevor die Antwort-Karte folgt. Keine
+    // Wort-Hervorhebung wie beim Untertitel-Balken - für eine kurze Frage/
+    // Antwort auf einer eigenen Karte reicht ruhiger, größerer Text.
+    _drawQuizCard(ctx, scene, fmt, metrics, localSec) {
+        const area = metrics.image;
+        const isAnswer = scene.quizRole === 'answer';
+
+        const boxMargin = metrics.margin * 2;
+        const boxX = boxMargin;
+        const boxY = Math.round(area.y + area.h * 0.14);
+        const boxW = fmt.width - boxMargin * 2;
+        const boxH = Math.round(area.h * 0.72);
+        const innerWidth = boxW - metrics.pad * 2;
+
+        ctx.save();
+        ctx.fillStyle = COLOR_BAR;
+        this._roundRect(ctx, boxX, boxY, boxW, boxH, metrics.radius * 1.4);
+        ctx.fill();
+        ctx.restore();
+
+        ctx.save();
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'alphabetic';
+        const centerX = fmt.width / 2;
+
+        const badgeSize = Math.round(metrics.fontSize * 0.8);
+        ctx.font = `700 ${badgeSize}px ${FONT_STACK}`;
+        ctx.fillStyle = isAnswer ? '#86efac' : '#fde047';
+        ctx.fillText(isAnswer ? '✅ Antwort' : '❓ Rätselfrage', centerX, boxY + metrics.pad + badgeSize);
+
+        ctx.font = `700 ${Math.round(metrics.fontSize * 1.05)}px ${FONT_STACK}`;
+        ctx.fillStyle = COLOR_TEXT;
+        const lines = this._wrapPlain(ctx, scene.text || '', innerWidth, 6);
+        let y = boxY + metrics.pad + badgeSize + Math.round(metrics.fontSize * 1.4);
+        lines.forEach(text => {
+            ctx.fillText(text, centerX, y);
+            y += Math.round(metrics.fontSize * 1.35);
+        });
+
+        // Bei der Frage: sobald das letzte Wort gesprochen ist (der Rest der
+        // Szenenlänge ist die Denkpause), einen Hinweis einblenden - sonst
+        // wirkt der stehende Frame wie ein Hänger statt wie Bedenkzeit.
+        if (!isAnswer) {
+            const words = scene.words || [];
+            const spokenEnd = words.length ? words[words.length - 1].end : 0;
+            if (localSec > spokenEnd) {
+                ctx.font = `600 ${Math.round(metrics.fontSize * 0.86)}px ${FONT_STACK}`;
+                ctx.fillStyle = COLOR_MUTED;
+                ctx.fillText('🤔 Zeit zum Überlegen...', centerX, boxY + boxH - metrics.pad);
+            }
+        }
+        ctx.restore();
     },
 
     // ctx.roundRect() gibt es erst in neueren Browsern - der Rückfall hält
