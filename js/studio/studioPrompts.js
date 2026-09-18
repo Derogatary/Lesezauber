@@ -266,7 +266,7 @@ ${brief.message ? `Das soll am Ende hängenbleiben: ${brief.message}` : ''}
 
 ${guardrailsBlock()}
 
-Schreibe ein vollständiges Comic-Skript mit GENAU ${spec.storySpreads} Seiten. JEDE Seite besteht aus 1 bis 4 Panels (die meisten Seiten 1-3 Panels - mehr Panels nur bei viel Dialog oder schneller Bewegung, ein einzelnes großes Panel für einen wichtigen/ruhigen Moment). Für JEDES Panel: eine kurze Bildbeschreibung (wer/was/wo, Kameraperspektive/Ausschnitt - KEIN Bild-Prompt, nur die Idee) UND 0 bis 3 kurze Sprechblasen-Zeilen (Dialog, keine erzählende Prosa - kurze, natürlich klingende Sätze). Halte dich an feste, wiederkehrende Figurennamen über das ganze Skript hinweg - erfinde nicht bei jeder Seite neue Namen für dieselbe Figur. Jede Seite außer der letzten endet mit einem kleinen Zug zum Weiterblättern (eine Frage, eine Überraschung, ein Cliffhanger).
+Schreibe ein vollständiges Comic-Skript mit GENAU ${spec.storySpreads} Seiten. JEDE Seite besteht aus 1 bis 4 Panels (die meisten Seiten 1-3 Panels - mehr Panels nur bei viel Dialog oder schneller Bewegung, ein einzelnes großes Panel für einen wichtigen/ruhigen Moment). Für JEDES Panel: eine kurze Bildbeschreibung (wer/was/wo, Kameraperspektive/Ausschnitt - KEIN Bild-Prompt, nur die Idee), 0 bis 3 kurze Sprechblasen-Zeilen (Dialog, keine erzählende Prosa - kurze, natürlich klingende Sätze) UND optional EIN kurzes Geräuschwort (Manga-/Comic-Lautmalerei wie "BUMM", "PATSCH", "ZOOM" - NUR bei einer Aktion/einem Geräusch, die meisten Panels brauchen keins - leerer String, wenn nicht passend). Halte dich an feste, wiederkehrende Figurennamen über das ganze Skript hinweg - erfinde nicht bei jeder Seite neue Namen für dieselbe Figur. Jede Seite außer der letzten endet mit einem kleinen Zug zum Weiterblättern (eine Frage, eine Überraschung, ein Cliffhanger).
 
 Antworte AUSSCHLIESSLICH in validem JSON, ohne Markdown-Blöcke, exakt in diesem Format mit GENAU ${spec.storySpreads} Einträgen in "spreads":
 {
@@ -277,6 +277,7 @@ Antworte AUSSCHLIESSLICH in validem JSON, ohne Markdown-Blöcke, exakt in diesem
       "panels": [
         {
           "visual": "Kurze Bildidee: wer/was/wo, Perspektive/Ausschnitt",
+          "soundEffect": "Geräuschwort in Großbuchstaben, oder leerer String \\"\\"",
           "dialogue": [
             {"speaker": "Name der sprechenden Figur", "line": "Was sie sagt, kurz und natürlich."}
           ]

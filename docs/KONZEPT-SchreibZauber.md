@@ -880,12 +880,28 @@ Einträge v0.24.0-beta und v0.26.0-beta).
   automatisch per Namen mit `project.characters` ab, sobald die existieren, statt eine eigene
   manuelle Zuordnungs-UI zu bauen. Ein Panel bekommt dadurch NUR die Figuren als Bild-Referenz,
   die darin tatsächlich sprechen - noch genauer als beim ursprünglichen Seiten-weiten Ansatz.
-- **"Clean vs. mit Sprechblase" beim Export:** `project.comicBakeText` (Checkbox in Stufe 3,
-  Standard AN) - AN brennt `app.studio.comicPanels.bakePageWithBalloons()` die Sprechblasen
-  fest in die exportierte Bilddatei (zweite bewusste Ausnahme von "Text nie ins Bild brennen",
-  weil das bei echten Comics/Mangas genau so gemacht wird), AUS exportiert die "saubere"
-  Fassung ohne Text im Bild (einfacher später neu zu übersetzen). Der Klartext für Vorlesen/
-  Suche bleibt in beiden Fällen identisch erhalten (`spreadReadableText()`).
+- **Sprechblasen sind KEINE Erstell-Entscheidung, sondern ein Umschalter beim Lesen (seit
+  v0.27.0-beta - siehe dortiger CLAUDE.md-Eintrag für die Vorgeschichte).** `toLibraryBook()`
+  erzeugt beim "Ins Regal stellen" für jede Comic-Seite IMMER beide Bildfassungen: die
+  "saubere" Komposition (`app.studio.comicPanels.compositePage()`) landet in `page.
+  comicCleanImgUrl`/`comicCleanThumbUrl`, die Fassung MIT eingebrannten Sprechblasen
+  (`bakePageWithBalloons()` - zweite bewusste Ausnahme von "Text nie ins Bild brennen", weil
+  das bei echten Comics/Mangas genau so gemacht wird) bleibt wie gewohnt `imgUrl`/`thumbUrl`,
+  damit alle generischen Reader-Codepfade unverändert lauffähig bleiben. Ein neuer
+  Reader-Umschalter ("🗨️ Sprechblasen", nur sichtbar bei vorhandener `comicCleanImgUrl`) ruft
+  `app.actions.toggleComicBubblesInReader()` auf, die den flüchtigen `app.state.
+  comicBubblesOff` setzt (wie `readingPersonaId` - nicht gespeichert, jedes Öffnen zeigt wieder
+  Sprechblasen). `app.utils.resolveDisplayImageUrl(page)` ist die EINE Stelle, die je nach
+  Umschalter `imgUrl` oder `comicCleanImgUrl` liefert - genutzt vom normalen Reader-Bild, dem
+  Vollbild-Vorlesemodus UND "Frag den Zauberer", damit alle drei dasselbe Bild zeigen/befragen.
+  Der Klartext für Vorlesen/Suche (`spreadReadableText()`) bleibt für beide Bildfassungen
+  identisch.
+- **Geräuschwörter bekommen einen eigenen, separaten Umschalter** `project.
+  comicShowSoundEffects` (Checkbox in Stufe 3, Standard AUS - laut Nutzer "weniger wichtig"),
+  UNABHÄNGIG vom Sprechblasen-Umschalter oben. Die Skript-Generierung schlägt pro Panel
+  optional ein Geräuschwort vor (`panel.soundEffect`, meist leer), von Hand editierbar.
+  `bakePageWithBalloons(spread, {showSoundEffects})` zeichnet es nur, wenn der Umschalter an
+  UND das Panel eins hat - siehe `drawSoundEffect()` in `studioComicPanels.js`.
 - Bild-Prompt-Fix aus `docs/KONZEPT-Comic.md` Abschnitt 5 übernommen: die Comic-Textzone
   (`imageFormats.js`) beschreibt jetzt rein visuell ("unbedeckter Hintergrund ohne Figuren/
   Objekte/Details"), OHNE das Wort "Sprechblase" zu nennen - der dortige Testlauf hatte
@@ -896,15 +912,11 @@ Einträge v0.24.0-beta und v0.26.0-beta).
   Panel-basierte westliche Stil - Webtoon/Manga wären eigene, spätere Ausbaustufen mit eigener
   Layout-Logik (anderes Seitenverhältnis/Leserichtung), kein Aufsatz auf diesem Panel-System.
 - **Bewusst NICHT umgesetzt:**
-  - **Sichtbare Sprechblasen im normalen Reader.** Der Reader kennt bewusst KEINEN
-    Unterschied zwischen Werktypen (Kernprinzip seit Stufe 1) - eine exportierte Comic-Seite
-    zeigt dort das Bild (ggf. bereits MIT eingebrannten Sprechblasen, siehe oben) plus den
-    Dialog als normalen vorlesbaren Text ("Name: Zeile"). `comicBakeText` wirkt nur auf die
-    Bilddatei selbst, keine zusätzliche Reader-Fähigkeit.
-  - **Manga-Style Geräuschwörter/Tags** ("BOOM" etc.) - vom Nutzer selbst als "weniger
-    wichtig" eingestuft. `bakePageWithBalloons()` wäre der naheliegende Ort dafür.
   - **Comic-Druck** (mit echten Sprechblasen auf Papier, analog zu `studioPrint.js`) - noch
-    nicht gebaut, `bakePageWithBalloons()` liefert aber bereits das fertige Seitenbild dafür.
+    nicht gebaut und von der obigen Umstellung unberührt (`studioPrint.js` ist ohnehin noch
+    nicht Comic-fähig), `bakePageWithBalloons()` liefert aber bereits das fertige Seitenbild
+    dafür. Ein eigener "clean vs. mit Sprechblase"-Umschalter für einen künftigen Comic-Druck
+    wäre dort ein separater Programmpunkt, unabhängig vom Reader-Umschalter oben.
   - **Freies Ziehen (Drag&Drop)** der Sprechblasen - Stufe 7 bietet stattdessen X/Y/Breite als
     Prozent-Regler, reicht für die üblichen 1-3 Sprechblasen pro Panel.
 

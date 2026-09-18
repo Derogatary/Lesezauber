@@ -140,6 +140,7 @@ function comicPanelCardHtml(spreadIndex, panel, panelIndex, panelCount) {
                     ${panelCount > 1 ? `<button onclick="app.studio.deletePanel(${spreadIndex}, ${panelIndex})" aria-label="Panel löschen" class="text-slate-300 hover:text-red-500 text-xs">🗑️</button>` : ''}
                 </div>
                 <input type="text" value="${app.utils.sanitize(panel.visual)}" placeholder="Bildidee: wer/was/wo" onchange="app.studio.updatePanelVisual(${spreadIndex}, ${panelIndex}, this.value)" class="w-full text-xs bg-white border border-slate-200 rounded-lg px-1.5 py-1 focus:outline-none focus:border-indigo-500">
+                <input type="text" value="${app.utils.sanitize(panel.soundEffect)}" placeholder="💥 Geräuschwort (optional, z.B. BUMM)" onchange="app.studio.updatePanelSoundEffect(${spreadIndex}, ${panelIndex}, this.value)" class="w-full text-xs bg-white border border-slate-200 rounded-lg px-1.5 py-1 focus:outline-none focus:border-indigo-500">
             </div>
         </div>
         ${balloonRows}
@@ -175,9 +176,9 @@ function fillStoryStage(project) {
     document.getElementById('studioSpreadList').innerHTML = project.spreads
         .map((s, i) => isComic ? comicSpreadCardHtml(s, i) : spreadCardHtml(s, i)).join('');
     document.getElementById('studioExportBtn').classList.toggle('hidden', !hasStory);
-    // NEU (Ausbaustufe 5, Panels): "clean vs. mit Sprechblase" - nur beim Comic sichtbar.
-    document.getElementById('studioComicBakeRow').classList.toggle('hidden', !isComic);
-    document.getElementById('studioComicBakeText').checked = project.comicBakeText !== false;
+    // NEU (Ausbaustufe 5, Panels): Geräuschwörter-Umschalter - nur beim Comic sichtbar.
+    document.getElementById('studioComicSoundEffectsRow').classList.toggle('hidden', !isComic);
+    document.getElementById('studioComicSoundEffects').checked = !!project.comicShowSoundEffects;
 }
 
 Object.assign(app.render, {

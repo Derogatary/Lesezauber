@@ -228,11 +228,13 @@ function createDefaultProject(type) {
         seriesName: '',
 
         // NEU (Ausbaustufe 5, Panels): nur für Comic-Projekte relevant -
-        // true = beim "Ins Regal stellen" werden die Sprechblasen fest ins
-        // Bild gebrannt ("fertiger Comic-Look"), false = die Bildseite
-        // bleibt "sauber" (Text separat, einfacher später zu übersetzen/
-        // zu bearbeiten). Siehe js/studio/studioExport.js toLibraryBook().
-        comicBakeText: true,
+        // ob KI-vorgeschlagene Geräuschwörter (Manga-/Comic-Lautmalerei wie
+        // "BUMM") beim Export mit eingebrannt werden. Standard AUS - laut
+        // Nutzer "weniger wichtig" als die Sprechblasen selbst, die werden
+        // beim Export IMMER erzeugt (siehe js/studio/studioExport.js
+        // toLibraryBook() - Sprechblasen-Sichtbarkeit ist KEINE Export-
+        // Entscheidung mehr, sondern ein Umschalter im Reader selbst).
+        comicShowSoundEffects: false,
 
         spec: { totalPages, storySpreads, wordBudget, trim: 'a5-quer' },
 
@@ -668,6 +670,7 @@ Object.assign(app.studio, {
                 panels: rawPanels.map(p => ({
                     id: genId('panel'),
                     visual: (p.visual || '').trim(),
+                    soundEffect: (p.soundEffect || '').trim(),
                     imgUrl: null, thumbUrl: null, imageStatus: 'idle',
                     balloons: app.studio.balloons.fromDialogue(Array.isArray(p.dialogue) ? p.dialogue : [])
                 }))
@@ -687,12 +690,14 @@ Object.assign(app.studio, {
         app.render.studioWizard(3);
     },
 
-    // NEU (Ausbaustufe 5, Panels): "clean vs. mit Sprechblase"-Umschalter
-    // fürs Comic-"Ins Regal stellen" (siehe project.comicBakeText oben).
-    toggleComicBakeText(checked) {
+    // NEU (Ausbaustufe 5, Panels): Geräuschwörter-Umschalter (siehe
+    // project.comicShowSoundEffects oben). Sprechblasen selbst sind KEINE
+    // Export-Entscheidung mehr - die werden immer erzeugt, sichtbar/
+    // unsichtbar ist ein Umschalter im Reader (app.actions.toggleComicBubblesInReader()).
+    toggleComicSoundEffects(checked) {
         const project = app.studio.projects[app.state.currentStudioProjectId];
         if (!project) return;
-        project.comicBakeText = checked;
+        project.comicShowSoundEffects = checked;
         app.dbOps.saveProject(project);
     },
 

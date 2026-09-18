@@ -1,7 +1,12 @@
 // Bei jeder inhaltlichen Änderung an einer dieser Dateien diese Nummer
 // erhöhen - sonst bekommen wiederkehrende Besucher weiter die alte
 // zwischengespeicherte Version ausgeliefert.
-const CACHE_NAME = 'lesezauber-shell-v40';
+const CACHE_NAME = 'lesezauber-shell-v41';
+
+// NEU (v41): Comic-Sprechblasen sind jetzt IMMER Teil des Exports, ihre
+// Sichtbarkeit ist ein Umschalter im Reader (nicht mehr beim Erstellen).
+// Dazu ein eigener Geräuschwörter-Umschalter. Keine neuen Dateien. Siehe
+// CLAUDE.md, Versionsstand.
 
 // NEU (v40): Comic-Werktyp überarbeitet - echte Panels statt einer Seite
 // mit lose schwebenden Sprechblasen (Nutzer-Feedback: "sonst ist es

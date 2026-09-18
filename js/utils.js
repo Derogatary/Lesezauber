@@ -467,5 +467,18 @@ Object.assign(app.utils, {
         }
         const first = book.pages[0];
         return first ? (first.thumbUrl || first.imgUrl) : '';
+    },
+
+    // NEU (Ausbaustufe 5, Panels): welches Bild einer Seite beim Lesen
+    // tatsächlich gezeigt wird - normalerweise page.imgUrl (bei einem Comic
+    // MIT eingebrannten Sprechblasen, siehe js/studio/studioExport.js),
+    // außer der Reader-Umschalter (app.state.comicBubblesOff, siehe
+    // js/actions/reader.js toggleComicBubblesInReader()) steht auf "aus" UND
+    // die Seite hat eine "saubere" Zweitfassung (comicCleanImgUrl). EIN Ort,
+    // damit Haupt-/Vollbild-Ansicht und "Frag den Zauberer" garantiert
+    // dasselbe Bild sehen wie das Kind gerade auf dem Schirm hat.
+    resolveDisplayImageUrl(page) {
+        if (app.state.comicBubblesOff && page.comicCleanImgUrl) return page.comicCleanImgUrl;
+        return page.imgUrl;
     }
 });

@@ -55,11 +55,12 @@ function updateFocusImage(page, pageIdx) {
     const front = app.state._focusFrontImg;
     const back = front === imgA ? imgB : imgA;
 
+    const displayUrl = app.utils.resolveDisplayImageUrl(page);
     // Kein tatsächlicher Wechsel (z.B. erneuter Aufruf ohne Seitenwechsel) -
     // nichts zu tun, sonst würde bei jedem Aufruf unnötig neu geblendet.
-    if (front.src === page.imgUrl) return;
+    if (front.src === displayUrl) return;
 
-    back.src = page.imgUrl;
+    back.src = displayUrl;
     back.style.zIndex = '2';
     front.style.zIndex = '1';
 
@@ -96,7 +97,18 @@ Object.assign(app.render, {
         applyBookTypeLabels(isWorkbook);
 
         document.getElementById('readerPageCounter').innerText = `${isWorkbook ? 'Blatt' : 'Seite'} ${pageIdx + 1} / ${book.pages.length}`;
-        document.getElementById('readerImg').src = page.imgUrl;
+        document.getElementById('readerImg').src = app.utils.resolveDisplayImageUrl(page);
+
+        // NEU (Ausbaustufe 5, Panels): Sprechblasen-Umschalter nur zeigen,
+        // wenn diese Seite überhaupt eine "saubere" Zweitfassung hat (siehe
+        // js/studio/studioExport.js) - bei jedem anderen Buch bleibt die
+        // Reader-Oberfläche unverändert.
+        const bubbleRow = document.getElementById('comicBubbleToggleRow');
+        if (bubbleRow) {
+            bubbleRow.classList.toggle('hidden', !page.comicCleanImgUrl);
+            const cb = document.getElementById('toggleComicBubbles');
+            if (cb) cb.checked = !app.state.comicBubblesOff;
+        }
 
         // NEU: Vor/Zurück-Buttons an den Buchgrenzen deaktivieren
         const prevBtn = document.getElementById('prevPageBtn');

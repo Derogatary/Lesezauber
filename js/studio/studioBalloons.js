@@ -128,6 +128,15 @@ Object.assign(app.studio, {
         app.dbOps.saveProject(project);
     },
 
+    // NEU: Geräuschwort von Hand setzen/ändern (siehe project.comicShowSoundEffects).
+    updatePanelSoundEffect(spreadIndex, panelIndex, soundEffect) {
+        const project = app.studio.projects[app.state.currentStudioProjectId];
+        const panel = project && project.spreads[spreadIndex]?.panels[panelIndex];
+        if (!panel) return;
+        panel.soundEffect = soundEffect;
+        app.dbOps.saveProject(project);
+    },
+
     // Ein leeres Panel von Hand anhängen (max. 4 pro Seite, siehe
     // js/studio/studioComicPanels.js LAYOUTS).
     addPanel(spreadIndex) {
@@ -138,7 +147,7 @@ Object.assign(app.studio, {
             app.ui.toast('Mehr als 4 Panels pro Seite werden nicht unterstützt.', 'ℹ️');
             return;
         }
-        spread.panels.push({ id: app.studio.genId('panel'), visual: '', imgUrl: null, thumbUrl: null, imageStatus: 'idle', balloons: [] });
+        spread.panels.push({ id: app.studio.genId('panel'), visual: '', soundEffect: '', imgUrl: null, thumbUrl: null, imageStatus: 'idle', balloons: [] });
         app.dbOps.saveProject(project);
         app.render.studioWizard();
     },

@@ -197,10 +197,35 @@ function drawBalloon(ctx, balloon, region, w, h) {
     });
 }
 
-// Baut die komplette, fertige Comic-Seite MIT eingebrannten Sprechblasen -
-// dieselbe zusammengesetzte Seite wie compositePage(), nur zusätzlich mit
-// drawBalloon() pro Sprechblase überzeichnet.
-async function bakePageWithBalloons(spread) {
+// NEU: Geräuschwort (Manga-/Comic-Lautmalerei, z.B. "BUMM") - eigener,
+// auffälliger Stil (schräg, dick, gelb mit dunklem Umriss), grob in der
+// oberen rechten Ecke des Panels platziert. Keine automatische
+// Kollisionsvermeidung mit Sprechblasen - bei sehr vollen Panels kann es zu
+// Überlappung kommen, das Geräuschwort ist bewusst die niedriger
+// priorisierte, optionale Ebene (siehe project.comicShowSoundEffects).
+function drawSoundEffect(ctx, text, region, w, h) {
+    const px = region.x * w, py = region.y * h, pw = region.w * w, ph = region.h * h;
+    const fontSize = Math.max(22, pw * 0.11);
+    ctx.save();
+    ctx.translate(px + pw * 0.7, py + ph * 0.22);
+    ctx.rotate(-0.12);
+    ctx.font = `italic 900 ${fontSize}px system-ui, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.lineWidth = fontSize * 0.16;
+    ctx.strokeStyle = '#1e293b';
+    ctx.fillStyle = '#fde047';
+    ctx.strokeText(text, 0, 0);
+    ctx.fillText(text, 0, 0);
+    ctx.restore();
+}
+
+// Baut die komplette, fertige Comic-Seite MIT eingebrannten Sprechblasen
+// (IMMER, siehe js/studio/studioExport.js toLibraryBook() - Sprechblasen
+// sind keine Export-Entscheidung mehr, deren Sichtbarkeit wird im Reader
+// umgeschaltet) und optional den Geräuschwörtern (options.showSoundEffects,
+// siehe project.comicShowSoundEffects) - dieselbe zusammengesetzte Seite
+// wie compositePage(), nur zusätzlich überzeichnet.
+async function bakePageWithBalloons(spread, options = {}) {
     if (!spread.panels.every(p => p.imgUrl)) return null;
     const fmt = app.studio.formats.get('comicPage');
     const { genW: w, genH: h } = fmt;
@@ -210,6 +235,7 @@ async function bakePageWithBalloons(spread) {
     spread.panels.forEach((panel, i) => {
         const region = layout[i];
         if (!region) return;
+        if (options.showSoundEffects && panel.soundEffect) drawSoundEffect(ctx, panel.soundEffect, region, w, h);
         (panel.balloons || []).forEach(b => drawBalloon(ctx, b, region, w, h));
     });
     return app.utils.createImageVariants(canvas, w, h);

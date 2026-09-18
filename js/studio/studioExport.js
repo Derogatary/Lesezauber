@@ -18,9 +18,9 @@ import { app } from '../core.js';
 // Anzeige/Vorlesen (variants[persona].text, siehe js/tts.js) wird er ÜBER
 // ALLE Panels der Seite hinweg als normaler Text zusammengefasst
 // ("Name: Zeile"), genau wie ein Hörbuch ein Comic-Skript vorlesen würde.
-// Das bleibt UNABHÄNGIG davon, ob die Sprechblasen beim Export zusätzlich
-// fest ins Bild gebrannt werden (siehe toLibraryBook() unten,
-// project.comicBakeText) - Vorlesen/Suche brauchen immer den Klartext.
+// Das bleibt UNABHÄNGIG davon, welche Bildfassung der Reader gerade zeigt
+// (siehe toLibraryBook() unten, comicCleanImgUrl) - Vorlesen/Suche brauchen
+// immer den Klartext.
 function spreadReadableText(spread) {
     if (!spread.panels?.length) return spread.text;
     return spread.panels
@@ -37,8 +37,7 @@ Object.assign(app.studio, {
         // anzulegen - so kostet ein erneutes "Ins Regal stellen" nach einer
         // Textänderung keine zweite Kopie.
         // NEU (Ausbaustufe 5, Panels): async, weil das Comic-"Einbrennen"
-        // der Sprechblasen (project.comicBakeText, siehe unten) Bilder per
-        // Canvas nachlädt.
+        // der Sprechblasen (siehe unten) Bilder per Canvas nachlädt.
         async toLibraryBook(project) {
             const existing = project.exportedBookId ? app.library[project.exportedBookId] : null;
             const bookId = existing ? existing.id : ('book_' + Date.now());
@@ -67,24 +66,37 @@ Object.assign(app.studio, {
                 variants: { [personaId]: { text: meta.title.text, erstleserText: meta.title.text, desc: null, quizQ: null, quizA: null } }
             };
 
-            // NEU (Ausbaustufe 5, Panels): "clean vs. mit Sprechblase" -
-            // project.comicBakeText (Default true = "fertiger Comic-Look")
-            // entscheidet, ob die exportierte Seite die Sprechblasen fest
-            // eingebrannt bekommt (app.studio.comicPanels.bakePageWithBalloons(),
-            // sieht aus wie ein echter Comic) oder die "saubere" Fassung ohne
-            // Text im Bild bleibt (einfacher später neu zu übersetzen/
-            // zu bearbeiten, ohne die Kunst neu erzeugen zu müssen). Der
-            // Klartext (variants[persona].text) ist in BEIDEN Fällen
-            // identisch - Vorlesen/Suche funktionieren immer.
+            // NEU (Ausbaustufe 5, Panels): Comic wird IMMER MIT Sprechblasen
+            // exportiert (app.studio.comicPanels.bakePageWithBalloons(),
+            // sieht aus wie ein echter Comic) - Sprechblasen-Sichtbarkeit ist
+            // KEINE Export-Entscheidung mehr, sondern ein Umschalter im
+            // Reader selbst (siehe js/actions/reader.js
+            // toggleComicBubblesInReader()). Die "saubere" Fassung ohne Text
+            // im Bild (comicCleanImgUrl/-ThumbUrl) bleibt dafür zusätzlich
+            // erhalten, statt verworfen zu werden - genau das schaltet der
+            // Reader um, OHNE die Kunst neu erzeugen zu müssen. Der Klartext
+            // (variants[persona].text) ist für beide Fassungen identisch -
+            // Vorlesen/Suche funktionieren so oder so.
             const spreadPages = await Promise.all(project.spreads.map(async (spread, i) => {
                 let imgUrl = spread.imgUrl, thumbUrl = spread.thumbUrl;
-                if (project.type === 'comic' && project.comicBakeText !== false) {
-                    const baked = await app.studio.comicPanels.bakePageWithBalloons(spread);
-                    if (baked) { imgUrl = baked.full; thumbUrl = baked.thumb; }
+                let comicCleanImgUrl = null, comicCleanThumbUrl = null;
+                if (project.type === 'comic') {
+                    const baked = await app.studio.comicPanels.bakePageWithBalloons(spread, { showSoundEffects: project.comicShowSoundEffects });
+                    if (baked) {
+                        comicCleanImgUrl = spread.imgUrl;
+                        comicCleanThumbUrl = spread.thumbUrl;
+                        imgUrl = baked.full;
+                        thumbUrl = baked.thumb;
+                    }
                 }
                 return {
                     id: existingSpreadPages[i]?.id ?? (baseTime + i),
                     imgUrl, thumbUrl,
+                    // NEU: nur bei Comic-Seiten gesetzt (siehe oben) - der
+                    // Reader zeigt normalerweise imgUrl/thumbUrl (MIT
+                    // Sprechblasen), schaltet auf Wunsch aber auf diese
+                    // "saubere" Fassung um (js/render/reader.js).
+                    comicCleanImgUrl, comicCleanThumbUrl,
                     status: 'done',
                     variants: {
                         // Stufe 1 erzeugt noch keine zweite, echte

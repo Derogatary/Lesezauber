@@ -8,7 +8,11 @@ Object.assign(app.actions, {
 
         const book = app.library[app.state.currentBookId];
         const page = book.pages[app.state.currentPageIdx];
-        const b64 = page.imgUrl.split(',')[1];
+        // NEU (Ausbaustufe 5, Panels): dasselbe Bild wie gerade angezeigt
+        // fragen (siehe app.utils.resolveDisplayImageUrl()) - bei
+        // ausgeschalteten Sprechblasen soll "Frag den Zauberer" auch die
+        // gerade sichtbaren, reinen Bilder sehen, keine andere Fassung.
+        const b64 = app.utils.resolveDisplayImageUrl(page).split(',')[1];
 
         const history = document.getElementById('chatHistory');
         history.innerHTML += `<div class="bg-indigo-50 p-2 rounded-lg text-indigo-900 font-medium"><b>Du:</b> ${app.utils.sanitize(q)}</div>`;
@@ -73,6 +77,19 @@ Object.assign(app.actions, {
     switchReadingPersona(personaId) {
         app.state.readingPersonaId = personaId;
         app.render.reader(app.state.currentPageIdx);
+    },
+
+    // NEU (Ausbaustufe 5, Panels): Sprechblasen-Sichtbarkeit beim Comic
+    // umschalten - reine Lese-Einstellung (wie readingPersonaId), NICHT
+    // gespeichert, setzt sich beim nächsten Öffnen zurück auf "sichtbar".
+    // Zeigt/versteckt einfach die passende gespeicherte Bildfassung
+    // (page.imgUrl MIT Sprechblasen vs. page.comicCleanImgUrl OHNE) - beide
+    // liegen bereits fertig vor (siehe js/studio/studioExport.js), hier wird
+    // nichts neu erzeugt.
+    toggleComicBubblesInReader(showBubbles) {
+        app.state.comicBubblesOff = !showBubbles;
+        app.render.reader(app.state.currentPageIdx);
+        if (app.state.focusMode) app.render.focusMode();
     },
 
     deletePage(idx) {
