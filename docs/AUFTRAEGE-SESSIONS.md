@@ -160,7 +160,7 @@ Kindern direkt und ist Voraussetzung für SchreibZauber Stufe 6.
 | 8 | Emotionen / Audio-Tags | Vorlesen | **M** | ✅ in `main` |
 | 9 | Lange Texte stückeln + Mitmachmodus mit KI-Stimme | Vorlesen | **M** | `claude/tts-stueckeln-mitmachmodus` |
 | 10 | Heft-Generator: API-Aufruf + Prompt | Übungshefte | **S** | `claude/heft-generator-api` |
-| 11 | Heft-Generator: Auswahl-Ansicht + Canvas | Übungshefte | **M** | `claude/heft-generator-ansicht` |
+| 11 | Heft-Generator: Auswahl-Ansicht + Canvas | Übungshefte | **M** | ✅ `claude/aufgabe-11-heft-generierung-sju4rb` |
 | 12 | SchreibZauber Stufe 1 - Fundament | Eigene Werke | **L** | ✅ in `main` |
 | 13 | Integrations-Pass nach dem Merge + v0.13.0-beta | Plattform | **S** | ✅ in Welle 0 gelaufen - **Vorlage für jedes Wellen-Ende** |
 | 14 | Video-Export Weg B, Teil 1: Renderer-Kern | Video | **M** | `claude/video-renderer-kern` |

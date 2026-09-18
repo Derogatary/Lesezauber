@@ -29,6 +29,7 @@ import './actions/vocabTrainer.js';
 import './actions/workbook.js';
 import './actions/progress.js';
 import './actions/checkWork.js';
+import './actions/workbookGenerator.js';
 import './actions/prepareAudio.js';
 import './actions/audiobookExport.js';
 
@@ -47,6 +48,7 @@ import './render/reader.js';
 import './render/settings.js';
 import './render/vocab.js';
 import './render/workbook.js';
+import './render/workbookGenerator.js';
 import './render/progress.js';
 import './render/checkWork.js';
 import './render/studioLibrary.js';

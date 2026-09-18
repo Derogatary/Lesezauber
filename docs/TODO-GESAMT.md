@@ -33,7 +33,7 @@ wo dort eine Zahl steht, ist sie übernommen.
 | `docs/KONZEPT-SchreibZauber.md` | Eigener Schreib-/Generierungs-Bereich für selbst erstellte Werke |
 | `docs/KONZEPT-Bildquellen.md` | Woher Bilder für selbst erstellte Werke kommen |
 | `docs/KONZEPT-Comic.md` | KI-generierte Illustrationen/Comic - EPUB-Illustration UND SchreibZauber-Werktyp |
-| `docs/KONZEPT-Uebungshefte.md` | Heft-Modus (umgesetzt) + Heft-Generator (offen), ein Dokument |
+| `docs/KONZEPT-Uebungshefte.md` | Heft-Modus + Heft-Generator (beide umgesetzt), ein Dokument |
 
 ---
 
@@ -147,16 +147,18 @@ Details: `docs/KONZEPT-SchreibZauber.md`, TEIL G.
 
 Details: [`docs/KONZEPT-Uebungshefte.md`](KONZEPT-Uebungshefte.md)
 
-Der Heft-**Modus** (Blätter auslesen, erklären, kontrollieren) ist fertig. Offen ist der
-Schritt davor: Blätter **erzeugen**.
+Der Heft-**Modus** (Blätter auslesen, erklären, kontrollieren) ist fertig. Der Schritt
+davor - Blätter **erzeugen** (Heft-Generator) - ist seit v0.16.0-beta ebenfalls fertig,
+bis auf die optionale eigene Druckansicht.
 
 | Punkt | Aufwand | Anmerkung |
 |---|---|---|
 | **Kontroll-Funktion im Alltag beobachten** | **S** | Wie zuverlässig beurteilt Gemini die Fotos bearbeiteter Blätter? Bei zu vielen „unklar" wäre eine Foto-Hilfe (Rahmen, Helligkeitshinweis) der nächste Schritt |
 | ~~**Heft-Generator: API-Aufruf + Prompt**~~ | **erledigt** | `app.api.generateWorksheets()` in `js/api.js` - ein Heft = **ein** Aufruf, nicht einer pro Blatt. Nur Aufgabenarten ohne Bildmaterial (zaehlen, ankreuzen, nachspuren, schreiben) |
-| **Heft-Generator: Auswahl-Ansicht** | **M** | Neue Ansicht inkl. Router-Eintrag in `js/nav.js` |
-| **Heft-Generator: Blätter auf Canvas zeichnen** | **M** | Vorlage vorhanden: `renderTextAsImageCanvas()` in `epubImport.js` |
-| **Heft-Generator: eigene Druckansicht** | **M** | Optional. Ein Canvas-Bild druckt schlechter als echter Text - dafür gäbe es dann zwei Wege zum selben Inhalt |
+| ~~**Heft-Generator: Auswahl-Ansicht**~~ | **erledigt** | `js/render/workbookGenerator.js` + `js/actions/workbookGenerator.js`, Router-Eintrag `workbookGenerator` in `js/nav.js` |
+| ~~**Heft-Generator: Blätter auf Canvas zeichnen**~~ | **erledigt** | `drawWorksheetCanvas()` in `js/actions/workbookGenerator.js`, nach Vorlage von `renderTextAsImageCanvas()` in `epubImport.js` |
+| ~~**Heft-Generator: Druckqualität**~~ | **erledigt** | `page.generatedSheet` (persona-unabhängig, wie `pdfSourceText`), genutzt von der bestehenden `app.actions.printBook()` - kein zweiter View nötig |
+| **Heft-Generator: KI-Bildgenerierung für Ausmalbilder** | **L** | Eigenes größeres Thema, siehe `KONZEPT-Comic.md` + `KONZEPT-Bildquellen.md`. Braucht Abstimmung mit dem Nutzer |
 
 **Wichtigste Einschränkung:** Ein auf Canvas gezeichnetes Textblatt ist für „Male die Tiere
 an" nutzlos - da fehlen die Tiere. Zuerst also Aufgabentypen **ohne Bild** (Zählen,
