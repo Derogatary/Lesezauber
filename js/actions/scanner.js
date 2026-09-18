@@ -36,11 +36,13 @@ Object.assign(app.actions, {
             app.nav.go('settings');
             return;
         }
+        // NEU: origin: 'scan' - abfotografiert, also KEIN Video-Export
+        // (siehe app.utils.resolveBookOrigin und docs/KONZEPT-Video.md 7).
         const id = 'book_' + Date.now();
         // NEU: bookType entscheidet, ob die KI die Seiten als Erzähltext
         // oder als Übungsaufgabe auswertet - muss deshalb schon beim
         // Anlegen feststehen, nicht erst beim Lesen.
-        const newBook = { id, title: 'Neues Buch', author: 'Unbekannt', created: Date.now(), profileId: app.utils.resolveCreationProfileId(), bookType: app.state.newBookType, pages: [] };
+        const newBook = { id, title: 'Neues Buch', author: 'Unbekannt', created: Date.now(), profileId: app.utils.resolveCreationProfileId(), bookType: app.state.newBookType, origin: 'scan', pages: [] };
         app.dbOps.saveBook(newBook);
         app.state.currentBookId = id;
         app.render.book(id);
@@ -62,7 +64,7 @@ Object.assign(app.actions, {
         // NEU: bookType entscheidet, ob die KI die Seiten als Erzähltext
         // oder als Übungsaufgabe auswertet - muss deshalb schon beim
         // Anlegen feststehen, nicht erst beim Lesen.
-        const newBook = { id, title: 'Neues Buch', author: 'Unbekannt', created: Date.now(), profileId: app.utils.resolveCreationProfileId(), bookType: app.state.newBookType, pages: [] };
+        const newBook = { id, title: 'Neues Buch', author: 'Unbekannt', created: Date.now(), profileId: app.utils.resolveCreationProfileId(), bookType: app.state.newBookType, origin: 'scan', pages: [] };
         app.library[id] = newBook;
         app.state.currentBookId = id;
 

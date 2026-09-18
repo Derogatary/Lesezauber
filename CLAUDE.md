@@ -94,13 +94,17 @@ import './actions/meineNeueDatei.js';
 | `js/actions/workbookGenerator.js` | Heft-Generator: Formular auslesen, `app.api.generateWorksheets()` aufrufen, Blätter auf Canvas zeichnen, Heft anlegen |
 | `js/render/workbookGenerator.js` | Heft-Generator: Auswahl-Ansicht (Formular bzw. Blätter-Liste zum Abwählen) |
 | `js/render/progress.js` | Fortschrittsbalken, Erledigt-Knopf, Belohnungs-Banner |
+| `js/render/cinema.js` | Video-Export Weg B, Teil 1: der Canvas-Renderer (`app.cinema`). Zeichnet EINEN Frame zu einem Zeitpunkt t - Seitenbild mit Ken-Burns plus Untertitel-Balken mit mitlaufender Wort-Hervorhebung. Verwaltet absichtlich keine Zeit und spielt nichts ab |
+| `js/actions/videoTimeline.js` | Der Zeitplan/die "Regie" dazu (`app.cinema.buildTimeline`): welche Szene über welchem **Seitenbereich** wann läuft. Nimmt echte Sprach-Segmente aus `renderPageSegments()` entgegen, schätzt die Längen sonst aus der Textlänge |
+| `js/actions/videoPreview.js` | Film-Vorschau ("🎬 Film"): spielt den Zeitplan in Echtzeit auf einem sichtbaren Canvas ab. Bewusst stumm und ohne jede Synthese - kostet also nichts |
+| `js/actions/videoExport.js` | Video-Export Weg B, Teil 2: Ton aus `renderPageSegments()`, Frames per `VideoEncoder`, Ton per `AudioEncoder`, Datei per `mp4-muxer` über OPFS. Codec-Leiter statt festem Codec, Fortschritt + Abbruch, Größenschätzung vorab. **Nur bei `origin: 'authored'`** |
 | `js/studio/studioCore.js` | SchreibZauber: `app.studio`-Projekt-CRUD, Stufen-Logik (Idee/Bauplan/Geschichte), Platzhalter-Aufruf pro Doppelseite |
 | `js/studio/studioPrompts.js` | SchreibZauber: alle Prompt-Bausteine inkl. `guardrailsBlock()` (Veröffentlichungs-Leitplanken, siehe Entscheidung 6) |
 | `js/studio/studioApi.js` | SchreibZauber: eigener Gemini/Mistral-Textaufruf fürs Manuskript (gleiche Keys wie `js/api.js`, aber getrennte Funktionen) |
 | `js/studio/studioExport.js` | SchreibZauber: Projekt → normales Buch in `app.library` ("Ins Regal stellen") |
 | `js/studio/imageFormats.js`, `placeholder.js`, `imageSource.js` | SchreibZauber: Bildformat-Katalog, Platzhalter-Erzeugung, Bildquellen-Adapter (`{full, thumb, meta}`) - Details `docs/KONZEPT-Bildquellen.md` |
 | `js/render/studioLibrary.js`, `render/studioWizard.js` | SchreibZauber: Werkstatt-Übersicht bzw. die Stufen-Ansicht |
-| `js/vendor/` | PDF.js und JSZip - NIE direkt bearbeiten, nur austauschen/aktualisieren |
+| `js/vendor/` | PDF.js, JSZip und mp4-muxer (MIT, für den Video-Export) - NIE direkt bearbeiten, nur austauschen/aktualisieren. Alle drei werden lazy geladen und stehen deshalb NICHT in der `APP_SHELL` von `sw.js` |
 | `sw.js` | Service Worker - **`CACHE_NAME`-Version bei jeder Datei-Änderung hochzählen**, neue Dateien zur `APP_SHELL`-Liste hinzufügen |
 
 ## Datenmodell (zentral, viel hängt davon ab)
@@ -112,6 +116,14 @@ import './actions/meineNeueDatei.js';
   coverPageId,       // Seiten-ID (nicht Index!) des gewählten Covers (nur Anzeige, Bibliotheks-Thumbnail)
   bookType,          // 'story' (Standard) | 'workbook' - fehlt bei alten Büchern,
                      // IMMER über app.utils.resolveBookType(book) lesen
+  origin,            // 'scan' (abfotografiert/importiert) | 'authored' (selbst erzeugt:
+                     // SchreibZauber UND Heft-Generator - beides steckt kein fremdes
+                     // Werk in das Buch) -
+                     // fehlt bei alten Büchern, IMMER über app.utils.resolveBookOrigin(book)
+                     // lesen. Steuert NUR den Video-Export: eine weitergegebene Videodatei
+                     // eines fremden Kinderbuchs wäre eine Vervielfältigung, deshalb gilt
+                     // alles ohne ausdrückliches 'authored' als 'scan' (siehe
+                     // docs/KONZEPT-Video.md, Abschnitt 7)
   publisher, series, // optional: von der KI auf der Titelseite erkannt (siehe analyzePage)
   titlePageId, backCoverPageId, tocPageId, authorBioPageId,  // optional: Seiten-IDs, manuell
                      // per "Seiten-Rollen" markiert (siehe app.actions.setPageRole) - ersetzen die
@@ -236,7 +248,7 @@ Nutzer, nicht einfach lospreschen):
 
 | Vorhaben | Konzept |
 |---|---|
-| 🎬 Video-Export (Seite UND Buch, Schwerpunkt Buch - entschieden) - Vorarbeit steht (siehe "KI-Stimmen"), offen ist nur Canvas + `WebCodecs` | [`docs/KONZEPT-Video.md`](docs/KONZEPT-Video.md) |
+| 🎬 Video: nur noch Restpunkte (Ton in der Vorschau, Ansage auf der Titelkarte, Quiz-Karte mit Denkpause, höhere Bildauflösung) - Renderer UND Export sind gebaut, siehe Abschnitt 4.7 des Konzepts | [`docs/KONZEPT-Video.md`](docs/KONZEPT-Video.md) |
 | 🪄 "SchreibZauber" - eigener Schreib-/Generierungs-Bereich für eigene Werke | [`docs/KONZEPT-SchreibZauber.md`](docs/KONZEPT-SchreibZauber.md), [`docs/KONZEPT-Bildquellen.md`](docs/KONZEPT-Bildquellen.md) |
 | 🎨 KI-generierte Illustrationen (Comic-Stil), für Text-only-EPUB-Kapitel UND als SchreibZauber-Werktyp | [`docs/KONZEPT-Comic.md`](docs/KONZEPT-Comic.md) |
 | 🎭 Emotionen/Sprech-Anweisungen mitten im Satz (Audio-Tags) | [`docs/ROADMAP.md`](docs/ROADMAP.md) |
@@ -282,7 +294,19 @@ Feste Regeln dabei:
 
 ## Versionsstand
 
-Aktuell `v0.17.0-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Zähl die Version bei größeren Änderungen entsprechend hoch (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).
+Aktuell `v0.18.0-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Zähl die Version bei größeren Änderungen entsprechend hoch (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).
+
+Mit v0.18.0-beta sind der Heft-Generator (vorher v0.16.0/v0.17.0-beta) und der Video-Export (vorher parallel als v0.15.0/v0.16.0-beta entwickelt) in einem Integrationspass zusammengeführt. Die beiden Zweige sind unabhängig voneinander entstanden und hatten deshalb dieselben Versionsnummern doppelt vergeben - maßgeblich ist ab hier nur noch diese Datei. Beim Zusammenführen gefunden und behoben: vom Heft-Generator erzeugte Hefte bekommen jetzt `origin: 'authored'` - der Zweig entstand ohne Kenntnis dieses Feldes, dadurch wären sie als 'scan' durchgegangen und vom Video-Export ausgeschlossen gewesen, obwohl in ihnen kein fremdes Werk steckt.
+
+Seit v0.15.0/v0.16.0-beta ist der **Video-Export** gebaut (Weg B, Teil 1 + 2):
+`js/render/cinema.js` + `js/actions/videoTimeline.js` + `js/actions/videoPreview.js` +
+`js/actions/videoExport.js`, eigener `app.cinema`-Namespace, Muxer in
+`js/vendor/mp4muxer/`. Sichtbar als "🎬 Film"-Vorschau in der Buch-Ansicht bzw.
+"🎬 Film-Vorschau dieser Seite" im Reader; darin der Knopf "🎞️ Als Videodatei
+speichern" (nur bei `origin: 'authored'`). Alle dabei gefallenen Entscheidungen
+(9:16 als Standard, Untertitel in Blöcken, wer die dekodierten Bilder besitzt, warum
+die Vorschau stumm bleibt, Codec-Leiter, OPFS, Seiten-Rollen als Regie) stehen in
+`docs/KONZEPT-Video.md`, Abschnitt 4.7 - **vor jeder Arbeit daran dort nachlesen.**
 
 Seit v0.17.0-beta druckt `app.actions.printBook()` (`js/actions/backup.js`) vom Heft-Generator erzeugte Blätter als echten Text statt über den Umweg des Canvas-Seitenbildes - schärfer auf Papier. Dafür merkt sich die Seite zusätzlich `generatedSheet: { heading, body }` (persona-unabhängig, wie `pdfSourceText`). Das war der im Konzept ausdrücklich benannte Folgeschritt („Druckqualität") aus v0.16.0-beta.
 

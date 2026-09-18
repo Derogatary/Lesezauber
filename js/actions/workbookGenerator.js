@@ -194,6 +194,14 @@ Object.assign(app.actions, {
             created: Date.now(),
             profileId: app.utils.resolveCreationProfileId(),
             bookType: 'workbook',
+            // NEU (Integrationspass): origin: 'authored' - dieser Zweig entstand
+            // parallel zum Video-Export und kannte book.origin noch nicht, ohne
+            // das Feld fiele das Heft auf 'scan' zurück (app.utils.resolveBookOrigin).
+            // 'authored' ist hier richtig: die Blätter sind komplett von der KI aus
+            // der eigenen Themen-Eingabe erzeugt, es steckt kein fremdes Werk drin -
+            // die Export-Sperre aus docs/KONZEPT-Video.md, Abschnitt 7 zielt nur auf
+            // abfotografierte fremde Bücher.
+            origin: 'authored',
             pages
         };
         app.dbOps.saveBook(newBook);

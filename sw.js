@@ -1,7 +1,18 @@
 // Bei jeder inhaltlichen Änderung an einer dieser Dateien diese Nummer
 // erhöhen - sonst bekommen wiederkehrende Besucher weiter die alte
 // zwischengespeicherte Version ausgeliefert.
-const CACHE_NAME = 'lesezauber-shell-v27';
+const CACHE_NAME = 'lesezauber-shell-v28';
+
+// NEU (v28): Integrationspass - Heft-Generator und Video-Export zusammengeführt.
+// Beide Zweige hatten unabhängig voneinander bis v26/v27 hochgezählt, deshalb hier
+// einmal über beide hinweg auf v28.
+
+// NEU (v25/v26): Video-Export Weg B - js/render/cinema.js,
+// js/actions/videoTimeline.js, js/actions/videoPreview.js und
+// js/actions/videoExport.js sind in main.js verdrahtet und gehören damit in
+// die App-Hülle. Die Muxer-Bibliothek js/vendor/mp4muxer/mp4-muxer.mjs steht
+// bewusst NICHT hier: sie wird wie PDF.js und JSZip erst bei Bedarf geladen
+// und landet dann über den fetch-Handler unten automatisch im Cache.
 
 // NEU: js/studio/* (SchreibZauber) ist jetzt in main.js verdrahtet (Stufe 1,
 // siehe docs/KONZEPT-SchreibZauber.md) und steht deshalb komplett in der
@@ -46,6 +57,9 @@ const APP_SHELL = [
     './js/actions/workbookGenerator.js',
     './js/actions/prepareAudio.js',
     './js/actions/audiobookExport.js',
+    './js/actions/videoTimeline.js',
+    './js/actions/videoPreview.js',
+    './js/actions/videoExport.js',
     './js/render/library.js',
     './js/render/book.js',
     './js/render/reader.js',
@@ -55,6 +69,7 @@ const APP_SHELL = [
     './js/render/workbookGenerator.js',
     './js/render/progress.js',
     './js/render/checkWork.js',
+    './js/render/cinema.js',
     './js/studio/imageFormats.js',
     './js/studio/placeholder.js',
     './js/studio/imageSource.js',

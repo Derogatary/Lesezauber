@@ -33,6 +33,15 @@ import './actions/workbookGenerator.js';
 import './actions/prepareAudio.js';
 import './actions/audiobookExport.js';
 
+// NEU: Video-Export Weg B, Teil 1 - Renderer-Kern (Canvas) plus Zeitplan
+// und Vorschau. Reihenfolge unkritisch (alle drei hängen nur Funktionen an
+// app.cinema/app.actions an), aber cinema.js zuerst, weil es den Namespace
+// mit Formaten/Zeichenfunktionen füllt, auf die die anderen zwei aufbauen.
+import './render/cinema.js';
+import './actions/videoTimeline.js';
+import './actions/videoPreview.js';
+import './actions/videoExport.js';
+
 // NEU: SchreibZauber (Werkstatt für eigene Werke) - siehe
 // docs/KONZEPT-SchreibZauber.md. studioCore.js importiert seinerseits
 // imageFormats.js/placeholder.js/imageSource.js, deshalb reicht hier ein

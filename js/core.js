@@ -28,6 +28,12 @@ export const app = {
     // NEU: rein lokale Kosten-/Verbrauchsanzeige (js/costMeter.js) - zaehlt
     // tatsaechlich synthetisierte TTS-Zeichen und Gemini-Textaufrufe mit.
     costMeter: {},
+    // NEU: Canvas-Renderer + Zeitplan ("Regie") für den Video-Export,
+    // Weg B (siehe docs/KONZEPT-Video.md). Eigener Namespace statt
+    // app.render.*, weil hier NICHTS ins DOM geschrieben wird - es wird
+    // ausschließlich auf einen Canvas gezeichnet, und dieselben Funktionen
+    // müssen später auch ohne sichtbare Ansicht (beim Kodieren) laufen.
+    cinema: {},
     // NEU: reserviert für den Schreib-/Generierungs-Bereich "SchreibZauber"
     // (js/studio/*). Steht hier, damit die Studio-Module denselben
     // Namespace-Regeln folgen wie alles andere - siehe

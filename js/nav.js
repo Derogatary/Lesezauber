@@ -15,6 +15,11 @@ Object.assign(app.nav, {
             document.getElementById('viewFocus')?.classList.add('hidden');
         }
 
+        // NEU: Film-Vorschau schließen, wenn die Ansicht wechselt - sie
+        // läuft als Overlay über allem und würde sonst über der neuen
+        // Ansicht stehen bleiben (samt laufendem Animationsschritt).
+        if (app.state.videoPreview) app.actions.closeVideoPreview();
+
         // Hide all main views safely
         ['viewLibrary', 'viewBook', 'viewScanner', 'viewReader', 'viewSettings', 'viewVocab', 'viewHelp', 'viewStudioLibrary', 'viewStudioWizard', 'viewWorkbookGenerator'].forEach(id => {
             const el = document.getElementById(id);
