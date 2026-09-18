@@ -17,9 +17,17 @@ import './studioPrompts.js';
 // die Quelle gewechselt werden muss und nicht der halbe Prompt neu entsteht.
 // (Und: derselbe Text lässt sich kopieren und kostenlos von Hand in einem
 // KI-Chat erzeugen - siehe docs/KONZEPT-Bildquellen.md, Weg "Prompt-Export".)
-function buildPrompt({ formatId, sketch, style, characters = [] }) {
+function buildPrompt({ formatId, sketch, style, characters = [], textPos }) {
     const fmt = app.studio.formats.get(formatId);
     if (!fmt) return '';
+
+    // NEU: welche Zone frei bleiben soll, richtet sich jetzt nach dem
+    // (pro Doppelseite unterschiedlichen) textPos statt einer für das ganze
+    // Format immer gleichen Zone - siehe js/studio/imageFormats.js textZones
+    // und die Auswahl in studioCore.js (pickAutoTextPos). Ohne textPos oder
+    // bei Formaten ohne textZones (Figurenblatt, Arbeitsheft-Bild) bleibt
+    // fmt.textZone der Rückfall.
+    const zoneLabel = fmt.textZones?.[textPos] || fmt.textZone;
 
     const parts = [
         `Illustration für ein Kinderbuch. Bildinhalt: ${sketch || 'noch offen'}.`,
@@ -31,7 +39,7 @@ function buildPrompt({ formatId, sketch, style, characters = [] }) {
         // Harte Regeln - stehen bewusst in JEDEM Prompt, nicht optional:
         'KEIN Text, KEINE Buchstaben, KEINE Zahlen und KEINE Sprechblasen im Bild.',
         fmt.textZone !== 'keine'
-            ? `Halte im Bereich "${fmt.textZone}" eine ruhige, kontrastarme Fläche frei, auf der später Text liegt.`
+            ? `Halte im Bereich "${zoneLabel}" eine ruhige, kontrastarme Fläche frei, auf der später Text liegt.`
             : '',
         'Kindgerecht, freundlich, keine Gewalt, keine Angstmotive, keine realen Personen, keine Markenzeichen.',
         // NEU (Stufe 2): die Veröffentlichungs-Leitplanken (Entscheidung 6)

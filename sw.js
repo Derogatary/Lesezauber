@@ -1,7 +1,12 @@
 // Bei jeder inhaltlichen Änderung an einer dieser Dateien diese Nummer
 // erhöhen - sonst bekommen wiederkehrende Besucher weiter die alte
 // zwischengespeicherte Version ausgeliefert.
-const CACHE_NAME = 'lesezauber-shell-v33';
+const CACHE_NAME = 'lesezauber-shell-v34';
+
+// NEU (v34): Textposition pro Doppelseite wird jetzt beim Anlegen
+// automatisch abwechslungsreich verteilt und beim Bild-Prompt als
+// tatsächlich freizuhaltende Zone mitgeschickt (js/studio/studioCore.js,
+// imageSource.js, imageFormats.js) - siehe CLAUDE.md, Versionsstand.
 
 // NEU (v33): Leitplanken (guardrailsBlock, js/studio/studioPrompts.js) für
 // gemeinfreie Figuren geöffnet - siehe CLAUDE.md, Versionsstand.

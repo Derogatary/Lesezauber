@@ -24,7 +24,18 @@ const FORMATS = {
         label: 'Bilderbuch-Doppelseite (quer)',
         aspect: '3:2',
         genW: 1536, genH: 1024,
-        textZone: 'unteres Viertel',
+        textZone: 'unteres Viertel', // Rückfall, falls kein textPos übergeben wird
+        // NEU: Gegenstück zu spread.layout.textPos (js/studio/studioLayout.js) -
+        // ohne diese Zuordnung fragte JEDE Doppelseite immer dieselbe feste
+        // Zone (textZone oben) an, wodurch am Ende auch jede Seite gleich
+        // aussah (siehe Bugreport "jede Seite gleich gestaltet"). Mit dieser
+        // Zuordnung bekommt der Bild-Prompt genau die Zone, die auch die
+        // Textebene später benutzt - Bild und Layout fragen garantiert nach
+        // demselben freien Bereich.
+        textZones: {
+            unten: 'unteres Viertel', oben: 'oberes Viertel',
+            links: 'linkes Drittel', rechts: 'rechtes Drittel'
+        },
         note: 'Standard fürs Bilderbuch: ein Bild pro Doppelseite.'
     },
     pagePortrait: {
@@ -32,6 +43,10 @@ const FORMATS = {
         aspect: '3:4',
         genW: 1024, genH: 1344,
         textZone: 'unteres Drittel',
+        textZones: {
+            unten: 'unteres Drittel', oben: 'oberes Drittel',
+            links: 'linkes Drittel', rechts: 'rechtes Drittel'
+        },
         note: 'Für Bücher, bei denen jede Seite ein eigenes Bild hat.'
     },
     characterSheet: {

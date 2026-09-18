@@ -45,7 +45,13 @@ Object.assign(app.studio, {
                 characters: app.studio.characterRefsFor(project, spread),
                 characterImages: characterImagesFor(project, spread),
                 title: `Doppelseite ${spreadIndex + 1}`,
-                index: spreadIndex
+                index: spreadIndex,
+                // NEU: dieselbe Zone anfragen, die spread.layout gerade
+                // benutzt (beim Anlegen der Doppelseite zufällig verteilt,
+                // siehe pickAutoTextPos() in studioCore.js, oder seither vom
+                // Nutzer in Stufe 7 von Hand geändert) - Bild und Textebene
+                // fragen so garantiert nach derselben freien Fläche.
+                textPos: spread.layout?.textPos
             });
             if (!result) return;
 

@@ -50,6 +50,20 @@ function trimToFormat(trim) {
     return trim === 'a5-quer' ? 'spreadLandscape' : 'pagePortrait';
 }
 
+// NEU: feste, aber pro Doppelseite unterschiedliche Textzone (Bugreport:
+// "jede Seite gleich gestaltet", weil textPos immer auf 'unten' stand).
+// Bewusst eine Reihenfolge statt reinem Zufall - reproduzierbar, und
+// "unten"/"oben" (volle Breite, verzeiht unterschiedlich lange Texte)
+// häufiger als die schmaleren Spalten "links"/"rechts". Wird NUR beim
+// ERSTEN Anlegen einer Doppelseite verwendet (addSpread()/applyManuscript()
+// unten) - einmal gesetzt, bleibt textPos unverändert, bis der Nutzer es in
+// Stufe 7 selbst ändert oder ein neues Bild dieselbe Zone erneut anfragt
+// (siehe regenerateSpreadPlaceholder/generateSpreadImage).
+const AUTO_TEXT_POS_ROTATION = ['unten', 'oben', 'links', 'unten', 'rechts', 'oben'];
+function pickAutoTextPos(index) {
+    return AUTO_TEXT_POS_ROTATION[index % AUTO_TEXT_POS_ROTATION.length];
+}
+
 // ===== Stufe 2 (Bilder): kleine, cross-cutting Hilfsfunktionen =====
 // Werden sowohl von studioCharacters.js (Figurenblatt) als auch von
 // studioImages.js (Doppelseiten-Bild) gebraucht - deshalb hier zentral
@@ -318,7 +332,7 @@ Object.assign(app.studio, {
             // aktuellen Figur passt (Konzept C.3 - "Figur veraltet", NIE
             // automatisch neu gezeichnet, siehe studioCharacters.js).
             imageStale: false,
-            characterIds: [], layout: { textPos: 'unten', fontScale: 1, syllableColors: project.brief.readingLevel === 'erstleser' },
+            characterIds: [], layout: { textPos: pickAutoTextPos(project.spreads.length), fontScale: 1, syllableColors: project.brief.readingLevel === 'erstleser' },
             balloons: []
         });
         app.dbOps.saveProject(project);
@@ -376,7 +390,12 @@ Object.assign(app.studio, {
             style: buildStyleText(project.style),
             characters: characterRefsFor(project, spread),
             title: `Doppelseite ${spreadIndex + 1}`,
-            index: spreadIndex
+            index: spreadIndex,
+            // NEU: die beim Anlegen (addSpread/applyManuscript) gewürfelte
+            // bzw. später vom Nutzer in Stufe 7 gesetzte Zone erneut anfragen,
+            // damit ein erneuertes Bild (Textänderung) nicht plötzlich eine
+            // andere Fläche freihält als das Layout gerade benutzt.
+            textPos: spread.layout?.textPos
         });
         if (!result) return;
 
@@ -443,7 +462,7 @@ Object.assign(app.studio, {
             sketchPrompt: '', imagePrompt: '',
             imgUrl: null, thumbUrl: null, imageMeta: null, imageStatus: 'idle',
             imageStale: false, // siehe addSpread() weiter oben
-            characterIds: [], layout: { textPos: 'unten', fontScale: 1, syllableColors: project.brief.readingLevel === 'erstleser' },
+            characterIds: [], layout: { textPos: pickAutoTextPos(i), fontScale: 1, syllableColors: project.brief.readingLevel === 'erstleser' },
             balloons: []
         }));
 
