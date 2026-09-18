@@ -1,7 +1,11 @@
 // Bei jeder inhaltlichen Änderung an einer dieser Dateien diese Nummer
 // erhöhen - sonst bekommen wiederkehrende Besucher weiter die alte
 // zwischengespeicherte Version ausgeliefert.
-const CACHE_NAME = 'lesezauber-shell-v38';
+const CACHE_NAME = 'lesezauber-shell-v39';
+
+// NEU (v39): SchreibZauber Ausbaustufe 6 (Politur, Teilumsetzung) - feste
+// Vorlagen in Stufe 1, projektübergreifende Figuren-Übernahme in Stufe 4.
+// Keine neuen Dateien. Siehe CLAUDE.md, Versionsstand.
 
 // NEU (v38): SchreibZauber Ausbaustufe 5 (Comic) - Werktyp 'comic'
 // freigeschaltet, neue Datei js/studio/studioBalloons.js (Sprechblasen).

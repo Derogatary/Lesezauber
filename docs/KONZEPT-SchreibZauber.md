@@ -499,7 +499,7 @@ Prompt muss nie neu erdacht werden. Anbietervergleich und Austausch-Mechanik im 
 | **3 – Layout & Druck** | Textplatzierung, Silbenfarben, Erstleser-Regelprofil, Doppelseiten-Druck | Ein Buch, das man ausdrucken und verschenken kann |
 | ~~**4 – Arbeitsheft**~~ | ✅ **gebaut** (Branch `claude/schreibzauber-stufe4-arbeitsheft`, noch nicht in `main`) - Lernziel, Progression, Aufgabenbaukasten (5 von 9 Typen), Differenzierung, Lösungsteil, s/w-Druck | Übungshefte passend zum aktuellen Schulstoff |
 | ~~**5 – Comic**~~ | ✅ **gebaut** (siehe "Stand nach Stufe 5" unten) - Sprechblasen-Overlay, Comic-Skript-Generierung, Figuren-Namensabgleich. Panel-Layouts (mehrere Panels/Seite) bewusst NICHT umgesetzt | Eigene Comic-Hefte |
-| **6 – Politur** | Zweite Einstiegsseite `schreiben.html` + eigenes Manifest, projektübergreifende Figuren, Vorlagen („Gute-Nacht-Geschichte“, „Geburtstagsbuch“) | Fühlt sich wie eine eigene App an |
+| **6 – Politur** | ⚠️ **teilweise gebaut** (siehe "Stand nach Stufe 5" unten) - Vorlagen und projektübergreifende Figuren fertig, zweite Einstiegsseite `schreiben.html` + eigenes Manifest bewusst NICHT umgesetzt | Fühlt sich wie eine eigene App an |
 
 Jede Stufe ist für sich benutzbar und lieferbar. Stufe 1 hat den besten Nutzen-pro-Aufwand
 und sollte zuerst gebaut werden.
@@ -888,6 +888,24 @@ Eintrag v0.24.0-beta), hier nur die Kurzfassung mit den wichtigsten Abgrenzungen
 **Was eine spätere Sitzung vorfindet:** `app.studio.balloons` ist der Andockpunkt für einen
 künftigen Comic-Druck; Panel-Layouts wären eine eigene, größere Ausbaustufe (Datenmodell
 müsste `spreads[]` um eine echte Panel-Liste pro Seite erweitern, nicht nur um `balloons[]`).
+
+### Stufe 6 (Politur) - zwei von drei Punkten umgesetzt
+
+- **Vorlagen:** zwei feste Kurz-Vorlagen ("Gute-Nacht-Geschichte"/"Geburtstagsbuch") füllen in
+  Stufe 1 nur das Formular vor, speichern nichts (`STUFE1_TEMPLATES`, `js/render/studioWizard.js`).
+- **Projektübergreifende Figuren:** "Figur aus anderem Werk übernehmen" in Stufe 4 - kopiert
+  eine Figur samt Figurenblatt aus JEDEM anderen Projekt mit neuer ID
+  (`app.studio.listOtherProjectsCharacters()`/`importCharacterFromOtherProject()`,
+  `js/studio/studioCharacters.js`).
+- **Bewusst NICHT umgesetzt: zweite Einstiegsseite `schreiben.html` + eigenes Manifest.** Die
+  App ist eine einzige monolithische `index.html` mit allen Ansichten als `<main>`-Blöcken,
+  kein Build-Tool, keine HTML-Includes. Eine echte zweite, schlanke Einstiegsseite hätte
+  entweder die komplette `index.html` dauerhaft duplizieren müssen (unwartbar) oder eine
+  Aufteilung in gemeinsame Partials erfordert - eine eigene, deutlich größere
+  Architekturänderung für den rein kosmetischen Nutzen eines zweiten Homescreen-Icons. Ein
+  künftiger Anlauf bräuchte zuerst eine Entscheidung, wie die App strukturell in
+  gemeinsame/eigenständige Teile zerlegt würde - das ist keine Detailfrage von Stufe 6 mehr,
+  sondern eine eigene Grundsatzfrage.
 
 ---
 

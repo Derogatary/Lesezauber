@@ -68,6 +68,39 @@ Object.assign(app.studio, {
         app.render.studioWizard(4);
     },
 
+    // NEU (Ausbaustufe 6 - Politur): "projektübergreifende Figuren" - eine
+    // Lieblingsfigur soll in mehreren Werken auftauchen können, unabhängig
+    // vom Werktyp (ein Comic darf z.B. eine Bilderbuch-Figur übernehmen).
+    // Bewusst ALLE anderen Projekte, nicht nur dieselbe Reihe (dafür gibt es
+    // bereits die automatische Übernahme in saveBrief(), siehe studioCore.js).
+    listOtherProjectsCharacters(project) {
+        const result = [];
+        Object.values(app.studio.projects).forEach(p => {
+            if (p.id === project.id || p._draft) return;
+            p.characters.forEach(c => {
+                if (c.name) result.push({ projectId: p.id, projectTitle: p.title || 'Unbenanntes Werk', character: c });
+            });
+        });
+        return result;
+    },
+
+    // Kopiert eine per listOtherProjectsCharacters() gefundene Figur in
+    // DIESES Projekt - mit einer NEUEN ID (sonst würden beide Projekte
+    // dieselbe Referenz teilen und eine spätere Änderung im Ursprungswerk
+    // hier unbemerkt durchschlagen). Figurenblatt-Bild/Steckbrief werden
+    // mitkopiert, sind danach aber komplett unabhängig voneinander.
+    importCharacterFromOtherProject(sourceProjectId, sourceCharacterId) {
+        const project = currentProject();
+        const sourceProject = app.studio.projects[sourceProjectId];
+        const sourceCharacter = sourceProject && sourceProject.characters.find(c => c.id === sourceCharacterId);
+        if (!project || !sourceCharacter) return;
+        project.characters.push({ ...sourceCharacter, id: app.studio.genId('char') });
+        project.stage = Math.max(project.stage, 4);
+        app.dbOps.saveProject(project);
+        app.render.studioWizard(4);
+        app.ui.toast(`"${sourceCharacter.name}" übernommen.`, '📚');
+    },
+
     deleteCharacter(characterId) {
         const project = currentProject();
         if (!project) return;

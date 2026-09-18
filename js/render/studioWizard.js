@@ -47,6 +47,29 @@ function updateStepper(project) {
     });
 }
 
+// NEU (Ausbaustufe 6 - Politur, Konzept TEIL E "Vorlagen"): feste
+// Kurz-Vorlagen für häufige Anlässe - füllen NUR das Stufe-1-Formular
+// direkt (wie der Master-Prompt-Knopf, OHNE zu speichern), alles bleibt
+// vor dem "Weiter" editierbar. Bewusst als reine Formular-Vorbefüllung
+// statt eines eigenen KI-Aufrufs - kostenlos, sofort, und der Nutzer sieht
+// genau, was er bekommt, bevor irgendetwas gespeichert wird.
+const STUFE1_TEMPLATES = {
+    gutenacht: {
+        label: '🌙 Gute-Nacht-Geschichte',
+        audienceAge: '3-5', readingLevel: 'vorlesen',
+        topic: 'Ein kleines Tier, das abends nicht einschlafen kann und nach und nach zur Ruhe kommt',
+        tone: 'ruhig, leise, beruhigend',
+        message: 'Es ist schön, zur Ruhe zu kommen - morgen ist ein neuer Tag'
+    },
+    geburtstag: {
+        label: '🎂 Geburtstagsbuch',
+        audienceAge: '6-7', readingLevel: 'vorlesen',
+        topic: 'Eine Geburtstagsfeier mit allen, die dem Geburtstagskind wichtig sind',
+        tone: 'fröhlich, herzlich, feierlich',
+        message: 'Du bist etwas Besonderes, und wir freuen uns, dass es dich gibt'
+    }
+};
+
 function fillBriefStage(project) {
     const b = project.brief;
     const m = project.meta || {};
@@ -237,6 +260,22 @@ Object.assign(app.render, {
         };
         const prompt = app.studio.prompts.buildMasterSetupPrompt(draft);
         app.studio.imageSource.copyPrompt(prompt);
+    },
+
+    studioTemplates: STUFE1_TEMPLATES,
+
+    // NEU (Ausbaustufe 6 - Politur): Vorlage einsetzen - füllt NUR die
+    // Formularfelder, speichert nichts. Der Nutzer sieht das Ergebnis
+    // sofort und kann jedes Feld vor "Weiter" noch anpassen.
+    studioApplyTemplate(templateId) {
+        const tpl = STUFE1_TEMPLATES[templateId];
+        if (!tpl) return;
+        document.getElementById('studioAudienceAge').value = tpl.audienceAge;
+        document.getElementById('studioReadingLevel').value = tpl.readingLevel;
+        document.getElementById('studioTopic').value = tpl.topic;
+        document.getElementById('studioTone').value = tpl.tone;
+        document.getElementById('studioMessage').value = tpl.message;
+        app.ui.toast(`Vorlage "${tpl.label}" eingesetzt - vor "Weiter" gern noch anpassen.`, '📝');
     },
 
     // Liest das Bauplan-Formular aus und übergibt es an app.studio.saveSpec().

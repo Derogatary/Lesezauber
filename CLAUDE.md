@@ -271,7 +271,7 @@ Nutzer, nicht einfach lospreschen):
 | Vorhaben | Konzept |
 |---|---|
 | 🎬 Video: praktisch fertig, nur noch höhere Bildauflösung (`videoUrl`, niedrigste Priorität) offen - Titelkarten-Ansage, Ton in der Vorschau und Quiz-Karte mit Denkpause sind seit v0.19.0-beta gebaut, siehe Abschnitt 4.7 des Konzepts | [`docs/KONZEPT-Video.md`](docs/KONZEPT-Video.md) |
-| 🪄 "SchreibZauber" - Stufe 1-4 und jetzt auch Stufe 5 (Comic) sind fertig. Stufe 6 (Politur) bleibt zurückgestellt - siehe Abschnitt "Stand nach Stufe 5" im Konzept, dort auch der verifizierte (aber noch nicht umgesetzte) KDP-Kenntnisstand | [`docs/KONZEPT-SchreibZauber.md`](docs/KONZEPT-SchreibZauber.md), [`docs/KONZEPT-Bildquellen.md`](docs/KONZEPT-Bildquellen.md), [`docs/KONZEPT-Comic.md`](docs/KONZEPT-Comic.md) |
+| 🪄 "SchreibZauber" - Stufe 1-5 fertig, von Stufe 6 ("Politur") zwei von drei Punkten (Vorlagen, projektübergreifende Figuren) - die zweite Einstiegsseite/eigenes Manifest bewusst nicht umgesetzt, siehe Versionsstand v0.25.0-beta. Dort auch der verifizierte (aber noch nicht umgesetzte) KDP-Kenntnisstand aus Stufe 3 | [`docs/KONZEPT-SchreibZauber.md`](docs/KONZEPT-SchreibZauber.md), [`docs/KONZEPT-Bildquellen.md`](docs/KONZEPT-Bildquellen.md), [`docs/KONZEPT-Comic.md`](docs/KONZEPT-Comic.md) |
 | 🎨 KI-generierte Illustrationen (Comic-Stil) für Text-only-EPUB-Kapitel (TEIL A des Konzepts - separates lokales Werkzeug, nicht Teil der PWA). Der SchreibZauber-Comic-Werktyp (TEIL B) ist seit Ausbaustufe 5 fertig, siehe Zeile oben | [`docs/KONZEPT-Comic.md`](docs/KONZEPT-Comic.md) |
 | 📱 Native Android-App via Capacitor | [`docs/TODO-GESAMT.md`](docs/TODO-GESAMT.md), Bereich "App & Plattform" |
 
@@ -315,7 +315,14 @@ Feste Regeln dabei:
 
 ## Versionsstand
 
-Aktuell `v0.24.0-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Zähl die Version bei größeren Änderungen entsprechend hoch (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).
+Aktuell `v0.25.0-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Zähl die Version bei größeren Änderungen entsprechend hoch (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).
+
+Mit v0.25.0-beta zwei von drei TEIL-E-Punkten aus **SchreibZauber Ausbaustufe 6 ("Politur")** umgesetzt:
+
+- **Vorlagen** (Stufe 1): zwei feste Kurz-Vorlagen ("🌙 Gute-Nacht-Vorlage"/"🎂 Geburtstags-Vorlage", `STUFE1_TEMPLATES` in `js/render/studioWizard.js`) füllen Zielgruppe/Thema/Ton/Botschaft direkt im Formular vor - wie der Master-Prompt-Knopf speichern sie nichts, alles bleibt vor "Weiter" editierbar.
+- **Projektübergreifende Figuren** (Stufe 4): neuer Knopf "📚 Figur aus anderem Werk übernehmen" - `app.studio.listOtherProjectsCharacters()`/`importCharacterFromOtherProject()` (`js/studio/studioCharacters.js`) kopieren eine Figur samt Figurenblatt aus JEDEM anderen Projekt (nicht nur aus derselben Reihe - dafür gibt es bereits die automatische Übernahme in `saveBrief()`) mit einer neuen ID, damit beide Werke danach unabhängig voneinander bleiben.
+
+**Bewusst NICHT umgesetzt:** die zweite Einstiegsseite `schreiben.html` + eigenes Manifest (zweites Homescreen-Icon). Die App ist EINE monolithische `index.html` mit allen Ansichten als `<main>`-Blöcken (kein Build-Tool, keine HTML-Includes) - eine echte zweite, schlanke Einstiegsseite hätte entweder die komplette `index.html` dauerhaft duplizieren müssen (unwartbar, verstößt gegen das Projektprinzip "neue Funktion = neue Datei, nicht duplizieren") oder eine Aufteilung in gemeinsame Partials erfordert - eine eigene, deutlich größere Architekturänderung für den rein kosmetischen Nutzen eines zweiten Icons. Diese bewusste Abgrenzung wurde nicht vorab mit dem Nutzer abgestimmt (der Auftrag lautete "so gut wie möglich"), sondern hier dokumentiert, damit sie nachvollziehbar bleibt statt still zu verschwinden.
 
 Mit v0.24.0-beta ist **SchreibZauber Ausbaustufe 5 (Comic)** dazugekommen - auf Nutzerauftrag gebaut, nachdem Stufe 5/6 laut TEIL E des Konzepts zuvor bewusst zurückgestellt waren. Der Werktyp `'comic'` (`app.studio.projectTypes`) ist jetzt freigeschaltet und durchläuft dasselbe 8-Stufen-Gerüst wie das Bilderbuch (Konzept C.1) - nur zwei Stufen unterscheiden sich wirklich:
 

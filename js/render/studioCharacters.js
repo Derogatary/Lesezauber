@@ -94,6 +94,35 @@ Object.assign(app.render, {
         project.characters.forEach(c => fillCharacterCard(c, project));
     },
 
+    // NEU (Ausbaustufe 6 - Politur): Auswahl-Zeile für "Figur aus anderem
+    // Werk übernehmen" ein-/ausblenden, Optionen erst beim Öffnen aufbauen
+    // (nicht bei jedem Stufe-4-Rendern - die Liste ändert sich selten und
+    // ist sonst unnötige Arbeit).
+    toggleImportCharacterRow() {
+        const row = document.getElementById('studioImportCharacterRow');
+        if (!row) return;
+        const willShow = row.classList.contains('hidden');
+        row.classList.toggle('hidden');
+        if (!willShow) return;
+
+        const project = app.studio.projects[app.state.currentStudioProjectId];
+        const options = project ? app.studio.listOtherProjectsCharacters(project) : [];
+        const select = document.getElementById('studioImportCharacterSelect');
+        select.innerHTML = options.length
+            ? options.map(o => `<option value="${o.projectId}::${o.character.id}">${app.utils.sanitize(o.projectTitle)} – ${app.utils.sanitize(o.character.name)}</option>`).join('')
+            : '<option value="">(keine Figuren in anderen Werken gefunden)</option>';
+    },
+
+    // Liest die getroffene Auswahl aus und übergibt sie an
+    // app.studio.importCharacterFromOtherProject().
+    studioImportSelectedCharacter() {
+        const value = document.getElementById('studioImportCharacterSelect').value;
+        if (!value) return;
+        const [sourceProjectId, sourceCharacterId] = value.split('::');
+        app.studio.importCharacterFromOtherProject(sourceProjectId, sourceCharacterId);
+        document.getElementById('studioImportCharacterRow').classList.add('hidden');
+    },
+
     // Liest das Stilkarte-Formular aus und übergibt es an app.studio.saveStyle().
     studioCollectStyle() {
         app.studio.saveStyle({
