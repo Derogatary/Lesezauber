@@ -177,6 +177,13 @@ function createDefaultProject(type) {
             topic: '', tone: '', message: '', language: 'de'
         },
 
+        // NEU: Verlags-/Impressum-Angaben - alle optional, siehe
+        // js/studio/studioMetaPages.js für die Platzhalter, falls leer
+        // gelassen (Bugreport: "fehlende Meta-Seiten" - Cover/Autor/
+        // Klappentext/Verlag). Bewusst ein eigenes Feld statt Teil von
+        // "brief" - das sind Publikations-, keine Geschichte-Angaben.
+        meta: { authorBio: '', publisher: '', blurb: '' },
+
         spec: { totalPages, storySpreads, wordBudget, trim: 'a5-quer' },
 
         // Reserviert für Stufe 2 (Stilkarte) - bleibt in Stufe 1 leer.
@@ -266,7 +273,8 @@ Object.assign(app.studio, {
         app.render.studioLibrary();
     },
 
-    // Stufe 1 – Idee: Exposé speichern. fields entspricht 1:1 project.brief.
+    // Stufe 1 – Idee: Exposé speichern. fields entspricht 1:1 project.brief,
+    // plus die drei optionalen Verlags-/Impressum-Felder (project.meta).
     saveBrief(fields) {
         const project = app.studio.projects[app.state.currentStudioProjectId];
         if (!project) return;
@@ -282,6 +290,13 @@ Object.assign(app.studio, {
             tone: (fields.tone || '').trim(),
             message: (fields.message || '').trim(),
             language: 'de'
+        };
+        // NEU: alle drei optional, komplett leer lassen ist ausdrücklich
+        // erlaubt (siehe studioMetaPages.js für die Platzhalter dafür).
+        project.meta = {
+            authorBio: (fields.authorBio || '').trim(),
+            publisher: (fields.publisher || '').trim(),
+            blurb: (fields.blurb || '').trim()
         };
         // Bauplan neu berechnen, falls sich die Zielgruppe geändert hat -
         // aber nur, wenn noch keine Geschichte existiert (sonst würde ein

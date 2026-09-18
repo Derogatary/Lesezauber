@@ -49,12 +49,17 @@ function updateStepper(project) {
 
 function fillBriefStage(project) {
     const b = project.brief;
+    const m = project.meta || {};
     document.getElementById('studioTitleInput').value = project.title || '';
     document.getElementById('studioAudienceAge').value = b.audienceAge;
     document.getElementById('studioReadingLevel').value = b.readingLevel;
     document.getElementById('studioTopic').value = b.topic || '';
     document.getElementById('studioTone').value = b.tone || '';
     document.getElementById('studioMessage').value = b.message || '';
+    // NEU: optionale Verlags-/Impressum-Felder (siehe studioMetaPages.js)
+    document.getElementById('studioAuthorBio').value = m.authorBio || '';
+    document.getElementById('studioPublisher').value = m.publisher || '';
+    document.getElementById('studioBlurb').value = m.blurb || '';
 }
 
 function fillSpecStage(project) {
@@ -167,7 +172,11 @@ Object.assign(app.render, {
             readingLevel: document.getElementById('studioReadingLevel').value,
             topic: document.getElementById('studioTopic').value,
             tone: document.getElementById('studioTone').value,
-            message: document.getElementById('studioMessage').value
+            message: document.getElementById('studioMessage').value,
+            // NEU: optionale Verlags-/Impressum-Felder (siehe studioMetaPages.js)
+            authorBio: document.getElementById('studioAuthorBio').value,
+            publisher: document.getElementById('studioPublisher').value,
+            blurb: document.getElementById('studioBlurb').value
         });
     },
 

@@ -50,6 +50,7 @@ import './studio/studioCore.js';
 import './studio/studioPrompts.js';
 import './studio/studioApi.js';
 import './studio/studioExport.js';
+import './studio/studioMetaPages.js';
 // NEU (Stufe 2 - Bilder): Stilkarte/Figuren-Bibel, Storyboard,
 // Bildgenerierung - siehe docs/KONZEPT-SchreibZauber.md TEIL E.
 import './studio/studioCharacters.js';

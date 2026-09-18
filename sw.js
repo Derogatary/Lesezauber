@@ -1,7 +1,11 @@
 // Bei jeder inhaltlichen Änderung an einer dieser Dateien diese Nummer
 // erhöhen - sonst bekommen wiederkehrende Besucher weiter die alte
 // zwischengespeicherte Version ausgeliefert.
-const CACHE_NAME = 'lesezauber-shell-v34';
+const CACHE_NAME = 'lesezauber-shell-v35';
+
+// NEU (v35): Meta-Seiten (Titel/Klappentext/Autor) beim "Ins Regal stellen"
+// - neue Datei js/studio/studioMetaPages.js, drei neue optionale Felder in
+// Stufe 1 (Idee). Siehe CLAUDE.md, Versionsstand.
 
 // NEU (v34): Textposition pro Doppelseite wird jetzt beim Anlegen
 // automatisch abwechslungsreich verteilt und beim Bild-Prompt als
@@ -101,6 +105,7 @@ const APP_SHELL = [
     './js/studio/studioPrompts.js',
     './js/studio/studioApi.js',
     './js/studio/studioExport.js',
+    './js/studio/studioMetaPages.js',
     // NEU (Stufe 2 - Bilder): Stilkarte/Figuren-Bibel, Storyboard, Bildgenerierung.
     './js/studio/studioCharacters.js',
     './js/studio/studioStoryboard.js',

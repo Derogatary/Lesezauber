@@ -41,7 +41,7 @@
                     <p id="streakBadge" class="hidden text-xs font-bold text-amber-600 mt-0.5"></p>
                     <!-- NEU: Belohnung - Anzahl komplett geschaffter Bücher/Hefte -->
                     <p id="medalBadge" class="hidden text-xs font-bold text-emerald-600 mt-0.5"></p>
-                    <p class="text-[10px] text-slate-400 font-semibold mt-0.5">v0.20.3-beta</p>
+                    <p class="text-[10px] text-slate-400 font-semibold mt-0.5">v0.21.0-beta</p>
                 </div>
                 <div class="flex items-center gap-2 flex-shrink-0">
                     <button onclick="app.nav.go('help')" aria-label="Hilfe öffnen" title="Hilfe" class="w-10 h-10 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-600 hover:bg-slate-100 shadow-sm transition active:scale-95">
@@ -764,6 +764,27 @@
                     <div>
                         <label class="text-xs font-bold text-slate-600 block mb-1">Was soll hängenbleiben?</label>
                         <input id="studioMessage" type="text" placeholder="z.B. Mut haben ist gut" class="w-full text-sm text-slate-900 bg-white border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500">
+                    </div>
+                </div>
+                <!-- NEU: optionale Verlags-/Impressum-Angaben, damit das fertige
+                     Buch Titel-, Klappentext- und Autorenseite bekommt statt
+                     ohne sie auszukommen (Bugreport: "fehlende Meta-Seiten").
+                     Bewusst ALLE drei optional - leer lassen ist ausdrücklich
+                     erlaubt, app.studio.export baut dann einen freundlichen
+                     Platzhaltertext (siehe js/studio/studioMetaPages.js). -->
+                <div class="border-t border-slate-100 pt-3 space-y-3">
+                    <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">📖 Verlag &amp; Impressum (optional)</p>
+                    <div>
+                        <label class="text-xs font-bold text-slate-600 block mb-1">Kurzer Autoren-Steckbrief</label>
+                        <textarea id="studioAuthorBio" rows="2" placeholder="z.B. schreibt seit 2024 Geschichten für seine Kinder - leer lassen für einen Standardtext" class="w-full text-sm text-slate-900 bg-white border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500"></textarea>
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-slate-600 block mb-1">Verlag</label>
+                        <input id="studioPublisher" type="text" placeholder="leer lassen = Selbstverlag" class="w-full text-sm text-slate-900 bg-white border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500">
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-slate-600 block mb-1">Klappentext</label>
+                        <textarea id="studioBlurb" rows="2" placeholder="Kurzer Anreißer für die Rückseite - leer lassen, dann wird er aus Thema/Botschaft gebaut" class="w-full text-sm text-slate-900 bg-white border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500"></textarea>
                     </div>
                 </div>
                 <button onclick="app.render.studioCollectBrief()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl shadow-md transition">Weiter zum Bauplan ▶</button>
