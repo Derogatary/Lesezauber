@@ -157,7 +157,8 @@ bis auf die optionale eigene Druckansicht.
 | ~~**Heft-Generator: API-Aufruf + Prompt**~~ | **erledigt** | `app.api.generateWorksheets()` in `js/api.js` - ein Heft = **ein** Aufruf, nicht einer pro Blatt. Nur Aufgabenarten ohne Bildmaterial (zaehlen, ankreuzen, nachspuren, schreiben) |
 | ~~**Heft-Generator: Auswahl-Ansicht**~~ | **erledigt** | `js/render/workbookGenerator.js` + `js/actions/workbookGenerator.js`, Router-Eintrag `workbookGenerator` in `js/nav.js` |
 | ~~**Heft-Generator: Blätter auf Canvas zeichnen**~~ | **erledigt** | `drawWorksheetCanvas()` in `js/actions/workbookGenerator.js`, nach Vorlage von `renderTextAsImageCanvas()` in `epubImport.js` |
-| **Heft-Generator: eigene Druckansicht** | **M** | Optional. Ein Canvas-Bild druckt schlechter als echter Text - dafür gäbe es dann zwei Wege zum selben Inhalt |
+| ~~**Heft-Generator: Druckqualität**~~ | **erledigt** | `page.generatedSheet` (persona-unabhängig, wie `pdfSourceText`), genutzt von der bestehenden `app.actions.printBook()` - kein zweiter View nötig |
+| **Heft-Generator: KI-Bildgenerierung für Ausmalbilder** | **L** | Eigenes größeres Thema, siehe `KONZEPT-Comic.md` + `KONZEPT-Bildquellen.md`. Braucht Abstimmung mit dem Nutzer |
 
 **Wichtigste Einschränkung:** Ein auf Canvas gezeichnetes Textblatt ist für „Male die Tiere
 an" nutzlos - da fehlen die Tiere. Zuerst also Aufgabentypen **ohne Bild** (Zählen,

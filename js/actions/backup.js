@@ -52,9 +52,20 @@ Object.assign(app.actions, {
             const explainedHtml = (isWorkbook && variant?.erstleserText && variant.erstleserText !== text)
                 ? `<p style="font-size:14px; margin-top:8px; color:#444;">${app.utils.sanitize(variant.erstleserText)}</p>`
                 : '';
+            // NEU (Folgeschritt aus Auftrag 11, siehe KONZEPT-Uebungshefte.md
+            // "Druckqualität"): vom Heft-Generator erzeugte Blätter drucken
+            // ihr Übungsfeld als echten Text statt über den Umweg des
+            // Canvas-Seitenbildes - schärfer auf Papier UND ohne die
+            // Überschrift ein zweites Mal (im Bild) mitzudrucken.
+            const bodyBlock = p.generatedSheet
+                ? `<h2 style="margin:0 0 8px; font-size:22px;">${app.utils.sanitize(p.generatedSheet.heading)}</h2>
+                   <div style="font-family: monospace; font-size:20px; line-height:2.1; margin-top:16px;">${
+                       (p.generatedSheet.body || []).map(line => `<div>${line.trim() ? app.utils.sanitize(line) : '&nbsp;'}</div>`).join('')
+                   }</div>`
+                : `<img src="${p.imgUrl}" style="max-width:100%; max-height:65vh; object-fit:contain;">`;
             return `
                 <div style="page-break-after: always; text-align:center; padding: 24px 16px;">
-                    <img src="${p.imgUrl}" style="max-width:100%; max-height:65vh; object-fit:contain;">
+                    ${bodyBlock}
                     <p style="font-size:16px; margin-top:16px; line-height:1.5;">${app.utils.sanitize(text)}</p>
                     ${explainedHtml}
                     ${stepsHtml}

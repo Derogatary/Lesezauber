@@ -131,6 +131,11 @@ import './actions/meineNeueDatei.js';
   id, imgUrl, thumbUrl,  // WebP, zwei Größen
   status: 'pending' | 'processing' | 'done' | 'error',  // persona-UNABHÄNGIG
   pdfSourceText,   // optional: garantiert korrekter Text aus PDF/EPUB-Textebene, kein OCR nötig
+  generatedSheet,  // optional: { heading, body: [] } - nur bei vom Heft-Generator erzeugten
+                   // Blättern (js/actions/workbookGenerator.js). Persona-unabhängig wie
+                   // pdfSourceText: hält das Übungsfeld als echten Text fest, damit
+                   // app.actions.printBook() beim Ausdrucken nicht den Umweg über das
+                   // Canvas-Seitenbild (imgUrl) gehen muss.
   chapterTitle,    // optional: von der KI erkannte Kapitelüberschrift, falls diese Seite ein Kapitel beginnt
   tocEntries,      // optional: Array von Kapitelüberschriften, falls diese Seite ein Inhaltsverzeichnis ist (ohne Seitenzahlen)
   excluded,        // optional bool - Seite komplett von Analyse UND automatischem Vorlesen
@@ -277,7 +282,9 @@ Feste Regeln dabei:
 
 ## Versionsstand
 
-Aktuell `v0.16.0-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Zähl die Version bei größeren Änderungen entsprechend hoch (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).
+Aktuell `v0.17.0-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Zähl die Version bei größeren Änderungen entsprechend hoch (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).
+
+Seit v0.17.0-beta druckt `app.actions.printBook()` (`js/actions/backup.js`) vom Heft-Generator erzeugte Blätter als echten Text statt über den Umweg des Canvas-Seitenbildes - schärfer auf Papier. Dafür merkt sich die Seite zusätzlich `generatedSheet: { heading, body }` (persona-unabhängig, wie `pdfSourceText`). Das war der im Konzept ausdrücklich benannte Folgeschritt („Druckqualität") aus v0.16.0-beta.
 
 Seit v0.16.0-beta ist der **Heft-Generator** fertig (Teil 2 aus `docs/KONZEPT-Uebungshefte.md`): über "📝 Heft erstellen lassen" in der Bibliothek (`js/render/workbookGenerator.js`, `js/actions/workbookGenerator.js`) schlägt die KI zu Thema + Lernziel fertige Übungsblätter vor, die einzeln abgewählt werden können, bevor daraus ein ganz normales Übungsheft entsteht. Jedes Blatt wird auf Canvas gezeichnet (gleiche Technik wie `renderTextAsImageCanvas()` in `epubImport.js`) und bekommt seine Variante direkt aus der KI-Antwort mit - kein zweiter Auslese-Aufruf nötig.
 

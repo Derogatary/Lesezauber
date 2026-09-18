@@ -1,7 +1,7 @@
 // Bei jeder inhaltlichen Änderung an einer dieser Dateien diese Nummer
 // erhöhen - sonst bekommen wiederkehrende Besucher weiter die alte
 // zwischengespeicherte Version ausgeliefert.
-const CACHE_NAME = 'lesezauber-shell-v26';
+const CACHE_NAME = 'lesezauber-shell-v27';
 
 // NEU: js/studio/* (SchreibZauber) ist jetzt in main.js verdrahtet (Stufe 1,
 // siehe docs/KONZEPT-SchreibZauber.md) und steht deshalb komplett in der

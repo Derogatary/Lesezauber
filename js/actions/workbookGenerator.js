@@ -177,7 +177,13 @@ Object.assign(app.actions, {
                 // Die Feldnamen der Blätter sind absichtlich identisch mit
                 // dem Auslese-Schema, buildPageVariant() braucht deshalb
                 // keinen Sonderfall.
-                variants: { [personaId]: app.utils.buildPageVariant(sheet, {}, 'workbook') }
+                variants: { [personaId]: app.utils.buildPageVariant(sheet, {}, 'workbook') },
+                // NEU (Folgeschritt aus Auftrag 11, siehe KONZEPT-Uebungshefte.md
+                // "Druckqualität"): persona-unabhängig wie pdfSourceText - hält
+                // Überschrift und Übungsfeld als echten Text fest, damit
+                // app.actions.printBook() sie beim Ausdrucken NICHT über den
+                // Umweg des Canvas-Bildes lesen muss (schärferer Druck).
+                generatedSheet: { heading: sheet.heading, body: sheet.body }
             };
         });
 

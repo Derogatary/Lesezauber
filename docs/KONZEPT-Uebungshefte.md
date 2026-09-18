@@ -1,7 +1,8 @@
 # 📝 Konzept: Übungshefte – Stand und Heft-Generator
 
-**Stand:** v0.11.0-beta (Teil 1), v0.16.0-beta (Teil 2: fertig) · **Zusammengeführt
-aus** `uebungshefte-konzept.md` und `todo-heft-generator.md`, September 2026.
+**Stand:** v0.11.0-beta (Teil 1), v0.17.0-beta (Teil 2: fertig inkl. Druckqualität) ·
+**Zusammengeführt aus** `uebungshefte-konzept.md` und `todo-heft-generator.md`,
+September 2026.
 
 Dieses Dokument hat zwei Teile, die zusammengehören:
 
@@ -10,9 +11,11 @@ Dieses Dokument hat zwei Teile, die zusammengehören:
 - **Teil 2 – Heft-Generator:** Übungsblätter von der KI **erstellen** lassen, statt nur
   vorhandene auszulesen. **Gebaut und im Einsatz:** der KI-Aufruf
   (`app.api.generateWorksheets()`), die Auswahl-Ansicht
-  (`js/render/workbookGenerator.js`, `js/actions/workbookGenerator.js`) und das
-  Zeichnen der Blätter auf Canvas. Offen ist nur noch eine eigene Druckansicht
-  (optionaler Folgeschritt, siehe „Offene Punkte" unten).
+  (`js/render/workbookGenerator.js`, `js/actions/workbookGenerator.js`), das
+  Zeichnen der Blätter auf Canvas und - seit v0.17.0-beta - der Druck als echter
+  Text statt über das Canvas-Bild (`page.generatedSheet`, siehe „Offene Punkte"
+  unten). Offen ist nur noch KI-Bildgenerierung für Ausmalbilder, ein eigenes
+  größeres Thema.
 
 ---
 
@@ -143,9 +146,10 @@ für den Privatgebrauch:
 
 # TEIL 2 – Heft-Generator (Übungsblätter von der KI erstellen lassen)
 
-**Status:** fertig gebaut (v0.16.0-beta) – KI-Aufruf, Auswahl-Ansicht und
-Canvas-Zeichnen laufen. Offen ist nur noch die optionale eigene Druckansicht
-(siehe „Offene Punkte" unten). **Voraussetzung:** Teil 1 (der Heft-Modus) läuft bereits.
+**Status:** fertig gebaut (v0.16.0-beta, Druckqualität nachgezogen in v0.17.0-beta) –
+KI-Aufruf, Auswahl-Ansicht, Canvas-Zeichnen und Druck als echter Text laufen. Offen ist
+nur noch KI-Bildgenerierung für Ausmalbilder (siehe „Offene Punkte" unten), ein eigenes
+größeres Thema. **Voraussetzung:** Teil 1 (der Heft-Modus) läuft bereits.
 
 ## Ziel
 
@@ -240,10 +244,13 @@ kostet damit **einen** Aufruf statt zwölf.
    Bibelinhalten unzuverlässig (siehe „Verlässlichkeit" in Teil 1). Sicherer: Feld für
    eigenen Text, den die KI wörtlich übernehmen muss – dieses Feld steht im Formular
    (`heftGenOwnText`), bleibt aber weiterhin **manuell** einzutragen.
-3. **Druckqualität (weiterhin offen).** Ein Canvas-Bild druckt schlechter als echter
-   Text. Für ausdruckbare Hefte wäre eine eigene Druckansicht mit echtem HTML-Text
-   besser als der Umweg über das Seitenbild – dann aber zwei Wege zum selben Inhalt.
-   Bewusst nicht Teil der ersten Fassung.
+3. ~~**Druckqualität.**~~ **erledigt (v0.17.0-beta):** Der Bedenken war, eine eigene
+   Druckansicht schaffe zwei Wege zum selben Inhalt. Stattdessen bekommt die Seite ein
+   zusätzliches, persona-unabhängiges Feld `generatedSheet: { heading, body }`
+   (gleiches Muster wie `pdfSourceText`) - `app.actions.printBook()` (bestehende
+   Funktion, `js/actions/backup.js`) nutzt es, wenn vorhanden, statt des
+   Canvas-Seitenbildes. Kein zweiter View, keine zwei Wege - nur eine zweite,
+   schärfere Textquelle für denselben Druck-Weg.
 4. **Kosten/Limit.** Ein Aufruf pro Heft ist unkritisch, auch im kostenlosen Tarif.
 5. **Weitergabe an andere Familien / woher der Bibeltext kommt / fester Lehrplan oder
    frei?** - drei zusammengehörige Fragen, die vor allem für Teil-1-Nutzung *und* den
@@ -264,9 +271,10 @@ kostet damit **einen** Aufruf statt zwölf.
 | ~~API-Aufruf + Prompt~~ | **erledigt** – `app.api.generateWorksheets()` |
 | ~~Auswahl-Ansicht~~ | **erledigt** – `js/render/workbookGenerator.js`, Router-Eintrag `workbookGenerator` in `js/nav.js` |
 | ~~Blätter auf Canvas zeichnen~~ | **erledigt** – `drawWorksheetCanvas()` in `js/actions/workbookGenerator.js` |
-| Eigene Druckansicht (Punkt 3) | mittel, optional |
+| ~~Druckqualität (Punkt 3)~~ | **erledigt** – `page.generatedSheet`, genutzt von `app.actions.printBook()` |
 | KI-Bildgenerierung für Ausmalbilder | groß, eigenes Thema |
 
-**Nächster möglicher Schritt:** eine eigene Druckansicht (Punkt 3) oder KI-Bildgenerierung
-für Ausmalbilder (`zuordnen`/`ausmalen`/`verbinden`/`suchen` erweitern `GENERATOR_TASK_TYPES`
-in `js/api.js`) – beides eigenständige, größere Themen.
+**Nächster möglicher Schritt:** KI-Bildgenerierung für Ausmalbilder
+(`zuordnen`/`ausmalen`/`verbinden`/`suchen` erweitern `GENERATOR_TASK_TYPES` in
+`js/api.js`) – ein eigenständiges, größeres Thema, siehe `docs/KONZEPT-Comic.md` und
+`docs/KONZEPT-Bildquellen.md`. Braucht erst Abstimmung mit dem Nutzer.
