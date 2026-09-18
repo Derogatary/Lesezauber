@@ -1,7 +1,10 @@
 // Bei jeder inhaltlichen Änderung an einer dieser Dateien diese Nummer
 // erhöhen - sonst bekommen wiederkehrende Besucher weiter die alte
 // zwischengespeicherte Version ausgeliefert.
-const CACHE_NAME = 'lesezauber-shell-v32';
+const CACHE_NAME = 'lesezauber-shell-v33';
+
+// NEU (v33): Leitplanken (guardrailsBlock, js/studio/studioPrompts.js) für
+// gemeinfreie Figuren geöffnet - siehe CLAUDE.md, Versionsstand.
 
 // NEU (v32): drei Bugfixes aus Nutzer-Testfeedback zur Werkstatt (siehe
 // CLAUDE.md, Versionsstand) - keine neuen Dateien, nur geänderte

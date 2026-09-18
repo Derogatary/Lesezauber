@@ -313,7 +313,9 @@ Feste Regeln dabei:
 
 ## Versionsstand
 
-Aktuell `v0.20.1-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Zähl die Version bei größeren Änderungen entsprechend hoch (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).
+Aktuell `v0.20.2-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Zähl die Version bei größeren Änderungen entsprechend hoch (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).
+
+Mit v0.20.2-beta wurden die Veröffentlichungs-Leitplanken (`guardrailsBlock()` in `js/studio/studioPrompts.js`, Entscheidung 6) für **gemeinfreie Figuren** geöffnet. Bisher verbot der Block AUSNAHMSLOS jede bekannte Figur - das hatte einen echten Bug ausgelöst: eine gewünschte biblische Figur ("Samuel") wurde von der KI eigenmächtig in eine erfundene ("Mio") umbenannt. Jetzt gilt: urheber-/markenrechtlich geschützte Figuren/Werke (aktuelle Bücher, Filme, Marken) bleiben verboten, aber klassische Volksmärchen, Sagen, Mythologie und biblische/religiöse Geschichten dürfen beim Namen bleiben, wenn das Thema sie nennt - inkl. der ausdrücklichen Regel, einen im Thema genannten Namen NIE eigenmächtig zu ändern. Historische Persönlichkeiten dürfen sachlich vorkommen, wenn das Thema ausdrücklich von ihnen handelt (z.B. eine Biografie), nicht als beliebige Nebenfigur. Lebende Personen bleiben weiterhin ausnahmslos tabu.
 
 Mit v0.20.1-beta drei Bugfixes aus echtem Nutzer-Testfeedback (Testbasis: Stand kurz vor der Stufe-3-Zusammenführung), alle drei bestätigt reproduziert, bevor sie behoben wurden:
 

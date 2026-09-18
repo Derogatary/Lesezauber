@@ -15,9 +15,20 @@ import { app } from '../core.js';
 // (Bilderbuch Stufe 2+3, Comic Stufe 5, Arbeitsheft Stufe 4) ihn 1:1
 // übernehmen können, statt ihn erneut zu formulieren.
 function guardrailsBlock() {
+    // FIX: bisher wurden AUSNAHMSLOS alle bekannten Figuren verboten - dadurch
+    // hat die KI z.B. aus einer gewünschten biblischen Figur ("Samuel")
+    // eigenmächtig eine erfundene ("Mio") gemacht, obwohl daran urheberrechtlich
+    // gar nichts zu schützen ist. Die eigentliche Gefahr für eine spätere
+    // Veröffentlichung sind fremde, geschützte WERKE (Marken, aktuelle Bücher/
+    // Filme/Serien) - gemeinfreie Stoffe (Märchen, Sagen, Mythologie, religiöse
+    // Geschichten) sind dagegen schon immer frei nacherzählbar und deshalb
+    // ausdrücklich erlaubt, wenn das Thema sie nennt.
     return `Diese Geschichte soll später eventuell veröffentlicht werden (z.B. über Amazon KDP als Self-Publishing) - deshalb gelten diese Regeln IMMER, ohne Ausnahme:
-- Erfinde ALLES komplett neu und eigenständig: eigene Figurennamen, eigene Welt, eigene Handlung. Verwende NIEMALS bekannte/reale Figuren, Marken, Buchtitel, Filme, Serien oder deren Stil (auch nicht "im Stil von ...").
-- Keine echten, lebenden oder historischen Personen, auch nicht angedeutet.
+- Verwende NIEMALS urheberrechtlich oder markenrechtlich geschützte Figuren, Welten, Buchtitel, Filme oder Serien (auch nicht "im Stil von ..."), also keine Figuren aus aktuellen, noch geschützten Kinderbüchern/Comics/Filmen/Marken.
+- Gemeinfreie Stoffe sind dagegen ausdrücklich erlaubt, wenn das Thema sie nennt: klassische Volksmärchen (z.B. Brüder Grimm), Sagen, Fabeln, Mythologie sowie biblische/religiöse Geschichten und Figuren (z.B. "Samuel" oder "Rotkäppchen" dürfen beim Namen bleiben). Erzähle sie in eigenen Worten nach, ohne der bekannten Geschichte zu widersprechen.
+- Nennt das Thema einen Figurennamen (ob erfunden oder gemeinfrei), behalte GENAU diesen Namen bei - erfinde ihn nicht eigenmächtig um.
+- Wird KEIN bekannter Stoff genannt, erfinde ALLES komplett neu und eigenständig: eigene Figurennamen, eigene Welt, eigene Handlung.
+- Keine echten, lebenden Personen, auch nicht angedeutet. Historische Persönlichkeiten dürfen sachlich vorkommen, wenn das Thema ausdrücklich von ihnen handelt (z.B. eine kindgerechte Biografie) - nicht als beliebig verwendbare Nebenfigur in einer sonst erfundenen Geschichte.
 - Kindgerecht, freundlich, keine Gewalt, keine Angst- oder Horror-Motive, keine diskriminierenden oder anzüglichen Inhalte.
 - Text bleibt IMMER reiner Text - keine Formatierungsanweisungen, kein Bild wird hier beschrieben oder erzeugt.`;
 }
