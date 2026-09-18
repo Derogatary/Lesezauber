@@ -1,7 +1,10 @@
 // Bei jeder inhaltlichen Änderung an einer dieser Dateien diese Nummer
 // erhöhen - sonst bekommen wiederkehrende Besucher weiter die alte
 // zwischengespeicherte Version ausgeliefert.
-const CACHE_NAME = 'lesezauber-shell-v36';
+const CACHE_NAME = 'lesezauber-shell-v37';
+
+// NEU (v37): "Master-Prompt" fürs Komplett-Setup (Stufe 1) - keine neuen
+// Dateien. Siehe CLAUDE.md, Versionsstand.
 
 // NEU (v36): Reihen-Zugehörigkeit (project.seriesName/book.series) inkl.
 // Stil-/Figuren-Übernahme aus der jüngsten Geschwister-Doppelseite und

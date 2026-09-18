@@ -77,9 +77,70 @@ const TASK_SCHEMA_HINT = `Wähle für jede Aufgabe GENAU EINEN dieser Typen und 
 - "frei" (Frei schreiben): data = {"prompt": "Schreibimpuls als Frage/Satzanfang.", "lines": 4} (lines = Anzahl Schreiblinien, 3-6)
 Jede Aufgabe braucht außerdem: "instruction" (kurze Aufgabenstellung, wird oben auf dem Blatt gedruckt), "explanation" (dieselbe Aufgabe nochmal in 1-2 einfachen, freundlichen Sätzen erklärt, für ein Kind vorgelesen), "solution" (die richtige Lösung als kurzer Text - bei "frei" ein leerer String, weil freies Schreiben keine Musterlösung hat).`;
 
+// NEU: "Master-Prompt" fürs Komplett-Setup (Stufe 1) - Bugreport: "Es fehlt
+// eine Funktion, um alle Eingabefelder strukturiert vorzubefüllen... ein
+// Master-Prompt, der das Ergebnis für jedes Eingabefeld in einem eigenen
+// Codeblock ausgibt, damit die Werte manuell reinkopiert werden können."
+// Bewusst NUR Stufe 1 (Idee + die drei Verlagsfelder aus studioMetaPages.js)
+// - Bauplan (Stufe 2) ist eine Format-/Zahlenentscheidung, keine
+// Kreativaufgabe, und Geschichte (Stufe 3) hat mit "✨ Von der KI schreiben
+// lassen" bereits einen eigenen Ein-Klick-Weg MIT der App-eigenen API - ein
+// externer Copy-Paste-Umweg über Dutzende Doppelseiten wäre dort nur
+// umständlicher, nicht hilfreicher. Nutzt denselben "Prompt kopieren, in
+// einem KI-Chat einfügen, Ergebnis zurückkopieren"-Weg wie schon bei den
+// Bildern (siehe app.studio.imageSource.copyPrompt(),
+// docs/KONZEPT-Bildquellen.md) - kostet dadurch nichts, auch ohne eigenen
+// API-Key nutzbar.
+function buildMasterSetupPrompt(draft) {
+    const b = draft.brief;
+    const given = [];
+    if (draft.title) given.push(`Arbeitstitel: ${draft.title}`);
+    if (b.topic) given.push(`Thema: ${b.topic}`);
+    if (b.tone) given.push(`Ton/Stimmung: ${b.tone}`);
+    if (b.message) given.push(`Botschaft: ${b.message}`);
+    if (draft.seriesName) given.push(`Reihe: ${draft.seriesName}`);
+
+    return `Du hilfst beim Komplett-Setup für ein selbst geschriebenes Kinderbuch (App "LeseZauber Pro", Bereich "SchreibZauber").
+Zielgruppe: ${AGE_LABEL[b.audienceAge] || b.audienceAge}. ${readingLevelRule(b.readingLevel)}
+${given.length ? `Bereits festgelegt (bitte unverändert übernehmen):\n${given.join('\n')}` : 'Noch nichts festgelegt - erfinde alles frei.'}
+
+${guardrailsBlock()}
+
+Fülle ALLE folgenden Felder aus (auch die oben schon festgelegten unverändert übernehmen). Antworte GENAU in diesem Format, jedes Feld in seinem eigenen Codeblock, sonst nichts drumherum:
+
+\`\`\`titel
+Ein kurzer, kindgerechter Buchtitel
+\`\`\`
+
+\`\`\`thema
+Worum es geht, 1-2 Sätze
+\`\`\`
+
+\`\`\`ton
+Ton/Stimmung in 2-4 Worten
+\`\`\`
+
+\`\`\`botschaft
+Was am Ende hängenbleiben soll, 1 Satz
+\`\`\`
+
+\`\`\`autor
+Kurzer, erfundener Autoren-Steckbrief in Ich-Form, 1-2 Sätze
+\`\`\`
+
+\`\`\`verlag
+Ein erfundener, freundlicher Kleinverlag-Name (leer lassen, wenn Selbstverlag besser passt)
+\`\`\`
+
+\`\`\`klappentext
+Anreißer für die Buchrückseite, 2-3 Sätze, macht neugierig ohne das Ende zu verraten
+\`\`\``;
+}
+
 Object.assign(app.studio, {
     prompts: {
         guardrailsBlock,
+        buildMasterSetupPrompt,
         GRADE_LABEL, SUBJECT_LABEL,
 
         // Stufe 4' – Progression: Kapitelfolge vom Leichten zum Schweren

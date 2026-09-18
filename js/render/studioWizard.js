@@ -186,6 +186,27 @@ Object.assign(app.render, {
         });
     },
 
+    // NEU: "Master-Prompt" kopieren (siehe app.studio.prompts.buildMasterSetupPrompt()
+    // in studioPrompts.js für den Hintergrund). Liest die AKTUELL im
+    // Formular stehenden Werte direkt aus dem DOM statt aus dem Projekt -
+    // damit auch ein noch nicht per "Weiter" gespeicherter Anfang (z.B. nur
+    // das Thema schon eingetippt) in den Prompt einfließt.
+    studioCopyMasterPrompt() {
+        const draft = {
+            title: document.getElementById('studioTitleInput').value.trim(),
+            seriesName: document.getElementById('studioSeriesName').value.trim(),
+            brief: {
+                audienceAge: document.getElementById('studioAudienceAge').value,
+                readingLevel: document.getElementById('studioReadingLevel').value,
+                topic: document.getElementById('studioTopic').value.trim(),
+                tone: document.getElementById('studioTone').value.trim(),
+                message: document.getElementById('studioMessage').value.trim()
+            }
+        };
+        const prompt = app.studio.prompts.buildMasterSetupPrompt(draft);
+        app.studio.imageSource.copyPrompt(prompt);
+    },
+
     // Liest das Bauplan-Formular aus und übergibt es an app.studio.saveSpec().
     studioCollectSpec() {
         app.studio.saveSpec({
