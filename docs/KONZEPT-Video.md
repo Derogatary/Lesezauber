@@ -477,11 +477,10 @@ sich (`MediaRecorder` vs. `VideoEncoder`/`AudioEncoder` + Muxer).
   sicher vorhanden ist.
 - **Höhere Bildauflösung** (`videoUrl`, ~2560 px) wie in 4.5 beschrieben; mit
   1600 px Vorlage und 1,12-fachem Zoom sieht 1080p bisher vertretbar aus.
-  Niedrigste Priorität laut Auftrag, deshalb hier ausgelassen - zusätzlich
-  würde eine dritte Bild-Variante die Bildgenerierung anfassen, an der
-  parallel die SchreibZauber-Stufe-2-Sitzung (`claude/schreibzauber-stufe2-bilder`)
-  arbeitet. Erst nach deren Merge angehen, sonst doppelte Arbeit an
-  denselben Stellen.
+  Niedrigste Priorität laut Auftrag, deshalb hier ausgelassen. SchreibZauber
+  Stufe 2 (Bilder) ist inzwischen gemergt (v0.19.0-beta) - der ursprüngliche
+  Grund fürs Zurückstellen (Kollision mit deren Bildgenerierungs-Arbeit)
+  entfällt damit, der Punkt ist also jetzt ohne Bedingung angehbar.
 
 ---
 

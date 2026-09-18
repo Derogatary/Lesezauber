@@ -266,8 +266,8 @@ Nutzer, nicht einfach lospreschen):
 
 | Vorhaben | Konzept |
 |---|---|
-| 🎬 Video: nur noch Restpunkte (Ton in der Vorschau, Ansage auf der Titelkarte, Quiz-Karte mit Denkpause, höhere Bildauflösung) - Renderer UND Export sind gebaut, siehe Abschnitt 4.7 des Konzepts | [`docs/KONZEPT-Video.md`](docs/KONZEPT-Video.md) |
-| 🪄 "SchreibZauber" - Stufe 1 (Fundament) ist fertig, **Stufe 2+3 (Bilderbuch) und Stufe 4 (Arbeitsheft) sind jetzt parallel mit mehreren Sitzungen startbar** - siehe Abschnitt "Stand nach Stufe 1" im Konzept | [`docs/KONZEPT-SchreibZauber.md`](docs/KONZEPT-SchreibZauber.md), [`docs/KONZEPT-Bildquellen.md`](docs/KONZEPT-Bildquellen.md) |
+| 🎬 Video: praktisch fertig, nur noch höhere Bildauflösung (`videoUrl`, niedrigste Priorität) offen - Titelkarten-Ansage, Ton in der Vorschau und Quiz-Karte mit Denkpause sind seit v0.19.0-beta gebaut, siehe Abschnitt 4.7 des Konzepts | [`docs/KONZEPT-Video.md`](docs/KONZEPT-Video.md) |
+| 🪄 "SchreibZauber" - Stufe 1 (Fundament), Stufe 2 (Bilder) und Stufe 4 (Arbeitsheft) sind fertig. **Stufe 3 (Layout & Druck) ist jetzt startbar** (baut auf den in Stufe 2 gefüllten `spread.imgUrl`/`layout`-Feldern auf) - siehe Abschnitt "Stand nach Stufe 2" im Konzept. Stufe 5 (Comic) und Stufe 6 (Politur) bleiben zurückgestellt | [`docs/KONZEPT-SchreibZauber.md`](docs/KONZEPT-SchreibZauber.md), [`docs/KONZEPT-Bildquellen.md`](docs/KONZEPT-Bildquellen.md) |
 | 🎨 KI-generierte Illustrationen (Comic-Stil), für Text-only-EPUB-Kapitel UND als SchreibZauber-Werktyp | [`docs/KONZEPT-Comic.md`](docs/KONZEPT-Comic.md) |
 | 📱 Native Android-App via Capacitor | [`docs/TODO-GESAMT.md`](docs/TODO-GESAMT.md), Bereich "App & Plattform" |
 
@@ -311,7 +311,9 @@ Feste Regeln dabei:
 
 ## Versionsstand
 
-Aktuell `v0.18.0-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Zähl die Version bei größeren Änderungen entsprechend hoch (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).
+Aktuell `v0.19.0-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Zähl die Version bei größeren Änderungen entsprechend hoch (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).
+
+Mit v0.19.0-beta ist Welle 5 zusammengeführt: **SchreibZauber Stufe 2** (Bilder: Stilkarte, Figuren-Bibel, Storyboard, Bildgenerierung, Kostenzähler) und **Ausbaustufe 4** (Arbeitsheft: Lernziel, Progression, Aufgabenbaukasten, Lösungsteil) liefen als zwei parallele, unabhängige Sitzungen auf demselben `main`-Stand, dazu unabhängig davon die **Video-Restpunkte** (Titelkarten-Ansage, Ton in der Vorschau aus dem Cache, Quiz-Karte mit Denkpause). Details zu Stufe 2/4: `docs/KONZEPT-SchreibZauber.md`, Abschnitte „Stand nach Stufe 2"/„Stand nach Stufe 4". Beim Zusammenführen gefunden und behoben: beide SchreibZauber-Sitzungen hatten unabhängig voneinander dieselbe Gemini-zuerst-Mistral-Fallback-Hilfsfunktion in `js/studio/studioApi.js` erfunden - auf eine gemeinsame Fassung vereinheitlicht. Sonst nur mechanische Konflikte (Imports, `sw.js`-Dateiliste, die Verschachtelung der beiden Werktyp-Container in `index.html`), keine weiteren unsichtbaren Brüche gefunden.
 
 Mit v0.18.0-beta sind der Heft-Generator (vorher v0.16.0/v0.17.0-beta) und der Video-Export (vorher parallel als v0.15.0/v0.16.0-beta entwickelt) in einem Integrationspass zusammengeführt. Die beiden Zweige sind unabhängig voneinander entstanden und hatten deshalb dieselben Versionsnummern doppelt vergeben - maßgeblich ist ab hier nur noch diese Datei. Beim Zusammenführen gefunden und behoben: vom Heft-Generator erzeugte Hefte bekommen jetzt `origin: 'authored'` - der Zweig entstand ohne Kenntnis dieses Feldes, dadurch wären sie als 'scan' durchgegangen und vom Video-Export ausgeschlossen gewesen, obwohl in ihnen kein fremdes Werk steckt.
 
