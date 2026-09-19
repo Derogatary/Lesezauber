@@ -257,7 +257,7 @@ Größere, noch nicht begonnene Features (brauchen erst Abstimmung mit dem Nutze
 | 🎬 Video: praktisch fertig, nur noch höhere Bildauflösung (`videoUrl`, niedrigste Priorität) offen - Rest seit v0.19.0-beta gebaut, siehe Konzept Abschnitt 4.7 | [`docs/KONZEPT-Video.md`](docs/KONZEPT-Video.md) |
 | 🪄 "SchreibZauber" - Stufe 1-6 fertig. Die zweite Einstiegsseite/eigenes Manifest wird laut Nutzerentscheid (Sept. 2026) **nicht gebraucht** - endgültig verworfen, kein offener Punkt mehr (siehe CHANGELOG.md v0.25.0-beta für die ursprüngliche Abwägung) | [`docs/KONZEPT-SchreibZauber.md`](docs/KONZEPT-SchreibZauber.md), [`docs/KONZEPT-Bildquellen.md`](docs/KONZEPT-Bildquellen.md), [`docs/KONZEPT-Comic.md`](docs/KONZEPT-Comic.md) |
 | 🎨 KI-Illustrationen (Comic-Stil) für Text-only-EPUB-Kapitel (TEIL A - separates lokales Werkzeug, nicht Teil der PWA). Der SchreibZauber-Comic-Werktyp (TEIL B) ist seit Ausbaustufe 5 fertig | [`docs/KONZEPT-Comic.md`](docs/KONZEPT-Comic.md) |
-| 📱 Native Android-App via Capacitor | [`docs/TODO-GESAMT.md`](docs/TODO-GESAMT.md), Bereich "App & Plattform" |
+| 📱 Native Android-App - TWA-Weg gewählt (Paket-ID `app.lesezauber.pro`, Signierschlüssel erzeugt+übergeben, `.well-known/assetlinks.json`/`.nojekyll` im Repo). Noch offen: `bubblewrap init`/`build` tatsächlich ausführen (braucht volle Internetverbindung), Play-Console-Konto einrichten - siehe CHANGELOG.md v0.30.3-beta | [`docs/TODO-GESAMT.md`](docs/TODO-GESAMT.md), Bereich "App & Plattform" |
 
 **Vor jeder Arbeit an einem dieser Themen erst das verlinkte Dokument lesen** - sonst werden bereits gefallene Entscheidungen neu diskutiert und verworfene Wege erneut probiert.
 
@@ -294,6 +294,6 @@ Feste Regeln:
 
 ## Versionsstand
 
-Aktuell `v0.30.2-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Version bei größeren Änderungen hochzählen (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).
+Aktuell `v0.30.3-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Version bei größeren Änderungen hochzählen (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).
 
 **Die vollständige Versionshistorie (was mit welcher Version kam, inkl. aller Entscheidungen) steht in [`CHANGELOG.md`](CHANGELOG.md), neueste Version zuerst.** Vor dem Einplanen eines Features dort nachsehen, sonst werden bereits gefallene Entscheidungen neu diskutiert. Neuer Eintrag bei jeder Versionserhöhung: oben in `CHANGELOG.md` ergänzen, nicht hier.

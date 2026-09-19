@@ -6,6 +6,15 @@ vollständige Historie, neueste Version zuerst. Diese Datei wurde aus
 `CLAUDE.md` ausgelagert, weil der Abschnitt dort mit der Zeit zu groß für
 schnellen Kontext wurde; inhaltlich unverändert übernommen.
 
+## v0.30.3-beta
+
+Erste Schritte Richtung Play Store (TWA-Weg, siehe unten "Bewusste Entscheidung"): Nutzerentscheidung - Paket-ID `app.lesezauber.pro` (dauerhaft, nicht mehr änderbar), Signierschlüssel wurde in der Claude-Code-Sitzung offline per `keytool` erzeugt und dem Nutzer direkt als Datei übergeben (NICHT im Repo - Passwort und Schlüsseldatei sind geheim, nur der öffentliche SHA-256-Zertifikats-Fingerabdruck ist es nicht).
+
+- **Neu:** `.well-known/assetlinks.json` - die von Google für die TWA-Verifizierung (Digital Asset Links) verlangte Datei, verknüpft die Domain mit `app.lesezauber.pro` und dem SHA-256-Fingerabdruck des neuen Signierschlüssels.
+- **Neu:** `.nojekyll` (leere Datei, Repo-Root) - GitHub Pages baut ohne diese Datei standardmäßig über Jekyll, das Punkt-Ordner wie `.well-known/` beim Bauen STILLSCHWEIGEND weglässt. Ohne `.nojekyll` wäre `assetlinks.json` nie öffentlich erreichbar gewesen, die TWA-Verifizierung wäre ohne erkennbaren Grund fehlgeschlagen.
+- **Bewusste Entscheidung (Nutzerabwägung):** TWA statt Capacitor, weil die Seite öffentlich bleiben soll/darf (Capacitor wäre nötig gewesen, wenn die Seite privat werden sollte - siehe Diskussion, verworfen) - TWA ist der schlankere Weg, wenn die Seite ohnehin live erreichbar bleibt.
+- **Weiterhin offen (braucht Aktion des Nutzers bzw. eine Umgebung mit vollem Internetzugriff, die Claude-Code-Sandbox durfte `github.io`/Android-SDK-Server nicht erreichen):** `bubblewrap init`/`build` tatsächlich ausführen (Android-Projekt erzeugen, `.aab` bauen), Google-Play-Console-Entwicklerkonto einrichten (25$, eigenes Google-Konto - noch nicht vorhanden), App-Eintrag samt Datenschutzerklärung/Zielgruppen-Fragebogen anlegen, `.aab` hochladen.
+
 ## v0.30.2-beta
 
 Nutzerauftrag: "KDP-Druck soll [wirklich] reif sein" - zwei konkrete, per Websuche (19.09.2026) gegen kdp.amazon.com nachgeprüfte Korrekturen/Ergänzungen am KDP-Innenteil-Export (`printSpreadsKdp()` in `js/studio/studioPrint.js`):
