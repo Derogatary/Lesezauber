@@ -1,45 +1,42 @@
 # CLAUDE.md
 
-Diese Datei gibt Claude Code Kontext für die Arbeit an diesem Projekt. Sie liegt im Repository-Root und wird automatisch gelesen.
+Kontext für Claude Code an diesem Projekt. Liegt im Repo-Root, wird automatisch gelesen.
 
 ## Projektüberblick
 
-**LeseZauber Pro** ist eine Web-App (PWA), mit der man Kinderbuch-Seiten fotografiert/importiert (Foto, Galerie, PDF, EPUB) und sich per KI (Gemini, optional Mistral-Fallback) automatisch vorlesen, vereinfachen ("Erstleser"-Modus mit Emojis) und erklären lässt (Bildbeschreibung, Quizfragen, Vokabeltrainer).
+**LeseZauber Pro** ist eine PWA: Kinderbuch-Seiten fotografieren/importieren (Foto, Galerie, PDF, EPUB) und per KI (Gemini, Mistral-Fallback) vorlesen, vereinfachen ("Erstleser"-Modus mit Emojis) und erklären lassen (Bildbeschreibung, Quiz, Vokabeltrainer).
 
-Seit v0.10.0-beta gibt es zusätzlich den **Heft-Modus**: ein Buch kann statt einer Geschichte auch ein **Übungsheft** sein (Arbeitsblätter zur Schulvorbereitung). Dann wertet die KI die Seite als Aufgabe aus (Aufgabenstellung, kindgerechte Erklärung, Hilfeschritte, Lösung) statt als Erzähltext. Seit v0.11.0-beta kann das Kind sein bearbeitetes Blatt zusätzlich abfotografieren und bekommt eine vorgelesene Rückmeldung (`js/actions/checkWork.js`). Hintergrund und Planung dazu, inklusive offenem Generator: `docs/KONZEPT-Uebungshefte.md`.
+Seit v0.10.0-beta gibt es den **Heft-Modus**: ein Buch kann statt einer Geschichte ein **Übungsheft** sein - die KI wertet die Seite dann als Aufgabe aus (Aufgabenstellung, Erklärung, Hilfeschritte, Lösung) statt als Erzähltext. Seit v0.11.0-beta kann das Kind sein bearbeitetes Blatt abfotografieren und bekommt eine vorgelesene Rückmeldung (`js/actions/checkWork.js`). Details: `docs/KONZEPT-Uebungshefte.md`.
 
-**Zielgruppe:** Eine Familie nutzt die App privat für ihre Kinder. Der Betreiber ist technischer Laie ("kann ein bisschen HTML"), arbeitet aber regelmäßig mit Claude (Chat) und jetzt auch Claude Code an dem Projekt weiter.
+**Zielgruppe:** eine Familie, rein privat. Der Betreiber ist technischer Laie ("kann ein bisschen HTML"), arbeitet aber regelmäßig mit Claude am Projekt weiter.
 
-**Architektur-Grundprinzip: komplett client-seitig, kein eigener Server.**
-Läuft rein im Browser, gehostet auf GitHub Pages (statisches Hosting). Alle Daten (Bücher, Fotos, Profile, Vokabeln) liegen in IndexedDB auf dem jeweiligen Gerät. API-Keys (Gemini/Mistral) werden vom Nutzer selbst in den Einstellungen eingetragen und liegen im Klartext im Browser - das ist eine bekannte, akzeptierte Grenze (siehe "Bekannte Grenzen" im README), keine zu fixende Sicherheitslücke.
+**Architektur-Grundprinzip: komplett client-seitig, kein eigener Server.** Läuft rein im Browser, gehostet auf GitHub Pages (statisch). Alle Daten (Bücher, Fotos, Profile, Vokabeln) liegen in IndexedDB auf dem Gerät. API-Keys liegen im Klartext im Browser - bekannte, akzeptierte Grenze (siehe README "Bekannte Grenzen"), keine zu fixende Sicherheitslücke.
 
 ## Tech-Stack
 
-- Reines HTML/CSS/JavaScript, **ES-Module** (`<script type="module">`)
-- **Tailwind CSS v4** - eigener Build, KEIN CDN mehr (siehe "Kritischer Build-Schritt" unten)
-- **PDF.js** (vendored, lazy-geladen) für PDF-Import
-- **JSZip** (vendored, lazy-geladen als klassisches Script, kein ESM-Build verfügbar) für EPUB-Import
-- **Google Gemini API** (aktuell `gemini-3.6-flash`, siehe `js/api.js`) für Bildanalyse/Text
-- **Mistral API** als optionaler Fallback bei Gemini-Fehlern
-- **Neuronale TTS-Anbieter** (optional, opt-in): Gemini TTS, Google Cloud Chirp 3 HD, ElevenLabs, OpenAI, Speechify - siehe `js/ttsProviders.js`
-- Service Worker für PWA/Offline-Fähigkeit der App-Hülle
-- Kein Build-Tool für JS nötig (reine ES-Module, kein Bundler) - NUR Tailwind braucht einen Build-Schritt
+- HTML/CSS/JS, ES-Module (`<script type="module">`)
+- Tailwind CSS v4, eigener Build - KEIN CDN (siehe Build-Schritt unten)
+- PDF.js, JSZip (vendored, lazy-geladen) für PDF-/EPUB-Import
+- Google Gemini API (aktuell `gemini-3.6-flash`, `js/api.js`) für Bildanalyse/Text, Mistral als optionaler Fallback
+- Neuronale TTS-Anbieter (optional, opt-in): Gemini TTS, Google Cloud Chirp 3 HD, ElevenLabs, OpenAI, Speechify (`js/ttsProviders.js`)
+- Service Worker für PWA/Offline-Fähigkeit
+- Kein Bundler nötig (reine ES-Module) - nur Tailwind braucht einen Build-Schritt
 
 ## ⚠️ Kritischer Build-Schritt: Tailwind
 
-**Nach JEDER Änderung an Tailwind-Klassen in `index.html` oder irgendeiner `.js`-Datei muss neu gebaut werden:**
+**Nach JEDER Änderung an Tailwind-Klassen (`index.html` oder eine `.js`-Datei) neu bauen:**
 
 ```bash
 npx @tailwindcss/cli -i ./css/tailwind-input.css -o ./css/tailwind.css --minify
 ```
 
-Ohne diesen Schritt fehlen neue Klassen einfach lautlos im Live-Betrieb (keine Fehlermeldung, das Element sieht nur ungestylt aus). `css/tailwind-input.css` enthält die Marken-Farben-Erweiterung (`@theme`-Block), `css/tailwind.css` ist die ausgelieferte, gebaute Datei - **niemals `tailwind.css` von Hand bearbeiten**, sie wird beim nächsten Build überschrieben.
+Ohne diesen Schritt fehlen neue Klassen lautlos im Live-Betrieb (kein Fehler, das Element bleibt nur ungestylt). `css/tailwind-input.css` enthält die Marken-Farben-Erweiterung (`@theme`-Block), `css/tailwind.css` ist die ausgelieferte, gebaute Datei - **niemals von Hand bearbeiten**, sie wird beim nächsten Build überschrieben.
 
-`node_modules/`, `package.json`, `package-lock.json` sind nur fürs lokale Bauen nötig und werden NICHT deployed (liegen in `.gitignore` bzw. wurden bisher manuell aus den Uploads rausgehalten).
+`node_modules/`, `package.json`, `package-lock.json` sind nur fürs lokale Bauen nötig, werden NICHT deployed.
 
 ## Architektur: das zentrale `app`-Objekt
 
-Der gesamte Code hängt sich an ein einziges gemeinsames Objekt `app`, definiert in `js/core.js`:
+Der gesamte Code hängt sich an ein gemeinsames Objekt `app`, definiert in `js/core.js`:
 
 ```js
 export const app = {
@@ -49,7 +46,7 @@ export const app = {
 };
 ```
 
-Jede andere Datei importiert dieses eine Objekt und hängt ihre eigenen Funktionen an einen der Namespaces:
+Jede andere Datei importiert dieses eine Objekt und hängt eigene Funktionen an einen Namespace:
 
 ```js
 import { app } from '../core.js';
@@ -58,7 +55,7 @@ Object.assign(app.actions, {
 });
 ```
 
-**Modul-Reihenfolge ist wichtig:** `js/main.js` importiert alle Module in einer bestimmten Reihenfolge (state.js vor allem, was `app.settings`/`app.state` liest). Ein neues Modul MUSS dort ergänzt werden, sonst lädt es nie:
+**Modul-Reihenfolge ist wichtig:** `js/main.js` importiert alle Module in fester Reihenfolge (state.js zuerst, da es teils von settings liest). Ein neues Modul MUSS dort ergänzt werden, sonst lädt es nie:
 
 ```js
 import './actions/meineNeueDatei.js';
@@ -66,8 +63,8 @@ import './actions/meineNeueDatei.js';
 
 **Neue Funktion hinzufügen = neue Datei, nicht bestehende aufblähen:**
 - `js/actions/<name>.js` - Nutzer-ausgelöste Aktionen (Button-Klicks etc.)
-- `js/render/<name>.js` - Baut/aktualisiert DOM-Inhalt für eine Ansicht
-- Beides zusammen in `main.js` importieren
+- `js/render/<name>.js` - baut/aktualisiert DOM-Inhalt für eine Ansicht
+- beides zusammen in `main.js` importieren
 
 ## Wichtige Dateien und ihre Rolle
 
@@ -75,12 +72,12 @@ import './actions/meineNeueDatei.js';
 |---|---|
 | `js/core.js` | Das `app`-Objekt selbst - Namespace-Definitionen |
 | `js/state.js` | `app.state` (Laufzeit) + `app.settings` (persistiert, localStorage) - **Reihenfolge: settings vor state**, da state teils von settings liest |
-| `js/db.js` | IndexedDB-Speicher-Engine (`app.library`, `app.vocabulary`, `ttsCache`, `projects`). **Version 4** - beim Hinzufügen eines neuen Object Stores `DB_VERSION` erhöhen und `onupgradeneeded` erweitern |
+| `js/db.js` | IndexedDB-Speicher-Engine (`app.library`, `app.vocabulary`, `ttsCache`, `projects`). **Version 4** - neuer Object Store: `DB_VERSION` erhöhen und `onupgradeneeded` erweitern |
 | `js/nav.js` | Router zwischen den `<main id="view...">`-Ansichten |
 | `js/api.js` | Gemini/Mistral-Aufrufe, der komplette Analyse-Prompt lebt hier |
-| `js/tts.js` | Sprachausgabe: Weiche zwischen Gerätestimme und KI-Stimme, Auto-Vorlesen, Wort-Hervorhebung (SpeechSynthesis `boundary`-Event), kombinierter Rätsel-Modus |
-| `js/ttsProviders.js` | KI-Stimmen-Anbieter als Liste (`app.ttsProviders.list`) - neue Stimme/neuer Anbieter = neuer Eintrag, UI baut sich daraus automatisch auf |
-| `js/ttsNeural.js` | Wiedergabe der KI-Stimmen: IndexedDB-Zwischenspeicher, eigene Wort-Hervorhebung per `requestAnimationFrame`, Vorbereitung der nächsten Seite, Rückfall auf die Gerätestimme |
+| `js/tts.js` | Sprachausgabe: Weiche Gerätestimme/KI-Stimme, Auto-Vorlesen, Wort-Hervorhebung (SpeechSynthesis `boundary`-Event), Rätsel-Modus |
+| `js/ttsProviders.js` | KI-Stimmen-Anbieter als Liste (`app.ttsProviders.list`) - neuer Anbieter = neuer Eintrag, UI baut sich automatisch auf |
+| `js/ttsNeural.js` | Wiedergabe der KI-Stimmen: IndexedDB-Zwischenspeicher, eigene Wort-Hervorhebung per `requestAnimationFrame`, Vorbereitung der nächsten Seite, Rückfall auf Gerätestimme |
 | `js/profiles.js` | Lokale Profile (kein Server/Login), inkl. `__all__`-Sonderfilter |
 | `js/backgroundPregen.js` | Opt-in Hintergrund-Vorbereitung fehlender Persona-Varianten/Buch-Quiz |
 | `js/keyboard.js`, `js/gestures.js` | Desktop-Tastatur bzw. Touch-Wisch-Navigation im Reader |
@@ -94,23 +91,23 @@ import './actions/meineNeueDatei.js';
 | `js/actions/workbookGenerator.js` | Heft-Generator: Formular auslesen, `app.api.generateWorksheets()` aufrufen, Blätter auf Canvas zeichnen, Heft anlegen |
 | `js/render/workbookGenerator.js` | Heft-Generator: Auswahl-Ansicht (Formular bzw. Blätter-Liste zum Abwählen) |
 | `js/render/progress.js` | Fortschrittsbalken, Erledigt-Knopf, Belohnungs-Banner |
-| `js/render/cinema.js` | Video-Export Weg B, Teil 1: der Canvas-Renderer (`app.cinema`). Zeichnet EINEN Frame zu einem Zeitpunkt t - Seitenbild mit Ken-Burns plus Untertitel-Balken mit mitlaufender Wort-Hervorhebung. Verwaltet absichtlich keine Zeit und spielt nichts ab |
-| `js/actions/videoTimeline.js` | Der Zeitplan/die "Regie" dazu (`app.cinema.buildTimeline`): welche Szene über welchem **Seitenbereich** wann läuft. Nimmt echte Sprach-Segmente aus `renderPageSegments()` entgegen, schätzt die Längen sonst aus der Textlänge |
-| `js/actions/videoPreview.js` | Film-Vorschau ("🎬 Film"): spielt den Zeitplan in Echtzeit auf einem sichtbaren Canvas ab. Bewusst stumm und ohne jede Synthese - kostet also nichts |
-| `js/actions/videoExport.js` | Video-Export Weg B, Teil 2: Ton aus `renderPageSegments()`, Frames per `VideoEncoder`, Ton per `AudioEncoder`, Datei per `mp4-muxer` über OPFS. Codec-Leiter statt festem Codec, Fortschritt + Abbruch, Größenschätzung vorab. **Nur bei `origin: 'authored'`** |
+| `js/render/cinema.js` | Video-Export Teil 1: Canvas-Renderer (`app.cinema`) - zeichnet EINEN Frame zum Zeitpunkt t (Seitenbild + Ken-Burns + Untertitel mit Wort-Hervorhebung), verwaltet bewusst keine Zeit und spielt nichts ab |
+| `js/actions/videoTimeline.js` | Zeitplan/"Regie" dazu (`app.cinema.buildTimeline`): welche Szene über welchem **Seitenbereich** wann läuft - nutzt echte Segmente aus `renderPageSegments()`, sonst Längen-Schätzung aus dem Text |
+| `js/actions/videoPreview.js` | Film-Vorschau ("🎬 Film"): spielt den Zeitplan live auf sichtbarem Canvas ab, bewusst stumm/ohne Synthese - kostet also nichts |
+| `js/actions/videoExport.js` | Video-Export Teil 2: Ton aus `renderPageSegments()`, Frames per `VideoEncoder`, Ton per `AudioEncoder`, Datei per `mp4-muxer` über OPFS. Codec-Leiter statt festem Codec, Fortschritt+Abbruch, Größenschätzung vorab. **Nur bei `origin: 'authored'`** |
 | `js/studio/studioCore.js` | SchreibZauber: `app.studio`-Projekt-CRUD, Stufen-Logik (Idee/Bauplan/Geschichte), Platzhalter-Aufruf pro Doppelseite |
-| `js/studio/studioPrompts.js` | SchreibZauber: alle Prompt-Bausteine inkl. `guardrailsBlock()` (Veröffentlichungs-Leitplanken, siehe Entscheidung 6) |
-| `js/studio/studioApi.js` | SchreibZauber: eigener Gemini/Mistral-Textaufruf fürs Manuskript (gleiche Keys wie `js/api.js`, aber getrennte Funktionen) |
-| `js/studio/studioExport.js` | SchreibZauber: Projekt → normales Buch in `app.library` ("Ins Regal stellen") - fügt dabei Titel-/Rück-/Autorenseite aus `js/studio/studioMetaPages.js` ein |
-| `js/studio/studioMetaPages.js` | SchreibZauber: baut Titelseite/Klappentext/Autorenseite als Canvas-Textseiten (mit Platzhaltertext für leer gelassene Felder) - `app.studio.buildMetaPages()`, wird ausschließlich von `studioExport.js` aufgerufen |
+| `js/studio/studioPrompts.js` | SchreibZauber: alle Prompt-Bausteine inkl. `guardrailsBlock()` (Veröffentlichungs-Leitplanken, Entscheidung 6) |
+| `js/studio/studioApi.js` | SchreibZauber: eigener Gemini/Mistral-Textaufruf fürs Manuskript (gleiche Keys wie `js/api.js`, getrennte Funktionen) |
+| `js/studio/studioExport.js` | SchreibZauber: Projekt → normales Buch in `app.library` ("Ins Regal stellen") - fügt Titel-/Rück-/Autorenseite aus `studioMetaPages.js` ein |
+| `js/studio/studioMetaPages.js` | SchreibZauber: Titelseite/Klappentext/Autorenseite als Canvas-Textseiten (Platzhaltertext bei leeren Feldern) - `app.studio.buildMetaPages()`, nur von `studioExport.js` aufgerufen |
 | `js/studio/imageFormats.js`, `placeholder.js`, `imageSource.js` | SchreibZauber: Bildformat-Katalog, Platzhalter-Erzeugung, Bildquellen-Adapter (`{full, thumb, meta}`) - Details `docs/KONZEPT-Bildquellen.md` |
-| `js/studio/studioLayout.js`, `render/studioLayout.js` | SchreibZauber: Textposition/Schriftgröße/Silbenfarben pro Doppelseite (Wizard-Stufe 7 "Das Layout") - `buildOverlayHtml()` ist die EINE Stelle, die Manuskripttext in eine positionierte, ggf. silbengefärbte HTML-Ebene über dem Bild umwandelt, genutzt von der Vorschau UND vom Druck |
-| `js/studio/studioBalloons.js` | SchreibZauber Comic: Sprechblasen-CRUD (`addBalloon()`/`updateBalloon()`/`deleteBalloon()`, jetzt PRO PANEL) + `buildBalloonsHtml()` als HTML-Vorschau-Ebene (Prozent-Koordinaten relativ zum jeweiligen Panel) |
-| `js/studio/studioComicPanels.js` | SchreibZauber Comic: Panel-Layout-Vorlagen (1-4 Panels/Seite), `compositePage()` setzt die einzeln generierten Panel-Bilder per Canvas zu einer "sauberen" Seite zusammen, `bakePageWithBalloons()` brennt Sprechblasen (immer) und Geräuschwörter (optional, `project.comicShowSoundEffects`) zusätzlich fest ein - Export liefert BEIDE Fassungen, der Reader schaltet zwischen ihnen um (`app.utils.resolveDisplayImageUrl()`) |
-| `js/studio/studioPrint.js` | SchreibZauber: Doppelseiten-Druck/PDF-Export (eigene Funktion, orientiert an, aber getrennt von `app.actions.printBook()`) - seit v0.28.0-beta auch comicfähig (druckt die fertig geletterte Panel-Seite, Sprechblasen-Einbrennen abschaltbar). Seit v0.29.0-beta zusätzlich `printSpreadsKdp()`: echter KDP-Innenteil-Export (Bleed + Sicherheitsabstand als tatsächliche Seitenvergrößerung, nur A5/A4 hoch) - liefert weiterhin KEINEN Umschlag, siehe TEIL F in `docs/KONZEPT-SchreibZauber.md` |
-| `js/render/studioLibrary.js`, `render/studioWizard.js` | SchreibZauber: Werkstatt-Übersicht bzw. die Stufen-Ansicht |
-| `js/vendor/` | PDF.js, JSZip und mp4-muxer (MIT, für den Video-Export) - NIE direkt bearbeiten, nur austauschen/aktualisieren. Alle drei werden lazy geladen und stehen deshalb NICHT in der `APP_SHELL` von `sw.js` |
-| `sw.js` | Service Worker - **`CACHE_NAME`-Version bei jeder Datei-Änderung hochzählen**, neue Dateien zur `APP_SHELL`-Liste hinzufügen |
+| `js/studio/studioLayout.js`, `render/studioLayout.js` | SchreibZauber: Textposition/Schriftgröße/Silbenfarben pro Doppelseite (Stufe 7 "Das Layout") - `buildOverlayHtml()` ist die EINE Stelle, die Manuskripttext in eine positionierte HTML-Ebene über dem Bild umwandelt, genutzt von Vorschau UND Druck |
+| `js/studio/studioBalloons.js` | SchreibZauber Comic: Sprechblasen-CRUD (`addBalloon()`/`updateBalloon()`/`deleteBalloon()`, PRO PANEL) + `buildBalloonsHtml()` als HTML-Vorschau-Ebene (Prozent-Koordinaten relativ zum Panel) |
+| `js/studio/studioComicPanels.js` | SchreibZauber Comic: Panel-Layout-Vorlagen (1-4/Seite), `compositePage()` setzt Panel-Bilder per Canvas zu einer "sauberen" Seite zusammen, `bakePageWithBalloons()` brennt Sprechblasen (immer) + Geräuschwörter (optional, `project.comicShowSoundEffects`) zusätzlich ein - Export liefert BEIDE Fassungen, Reader schaltet um (`app.utils.resolveDisplayImageUrl()`) |
+| `js/studio/studioPrint.js` | SchreibZauber: Doppelseiten-Druck/PDF-Export (eigene Funktion, getrennt von `app.actions.printBook()`) - seit v0.28.0-beta comicfähig, seit v0.29.0-beta zusätzlich `printSpreadsKdp()` (echter KDP-Innenteil-Export: Bleed+Sicherheitsabstand, nur A5/A4 hoch, KEIN Umschlag) - Details CHANGELOG.md, TEIL F in `docs/KONZEPT-SchreibZauber.md` |
+| `js/render/studioLibrary.js`, `render/studioWizard.js` | SchreibZauber: Werkstatt-Übersicht bzw. Stufen-Ansicht |
+| `js/vendor/` | PDF.js, JSZip, mp4-muxer (MIT) - NIE direkt bearbeiten, nur austauschen/aktualisieren. Lazy geladen, deshalb NICHT in der `APP_SHELL` von `sw.js` |
+| `sw.js` | Service Worker - **`CACHE_NAME` bei jeder Datei-Änderung hochzählen**, neue Dateien zur `APP_SHELL`-Liste hinzufügen |
 
 ## Datenmodell (zentral, viel hängt davon ab)
 
@@ -118,25 +115,21 @@ import './actions/meineNeueDatei.js';
 ```js
 {
   id, title, author, created, profileId, lastReadIdx, lastReadAt,
-  coverPageId,       // Seiten-ID (nicht Index!) des gewählten Covers (nur Anzeige, Bibliotheks-Thumbnail)
+  coverPageId,       // Seiten-ID (nicht Index!) des gewählten Covers (nur Anzeige)
   bookType,          // 'story' (Standard) | 'workbook' - fehlt bei alten Büchern,
                      // IMMER über app.utils.resolveBookType(book) lesen
-  origin,            // 'scan' (abfotografiert/importiert) | 'authored' (selbst erzeugt:
-                     // SchreibZauber UND Heft-Generator - beides steckt kein fremdes
-                     // Werk in das Buch) -
-                     // fehlt bei alten Büchern, IMMER über app.utils.resolveBookOrigin(book)
-                     // lesen. Steuert NUR den Video-Export: eine weitergegebene Videodatei
-                     // eines fremden Kinderbuchs wäre eine Vervielfältigung, deshalb gilt
-                     // alles ohne ausdrückliches 'authored' als 'scan' (siehe
-                     // docs/KONZEPT-Video.md, Abschnitt 7)
-  publisher, series, // optional: von der KI auf der Titelseite erkannt (siehe analyzePage)
+  origin,            // 'scan' (fotografiert/importiert) | 'authored' (SchreibZauber ODER
+                     // Heft-Generator - kein fremdes Werk im Buch) - fehlt bei alten Büchern,
+                     // IMMER über app.utils.resolveBookOrigin(book) lesen. Steuert NUR den
+                     // Video-Export (eine weitergegebene Videodatei eines fremden
+                     // Kinderbuchs wäre eine Vervielfältigung) - siehe docs/KONZEPT-Video.md
+                     // Abschnitt 7
+  publisher, series, // optional: von der KI auf der Titelseite erkannt (analyzePage)
   titlePageId, backCoverPageId, tocPageId, authorBioPageId,  // optional: Seiten-IDs, manuell
-                     // per "Seiten-Rollen" markiert (siehe app.actions.setPageRole) - ersetzen die
-                     // automatischen Annahmen (Titelseite = Seite 1) unabhängig von der
-                     // Scan-Reihenfolge; leer = ignorieren
-  readAuthorBioAloud, // optional bool (Default: true/undefined = vorlesen) - ob die
-                     // "Über den Autor"-Seite beim automatischen Vorlesen mit angesagt wird
-                     // (siehe app.actions.toggleReadAuthorBioAloud)
+                     // per "Seiten-Rollen" markiert (app.actions.setPageRole) - überschreiben
+                     // die automatische Annahme (Titelseite = Seite 1); leer = ignorieren
+  readAuthorBioAloud, // optional bool (Default: true = vorlesen) - ob die "Über den Autor"-
+                     // Seite beim automatischen Vorlesen angesagt wird (toggleReadAuthorBioAloud)
   bookQuiz: { questions: [{question, answer}] },  // optional, gecacht, nur bei 'story'
   pages: [ ... ]
 }
@@ -148,63 +141,58 @@ import './actions/meineNeueDatei.js';
   id, imgUrl, thumbUrl,  // WebP, zwei Größen
   status: 'pending' | 'processing' | 'done' | 'error',  // persona-UNABHÄNGIG
   pdfSourceText,   // optional: garantiert korrekter Text aus PDF/EPUB-Textebene, kein OCR nötig
-  generatedSheet,  // optional: { heading, body: [] } - nur bei vom Heft-Generator erzeugten
-                   // Blättern (js/actions/workbookGenerator.js). Persona-unabhängig wie
-                   // pdfSourceText: hält das Übungsfeld als echten Text fest, damit
-                   // app.actions.printBook() beim Ausdrucken nicht den Umweg über das
-                   // Canvas-Seitenbild (imgUrl) gehen muss.
-  chapterTitle,    // optional: von der KI erkannte Kapitelüberschrift, falls diese Seite ein Kapitel beginnt
-  tocEntries,      // optional: Array von Kapitelüberschriften, falls diese Seite ein Inhaltsverzeichnis ist (ohne Seitenzahlen)
-  excluded,        // optional bool - Seite komplett von Analyse UND automatischem Vorlesen
-                   // ausgeschlossen (Leerseiten, Impressum etc., siehe app.actions.togglePageExcluded)
-                   // - manuelles Ansehen/Durchblättern bleibt trotzdem möglich
+  generatedSheet,  // optional: { heading, body: [] } - nur bei Heft-Generator-Blättern,
+                   // persona-unabhängig wie pdfSourceText, damit printBook() den Text direkt
+                   // drucken kann statt über das Canvas-Seitenbild (imgUrl)
+  chapterTitle,    // optional: von der KI erkannte Kapitelüberschrift
+  tocEntries,      // optional: Array von Kapitelüberschriften, falls Inhaltsverzeichnis-Seite
+  excluded,        // optional bool - Seite komplett von Analyse UND Auto-Vorlesen ausgeschlossen
+                   // (Leerseiten, Impressum etc., togglePageExcluded) - manuelles Ansehen bleibt möglich
   variants: {
     // bei bookType 'story':
     [personaId]: { text, erstleserText, desc, quizQ, quizA }
-    // bei bookType 'workbook' zusätzlich (quizQ/quizA sind dort null):
+    // bei bookType 'workbook' zusätzlich (quizQ/quizA dort null):
     //   { text: Aufgabenstellung, erstleserText: kindgerechte Erklärung,
     //     desc: Blatt-Beschreibung, taskType, materials, helpSteps: [], solution }
   },
-  // NEU: Erledigt-Häkchen pro Kind-Profil (fehlt bei alten Büchern).
-  // NIE direkt lesen, immer über app.progress.isPageDone(page).
+  // Erledigt-Häkchen pro Kind-Profil (fehlt bei alten Büchern). NIE direkt lesen,
+  // immer über app.progress.isPageDone(page).
   progress: { [profileId]: { done: true, doneAt, sticker } },
-  // NEU: letzte Kontrolle des bearbeiteten Blattes, ebenfalls pro Profil.
-  // Lesen über app.utils.resolvePageCheck(page). thumbUrl ist absichtlich
-  // nur die kleine Vorschau - das volle Kontroll-Foto wird NICHT gespeichert,
-  // sonst wächst jedes Heft mit jeder Kontrolle um ein großes Bild.
+  // Letzte Kontrolle des bearbeiteten Blattes, pro Profil - lesen über
+  // app.utils.resolvePageCheck(page). thumbUrl ist absichtlich nur die kleine Vorschau,
+  // das volle Kontroll-Foto wird NICHT gespeichert (sonst wächst jedes Heft pro Kontrolle).
   check: { [profileId]: { verdict, praise, feedback, hints: [], thumbUrl, checkedAt } },
-  // Alte Bücher (vor der Variants-Architektur) haben stattdessen flache
-  // Felder text/erstleserText/desc/quizQ/quizA direkt auf der Seite -
-  // IMMER über app.utils.resolvePageVariant()/resolveAnyVariant() lesen,
-  // nie page.variants direkt, sonst bricht Rückwärtskompatibilität.
+  // Alte Bücher (vor der Variants-Architektur) haben stattdessen flache Felder
+  // text/erstleserText/desc/quizQ/quizA direkt auf der Seite - IMMER über
+  // app.utils.resolvePageVariant()/resolveAnyVariant() lesen, nie page.variants direkt.
 }
 ```
 
-**Metadaten-Ansage:** `chapterTitle`/`tocEntries`/`publisher`/`series` sind persona-UNABHÄNGIG (wie `pdfSourceText`), da sie strukturelle Fakten sind, keine erzählte Vorlese-Variante. `app.tts._buildMetadataAnnouncements()` baut daraus die Ansage-Sätze - nur im automatischen Vorlesemodus (`_readCurrentThenAdvance`), NICHT beim einzelnen 🔊-Button (sonst nervt die Wiederholung bei jedem erneuten Antippen). Für `backCoverPageId`/`authorBioPageId` gibt es KEIN eigenes KI-Feld - die Ansage ist nur eine kurze Einleitung ("Darum geht's:"/"Über den Autor:"), der eigentliche Text wird direkt danach ganz normal als Seitentext vorgelesen. Nur `titlePageId`/`tocPageId` beeinflussen tatsächlich die KI-Anfrage (siehe `js/api.js`), deshalb löst nur deren Zuweisung in `setPageRole()` eine erneute Analyse aus.
+**Metadaten-Ansage:** `chapterTitle`/`tocEntries`/`publisher`/`series` sind persona-UNABHÄNGIG (strukturelle Fakten, keine erzählte Variante). `app.tts._buildMetadataAnnouncements()` baut daraus die Ansage-Sätze - nur im automatischen Vorlesemodus, NICHT beim einzelnen 🔊-Button (sonst nervt die Wiederholung). `backCoverPageId`/`authorBioPageId` haben KEIN eigenes KI-Feld - nur eine kurze Ansage-Einleitung, der Text folgt als normaler Seitentext. Nur `titlePageId`/`tocPageId` beeinflussen die KI-Anfrage (`js/api.js`), deshalb löst nur deren Zuweisung in `setPageRole()` eine erneute Analyse aus.
 
-**Die Varianten-Umrechnung liegt an EINER Stelle:** `app.utils.buildPageVariant(result, page, bookType)` baut aus der KI-Antwort den Varianten-Datensatz - genutzt von `actions/scanner.js` UND `backgroundPregen.js`. Ein neues Feld also nur dort ergänzen, nicht an beiden Aufrufstellen.
+**Die Varianten-Umrechnung liegt an EINER Stelle:** `app.utils.buildPageVariant(result, page, bookType)` - genutzt von `actions/scanner.js` UND `backgroundPregen.js`. Neues Feld nur dort ergänzen.
 
 **Zwei Hilfsfunktionen sind der einzig sichere Weg, Seitentext zu lesen:**
 - `app.utils.resolvePageVariant(page, personaId)` - exakt diese Persona, sonst `null`
-- `app.utils.resolveAnyVariant(page, preferredPersonaId)` - diese Persona, sonst IRGENDEINE vorhandene (für Fälle wie Druck/Buch-Quiz, wo der Originaltext ohnehin persona-unabhängig sein sollte)
+- `app.utils.resolveAnyVariant(page, preferredPersonaId)` - diese Persona, sonst IRGENDEINE vorhandene (Druck/Buch-Quiz, wo der Text ohnehin persona-unabhängig sein sollte)
 
-**Wichtiges Verhalten:** Beim Scannen/Batch wird NUR die aktuell gewählte Persona generiert (1 API-Call/Seite). Andere Personas entstehen erst on-demand, wenn im Reader dorthin gewechselt wird (siehe `render/reader.js`) - das ist bewusst so (5 Personas sofort = 5x API-Kosten). NICHT eigenmächtig "alle Personas sofort generieren" umbauen, das wurde explizit mit dem Nutzer besprochen und verworfen.
+**Wichtiges Verhalten:** Beim Scannen/Batch wird NUR die aktuell gewählte Persona generiert (1 API-Call/Seite) - andere Personas entstehen erst on-demand im Reader (5 Personas sofort = 5x Kosten). NICHT eigenmächtig "alle Personas sofort generieren" umbauen - explizit besprochen und verworfen.
 
 ## Persona-System
 
-`js/config.js` definiert `app.personas` (Array von `{id, label, instruction, ttsStyle}`). `instruction` steuert, wie die KI den Text **schreibt**, das optionale `ttsStyle`, wie die KI-Stimme ihn **spricht** (fehlt es, dient `instruction` als Rückfall). Neue Persona = neuer Eintrag dort, taucht automatisch überall auf (Settings-Dropdown, Reader-Dropdown), keine weiteren Code-Änderungen nötig.
+`js/config.js` definiert `app.personas` (`{id, label, instruction, ttsStyle}`). `instruction` steuert, wie die KI **schreibt**, das optionale `ttsStyle`, wie die KI-Stimme **spricht** (fehlt es, dient `instruction` als Rückfall). Neue Persona = neuer Eintrag, taucht automatisch überall auf (Settings/Reader-Dropdown).
 
-Die Persona färbt bei Anbietern mit `supportsStyle` (Gemini, OpenAI) auch die **Stimmlage** - über `app.ttsProviders.styleHintFor()`, abschaltbar in den Einstellungen.
+Die Persona färbt bei Anbietern mit `supportsStyle` (Gemini, OpenAI) auch die Stimmlage - `app.ttsProviders.styleHintFor()`, abschaltbar in den Einstellungen.
 
-`js/config.js` definiert außerdem `app.bookTypes` (Geschichte/Übungsheft). Anders als bei den Personas reicht dort ein neuer Eintrag NICHT: eine neue Buchart braucht auch einen eigenen Prompt in `js/api.js` und eine Behandlung in `js/utils.js` (`buildPageVariant`).
+`js/config.js` definiert außerdem `app.bookTypes` (Geschichte/Übungsheft) - hier reicht ein neuer Eintrag NICHT: eine neue Buchart braucht auch einen eigenen Prompt (`js/api.js`) und eine Behandlung in `buildPageVariant` (`js/utils.js`).
 
-Zwei getrennte Persona-Konzepte, nicht verwechseln:
+Zwei getrennte Konzepte, nicht verwechseln:
 - `app.settings.persona` - globale Standard-Persona für neue Scans
 - `app.state.readingPersonaId` - nur fürs aktuell geöffnete Buch im Reader, ändert NICHT die globale Einstellung
 
 ## Sanity-Checks vor jedem Commit
 
-Diese Checks haben in der bisherigen Entwicklung wiederholt echte Bugs vor dem Ausliefern gefangen. Immer laufen lassen:
+Diese Checks haben wiederholt echte Bugs vor dem Ausliefern gefangen. Immer laufen lassen:
 
 ```bash
 # 1. Syntax-Check aller eigenen JS-Dateien (vendor/ ausschließen)
@@ -235,87 +223,77 @@ Ein Treffer `FEHLT: actions.xyz` beim dritten Check ist ein bekannter Fehlalarm 
 
 ## Deployment
 
-Kein CI/CD - der Nutzer lädt den kompletten Ordnerinhalt manuell über die GitHub-Weboberfläche hoch (Drag & Drop), GitHub Pages baut daraus automatisch `https://<username>.github.io/<repo>/`. Bei jeder Änderung an gecachten Dateien **`sw.js`'s `CACHE_NAME` hochzählen**, sonst bekommen wiederkehrende Nutzer alte Versionen aus dem Service-Worker-Cache ausgeliefert.
+Kein CI/CD - der Nutzer lädt den Ordnerinhalt manuell über die GitHub-Weboberfläche hoch (Drag & Drop), GitHub Pages baut daraus `https://<username>.github.io/<repo>/`. Bei jeder Änderung an gecachten Dateien **`sw.js`'s `CACHE_NAME` hochzählen**, sonst bekommen wiederkehrende Nutzer alte Versionen aus dem Service-Worker-Cache.
 
 ## Arbeitsschritt-Varianten bei mehreren parallelen Aufträgen (Branches/PRs)
 
-Wenn mehrere Aufträge gleichzeitig laufen (mehrere Claude-Code-Sessions/Branches), vergleicht sich jeder Branch nur mit dem Stand von `main`, den er beim Abzweigen gesehen hat - nicht mit dem aktuellen. Zwei Branches vom selben Ausgangspunkt wissen nichts voneinander. Das führt zu zwei Arten von Kollision, wenn sie zusammengeführt werden:
+Mehrere gleichzeitige Claude-Code-Sessions/Branches vergleichen sich nur mit dem `main`-Stand beim Abzweigen, nicht mit dem aktuellen - zwei Branches vom selben Ausgangspunkt wissen nichts voneinander. Beim Zusammenführen entstehen zwei Arten von Kollision:
 
-- **Sichtbare Konflikte** - beide Branches ändern dieselbe Zeile, Git meldet das von selbst (z. B. `CACHE_NAME`, Versionsnummer im Header, ein eigener Absatz in dieser Datei). Unangenehm, aber ungefährlich, weil Git danach fragt.
-- **Unsichtbare Brüche** - beide Branches ändern verschiedene Stellen, die inhaltlich zusammenhängen, ohne dass Git das merkt. Beispiel aus der Praxis: Ein Branch führte `book.origin` ein, ein zeitgleicher Branch legte neue Bücher an, ohne von diesem Feld zu wissen - kein Git-Konflikt, aber die neuen Bücher wären fälschlich vom Video-Export ausgeschlossen gewesen. Das findet nur ein Mensch (oder Claude) beim bewussten Draufschauen, nicht Git.
+- **Sichtbare Konflikte** - beide Branches ändern dieselbe Zeile (z.B. `CACHE_NAME`, Versionsnummer), Git meldet das von selbst. Unangenehm, aber ungefährlich.
+- **Unsichtbare Brüche** - beide Branches ändern verschiedene, inhaltlich zusammenhängende Stellen, ohne dass Git das merkt. Beispiel: ein Branch führte `book.origin` ein, ein zeitgleicher Branch legte neue Bücher an, ohne davon zu wissen - kein Git-Konflikt, aber die neuen Bücher wären fälschlich vom Video-Export ausgeschlossen gewesen. Das findet nur ein Mensch (oder Claude) beim bewussten Draufschauen, nicht Git.
 
 **Zwei Vorgehen, je nach Lage:**
+1. **Nacheinander mergen** - bei klar getrennten Ecken der App: PR 1 mergen, PR 2 per "Update branch" nachziehen, Konflikte lösen, mergen, usw.
+2. **Wellen mit Integrationspass** - bei mehreren Branches auf denselben oft angefassten Dateien (`index.html`, `sw.js`, `js/main.js`, diese Datei): alle in einen Sammelzweig mergen, dort **bewusst nach unsichtbaren Brüchen suchen** (nicht nur Konflikte lösen), Sanity-Checks laufen lassen, dann als ein geprüftes Paket nach `main`. In diesem Projekt meist der richtige Weg.
 
-1. **Nacheinander mergen** - passt, wenn die Branches klar getrennte Ecken der App betreffen. PR 1 mergen, PR 2 per "Update branch" auf den neuen `main`-Stand bringen, Konflikte lösen, mergen, PR 3 genauso.
-2. **Wellen mit Integrationspass** - passt besser, wenn mehrere Branches dieselben, oft angefassten Dateien berühren (bei diesem Projekt typisch: `index.html`, `sw.js`, `js/main.js`, diese Datei). Alle betroffenen Branches in einen Sammelzweig mergen, dort **einmal bewusst nach unsichtbaren Brüchen suchen** (nicht nur Git-Konflikte lösen), die Sanity-Checks laufen lassen, dann als ein geprüftes Paket nach `main`. In diesem Projekt bisher meist der richtige Weg, weil fast jedes Feature `main.js`/`sw.js`/die Versionsnummer anfasst.
-
-**Daraus folgende Regeln:**
-
-- Versionsnummer (`v0.X.Y-beta`) und `CACHE_NAME` **erst beim Zusammenführen** hochzählen, nicht schon in jedem einzelnen Auftrags-Branch - sonst vergeben zwei parallele Branches unabhängig voneinander dieselbe Nummer (ist schon passiert: zwei Branches beide "v0.16.0-beta").
-- Nach jedem Zusammenführen mehrerer Branches gezielt prüfen, ob neu eingeführte Felder/Konzepte (wie `book.origin`) auch von den *anderen* gerade gemergten Branches korrekt gesetzt werden, nicht nur von dem, der sie eingeführt hat.
-- Bereits gemergte Branches zeitnah löschen (lokal und auf GitHub), sonst sammeln sich alte Branches an und es wird unübersichtlich, welche noch echten, nicht gemergten Inhalt haben.
+**Regeln:**
+- Versionsnummer und `CACHE_NAME` **erst beim Zusammenführen** hochzählen, nicht in jedem Auftrags-Branch (sonst vergeben zwei Branches unabhängig dieselbe Nummer - schon passiert).
+- Nach jedem Zusammenführen prüfen, ob neue Felder/Konzepte (wie `book.origin`) auch von den *anderen* gemergten Branches korrekt gesetzt werden.
+- Gemergte Branches zeitnah löschen (lokal und auf GitHub).
 
 ## Bekannte, bewusste Einschränkungen (nicht versehentlich "reparieren")
 
-- Kein Server, keine Accounts, keine automatische Cloud-Synchronisierung - bewusst so, siehe README "Mögliche nächste Schritte"
+- Kein Server, keine Accounts, keine automatische Cloud-Synchronisierung - siehe README "Mögliche nächste Schritte"
 - API-Keys im Klartext im Browser - bekannte Grenze der reinen Client-Architektur
 
 ## Offene Punkte (Stand zuletzt besprochen)
 
-**Die vollständige, zusammengeführte Liste steht in [`docs/TODO-GESAMT.md`](docs/TODO-GESAMT.md).**
-Dort ist auch aufgeführt, welche Punkte mit v0.12.0 bereits erledigt sind - vor dem Einplanen
-eines Features dort nachsehen, sonst wird Fertiges doppelt gebaut.
+**Die vollständige, zusammengeführte Liste steht in [`docs/TODO-GESAMT.md`](docs/TODO-GESAMT.md)** (inkl. was mit v0.12.0 schon erledigt ist) - vor dem Einplanen eines Features dort nachsehen.
 
-Kurzfassung der größeren, noch nicht begonnenen Features (brauchen erst Abstimmung mit dem
-Nutzer, nicht einfach lospreschen):
+Größere, noch nicht begonnene Features (brauchen erst Abstimmung mit dem Nutzer):
 
 | Vorhaben | Konzept |
 |---|---|
-| 🎬 Video: praktisch fertig, nur noch höhere Bildauflösung (`videoUrl`, niedrigste Priorität) offen - Titelkarten-Ansage, Ton in der Vorschau und Quiz-Karte mit Denkpause sind seit v0.19.0-beta gebaut, siehe Abschnitt 4.7 des Konzepts | [`docs/KONZEPT-Video.md`](docs/KONZEPT-Video.md) |
-| 🪄 "SchreibZauber" - Stufe 1-5 fertig, von Stufe 6 ("Politur") zwei von drei Punkten (Vorlagen, projektübergreifende Figuren) - die zweite Einstiegsseite/eigenes Manifest bewusst nicht umgesetzt, siehe CHANGELOG.md v0.25.0-beta. Dort auch der verifizierte (aber noch nicht umgesetzte) KDP-Kenntnisstand aus Stufe 3 | [`docs/KONZEPT-SchreibZauber.md`](docs/KONZEPT-SchreibZauber.md), [`docs/KONZEPT-Bildquellen.md`](docs/KONZEPT-Bildquellen.md), [`docs/KONZEPT-Comic.md`](docs/KONZEPT-Comic.md) |
-| 🎨 KI-generierte Illustrationen (Comic-Stil) für Text-only-EPUB-Kapitel (TEIL A des Konzepts - separates lokales Werkzeug, nicht Teil der PWA). Der SchreibZauber-Comic-Werktyp (TEIL B) ist seit Ausbaustufe 5 fertig, siehe Zeile oben | [`docs/KONZEPT-Comic.md`](docs/KONZEPT-Comic.md) |
+| 🎬 Video: praktisch fertig, nur noch höhere Bildauflösung (`videoUrl`, niedrigste Priorität) offen - Rest seit v0.19.0-beta gebaut, siehe Konzept Abschnitt 4.7 | [`docs/KONZEPT-Video.md`](docs/KONZEPT-Video.md) |
+| 🪄 "SchreibZauber" - Stufe 1-5 fertig, von Stufe 6 ("Politur") zwei von drei Punkten - zweite Einstiegsseite/eigenes Manifest bewusst nicht umgesetzt, siehe CHANGELOG.md v0.25.0-beta (dort auch der verifizierte, noch nicht umgesetzte KDP-Kenntnisstand aus Stufe 3) | [`docs/KONZEPT-SchreibZauber.md`](docs/KONZEPT-SchreibZauber.md), [`docs/KONZEPT-Bildquellen.md`](docs/KONZEPT-Bildquellen.md), [`docs/KONZEPT-Comic.md`](docs/KONZEPT-Comic.md) |
+| 🎨 KI-Illustrationen (Comic-Stil) für Text-only-EPUB-Kapitel (TEIL A - separates lokales Werkzeug, nicht Teil der PWA). Der SchreibZauber-Comic-Werktyp (TEIL B) ist seit Ausbaustufe 5 fertig | [`docs/KONZEPT-Comic.md`](docs/KONZEPT-Comic.md) |
 | 📱 Native Android-App via Capacitor | [`docs/TODO-GESAMT.md`](docs/TODO-GESAMT.md), Bereich "App & Plattform" |
 
-**Vor jeder Arbeit an einem dieser Themen erst das verlinkte Dokument lesen** - sonst werden
-Entscheidungen neu diskutiert, die schon gefallen sind, und bereits verworfene Wege erneut probiert.
+**Vor jeder Arbeit an einem dieser Themen erst das verlinkte Dokument lesen** - sonst werden bereits gefallene Entscheidungen neu diskutiert und verworfene Wege erneut probiert.
 
-Diagnose, noch nicht reproduziert: Scroll-Verhalten am Bildschirmrand (Desktop),
-Zoom/Unschärfe im Fenstermodus - braucht ggf. einen Screenshot vom Nutzer.
+Diagnose, noch nicht reproduziert: Scroll-Verhalten am Bildschirmrand (Desktop), Zoom/Unschärfe im Fenstermodus - braucht ggf. einen Screenshot vom Nutzer.
 
-Bewusst zurückgestellt (bräuchten einen eigenen Server):
-- API-Key-Absicherung über Backend
-- Automatische Cloud-Synchronisierung
-- Echte Multi-Geräte-Accounts
+Bewusst zurückgestellt (bräuchten einen eigenen Server): API-Key-Absicherung über Backend, automatische Cloud-Synchronisierung, echte Multi-Geräte-Accounts.
 
 ## Code-Konventionen
 
 - Kommentare auf **Deutsch** (Zielgruppe: der Projektbetreiber, kein englischsprachiges Team)
-- Jede neue/geänderte Codestelle mit kurzem `// NEU:` oder `// FIX:`-Kommentar, der erklärt WARUM, nicht nur was
-- Immer `app.utils.sanitize()` verwenden, bevor Nutzer- oder KI-Text per `innerHTML` eingefügt wird (XSS-Schutz) - `.innerText`/`.textContent` brauchen das nicht
+- Jede neue/geänderte Codestelle mit kurzem `// NEU:` oder `// FIX:`-Kommentar, der WARUM erklärt, nicht nur was
+- Immer `app.utils.sanitize()` verwenden, bevor Nutzer-/KI-Text per `innerHTML` eingefügt wird (XSS-Schutz) - `.innerText`/`.textContent` brauchen das nicht
 - Fehler nie stumm verschlucken - mindestens `console.error()`, meist zusätzlich `app.ui.toast(...)`
-- Vor dem Vorlesen IMMER `app.utils.stripEmojiForSpeech()` bzw. `speak()` nutzen (nie rohen Text direkt an `SpeechSynthesisUtterance` geben) - sonst versucht der Browser, Emojis auszusprechen
-- **Rückmeldungen an Kinder nie hart formulieren.** Der Kontroll-Prompt in `js/api.js` verbietet der KI ausdrücklich das Wort "falsch", schreibt "im Zweifel lieber 'fast'" vor und verlangt `verdict: "unklar"` statt einer Vermutung, wenn das Foto unklar ist. Ein Kind, dem fälschlich gesagt wird, es habe sich vertan, verliert die Lust - das ist wichtiger als eine strenge Bewertung. Beim Anfassen dieses Prompts unbedingt beibehalten.
-- Die App hat **keine eigene Spracherkennung**. Gesprochene Eingabe läuft über die Mikrofon-Taste der Bildschirmtastatur (Gboard/iOS-Diktat), die ganz normal in das Textfeld schreibt - `app.actions.focusChatInput()` kann nur das Feld fokussieren und darauf hinweisen.
+- Vor dem Vorlesen IMMER `app.utils.stripEmojiForSpeech()` bzw. `speak()` nutzen (nie rohen Text direkt an `SpeechSynthesisUtterance`) - sonst versucht der Browser, Emojis auszusprechen
+- **Rückmeldungen an Kinder nie hart formulieren.** Der Kontroll-Prompt (`js/api.js`) verbietet der KI das Wort "falsch", verlangt im Zweifel "fast" bzw. `verdict: "unklar"` bei unklarem Foto - ein Kind, dem fälschlich gesagt wird, es habe sich vertan, verliert die Lust. Beim Anfassen dieses Prompts unbedingt beibehalten.
+- Die App hat **keine eigene Spracherkennung** - gesprochene Eingabe läuft über die Mikrofon-Taste der Bildschirmtastatur (Gboard/iOS-Diktat); `app.actions.focusChatInput()` fokussiert nur das Feld und weist darauf hin.
 
 ## KI-Stimmen (neuronale TTS)
 
-`app.settings.ttsProvider` entscheidet, wie vorgelesen wird - Standard ist `'device'` (Gerätestimme wie bisher). **Alles im Code ruft weiterhin nur `app.tts.speak(text, onEnd, highlightElementId)` auf**; die Weiche zwischen Gerät und KI-Stimme sitzt ausschließlich in `js/tts.js`.
+`app.settings.ttsProvider` entscheidet, wie vorgelesen wird - Standard `'device'` (Gerätestimme). **Alles im Code ruft weiterhin nur `app.tts.speak(text, onEnd, highlightElementId)` auf** - die Weiche zwischen Gerät und KI-Stimme sitzt ausschließlich in `js/tts.js`.
 
-Feste Regeln dabei:
-- **Nie ohne Ton enden:** Jeder Fehler (Key falsch, Limit, CORS, offline) fällt auf `app.tts.speakWithDevice()` zurück. Endgültige Fehler setzen `app.ttsNeural._disabledReason`, damit nicht jede Seite erneut in dieselbe Wartezeit läuft.
-- **Jede Aufnahme kostet Geld/Kontingent:** Ohne triftigen Grund keine zusätzlichen Synthese-Aufrufe einbauen. Der IndexedDB-Zwischenspeicher (`ttsCache`) ist Absicht, nicht Optimierung.
+Feste Regeln:
+- **Nie ohne Ton enden:** jeder Fehler (Key falsch, Limit, CORS, offline) fällt auf `app.tts.speakWithDevice()` zurück. Endgültige Fehler setzen `app.ttsNeural._disabledReason`, damit nicht jede Seite erneut in dieselbe Wartezeit läuft.
+- **Jede Aufnahme kostet Geld/Kontingent:** keine zusätzlichen Synthese-Aufrufe ohne triftigen Grund - der IndexedDB-Zwischenspeicher (`ttsCache`) ist Absicht, nicht Optimierung.
 - **`_token`-Zähler beachten:** `stop()` erhöht ihn; jede asynchrone Fortsetzung muss vorher prüfen, ob sie noch aktuell ist - sonst spricht eine abgebrochene Seite verspätet doch noch los.
-- Ein einziges `<audio>`-Element für die ganze App (iOS erlaubt Wiedergabe nur bei einem Element, das schon per Fingertipp gestartet wurde).
+- Ein einziges `<audio>`-Element für die ganze App (iOS erlaubt Wiedergabe nur bei einem per Fingertipp gestarteten Element).
 
 **Bausteine für den Video-Export** (bewusst getrennt vom Abspielen):
 - `app.ttsNeural.renderAudio(text, {personaId})` → `{ text, blob, mime, durationSec, words: [{word, start, end}], exact }`
 - `app.ttsNeural.renderPageSegments(bookId, pageIdx, {includeDescription, includeQuiz, onProgress})` → `{ imgUrl, totalDurationSec, segments: [...] }` (Reihenfolge: Text → Bildbeschreibung → Quiz)
-- Beide gehen zuerst in den `ttsCache`; Cache-Einträge tragen seit v0.10.1 `mime` und `durationSec`. Ältere Einträge messen ihre Länge beim ersten Export einmalig nach.
-- Die Wort-Zeitpunkte kommen aus derselben `_wordStartTimes()`-Berechnung wie die Hervorhebung im Reader (exakt bei ElevenLabs, sonst über die Textlänge geschätzt) - nicht duplizieren.
-- **Mit der Gerätestimme unmöglich:** SpeechSynthesis gibt keine Datei heraus. `renderAudio()` wirft deshalb bei `ttsProvider === 'device'` einen verständlichen Fehler.
+- Beide gehen zuerst in den `ttsCache`; Einträge tragen seit v0.10.1 `mime`/`durationSec`, ältere messen die Länge beim ersten Export nach.
+- Wort-Zeitpunkte kommen aus derselben `_wordStartTimes()`-Berechnung wie die Reader-Hervorhebung (exakt bei ElevenLabs, sonst über Textlänge geschätzt) - nicht duplizieren.
+- **Mit der Gerätestimme unmöglich:** SpeechSynthesis liefert keine Datei - `renderAudio()` wirft bei `ttsProvider === 'device'` einen verständlichen Fehler.
 
 ## Versionsstand
 
-Aktuell `v0.30.0-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Zähl die Version bei größeren Änderungen entsprechend hoch (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).
+Aktuell `v0.30.0-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Version bei größeren Änderungen hochzählen (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).
 
-**Die vollständige Versionshistorie (was mit welcher Version kam, inkl. aller dabei gefallenen Entscheidungen) steht in [`CHANGELOG.md`](CHANGELOG.md), neueste Version zuerst.** Vor dem Einplanen eines Features dort nachsehen, sonst werden Entscheidungen neu diskutiert, die schon gefallen sind (genau wie bei `docs/TODO-GESAMT.md` oben). Neuer Eintrag bei jeder Versionserhöhung: oben in `CHANGELOG.md` ergänzen, nicht hier in `CLAUDE.md`.
+**Die vollständige Versionshistorie (was mit welcher Version kam, inkl. aller Entscheidungen) steht in [`CHANGELOG.md`](CHANGELOG.md), neueste Version zuerst.** Vor dem Einplanen eines Features dort nachsehen, sonst werden bereits gefallene Entscheidungen neu diskutiert. Neuer Eintrag bei jeder Versionserhöhung: oben in `CHANGELOG.md` ergänzen, nicht hier.
