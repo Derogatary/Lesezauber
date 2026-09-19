@@ -114,6 +114,15 @@ Object.assign(app.studio, {
             return callTextWithFallback(prompt, 'Gemini nicht erreichbar - Mistral eingesprungen (Bildideen)');
         },
 
+        // NEU: Stufe 1 – restliche Felder (Titel/Ton/Botschaft/Autor/Verlag/
+        // Klappentext) direkt per API aus dem Thema ableiten, statt nur über
+        // den kostenlosen Master-Prompt-Copy-Paste-Weg. Rückgabe:
+        // { title, tone, message, authorBio, publisher, blurb }
+        async suggestBrief(topic, audienceAge, readingLevel) {
+            const prompt = app.studio.prompts.buildSuggestBriefPrompt(topic, audienceAge, readingLevel);
+            return callTextWithFallback(prompt, 'Gemini nicht erreichbar - Mistral eingesprungen (Ausfüllen)');
+        },
+
         // NEU (Ausbaustufe 4 - Arbeitsheft): Stufe 4' – Progression.
         // Rückgabe: { chapters: [{title, goal, pages: [{goal, kind}]}] }
         async generateWorksheetPlan(worksheet) {

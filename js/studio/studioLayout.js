@@ -198,5 +198,21 @@ Object.assign(app.studio, {
         spread.layout = { ...spread.layout, ...patch };
         app.dbOps.saveProject(project);
         app.render.studioWizard(7);
+    },
+
+    // NEU: Silbenfarben waren ursprünglich ein Regler PRO Doppelseite,
+    // obwohl sich die Einstellung in der Praxis nie innerhalb eines Buches
+    // ändert (Nutzer-Feedback: "man ändert die Einstellung ja nicht im
+    // Buch") - jetzt EIN Umschalter fürs ganze Werk, der einfach auf alle
+    // Doppelseiten gleichzeitig schreibt. Die Datenstruktur bleibt bewusst
+    // pro Doppelseite (spread.layout.syllableColors), damit
+    // buildOverlayHtml()/der Druck (studioPrint.js) unverändert bleiben -
+    // nur die Bedienung ist jetzt eine einzige Stelle statt vieler.
+    setBookSyllableColors(value) {
+        const project = app.studio.projects[app.state.currentStudioProjectId];
+        if (!project) return;
+        project.spreads.forEach(s => { s.layout = { ...s.layout, syllableColors: !!value }; });
+        app.dbOps.saveProject(project);
+        app.render.studioWizard(7);
     }
 });

@@ -326,6 +326,33 @@ Antworte AUSSCHLIESSLICH in validem JSON, ohne Markdown-Blöcke, exakt in diesem
 }`;
         },
 
+        // NEU: Direkter API-Weg fürs Stufe-1-Ausfüllen, als Ergänzung zum
+        // Master-Prompt oben (Bugreport/Wunsch: "Ausfüllfunktion durch API...
+        // man gibt einfach ein Thema ein und KI füllt die Felder aus, wie
+        // beim Bildvorschlag"). Bewusst ZUSÄTZLICH, nicht als Ersatz - der
+        // Master-Prompt bleibt der kostenlose Weg ganz ohne eigenen API-Key
+        // (siehe Begründung oben), dieser hier ist der bequeme Ein-Klick-Weg
+        // MIT der App-eigenen API, gleiches Muster wie suggestSketches().
+        // Braucht zwingend einen Thema-Text (das EINE Pflichtfeld, siehe
+        // studioTopic) - Alter/Lesesituation werden respektiert, nicht neu
+        // vorgeschlagen, weil das bewusste Nutzer-Entscheidungen sind, keine
+        // Kreativaufgabe der KI.
+        buildSuggestBriefPrompt(topic, audienceAge, readingLevel) {
+            return `Du hilfst beim Ausfüllen der Rahmendaten für ein selbst geschriebenes Kinderbuch (App "LeseZauber Pro", Bereich "SchreibZauber").
+Zielgruppe: ${AGE_LABEL[audienceAge] || audienceAge}. ${readingLevelRule(readingLevel)}
+Thema (bereits festgelegt, unverändert übernehmen, nicht umschreiben): ${topic}
+
+${guardrailsBlock()}
+
+Schlage dazu passend vor: einen kurzen, kindgerechten Buchtitel, Ton/Stimmung (2-4 Worte), eine Botschaft (was am Ende hängenbleiben soll, 1 Satz), einen kurzen erfundenen Autoren-Steckbrief in Ich-Form (1-2 Sätze), einen erfundenen, freundlichen Kleinverlag-Namen (leerer String, wenn Selbstverlag besser passt) und einen Klappentext für die Buchrückseite (2-3 Sätze, macht neugierig ohne das Ende zu verraten).
+
+Antworte AUSSCHLIESSLICH in validem JSON, ohne Markdown-Blöcke, exakt in diesem Format:
+{
+  "title": "...", "tone": "...", "message": "...",
+  "authorBio": "...", "publisher": "...", "blurb": "..."
+}`;
+        },
+
         // Stufe 5 – Das Daumenkino: Bildideen (Stichworte, KEIN
         // ausformulierter Bild-Prompt) für jede Doppelseite vorschlagen
         // (Konzept D.4 "suggestSketches" - AUSDRÜCKLICH ohne Bildaufruf,

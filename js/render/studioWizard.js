@@ -292,6 +292,55 @@ Object.assign(app.render, {
         app.studio.imageSource.copyPrompt(prompt);
     },
 
+    // NEU (Nutzerwunsch: "Ausfüllfunktion durch API... man gibt einfach ein
+    // Thema ein und KI füllt die Felder aus, wie beim Bildvorschlag") -
+    // Ergänzung zum kostenlosen Copy-Paste-Weg oben (studioCopyMasterPrompt):
+    // ruft die App-eigene API direkt auf (gleiches Muster wie
+    // suggestSketches() in studioStoryboard.js) und füllt Titel/Ton/
+    // Botschaft/Autor/Verlag/Klappentext sofort ins Formular. Braucht
+    // "Worum soll es gehen?" als einziges Pflichtfeld - Alter/Lesesituation
+    // werden respektiert, nicht neu vorgeschlagen (bewusste Nutzer-
+    // Entscheidung, keine Kreativaufgabe der KI).
+    async studioSuggestBrief() {
+        const topic = document.getElementById('studioTopic').value.trim();
+        if (!topic) {
+            app.ui.toast('Bitte zuerst "Worum soll es gehen?" ausfüllen.', '⚠️');
+            return;
+        }
+        const audienceAge = document.getElementById('studioAudienceAge').value;
+        const readingLevel = document.getElementById('studioReadingLevel').value;
+
+        const fieldIds = ['studioTitleInput', 'studioTone', 'studioMessage', 'studioAuthorBio', 'studioPublisher', 'studioBlurb'];
+        const hasExisting = fieldIds.some(id => document.getElementById(id).value.trim());
+        if (hasExisting && !confirm('Einige Felder sind schon ausgefüllt. Von der KI vorschlagen lassen und überschreiben?')) {
+            return;
+        }
+
+        app.ui.showLoader('Felder werden vorgeschlagen...', 'Die KI denkt sich Titel, Ton & Co. aus');
+        app.state.apiBusy = true;
+        try {
+            const result = await app.studio.api.suggestBrief(topic, audienceAge, readingLevel);
+            document.getElementById('studioTitleInput').value = result.title || '';
+            document.getElementById('studioTone').value = result.tone || '';
+            document.getElementById('studioMessage').value = result.message || '';
+            document.getElementById('studioAuthorBio').value = result.authorBio || '';
+            document.getElementById('studioPublisher').value = result.publisher || '';
+            document.getElementById('studioBlurb').value = result.blurb || '';
+            const project = app.studio.projects[app.state.currentStudioProjectId];
+            if (project) project.costLog.textCalls += 1;
+            app.ui.toast('Felder vorgeschlagen - vor "Weiter" gern noch anpassen.', '✨');
+        } catch (e) {
+            console.error('Stufe-1-Felder konnten nicht vorgeschlagen werden:', e);
+            const msg = e.message === 'API_KEY_MISSING'
+                ? 'Bitte zuerst einen Gemini-API-Key in den Einstellungen eintragen.'
+                : e.message;
+            app.ui.toast(msg, '❌');
+        } finally {
+            app.state.apiBusy = false;
+            app.ui.hideLoader();
+        }
+    },
+
     studioTemplates: STUFE1_TEMPLATES,
 
     // NEU (Ausbaustufe 6 - Politur): Vorlage einsetzen - füllt NUR die

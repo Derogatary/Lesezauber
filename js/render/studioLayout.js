@@ -46,10 +46,6 @@ function layoutCardHtml(spread, project) {
                     onchange="app.studio.updateSpreadLayout(${spread.index}, {fontScale: parseFloat(this.value)})" class="w-full mt-1.5">
             </div>
         </div>
-        <label class="flex items-center gap-2 text-xs font-semibold text-slate-600">
-            <input type="checkbox" ${layout.syllableColors ? 'checked' : ''} onchange="app.studio.updateSpreadLayout(${spread.index}, {syllableColors: this.checked})" class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
-            🎨 Silbenfarben (Erstleser-Hilfe)
-        </label>
     </div>`;
 }
 
@@ -134,5 +130,18 @@ Object.assign(app.render, {
         // NEU (comicfähiger Druck): der Sprechblasen-Einbrenn-Umschalter im
         // Druckblock ist nur beim Comic relevant (siehe js/studio/studioPrint.js).
         document.getElementById('studioPrintBubbleRow')?.classList.toggle('hidden', !isComic);
+
+        // NEU: EIN Silbenfarben-Umschalter fürs ganze Buch statt vorher pro
+        // Doppelseite (Nutzer-Feedback - siehe app.studio.setBookSyllableColors()).
+        // Bei Comics ausgeblendet (dort läuft Text über Sprechblasen, keine
+        // Silbenfärbung). Anzeige: "an", wenn IRGENDEINE Doppelseite es schon
+        // aktiv hat - so geht beim ersten Öffnen keine bereits gewählte
+        // Einstellung unsichtbar verloren.
+        const syllableRow = document.getElementById('studioSyllableColorsRow');
+        const syllableCheckbox = document.getElementById('studioSyllableColors');
+        if (syllableRow) syllableRow.classList.toggle('hidden', isComic);
+        if (syllableCheckbox && !isComic) {
+            syllableCheckbox.checked = project.spreads.some(s => s.layout?.syllableColors);
+        }
     }
 });

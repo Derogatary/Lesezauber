@@ -1,7 +1,17 @@
 // Bei jeder inhaltlichen Änderung an einer dieser Dateien diese Nummer
 // erhöhen - sonst bekommen wiederkehrende Besucher weiter die alte
 // zwischengespeicherte Version ausgeliefert.
-const CACHE_NAME = 'lesezauber-shell-v47';
+const CACHE_NAME = 'lesezauber-shell-v48';
+
+// NEU (v48): Silbenfarben jetzt EIN Umschalter fürs ganze Buch (Stufe 7 "Das
+// Layout") statt vorher pro Doppelseite - schreibt beim Umschalten auf alle
+// Doppelseiten gleichzeitig (app.studio.setBookSyllableColors(),
+// js/studio/studioLayout.js). Zusätzlich: Stufe 1 "Die Idee" hat jetzt einen
+// direkten API-Ausfüll-Knopf (Thema eintippen -> Titel/Ton/Botschaft/Autor/
+// Verlag/Klappentext werden per Gemini/Mistral vorgeschlagen, Ergänzung zum
+// bisherigen kostenlosen Master-Prompt-Copy-Paste-Weg) - neue Funktionen
+// app.render.studioSuggestBrief()/app.studio.api.suggestBrief(). Keine neuen
+// Dateien. Siehe CHANGELOG.md.
 
 // NEU (v47): Dark-Mode-Kontrastfix - mehrere neuere SchreibZauber-Eingabefelder
 // (Figuren-Bibel, Comic-Sprechblasen/Panels, Doppelseiten-Textfeld, Layout-

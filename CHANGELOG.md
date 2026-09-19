@@ -6,6 +6,15 @@ vollständige Historie, neueste Version zuerst. Diese Datei wurde aus
 `CLAUDE.md` ausgelagert, weil der Abschnitt dort mit der Zeit zu groß für
 schnellen Kontext wurde; inhaltlich unverändert übernommen.
 
+## v0.30.9-beta
+
+Zwei Nutzerwünsche aus der Werkstatt-Rückmeldung umgesetzt, keine neuen Dateien:
+
+- **Silbenfarben jetzt EIN Umschalter fürs ganze Buch** (Stufe 7 "Das Layout") statt vorher ein eigener Regler pro Doppelseite - Feedback: "man ändert die Einstellung ja nicht im Buch". Neuer Knopf `app.studio.setBookSyllableColors()` (`js/studio/studioLayout.js`) schreibt beim Umschalten auf alle Doppelseiten gleichzeitig; die Datenstruktur bleibt bewusst weiter pro Doppelseite (`spread.layout.syllableColors`), damit `buildOverlayHtml()`/der Druck unverändert bleiben - nur die Bedienstelle wurde zusammengefasst. Der einzelne Regler pro Karte in `js/render/studioLayout.js` ist entfernt, der neue Umschalter zeigt beim Öffnen "an", wenn irgendeine Doppelseite es schon aktiviert hatte (keine bereits gewählte Einstellung geht dadurch unsichtbar verloren). Bei Comics ausgeblendet (dort läuft Text über Sprechblasen).
+- **Stufe 1 "Die Idee": direkter API-Ausfüll-Knopf** ("✨ Restliche Felder von der KI ausfüllen lassen") - Thema eintippen, Titel/Ton/Botschaft/Autoren-Steckbrief/Verlag/Klappentext werden per Gemini (mit Mistral-Fallback) vorgeschlagen und direkt ins Formular geschrieben, analog zum bestehenden Bildideen-Vorschlag (`suggestSketches()`). Ergänzt, ersetzt aber NICHT den bisherigen kostenlosen "Master-Prompt kopieren"-Weg (Copy-Paste in einen externen KI-Chat, funktioniert auch ganz ohne eigenen API-Key) - wer schon einen Key hinterlegt hat, bekommt jetzt zusätzlich den bequemeren Ein-Klick-Weg. Alter/Lesesituation werden dabei respektiert, nicht neu vorgeschlagen (bewusste Nutzer-Entscheidung, keine Kreativaufgabe der KI). Neue Funktionen: `app.render.studioSuggestBrief()` (`js/render/studioWizard.js`), `app.studio.api.suggestBrief()` + `app.studio.prompts.buildSuggestBriefPrompt()`.
+
+Dazu zwei technische Rückfragen aus dem Chat beantwortet (keine Code-Änderung): Textposition und Bild-Prompt sind bereits verzahnt - `spread.layout.textPos` (beim Anlegen der Doppelseite zufällig verteilt, in Stufe 7 änderbar) fließt bei der tatsächlichen Bildgenerierung (Stufe 6) über `fmt.textZones[textPos]` in den Bild-Prompt ein ("Halte im Bereich ... frei") - siehe `js/studio/imageSource.js` `buildPrompt()`. Die Bildideen-Vorschläge selbst (Stufe 5 "Bildideen vorschlagen") berücksichtigen die Textposition dagegen NICHT - sie liefern nur ein Bildmotiv-Stichwort, die freizuhaltende Zone kommt erst später beim eigentlichen Bildaufruf dazu. "Doppelseiten-Bild" ist als erste Auswahl im Bauplan-Format-Dropdown hinterlegt (`project.spec.trim` Default `'a5-quer'`, `js/studio/studioCore.js`) - bewusst, weil ein Bild über die ganze aufgeschlagene Doppelseite eine klassische, sehr verbreitete Bilderbuch-Gestaltung ist.
+
 ## v0.30.8-beta
 
 Dark-Mode-Kontrastfix (Nutzer-Feedback mit Screenshot: "sind wieder die Schriften falsch kontrastet, an fast allen neuen Auswahlfeldern" - Figuren-Bibel in Stufe 4 des SchreibZauber-Assistenten):
