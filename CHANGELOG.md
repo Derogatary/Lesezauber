@@ -6,6 +6,15 @@ vollständige Historie, neueste Version zuerst. Diese Datei wurde aus
 `CLAUDE.md` ausgelagert, weil der Abschnitt dort mit der Zeit zu groß für
 schnellen Kontext wurde; inhaltlich unverändert übernommen.
 
+## v0.30.5-beta
+
+Impressum/Datenschutzerklärung mit den echten Angaben ausgefüllt (Nutzerauftrag), plus dritte neue Seite `nutzungsbedingungen.html` ("alle nötigen und optionalen Seiten, volle Absicherung"):
+
+- **`impressum.html`/`datenschutz.html`**: Platzhalter durch echte Angaben ersetzt (Name, Anschrift, Kontakt-E-Mail `derogatary@proton.me` - bewusst nicht die private Gmail-Adresse, um Impressum-Spam von der alltäglich genutzten Adresse fernzuhalten). `datenschutz.html` ergänzt außerdem einen Cookie-Abschnitt (keine Cookies, lokale Speicherung ohne Einwilligungspflicht nach § 25 Abs. 2 Nr. 2 TTDSG, da technisch notwendig).
+- **Neu: `nutzungsbedingungen.html`** - kein gesetzliches Muss wie Impressum/Datenschutz, aber empfohlene Haftungsbegrenzung: Zielgruppe (Erwachsene, Kinder nur unter Aufsicht), keine Garantie für KI-generierte Inhalte/Rückmeldungen, eigene Verantwortung für API-Keys/Kosten bei Drittanbietern, Klarstellung zu abfotografierten fremden Büchern (nur privater Gebrauch) und zu SchreibZauber-Werken (KI-Urheberrechtsstatus rechtlich ungeklärt, Leitplanken verhindern bekannte Figuren/Marken, Veröffentlichungsverantwortung liegt beim Nutzer), Gewährleistungsausschluss im gesetzlich zulässigen Rahmen.
+- Alle drei Seiten verlinken sich jetzt gegenseitig, und ein kleiner Link-Fuß in den Einstellungen (`index.html`, Ende der Settings-Ansicht) macht sie auch aus der laufenden App heraus erreichbar, nicht nur über die direkte URL für die Play-Console-Angaben.
+- **Markenrecherche beim DPMA** (Nutzer-Screenshot, Basisrecherche register.dpma.de): keine Treffer für "LeseZauber" - geringes Risiko, aber nur eine Basisrecherche, keine vollständige Prüfung über alle Klassen/ähnlichen Marken.
+
 ## v0.30.4-beta
 
 Zwei neue, eigenständige Seiten für die Play-Store-Einreichung: `impressum.html` und `datenschutz.html` (Repo-Root, direkt erreichbar, kein Teil der SPA-Ansichten in `index.html`). Beide nutzen `css/tailwind.css` für ein konsistentes Erscheinungsbild, sind aber bewusst reines, JS-freies HTML - keine Abhängigkeit vom Rest der App nötig, funktionieren auch, wenn `js/main.js` aus irgendeinem Grund nicht lädt.

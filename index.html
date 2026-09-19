@@ -41,7 +41,7 @@
                     <p id="streakBadge" class="hidden text-xs font-bold text-amber-600 mt-0.5"></p>
                     <!-- NEU: Belohnung - Anzahl komplett geschaffter Bücher/Hefte -->
                     <p id="medalBadge" class="hidden text-xs font-bold text-emerald-600 mt-0.5"></p>
-                    <p class="text-[10px] text-slate-400 font-semibold mt-0.5">v0.30.4-beta</p>
+                    <p class="text-[10px] text-slate-400 font-semibold mt-0.5">v0.30.5-beta</p>
                 </div>
                 <div class="flex items-center gap-2 flex-shrink-0">
                     <button onclick="app.nav.go('help')" aria-label="Hilfe öffnen" title="Hilfe" class="w-10 h-10 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-600 hover:bg-slate-100 shadow-sm transition active:scale-95">
@@ -1419,6 +1419,17 @@
                 <button onclick="app.settingsConfig.save()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl shadow-lg transition active:scale-98">
                     Einstellungen speichern
                 </button>
+
+                <!-- NEU (v0.30.5-beta, Play-Store-Einreichung): rechtliche Seiten
+                     verlinkt, damit sie auch aus der laufenden App erreichbar sind,
+                     nicht nur über die direkte URL für die Play-Console-Angaben. -->
+                <p class="text-center text-[11px] text-slate-400 space-x-3">
+                    <a href="./impressum.html" class="hover:text-slate-600 hover:underline">Impressum</a>
+                    <span>·</span>
+                    <a href="./datenschutz.html" class="hover:text-slate-600 hover:underline">Datenschutz</a>
+                    <span>·</span>
+                    <a href="./nutzungsbedingungen.html" class="hover:text-slate-600 hover:underline">Nutzungsbedingungen</a>
+                </p>
             </div>
         </main>
 
