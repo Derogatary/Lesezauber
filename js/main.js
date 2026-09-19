@@ -92,6 +92,7 @@ import './settingsConfig.js';
 import './backgroundPregen.js';
 import './keyboard.js';
 import './gestures.js';
+import './edgeScroll.js';
 
 app.init = async function () {
     // Speech synthesis listener for voice loading

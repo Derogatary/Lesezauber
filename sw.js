@@ -1,7 +1,11 @@
 // Bei jeder inhaltlichen Änderung an einer dieser Dateien diese Nummer
 // erhöhen - sonst bekommen wiederkehrende Besucher weiter die alte
 // zwischengespeicherte Version ausgeliefert.
-const CACHE_NAME = 'lesezauber-shell-v44';
+const CACHE_NAME = 'lesezauber-shell-v45';
+
+// NEU (v45): Mausrad im dunklen Rand neben dem App-Rahmen (Laptop) reicht
+// jetzt an die sichtbare Ansicht durch statt ins Leere zu laufen - neue
+// Datei js/edgeScroll.js. Siehe CHANGELOG.md.
 
 // NEU (v44): Hochauflösend-Umschalter für den Druck (project.spec.highResPrint,
 // Stufe 2 "Bauplan") - behält bei NEU erzeugten Bildern mehr von der ohnehin
@@ -177,6 +181,7 @@ const APP_SHELL = [
     './js/backgroundPregen.js',
     './js/keyboard.js',
     './js/gestures.js',
+    './js/edgeScroll.js',
     './js/actions/epubImport.js',
     './manifest.json'
 ];

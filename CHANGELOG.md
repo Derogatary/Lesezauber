@@ -6,6 +6,10 @@ vollständige Historie, neueste Version zuerst. Diese Datei wurde aus
 `CLAUDE.md` ausgelagert, weil der Abschnitt dort mit der Zeit zu groß für
 schnellen Kontext wurde; inhaltlich unverändert übernommen.
 
+## v0.30.1-beta
+
+Nutzer-Feedback (Laptop): im dunklen Rand links/rechts neben dem App-Rahmen (`#appShell`, "Mobile Screen Frame Container" in `index.html`) reagierte das Mausrad auf nichts - dort liegt schlicht `<body>`, das bewusst NICHT scrollbar ist (sonst würde das zentrierte "Handy-Rahmen"-Layout auf breiten Bildschirmen zerbrechen). Nur direkt über dem Rahmen scrollte die jeweils sichtbare Ansicht über ihr eigenes `overflow-y-auto`. Neue Datei `js/edgeScroll.js`: reicht ein Mausrad-Ereignis über `<body>` einfach an die aktuell sichtbare `<main id="view...">`-Ansicht weiter (`scrollTop += e.deltaY`), ohne das Layout selbst umzubauen. Pinch-Zoom am Trackpad (`e.ctrlKey`) bleibt unangetastet, damit der Browser normal zoomt.
+
 ## v0.30.0-beta
 
 Ein **Hochauflösend-Umschalter** für den Druck (Nutzerfrage nach dem KDP-Innenteil-Export: "wie kommen wir auf die höhere dpi-Zahl?") - `project.spec.highResPrint`, Checkbox "📐 Hochauflösend für den Druck (KDP)" in Stufe 2 ("Der Bauplan"), Standard AUS:
