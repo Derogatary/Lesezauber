@@ -69,7 +69,10 @@ Object.assign(app.studio, {
                 // siehe pickAutoTextPos() in studioCore.js, oder seither vom
                 // Nutzer in Stufe 7 von Hand geändert) - Bild und Textebene
                 // fragen so garantiert nach derselben freien Fläche.
-                textPos: spread.layout?.textPos
+                textPos: spread.layout?.textPos,
+                // NEU (KDP-Hochauflösend-Umschalter): siehe
+                // app.studio.printTargetWidth() in studioCore.js.
+                targetWidth: app.studio.printTargetWidth(project)
             });
             if (!result) return;
 
@@ -133,7 +136,9 @@ Object.assign(app.studio, {
                 app.studio.trackImageCost(project, result.meta);
             }
 
-            const composited = await app.studio.comicPanels.compositePage(spread);
+            // NEU (KDP-Hochauflösend-Umschalter): siehe
+            // app.studio.printTargetWidth() in studioCore.js.
+            const composited = await app.studio.comicPanels.compositePage(spread, app.studio.printTargetWidth(project));
             if (composited) {
                 spread.imgUrl = composited.full;
                 spread.thumbUrl = composited.thumb;
@@ -194,7 +199,10 @@ Object.assign(app.studio, {
                         formatId: app.studio.trimToFormat(project.spec.trim, project.type),
                         rawPrompt: s.imagePrompt,
                         characterImages: characterImagesFor(project, s),
-                        index: i
+                        index: i,
+                        // NEU (KDP-Hochauflösend-Umschalter): siehe
+                        // app.studio.printTargetWidth() in studioCore.js.
+                        targetWidth: app.studio.printTargetWidth(project)
                     });
                     if (result) {
                         s.imgUrl = result.full;
@@ -268,7 +276,9 @@ async function replaceAllComicPanelPlaceholders(project) {
             }
         }
         for (const spread of touchedSpreads) {
-            const composited = await app.studio.comicPanels.compositePage(spread);
+            // NEU (KDP-Hochauflösend-Umschalter): siehe
+            // app.studio.printTargetWidth() in studioCore.js.
+            const composited = await app.studio.comicPanels.compositePage(spread, app.studio.printTargetWidth(project));
             if (composited) {
                 spread.imgUrl = composited.full;
                 spread.thumbUrl = composited.thumb;

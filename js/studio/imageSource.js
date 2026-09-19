@@ -99,7 +99,13 @@ const providers = {
         if (!spec.file) throw new Error('Kein Bild ausgewählt.');
         const fmt = app.studio.formats.get(spec.formatId);
         const img = await app.utils.loadImageElement(spec.file);
-        const variants = app.utils.createImageVariants(img, img.naturalWidth, img.naturalHeight);
+        // NEU (KDP-Hochauflösend-Umschalter): mit spec.targetWidth (siehe
+        // app.studio.printTargetWidth()) wird die 1600px-Standardgrenze für
+        // dieses eine Bild übergangen, siehe createHiResPrintVariant() in
+        // utils.js.
+        const variants = spec.targetWidth
+            ? app.utils.createHiResPrintVariant(img, img.naturalWidth, img.naturalHeight, spec.targetWidth)
+            : app.utils.createImageVariants(img, img.naturalWidth, img.naturalHeight);
         return {
             full: variants.full,
             thumb: variants.thumb,
@@ -171,7 +177,13 @@ const providers = {
 
         const dataUrl = `data:${inlinePart.inlineData.mimeType};base64,${inlinePart.inlineData.data}`;
         const img = await loadImageFromDataUrl(dataUrl);
-        const variants = app.utils.createImageVariants(img, img.naturalWidth, img.naturalHeight);
+        // NEU (KDP-Hochauflösend-Umschalter): siehe Kommentar bei
+        // providers.upload() oben - Gemini bekommt dabei KEINE andere
+        // Anfrage, nur die Weiterverarbeitung des zurückgelieferten Bildes
+        // ändert sich (kein zusätzlicher API-Aufruf, keine Mehrkosten).
+        const variants = spec.targetWidth
+            ? app.utils.createHiResPrintVariant(img, img.naturalWidth, img.naturalHeight, spec.targetWidth)
+            : app.utils.createImageVariants(img, img.naturalWidth, img.naturalHeight);
 
         return {
             full: variants.full,

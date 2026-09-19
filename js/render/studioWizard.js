@@ -93,6 +93,8 @@ function fillBriefStage(project) {
 function fillSpecStage(project) {
     document.getElementById('studioTotalPages').value = project.spec.totalPages;
     document.getElementById('studioTrim').value = project.spec.trim;
+    // NEU (KDP-Hochauflösend-Umschalter): siehe studioCollectSpec() unten.
+    document.getElementById('studioHighResPrint').checked = !!project.spec.highResPrint;
     app.render.studioSpecPreview();
 }
 
@@ -310,7 +312,9 @@ Object.assign(app.render, {
     studioCollectSpec() {
         app.studio.saveSpec({
             totalPages: document.getElementById('studioTotalPages').value,
-            trim: document.getElementById('studioTrim').value
+            trim: document.getElementById('studioTrim').value,
+            // NEU (KDP-Hochauflösend-Umschalter): siehe app.studio.printTargetWidth().
+            highResPrint: document.getElementById('studioHighResPrint').checked
         });
     }
 });

@@ -170,6 +170,20 @@ function trackImageCost(project, meta) {
     project.costLog.estimatedUsd = Math.round((project.costLog.estimatedUsd + GEMINI_IMAGE_PRICE_USD) * 100) / 100;
 }
 
+// NEU (KDP-Hochauflösend-Umschalter, project.spec.highResPrint): liefert die
+// Ziel-Pixelbreite für 300dpi bei der physischen Papierbreite des gewählten
+// Bauplan-Formats, oder null, wenn der Umschalter aus ist (dann bleibt es
+// beim Standard: 1600px-Grenze aus utils.js createImageVariants()). Nur die
+// Breite wird vorgegeben, die Höhe skaliert proportional zum tatsächlich
+// gelieferten Bild mit (siehe app.utils.createHiResPrintVariant()) - genutzt
+// von js/studio/studioImages.js bei jedem echten Bildaufruf/-ersatz. Die
+// eigentliche mm->px-Rechnung liegt in js/studio/studioPrint.js
+// (targetWidthForTrim(), EIN Ort für die physischen Papiermaße).
+function printTargetWidth(project) {
+    if (!project.spec.highResPrint) return null;
+    return app.studio.targetWidthForTrim(project.spec.trim);
+}
+
 // NEU: Umfangsplanung (Konzept C.2, Stufe 2 "Der Bauplan"). totalPages
 // muss laut Konzept durch 16 bzw. mindestens durch 8 teilbar sein - die
 // Auswahl in der Wizard-UI bietet deshalb nur 16/24/32/40 an. 8 Seiten
@@ -236,7 +250,12 @@ function createDefaultProject(type) {
         // Entscheidung mehr, sondern ein Umschalter im Reader selbst).
         comicShowSoundEffects: false,
 
-        spec: { totalPages, storySpreads, wordBudget, trim: 'a5-quer' },
+        // NEU (KDP-Hochauflösend-Umschalter): Standard AUS - siehe
+        // printTargetWidth() unten. Kostet KEINEN zusätzlichen Bildaufruf/
+        // keine Mehrkosten bei Gemini (das Modell bekommt ohnehin keine
+        // Pixelmaße geschickt), aber deutlich mehr Speicherplatz pro Bild
+        // (IndexedDB) - deshalb bewusst opt-in statt Standard.
+        spec: { totalPages, storySpreads, wordBudget, trim: 'a5-quer', highResPrint: false },
 
         // Reserviert für Stufe 2 (Stilkarte) - bleibt in Stufe 1 leer.
         style: { look: '', palette: [], lineWeight: 'weich', extraPrompt: '' },
@@ -269,6 +288,7 @@ Object.assign(app.studio, {
     spreadSceneHint,
     resolveImageSourceId,
     trackImageCost,
+    printTargetWidth,
     GEMINI_IMAGE_PRICE_USD,
 
     // ===== Projekt-CRUD (die onclick-Ebene - bewusst FLACH auf app.studio,
@@ -408,7 +428,7 @@ Object.assign(app.studio, {
         if (!project) return;
         const totalPages = parseInt(fields.totalPages, 10);
         const { storySpreads, wordBudget } = computeSpec(totalPages, project.brief.audienceAge);
-        project.spec = { totalPages, storySpreads, wordBudget, trim: fields.trim };
+        project.spec = { totalPages, storySpreads, wordBudget, trim: fields.trim, highResPrint: !!fields.highResPrint };
         project.stage = Math.max(project.stage, 3);
         app.dbOps.saveProject(project);
         app.render.studioWizard(3);

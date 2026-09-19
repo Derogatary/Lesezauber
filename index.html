@@ -41,7 +41,7 @@
                     <p id="streakBadge" class="hidden text-xs font-bold text-amber-600 mt-0.5"></p>
                     <!-- NEU: Belohnung - Anzahl komplett geschaffter Bücher/Hefte -->
                     <p id="medalBadge" class="hidden text-xs font-bold text-emerald-600 mt-0.5"></p>
-                    <p class="text-[10px] text-slate-400 font-semibold mt-0.5">v0.29.0-beta</p>
+                    <p class="text-[10px] text-slate-400 font-semibold mt-0.5">v0.30.0-beta</p>
                 </div>
                 <div class="flex items-center gap-2 flex-shrink-0">
                     <button onclick="app.nav.go('help')" aria-label="Hilfe öffnen" title="Hilfe" class="w-10 h-10 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-600 hover:bg-slate-100 shadow-sm transition active:scale-95">
@@ -851,6 +851,12 @@
                     <span id="studioSpecPreviewText"></span>
                     <p class="font-normal text-indigo-700 mt-1">8 Seiten gehen für Umschlag, Vorsatz, Titelei und Impressum ab - der Rest verteilt sich auf die Doppelseiten der Geschichte.</p>
                 </div>
+                <!-- NEU (v0.30.0-beta, KDP-Hochauflösend-Umschalter): siehe
+                     printTargetWidth (Funktion) in js/studio/studioCore.js. -->
+                <label class="flex items-start gap-2 text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-xl px-3 py-2.5">
+                    <input id="studioHighResPrint" type="checkbox" class="mt-0.5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+                    <span>📐 Hochauflösend für den Druck (KDP)<br><span class="font-normal text-slate-400">Behält bei jedem neu erzeugten Bild mehr von der ohnehin gelieferten Auflösung (statt sie wie sonst auf 1600px zu kürzen) - kostet KEINE zusätzlichen Bild-Aufrufe, aber deutlich mehr Speicherplatz. Reicht die Bildquelle nicht, wird zusätzlich per Interpolation hochskaliert (mehr Pixel, aber kein echter Schärfegewinn). Nachträglich änderbar, wirkt sich aber nur auf NEU erzeugte Bilder aus.</span></span>
+                </label>
                 <div class="flex gap-2">
                     <button onclick="app.render.studioWizard(1)" class="flex-1 bg-white border border-slate-200 text-slate-600 font-bold py-3 rounded-xl hover:bg-slate-50 transition">◀ Zur Idee</button>
                     <button onclick="app.render.studioCollectSpec()" class="flex-[2] bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl shadow-md transition">Weiter zur Geschichte ▶</button>
@@ -1015,7 +1021,7 @@
                      eigener Block statt einer weiteren Checkbox oben. -->
                 <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 space-y-2">
                     <p class="text-xs font-bold text-amber-900">📕 Für Amazon KDP (Taschenbuch-Innenteil)</p>
-                    <p class="text-[11px] text-amber-800">Echte 3&nbsp;mm-Beschnittzugabe (Bleed) und 6,4&nbsp;mm Sicherheitsabstand für Text vom Papierrand - nur für die Papierformate „A5 hoch"/„A4 hoch" (Bauplan, Stufe 1), das sind zwei bei KDP tatsächlich hinterlegte Formate. <strong>Liefert nur das Innenteil, keinen Umschlag</strong> - Vorder-/Rückseite samt Buchrücken bitte im kostenlosen Cover-Ersteller direkt bei KDP erstellen, der berechnet die Rückenbreite passend zur Seitenzahl und lässt die Fläche für die (bei KDP kostenlose) ISBN frei. Noch ungeprüft: ob die KI-Bilder KDPs empfohlene 300 dpi erreichen (rechnerisch eher 120-180 dpi je nach Format) - für eine Testbestellung vor der echten Veröffentlichung sinnvoll.</p>
+                    <p class="text-[11px] text-amber-800">Echte 3&nbsp;mm-Beschnittzugabe (Bleed) und 6,4&nbsp;mm Sicherheitsabstand für Text vom Papierrand - nur für die Papierformate „A5 hoch"/„A4 hoch" (Bauplan, Stufe 1), das sind zwei bei KDP tatsächlich hinterlegte Formate. <strong>Liefert nur das Innenteil, keinen Umschlag</strong> - Vorder-/Rückseite samt Buchrücken bitte im kostenlosen Cover-Ersteller direkt bei KDP erstellen, der berechnet die Rückenbreite passend zur Seitenzahl und lässt die Fläche für die (bei KDP kostenlose) ISBN frei. Noch ungeprüft: ob die KI-Bilder KDPs empfohlene 300 dpi tatsächlich erreichen - mit dem neuen Umschalter "📐 Hochauflösend für den Druck" (Bauplan, Stufe 2) kommt man näher heran, eine belastbare Zahl gibt es aber erst nach einer echten Testgenerierung damit. Vor der echten Veröffentlichung trotzdem eine KDP-Testbestellung einplanen.</p>
                     <button onclick="app.studio.printSpreadsKdp()" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-2.5 rounded-xl shadow-md transition text-sm">📕 KDP-Innenteil erzeugen</button>
                 </div>
                 <div class="flex gap-2">

@@ -51,6 +51,19 @@ const KDP_SAFE_MM = 6.4;
 // stillschweigend ein evtl. falsches Format anzubieten.
 const KDP_ALLOWED_TRIMS = ['a5-hoch', 'a4-hoch'];
 
+// NEU (KDP-Hochauflösend-Umschalter): reine Rechenfunktion Papierbreite ->
+// Pixelbreite bei 300dpi, EIN Ort statt doppelt gerechnet - genutzt sowohl
+// von app.studio.printTargetWidth() (studioCore.js, für den Umschalter beim
+// ERZEUGEN, siehe project.spec.highResPrint) als auch unten in
+// printSpreadsKdp() (für das erneute Zusammensetzen einer Comic-Seite direkt
+// beim KDP-Druck - das kostet keinen zusätzlichen Bildaufruf, nur einen
+// größeren Canvas, deshalb dort IMMER, unabhängig vom Umschalter).
+function targetWidthForTrim(trim) {
+    const paper = TRIM_PAPER_MM[trim];
+    if (!paper) return null;
+    return Math.round((paper.w / 25.4) * 300);
+}
+
 // NEU (comicfähiger Druck): "randabfallend" (bleed) lässt das Bild die
 // ganze Seite füllen (object-fit: cover schneidet dafür ggf. Ränder des
 // Bildes ab), "mit Rand" (Standard - sicherer für Heimdrucker, die selten
@@ -270,7 +283,15 @@ Object.assign(app.studio, {
                 // Veröffentlichung ohnehin kein fertiges Werk.
                 const images = await Promise.all(project.spreads.map((spread) => {
                     if (!spread.panels.every((p) => p.imgUrl)) return Promise.resolve(null);
-                    return app.studio.comicPanels.bakePageWithBalloons(spread, { showSoundEffects: project.comicShowSoundEffects });
+                    // NEU: targetWidth wird HIER immer mitgegeben (unabhängig
+                    // von project.spec.highResPrint) - das Zusammensetzen der
+                    // Panels zu einer Seite ist ein reiner Canvas-Vorgang,
+                    // ein größerer Ziel-Canvas kostet keinen zusätzlichen
+                    // Bildaufruf, siehe targetWidthForTrim() oben.
+                    return app.studio.comicPanels.bakePageWithBalloons(spread, {
+                        showSoundEffects: project.comicShowSoundEffects,
+                        targetWidth: targetWidthForTrim(project.spec.trim)
+                    });
                 }));
                 pagesHtml = project.spreads.map((s, i) => kdpComicPageHtml(images[i]?.full, i)).join('');
             } finally {
@@ -309,3 +330,9 @@ Object.assign(app.studio, {
         setTimeout(() => printWindow.print(), 400);
     }
 });
+
+// NEU (KDP-Hochauflösend-Umschalter): beide hier für app.studio.printTargetWidth()
+// (studioCore.js) exportiert - EIN Ort für die physischen Papiermaße statt
+// einer zweiten, driftenden Kopie in studioCore.js.
+app.studio.TRIM_PAPER_MM = TRIM_PAPER_MM;
+app.studio.targetWidthForTrim = targetWidthForTrim;

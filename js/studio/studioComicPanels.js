@@ -63,9 +63,16 @@ function drawCover(ctx, img, x, y, w, h) {
 // Baut aus den einzelnen Panel-Bildern EIN Seitenbild (Canvas), OHNE
 // Sprechblasen - das bleibt die "saubere" Fassung (siehe
 // bakePageWithBalloons() unten für die Fassung MIT Text).
-async function compositeCanvas(spread) {
+// NEU (KDP-Hochauflösend-Umschalter): targetWidth (optional) überschreibt die
+// sonst feste Canvas-Breite aus dem Formatkatalog (genW) - die Höhe bleibt
+// im selben Seitenverhältnis wie comicPage (siehe imageFormats.js). Ein
+// größerer Ziel-Canvas kostet HIER nichts Zusätzliches (reines
+// Zusammensetzen bereits vorhandener Panel-Bilder), im Gegensatz zu einer
+// höheren Bildgenerierungs-Auflösung.
+async function compositeCanvas(spread, targetWidth) {
     const fmt = app.studio.formats.get('comicPage');
-    const { genW: w, genH: h } = fmt;
+    const w = targetWidth || fmt.genW;
+    const h = targetWidth ? Math.round(targetWidth * fmt.genH / fmt.genW) : fmt.genH;
     const layout = layoutFor(spread.panels.length);
 
     const canvas = document.createElement('canvas');
@@ -94,11 +101,10 @@ async function compositeCanvas(spread) {
 // Größen) - dieselbe Verkleinerungsfunktion wie bei jedem anderen Bild
 // (app.utils.createImageVariants), damit Speicherverbrauch/Format
 // konsistent bleiben.
-async function compositePage(spread) {
+async function compositePage(spread, targetWidth) {
     if (!spread.panels.every(p => p.imgUrl)) return null;
-    const fmt = app.studio.formats.get('comicPage');
-    const canvas = await compositeCanvas(spread);
-    return app.utils.createImageVariants(canvas, fmt.genW, fmt.genH);
+    const canvas = await compositeCanvas(spread, targetWidth);
+    return app.utils.createImageVariants(canvas, canvas.width, canvas.height);
 }
 
 // ===== Sprechblasen fest ins Bild zeichnen (Canvas) =====
@@ -227,9 +233,8 @@ function drawSoundEffect(ctx, text, region, w, h) {
 // wie compositePage(), nur zusätzlich überzeichnet.
 async function bakePageWithBalloons(spread, options = {}) {
     if (!spread.panels.every(p => p.imgUrl)) return null;
-    const fmt = app.studio.formats.get('comicPage');
-    const { genW: w, genH: h } = fmt;
-    const canvas = await compositeCanvas(spread);
+    const canvas = await compositeCanvas(spread, options.targetWidth);
+    const w = canvas.width, h = canvas.height;
     const ctx = canvas.getContext('2d');
     const layout = layoutFor(spread.panels.length);
     spread.panels.forEach((panel, i) => {

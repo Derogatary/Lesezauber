@@ -1,7 +1,17 @@
 // Bei jeder inhaltlichen Änderung an einer dieser Dateien diese Nummer
 // erhöhen - sonst bekommen wiederkehrende Besucher weiter die alte
 // zwischengespeicherte Version ausgeliefert.
-const CACHE_NAME = 'lesezauber-shell-v43';
+const CACHE_NAME = 'lesezauber-shell-v44';
+
+// NEU (v44): Hochauflösend-Umschalter für den Druck (project.spec.highResPrint,
+// Stufe 2 "Bauplan") - behält bei NEU erzeugten Bildern mehr von der ohnehin
+// gelieferten Auflösung statt sie auf 1600px zu kürzen (js/utils.js
+// createHiResPrintVariant()), plus Interpolations-Hochskalierung als
+// Rückfall. Kostet keine zusätzlichen Bild-Aufrufe. Beim Comic-KDP-Druck
+// wird die Panel-Seite zusätzlich IMMER (unabhängig vom Umschalter) in
+// höherer Auflösung neu zusammengesetzt (js/studio/studioComicPanels.js) -
+// das kostet nichts, weil dabei kein neuer Bildaufruf entsteht. Keine neuen
+// Dateien. Siehe CLAUDE.md, Versionsstand.
 
 // NEU (v43): echter KDP-Innenteil-Export (studioPrint.js, printSpreadsKdp())
 // mit tatsächlicher 3mm-Beschnittzugabe und 6,4mm-Sicherheitsabstand statt

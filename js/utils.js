@@ -18,6 +18,25 @@ function drawScaled(source, naturalWidth, naturalHeight, maxWidth, quality) {
     return canvas.toDataURL('image/webp', quality);
 }
 
+// NEU (KDP-Hochauflösend-Umschalter, siehe js/studio/studioCore.js
+// printTargetWidth()): wie drawScaled() oben, aber OHNE die
+// "Math.min(1, ...)"-Bremse - skaliert bewusst auch HOCH, wenn die
+// Bildquelle kleiner als targetWidth ist. Das fügt KEINE echten neuen
+// Bilddetails hinzu (reines Strecken/Interpolieren durch den Browser), aber
+// die Bilddatei erreicht dadurch trotzdem die für 300dpi nötige Pixelzahl,
+// statt bei niedriger Auflösung zu bleiben. Bewusst eine EIGENE Funktion
+// statt drawScaled() zu ändern: die bleibt für alle anderen ~20 Aufrufstellen
+// (normaler Reader, Bibliothek, Video-Export usw.) unverändert - dort ist
+// Hochskalieren nie gewollt.
+function drawScaledForPrint(source, naturalWidth, naturalHeight, targetWidth, quality) {
+    const scale = targetWidth / naturalWidth;
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(naturalWidth * scale) || 1;
+    canvas.height = Math.round(naturalHeight * scale) || 1;
+    canvas.getContext('2d').drawImage(source, 0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL('image/webp', quality);
+}
+
 Object.assign(app.utils, {
     // Lädt eine hochgeladene Datei als <img>-Element - liefert Breite/Höhe
     // und ist als Quelle für drawScaled() nutzbar.
@@ -42,6 +61,21 @@ Object.assign(app.utils, {
     createImageVariants(source, naturalWidth, naturalHeight) {
         return {
             full: drawScaled(source, naturalWidth, naturalHeight, READING_MAX_WIDTH, IMAGE_QUALITY),
+            thumb: drawScaled(source, naturalWidth, naturalHeight, THUMB_MAX_WIDTH, IMAGE_QUALITY)
+        };
+    },
+
+    // NEU (KDP-Hochauflösend-Umschalter): Gegenstück zu createImageVariants()
+    // oben, NUR für SchreibZauber-Druckbilder gedacht (siehe
+    // js/studio/imageSource.js/studioComicPanels.js). "full" wird auf exakt
+    // targetWidth gebracht statt auf maximal 1600px gedeckelt - das behält
+    // entweder mehr von der ohnehin schon vorhandenen Bildauflösung (statt
+    // sie wie sonst überall wegzuschneiden), oder skaliert per Interpolation
+    // hoch, falls die Bildquelle selbst kleiner als targetWidth ist (siehe
+    // drawScaledForPrint() oben für die ehrliche Einschränkung dabei).
+    createHiResPrintVariant(source, naturalWidth, naturalHeight, targetWidth) {
+        return {
+            full: drawScaledForPrint(source, naturalWidth, naturalHeight, targetWidth, IMAGE_QUALITY),
             thumb: drawScaled(source, naturalWidth, naturalHeight, THUMB_MAX_WIDTH, IMAGE_QUALITY)
         };
     },

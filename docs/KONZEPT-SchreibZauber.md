@@ -612,11 +612,19 @@ verwiesen. **Klarstellung, weil das beim Nutzer für Verwirrung sorgte:** "Kindl
 NICHT dieses Werkzeug - das ist Amazons kostenloses Programm für **E-Books** (Kindle-Format),
 es baut kein druckfertiges Taschenbuch-Innenteil und kennt weder Bleed noch Trimm-Formate.
 
-**Neu erkannt, noch offen:** ob die KI-generierten Bilder KDPs empfohlene 300 dpi erreichen -
-rechnerisch eher 120-180 dpi je nach Format bei den aktuellen Bildmaßen (`imageFormats.js`) auf
-den A5/A4-Trimm-Größen. Das ist eine Frage der Bildgenerierungs-Auflösung (Kosten/Qualität-
-Abwägung bei der Bild-API), keine Druck-Layout-Frage, deshalb hier nicht "nebenbei" mitgelöst.
-Ebenso offen: der von KDP je nach Gesamtseitenzahl vorgeschriebene zusätzliche
+**Mit v0.30.0-beta teilweise gelöst:** die ursprüngliche Annahme "120-180 dpi wegen zu kleiner
+Bildmaße (`genW`/`genH`)" war so nicht korrekt - der Gemini-Bildaufruf bekommt GAR KEINE
+Pixelmaße geschickt, `genW`/`genH` gehen nie an die API. Der eigentliche Engpass war eine ganz
+andere, app-weite Stelle: `app.utils.createImageVariants()` (`js/utils.js`) kappt JEDES Bild in
+der App (nicht nur SchreibZauber) auf maximal 1600px Breite. Der neue Umschalter
+"📐 Hochauflösend für den Druck" (`project.spec.highResPrint`, Stufe 2) umgeht diese Kappung
+NUR für SchreibZauber-Druckbilder und skaliert per Interpolation hoch, falls die Bildquelle
+selbst kleiner ist - siehe CLAUDE.md, Versionsstand v0.30.0-beta, für die Details. Ob das
+tatsächlich (nahe) an 300 dpi herankommt, hängt jetzt von der ECHTEN, bisher unbekannten
+nativen Auflösung des Gemini-Bildmodells ab - dazu gibt es keine belastbare Zahl ohne eine
+echte Testgenerierung mit eingeschaltetem Umschalter.
+
+Weiterhin offen: der von KDP je nach Gesamtseitenzahl vorgeschriebene zusätzliche
 Bundsteg-Innenrand ("gutter margin") - nicht modelliert, da die App nicht zwischen linker/
 rechter (Recto/Verso-)Seite unterscheidet. Vor einer echten Veröffentlichung bleibt eine
 KDP-Testbestellung dringend empfohlen (steht auch im UI-Hinweistext).
