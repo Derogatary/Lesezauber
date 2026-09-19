@@ -11,58 +11,57 @@ const CACHE_NAME = 'lesezauber-shell-v44';
 // wird die Panel-Seite zusätzlich IMMER (unabhängig vom Umschalter) in
 // höherer Auflösung neu zusammengesetzt (js/studio/studioComicPanels.js) -
 // das kostet nichts, weil dabei kein neuer Bildaufruf entsteht. Keine neuen
-// Dateien. Siehe CLAUDE.md, Versionsstand.
+// Dateien. Siehe CHANGELOG.md.
 
 // NEU (v43): echter KDP-Innenteil-Export (studioPrint.js, printSpreadsKdp())
 // mit tatsächlicher 3mm-Beschnittzugabe und 6,4mm-Sicherheitsabstand statt
 // nur eines optischen Randlos-Umschalters - nur für die Papierformate A5/A4
 // hoch. Liefert bewusst keinen Umschlag (KDPs eigener Cover-Ersteller).
-// Keine neuen Dateien. Siehe CLAUDE.md, Versionsstand.
+// Keine neuen Dateien. Siehe CHANGELOG.md.
 
 // NEU (v42): Doppelseiten-Druck (studioPrint.js) ist jetzt comicfähig -
 // druckt die fertig geletterte Panel-Seite, Sprechblasen-Einbrennen per
-// Checkbox abschaltbar. Keine neuen Dateien. Siehe CLAUDE.md, Versionsstand.
+// Checkbox abschaltbar. Keine neuen Dateien. Siehe CHANGELOG.md.
 
 // NEU (v41): Comic-Sprechblasen sind jetzt IMMER Teil des Exports, ihre
 // Sichtbarkeit ist ein Umschalter im Reader (nicht mehr beim Erstellen).
 // Dazu ein eigener Geräuschwörter-Umschalter. Keine neuen Dateien. Siehe
-// CLAUDE.md, Versionsstand.
+// CHANGELOG.md.
 
 // NEU (v40): Comic-Werktyp überarbeitet - echte Panels statt einer Seite
 // mit lose schwebenden Sprechblasen (Nutzer-Feedback: "sonst ist es
 // einfach ein Bilderbuch"). Neue Datei js/studio/studioComicPanels.js.
-// Siehe CLAUDE.md, Versionsstand.
+// Siehe CHANGELOG.md.
 
 // NEU (v39): SchreibZauber Ausbaustufe 6 (Politur, Teilumsetzung) - feste
 // Vorlagen in Stufe 1, projektübergreifende Figuren-Übernahme in Stufe 4.
-// Keine neuen Dateien. Siehe CLAUDE.md, Versionsstand.
+// Keine neuen Dateien. Siehe CHANGELOG.md.
 
 // NEU (v38): SchreibZauber Ausbaustufe 5 (Comic) - Werktyp 'comic'
 // freigeschaltet, neue Datei js/studio/studioBalloons.js (Sprechblasen).
-// Siehe CLAUDE.md, Versionsstand.
+// Siehe CHANGELOG.md.
 
 // NEU (v37): "Master-Prompt" fürs Komplett-Setup (Stufe 1) - keine neuen
-// Dateien. Siehe CLAUDE.md, Versionsstand.
+// Dateien. Siehe CHANGELOG.md.
 
 // NEU (v36): Reihen-Zugehörigkeit (project.seriesName/book.series) inkl.
 // Stil-/Figuren-Übernahme aus der jüngsten Geschwister-Doppelseite und
-// Reihen-Chip in der Bibliothek - keine neuen Dateien. Siehe CLAUDE.md,
-// Versionsstand.
+// Reihen-Chip in der Bibliothek - keine neuen Dateien. Siehe CHANGELOG.md.
 
 // NEU (v35): Meta-Seiten (Titel/Klappentext/Autor) beim "Ins Regal stellen"
 // - neue Datei js/studio/studioMetaPages.js, drei neue optionale Felder in
-// Stufe 1 (Idee). Siehe CLAUDE.md, Versionsstand.
+// Stufe 1 (Idee). Siehe CHANGELOG.md.
 
 // NEU (v34): Textposition pro Doppelseite wird jetzt beim Anlegen
 // automatisch abwechslungsreich verteilt und beim Bild-Prompt als
 // tatsächlich freizuhaltende Zone mitgeschickt (js/studio/studioCore.js,
-// imageSource.js, imageFormats.js) - siehe CLAUDE.md, Versionsstand.
+// imageSource.js, imageFormats.js) - siehe CHANGELOG.md.
 
 // NEU (v33): Leitplanken (guardrailsBlock, js/studio/studioPrompts.js) für
-// gemeinfreie Figuren geöffnet - siehe CLAUDE.md, Versionsstand.
+// gemeinfreie Figuren geöffnet - siehe CHANGELOG.md.
 
 // NEU (v32): drei Bugfixes aus Nutzer-Testfeedback zur Werkstatt (siehe
-// CLAUDE.md, Versionsstand) - keine neuen Dateien, nur geänderte
+// CHANGELOG.md) - keine neuen Dateien, nur geänderte
 // index.html/js/nav.js/js/studio/studioCore.js/js/studio/worksheet.js/
 // css/tailwind.css, deshalb trotzdem CACHE_NAME hochzählen.
 

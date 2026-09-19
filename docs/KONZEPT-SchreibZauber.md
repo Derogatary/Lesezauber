@@ -600,7 +600,7 @@ zusätzlich fehlte, war konkret benennbar (statt vage "muss noch geprüft werden
 **Mit v0.29.0-beta umgesetzt:** Punkt 1 (`app.studio.printSpreadsKdp()` in
 `js/studio/studioPrint.js`, echte 3mm-Beschnittzugabe + 6,4mm Sicherheitsabstand als
 tatsächliche Seitenvergrößerung, nur für die KDP-eigenen Metrik-Trimm-Formate "A5/A4 hoch") -
-Details siehe CLAUDE.md, Versionsstand v0.29.0-beta.
+Details siehe CHANGELOG.md v0.29.0-beta.
 
 **Bewusst weiterhin nicht gebaut (Punkt 3):** ein eigener Umschlag-Generator. Der KDP-Umschlag
 (Vorder-/Rückseite + Buchrücken in einer PDF, Rückenbreite abhängig von der finalen
@@ -619,7 +619,7 @@ andere, app-weite Stelle: `app.utils.createImageVariants()` (`js/utils.js`) kapp
 der App (nicht nur SchreibZauber) auf maximal 1600px Breite. Der neue Umschalter
 "📐 Hochauflösend für den Druck" (`project.spec.highResPrint`, Stufe 2) umgeht diese Kappung
 NUR für SchreibZauber-Druckbilder und skaliert per Interpolation hoch, falls die Bildquelle
-selbst kleiner ist - siehe CLAUDE.md, Versionsstand v0.30.0-beta, für die Details. Ob das
+selbst kleiner ist - siehe CHANGELOG.md v0.30.0-beta, für die Details. Ob das
 tatsächlich (nahe) an 300 dpi herankommt, hängt jetzt von der ECHTEN, bisher unbekannten
 nativen Auflösung des Gemini-Bildmodells ab - dazu gibt es keine belastbare Zahl ohne eine
 echte Testgenerierung mit eingeschaltetem Umschalter.
@@ -892,8 +892,8 @@ Auf Nutzerauftrag gebaut, NACHDEM Stufe 5/6 laut TEIL E ursprünglich zurückges
 Die erste Fassung (v0.24.0-beta: eine Seite = ein Bild + lose schwebende Sprechblasen) wurde
 nach echtem Test-Feedback verworfen und durch eine Panel-Fassung ersetzt (v0.26.0-beta,
 "sonst ist es einfach ein Bilderbuch") - dieser Abschnitt beschreibt den AKTUELLEN
-(Panel-)Stand, Details zu den Entscheidungen stehen in `CLAUDE.md` (Versionsstand,
-Einträge v0.24.0-beta und v0.26.0-beta).
+(Panel-)Stand, Details zu den Entscheidungen stehen in `CHANGELOG.md`,
+Einträge v0.24.0-beta und v0.26.0-beta.
 
 - Werktyp `'comic'` (`app.studio.projectTypes`) läuft durch DASSELBE 8-Stufen-Gerüst wie das
   Bilderbuch (Konzept C.1) - nur Stufe 3 (Panel-Skript statt Fließtext, `generateComicScript()`/
@@ -916,7 +916,7 @@ Einträge v0.24.0-beta und v0.26.0-beta).
   manuelle Zuordnungs-UI zu bauen. Ein Panel bekommt dadurch NUR die Figuren als Bild-Referenz,
   die darin tatsächlich sprechen - noch genauer als beim ursprünglichen Seiten-weiten Ansatz.
 - **Sprechblasen sind KEINE Erstell-Entscheidung, sondern ein Umschalter beim Lesen (seit
-  v0.27.0-beta - siehe dortiger CLAUDE.md-Eintrag für die Vorgeschichte).** `toLibraryBook()`
+  v0.27.0-beta - siehe dortiger CHANGELOG.md-Eintrag für die Vorgeschichte).** `toLibraryBook()`
   erzeugt beim "Ins Regal stellen" für jede Comic-Seite IMMER beide Bildfassungen: die
   "saubere" Komposition (`app.studio.comicPanels.compositePage()`) landet in `page.
   comicCleanImgUrl`/`comicCleanThumbUrl`, die Fassung MIT eingebrannten Sprechblasen
@@ -950,8 +950,8 @@ Einträge v0.24.0-beta und v0.26.0-beta).
   Reader-Umschaltung UNABHÄNGIGER "Sprechblasen mit einbrennen"-Umschalter direkt im
   Druckblock (Standard AN, druckt die fertig geletterte Panel-Seite über
   `bakePageWithBalloons()`; AUS druckt die "saubere" Fassung über `compositePage()`, z.B. für
-  eine spätere Übersetzung/eigenes Lettering von Hand). Details: siehe CLAUDE.md,
-  Versionsstand v0.28.0-beta.
+  eine spätere Übersetzung/eigenes Lettering von Hand). Details: siehe CHANGELOG.md,
+  Eintrag v0.28.0-beta.
 - **Bewusst NICHT umgesetzt:**
   - **Freies Ziehen (Drag&Drop)** der Sprechblasen - Stufe 7 bietet stattdessen X/Y/Breite als
     Prozent-Regler, reicht für die üblichen 1-3 Sprechblasen pro Panel.
