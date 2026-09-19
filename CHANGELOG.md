@@ -6,6 +6,15 @@ vollständige Historie, neueste Version zuerst. Diese Datei wurde aus
 `CLAUDE.md` ausgelagert, weil der Abschnitt dort mit der Zeit zu groß für
 schnellen Kontext wurde; inhaltlich unverändert übernommen.
 
+## v0.30.4-beta
+
+Zwei neue, eigenständige Seiten für die Play-Store-Einreichung: `impressum.html` und `datenschutz.html` (Repo-Root, direkt erreichbar, kein Teil der SPA-Ansichten in `index.html`). Beide nutzen `css/tailwind.css` für ein konsistentes Erscheinungsbild, sind aber bewusst reines, JS-freies HTML - keine Abhängigkeit vom Rest der App nötig, funktionieren auch, wenn `js/main.js` aus irgendeinem Grund nicht lädt.
+
+- **Datenschutzerklärung** beschreibt ehrlich die tatsächliche Architektur: kein eigener Server/keine Konten, aber Übertragung an Drittanbieter bei Nutzung der KI-Funktionen (Google Gemini, optional Mistral als Fallback, optional neuronale TTS-Anbieter bei ausdrücklicher Aktivierung) - das ist der Punkt, den eine Datenschutzerklärung für diese App überhaupt tragen muss, auch ohne eigenen Server.
+- **Impressum** nach § 5 DDG (Digitale-Dienste-Gesetz, Nachfolger des TMG).
+- **Beide enthalten noch Platzhalter** (`[Dein Name]`, `[Straße und Hausnummer]`, `[deine-email@beispiel.de]` usw.) - müssen vor der echten Play-Store-Einreichung mit den echten Angaben ausgefüllt werden, siehe eckige Klammern im Text.
+- Kein Rechtsrat, sondern ein sachlich auf die tatsächliche Architektur zugeschnittener Entwurf - bei Unsicherheit einen Anwalt oder z.B. den kostenlosen Generator von e-recht24.de konsultieren.
+
 ## v0.30.3-beta
 
 Erste Schritte Richtung Play Store (TWA-Weg, siehe unten "Bewusste Entscheidung"): Nutzerentscheidung - Paket-ID `app.lesezauber.pro` (dauerhaft, nicht mehr änderbar), Signierschlüssel wurde in der Claude-Code-Sitzung offline per `keytool` erzeugt und dem Nutzer direkt als Datei übergeben (NICHT im Repo - Passwort und Schlüsseldatei sind geheim, nur der öffentliche SHA-256-Zertifikats-Fingerabdruck ist es nicht).
