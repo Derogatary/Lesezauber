@@ -180,6 +180,25 @@ Ankreuzen, Nachspuren, Schwungübungen). Ausmalbilder setzen die Bildgenerierung
 
 ---
 
+## 🌍 Bereich: Mehrsprachigkeit / Übersetzung
+
+Noch kein Konzeptpapier, nur aus dem Chat übernommen (Sept. 2026) - vor dem Start erst
+ein kurzes Konzept schreiben, dann mit dem Nutzer abstimmen. Kein Code bisher.
+
+**Ausgangslage:** Die App ist komplett Deutsch-fest verdrahtet - UI-Texte in `index.html`/JS
+sowie alle Prompts (`js/api.js`, `js/studio/studioPrompts.js`) sind Deutsch, kein
+`app.settings.language`. Bei der Sprachausgabe ist es gemischt: ElevenLabs/Google Cloud
+Chirp erkennen/wählen die Sprache bereits automatisch (kein Codeblocker), Speechify hat
+`de-DE` fest einprogrammiert (`SPEECHIFY_LANGUAGE` in `js/ttsProviders.js`).
+
+| Punkt | Aufwand | Anmerkung |
+|---|---|---|
+| **Ein bestehendes Buch in eine Zielsprache übersetzen** | **M** | Reine Prompt-Arbeit, keine Architekturänderung: neue Aktion übersetzt pro Seite den vorhandenen Text per Gemini. Offene Design-Frage: als neue Sprach-Variante im bestehenden `page.variants`-System (Persona-Achse um eine Sprach-Achse erweitern) oder einfacher als komplett neues, separates Buch. UI selbst bliebe Deutsch, nur der Buchinhalt wäre in der Zielsprache |
+| **Birkenbihl-Methode (Interlinear-Text, zwei Sprachen übereinander)** | **M-L** | Baut auf dem Übersetzungs-Punkt oben auf. Technisch ähnliches Muster wie die Silbenfarben (`buildSyllableSpansHtml()` in `js/studio/studioLayout.js` zerlegt Text bereits Wort für Wort in `<span>`s) - hier bräuchte es zwei Zeilen pro Wort (Zielsprache oben, wörtliche Übersetzung in Original-Wortstellung darunter) statt Farbwechsel. Der Aufwand steckt im Prompt: die KI muss pro Wort/Kurzphrase wörtlich statt idiomatisch übersetzen und dabei die Ausgangs-Wortstellung beibehalten - fehleranfälliger als normales Übersetzen (Komposita, Artikel, Fälle passen nie 1:1 zwischen Sprachen). Für den Anfang nur Phase 1 der echten Methode bauen (Mitlesen mit Zielsprache-Audio + Dekodierzeile), nicht Phase 2 (reines Hören) |
+| **Volle App-Mehrsprachigkeit (UI-Texte selbst)** | **L** | Eigenes, deutlich größeres Projekt - bräuchte eine komplette i18n-Infrastruktur (Übersetzungsschlüssel statt fest eingebauter deutscher Strings), aktuell nicht angefragt, nur der Vollständigkeit halber hier notiert |
+
+---
+
 ## 📱 Bereich: App & Plattform
 
 | Punkt | Aufwand | Anmerkung |
