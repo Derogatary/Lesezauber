@@ -624,10 +624,15 @@ tatsächlich (nahe) an 300 dpi herankommt, hängt jetzt von der ECHTEN, bisher u
 nativen Auflösung des Gemini-Bildmodells ab - dazu gibt es keine belastbare Zahl ohne eine
 echte Testgenerierung mit eingeschaltetem Umschalter.
 
-Weiterhin offen: der von KDP je nach Gesamtseitenzahl vorgeschriebene zusätzliche
-Bundsteg-Innenrand ("gutter margin") - nicht modelliert, da die App nicht zwischen linker/
-rechter (Recto/Verso-)Seite unterscheidet. Vor einer echten Veröffentlichung bleibt eine
-KDP-Testbestellung dringend empfohlen (steht auch im UI-Hinweistext).
+**Mit v0.30.2-beta ergänzt:** der von KDP je nach Gesamtseitenzahl vorgeschriebene zusätzliche
+Bundsteg-Innenrand ("gutter margin") wird jetzt modelliert (`kdpGutterMm()`) - da die App nicht
+zwischen linker/rechter (Recto/Verso-)Seite unterscheidet, wird der jeweils GRÖSSERE Wert
+(Bundsteg vs. normaler Sicherheitsabstand) auf BEIDE Seiten angewendet, siehe CHANGELOG.md.
+Gleichzeitig wurde der Sicherheitsabstand selbst korrigiert (0,375" MIT Bleed statt der zuvor
+angenommenen pauschalen 0,25"). Neu entdeckt: KDP verlangt bei Standardfarbe mindestens 72,
+bei Premiumfarbe mindestens 24 Seiten - der Bauplan bietet aktuell maximal 40, ein Hinweis
+dazu steht jetzt im UI-Text. Vor einer echten Veröffentlichung bleibt eine KDP-Testbestellung
+weiterhin dringend empfohlen.
 
 ---
 

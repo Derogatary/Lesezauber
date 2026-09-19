@@ -41,7 +41,7 @@
                     <p id="streakBadge" class="hidden text-xs font-bold text-amber-600 mt-0.5"></p>
                     <!-- NEU: Belohnung - Anzahl komplett geschaffter Bücher/Hefte -->
                     <p id="medalBadge" class="hidden text-xs font-bold text-emerald-600 mt-0.5"></p>
-                    <p class="text-[10px] text-slate-400 font-semibold mt-0.5">v0.30.1-beta</p>
+                    <p class="text-[10px] text-slate-400 font-semibold mt-0.5">v0.30.2-beta</p>
                 </div>
                 <div class="flex items-center gap-2 flex-shrink-0">
                     <button onclick="app.nav.go('help')" aria-label="Hilfe öffnen" title="Hilfe" class="w-10 h-10 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-600 hover:bg-slate-100 shadow-sm transition active:scale-95">
@@ -1018,10 +1018,11 @@
                 <!-- NEU (v0.29.0-beta, KDP-Innenteil): siehe js/studio/studioPrint.js
                      printSpreadsKdp() - echte Beschnittzugabe/Sicherheitsabstand statt
                      nur eines optischen Randlos-Umschalters, deshalb bewusst ein
-                     eigener Block statt einer weiteren Checkbox oben. -->
+                     eigener Block statt einer weiteren Checkbox oben. Seit v0.30.2-beta
+                     zusätzlich mit Bundsteg-Innenrand nach Gesamtseitenzahl. -->
                 <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 space-y-2">
                     <p class="text-xs font-bold text-amber-900">📕 Für Amazon KDP (Taschenbuch-Innenteil)</p>
-                    <p class="text-[11px] text-amber-800">Echte 3&nbsp;mm-Beschnittzugabe (Bleed) und 6,4&nbsp;mm Sicherheitsabstand für Text vom Papierrand - nur für die Papierformate „A5 hoch"/„A4 hoch" (Bauplan, Stufe 1), das sind zwei bei KDP tatsächlich hinterlegte Formate. <strong>Liefert nur das Innenteil, keinen Umschlag</strong> - Vorder-/Rückseite samt Buchrücken bitte im kostenlosen Cover-Ersteller direkt bei KDP erstellen, der berechnet die Rückenbreite passend zur Seitenzahl und lässt die Fläche für die (bei KDP kostenlose) ISBN frei. Noch ungeprüft: ob die KI-Bilder KDPs empfohlene 300 dpi tatsächlich erreichen - mit dem neuen Umschalter "📐 Hochauflösend für den Druck" (Bauplan, Stufe 2) kommt man näher heran, eine belastbare Zahl gibt es aber erst nach einer echten Testgenerierung damit. Vor der echten Veröffentlichung trotzdem eine KDP-Testbestellung einplanen.</p>
+                    <p class="text-[11px] text-amber-800">Echte 3&nbsp;mm-Beschnittzugabe (Bleed), Sicherheitsabstand für Text vom Papierrand (0,375" mit Bleed, 0,25" ohne) UND ein zusätzlicher Bundsteg-Innenrand je nach Gesamtseitenzahl - alle drei nach KDPs eigenen Vorgaben. Nur für die Papierformate „A5 hoch"/„A4 hoch" (Bauplan, Stufe 1), das sind zwei bei KDP tatsächlich hinterlegte Formate. <strong>Liefert nur das Innenteil, keinen Umschlag</strong> - Vorder-/Rückseite samt Buchrücken bitte im kostenlosen Cover-Ersteller direkt bei KDP erstellen, der berechnet die Rückenbreite passend zur Seitenzahl und lässt die Fläche für die (bei KDP kostenlose) ISBN frei. <strong>Wichtig zur Seitenzahl:</strong> KDP verlangt bei Standardfarbe mindestens 72 Seiten, bei Premiumfarbe mindestens 24 - der Bauplan bietet aktuell maximal 40, bei der Einreichung also "Premiumfarbe" wählen (oder die Seitenzahl erhöhen). Für scharfen Druck den Umschalter "📐 Hochauflösend für den Druck" (Bauplan, Stufe 2) aktivieren, bevor die Bilder erzeugt werden - eine belastbare dpi-Zahl gibt es erst nach einer echten Testgenerierung damit. Vor der echten Veröffentlichung zusätzlich eine KDP-Testbestellung einplanen.</p>
                     <button onclick="app.studio.printSpreadsKdp()" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-2.5 rounded-xl shadow-md transition text-sm">📕 KDP-Innenteil erzeugen</button>
                 </div>
                 <div class="flex gap-2">

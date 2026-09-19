@@ -1,7 +1,13 @@
 // Bei jeder inhaltlichen Änderung an einer dieser Dateien diese Nummer
 // erhöhen - sonst bekommen wiederkehrende Besucher weiter die alte
 // zwischengespeicherte Version ausgeliefert.
-const CACHE_NAME = 'lesezauber-shell-v45';
+const CACHE_NAME = 'lesezauber-shell-v46';
+
+// NEU (v46): KDP-Innenteil-Export (studioPrint.js) korrigiert/vervollständigt
+// - Sicherheitsabstand jetzt korrekt 0,375" MIT Bleed (vorher pauschal
+// 0,25"), zusätzlicher Bundsteg-Innenrand nach Gesamtseitenzahl, Hinweis
+// auf KDPs Mindestseitenzahl (72 Standard-/24 Premiumfarbe). Keine neuen
+// Dateien. Siehe CHANGELOG.md.
 
 // NEU (v45): Mausrad im dunklen Rand neben dem App-Rahmen (Laptop) reicht
 // jetzt an die sichtbare Ansicht durch statt ins Leere zu laufen - neue

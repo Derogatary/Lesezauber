@@ -6,6 +6,15 @@ vollständige Historie, neueste Version zuerst. Diese Datei wurde aus
 `CLAUDE.md` ausgelagert, weil der Abschnitt dort mit der Zeit zu groß für
 schnellen Kontext wurde; inhaltlich unverändert übernommen.
 
+## v0.30.2-beta
+
+Nutzerauftrag: "KDP-Druck soll [wirklich] reif sein" - zwei konkrete, per Websuche (19.09.2026) gegen kdp.amazon.com nachgeprüfte Korrekturen/Ergänzungen am KDP-Innenteil-Export (`printSpreadsKdp()` in `js/studio/studioPrint.js`):
+
+- **Sicherheitsabstand korrigiert.** Die ursprüngliche Recherche (v0.29.0-beta) hatte pauschal 0,25" (6,4mm) angenommen - tatsächlich gilt das nur OHNE Bleed. MIT Bleed (unsere Bilderbuch-Seiten) verlangt KDP 0,375" (9,525mm), jetzt als `KDP_SAFE_MM_BLEED` hinterlegt. Comic-Seiten (kein Bleed-Bildinhalt) bleiben bei 0,25" (`KDP_SAFE_MM_NOBLEED`).
+- **Bundsteg-Innenrand ergänzt** (`kdpGutterMm()`), gestaffelt nach der Gesamtseitenzahl des Buchs (`project.spec.totalPages`): 24-150 Seiten 0,375", 151-300 0,5", 301-500 0,625", 501-700 0,75", 701-828 0,875" - das war zuvor der einzige echte, namentlich benannte offene Punkt (siehe "Korrektur einer bisherigen Annahme" unter v0.29.0-beta - dort ging es nur um die inzwischen als gegenstandslos erkannte Seiten-Aufteilung, der Bundsteg selbst war weiterhin offen). Da die App nicht zwischen linker/rechter (Recto/Verso-)Seite unterscheidet, wird der jeweils GRÖSSERE Wert (Bundsteg vs. normaler Sicherheitsabstand) auf BEIDE Seiten angewendet - verschenkt auf der Nicht-Bundsteg-Seite etwas Fläche, garantiert aber Konformität ohne Kenntnis der tatsächlichen Bindungsrichtung.
+- **Neu entdeckt, jetzt als Hinweis in der UI:** KDP verlangt für Taschenbücher mit Standardfarbe mindestens 72 Seiten, mit Premiumfarbe mindestens 24 - der Bauplan (Stufe 2) bietet aktuell maximal 40 Seiten an. `printSpreadsKdp()` zeigt bei zu wenigen Seiten einen nicht blockierenden Hinweis-Toast (die Farbstufe wird erst bei der Einreichung selbst gewählt, die App kann das nicht erzwingen).
+- Der Bilderauflösungs-Umschalter (`project.spec.highResPrint`, v0.30.0-beta) bleibt der empfohlene Weg zu näher an 300dpi - eine belastbare Zahl gibt es weiterhin erst nach einer echten Testgenerierung.
+
 ## v0.30.1-beta
 
 Nutzer-Feedback (Laptop): im dunklen Rand links/rechts neben dem App-Rahmen (`#appShell`, "Mobile Screen Frame Container" in `index.html`) reagierte das Mausrad auf nichts - dort liegt schlicht `<body>`, das bewusst NICHT scrollbar ist (sonst würde das zentrierte "Handy-Rahmen"-Layout auf breiten Bildschirmen zerbrechen). Nur direkt über dem Rahmen scrollte die jeweils sichtbare Ansicht über ihr eigenes `overflow-y-auto`. Neue Datei `js/edgeScroll.js`: reicht ein Mausrad-Ereignis über `<body>` einfach an die aktuell sichtbare `<main id="view...">`-Ansicht weiter (`scrollTop += e.deltaY`), ohne das Layout selbst umzubauen. Pinch-Zoom am Trackpad (`e.ctrlKey`) bleibt unangetastet, damit der Browser normal zoomt.

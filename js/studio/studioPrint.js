@@ -34,14 +34,38 @@ const TRIM_PAPER_MM = {
 const PRINT_BASE_FONT_MM = 4.4;
 
 // NEU (KDP-Innenteil): die in docs/KONZEPT-SchreibZauber.md, Nachtrag "KDP-
-// Druckvorgaben recherchiert" (Sept. 2026) verifizierten Werte - 0,125 Zoll
-// Beschnittzugabe (Bleed), 0,25 Zoll Sicherheitsabstand für Text vom
-// Trimm-Rand. Nur diese beiden Werte sind eine echte physische Vergrößerung
-// der Dokumentseite (siehe printSpreadsKdp() unten) - der bisherige
+// Druckvorgaben recherchiert" verifizierten Werte - 0,125 Zoll
+// Beschnittzugabe (Bleed). Der Sicherheitsabstand für Text ist je nachdem,
+// ob die Seite Bleed hat, unterschiedlich groß (per Websuche am 19.09.2026
+// gegen kdp.amazon.com nachgeprüft, da die ursprüngliche Sept.-2026-
+// Recherche hier pauschal 0,25" angenommen hatte): MIT Bleed (unsere
+// Bilderbuch-Seiten, printSpreadsKdp() unten) 0,375", OHNE Bleed (unsere
+// Comic-Seiten - siehe kdpComicPageHtml()) weiterhin 0,25". Nur der
+// Bleed-Wert ist eine echte physische Vergrößerung der Dokumentseite - der
 // "randlos"-Umschalter oben ist rein optisch (object-fit) und WAR nie
 // dasselbe wie echter Bleed, siehe dortiger Kommentar.
 const KDP_BLEED_MM = 3;
-const KDP_SAFE_MM = 6.4;
+const KDP_SAFE_MM_BLEED = 9.525;    // 0,375 Zoll
+const KDP_SAFE_MM_NOBLEED = 6.4;    // 0,25 Zoll
+
+// NEU (KDP-Innenteil): zusätzlicher Bundsteg-Innenrand (courant "gutter"),
+// je nach GESAMTER Seitenzahl des fertigen Buchs (project.spec.totalPages,
+// inkl. Vor-/Nachsatz - siehe computeSpec() in studioCore.js) - Tabelle
+// ebenfalls am 19.09.2026 gegen kdp.amazon.com nachgeprüft. Da diese App
+// nicht zwischen linker/rechter (Recto/Verso-)Seite unterscheidet (siehe
+// CHANGELOG.md v0.29.0-beta, "Korrektur einer bisherigen Annahme"), kann
+// nicht ermittelt werden, welche Seite tatsächlich der Bundsteg ist -
+// deshalb wird der größere der beiden Werte (Bundsteg vs. normaler
+// Sicherheitsabstand) auf BEIDE Seiten (links UND rechts) angewendet. Das
+// verschenkt auf der Nicht-Bundsteg-Seite etwas Fläche, garantiert aber
+// Konformität unabhängig von der tatsächlichen Bindungsrichtung.
+function kdpGutterMm(totalPages) {
+    if (totalPages <= 150) return 9.525;   // 0,375"
+    if (totalPages <= 300) return 12.7;    // 0,5"
+    if (totalPages <= 500) return 15.875;  // 0,625"
+    if (totalPages <= 700) return 19.05;   // 0,75"
+    return 22.225;                          // 0,875" (701-828 Seiten)
+}
 
 // NEU (KDP-Innenteil): nur Papierformate, die tatsächlich als KDP-eigenes
 // Metrik-Trimm-Format geführt werden (A5 hoch = 148x210mm, A4 hoch =
@@ -102,40 +126,39 @@ function comicPageHtml(imgUrl, index, bleed) {
 // NEU (KDP-Innenteil): Bild füllt die GESAMTE, um die Bleed-Zugabe
 // vergrößerte Seite per object-fit:cover - die äußeren KDP_BLEED_MM sind
 // bewusst Überstand, der beim Druck weggeschnitten wird. Die Textebene
-// bekommt einen EIGENEN, weiter innen liegenden Container (inset:
-// safeInset) - buildOverlayHtml()s Prozent-Positionen (top/bottom/left/
-// right in %, siehe studioLayout.js textPosStyle) beziehen sich dadurch auf
-// diese sichere Fläche statt auf die volle Bleed-Seite, der Text bleibt so
-// unabhängig von seiner gewählten Zone garantiert mindestens KDP_SAFE_MM
-// vom Trimm-Rand entfernt.
-function kdpPageHtml(spread, index, project, safeInset) {
+// bekommt einen EIGENEN, weiter innen liegenden Container - buildOverlayHtml()s
+// Prozent-Positionen (top/bottom/left/right in %, siehe studioLayout.js
+// textPosStyle) beziehen sich dadurch auf diese sichere Fläche statt auf die
+// volle Bleed-Seite. safe.topBottom/safe.side sind bewusst UNTERSCHIEDLICH
+// groß (siehe kdpGutterMm() oben - Bundsteg auf beiden Seiten, da unbekannt,
+// welche davon die Buchmitte ist).
+function kdpPageHtml(spread, index, project, safe) {
     const layout = spread.layout || { textPos: 'unten', fontScale: 1, syllableColors: false };
     const img = spread.imgUrl
         ? `<img src="${spread.imgUrl}" style="position:absolute; inset:0; width:100%; height:100%; object-fit:cover;" alt="Doppelseite ${index + 1}">`
         : '';
     const overlay = app.studio.layout.buildOverlayHtml(spread.text || '', layout, project.brief.readingLevel, PRINT_BASE_FONT_MM, 'mm');
-    return `<div class="sz-print-page">${img}<div style="position:absolute; inset:${safeInset}mm;">${overlay}</div></div>`;
+    return `<div class="sz-print-page">${img}<div style="position:absolute; inset:${safe.topBottom}mm ${safe.side}mm;">${overlay}</div></div>`;
 }
 
 // NEU (KDP-Innenteil, Comic): bewusst KEIN Bleed/Überstand hier - die
 // Sprechblasen sind bereits pixelgenau auf die ursprüngliche Seitenfläche
 // gebrannt (app.studio.comicPanels.bakePageWithBalloons), ein Rand-Überstand
 // per object-fit:cover könnte sie unkontrolliert anschneiden. Das Bild liegt
-// stattdessen per object-fit:contain mit einem Rand von Bleed+Sicherheits-
-// abstand - der ist automatisch größer als die geforderte Sicherheitszone,
-// also ohne Anschneide-Risiko.
-function kdpComicPageHtml(imgUrl, index) {
-    const inset = KDP_BLEED_MM + KDP_SAFE_MM;
+// stattdessen per object-fit:contain mit demselben asymmetrischen
+// Sicherheits-/Bundsteg-Rand wie beim Bilderbuch (safe, ohne Bleed-Zuschlag
+// - Comic-Seiten sind hier nicht vergrößert).
+function kdpComicPageHtml(imgUrl, index, safe) {
     const img = imgUrl
-        ? `<img src="${imgUrl}" style="position:absolute; inset:${inset}mm; width:calc(100% - ${2 * inset}mm); height:calc(100% - ${2 * inset}mm); object-fit:contain;" alt="Comic-Seite ${index + 1}">`
+        ? `<img src="${imgUrl}" style="position:absolute; inset:${safe.topBottom}mm ${safe.side}mm; width:calc(100% - ${2 * safe.side}mm); height:calc(100% - ${2 * safe.topBottom}mm); object-fit:contain;" alt="Comic-Seite ${index + 1}">`
         : '';
     return `<div class="sz-print-page">${img}</div>`;
 }
 
-function kdpTitlePageHtml(project, safeInset) {
+function kdpTitlePageHtml(project, safe) {
     const author = app.profiles.find((p) => p.id === project.profileId)?.name || 'Ich';
     return `
-        <div class="sz-print-page" style="display:flex; align-items:center; justify-content:center; flex-direction:column; text-align:center; padding:${safeInset}mm;">
+        <div class="sz-print-page" style="display:flex; align-items:center; justify-content:center; flex-direction:column; text-align:center; padding:${safe.topBottom}mm ${safe.side}mm;">
             <h1 style="font-size:9mm; margin:0 0 6mm; font-family:sans-serif;">${app.utils.sanitize(project.title || 'Unbenanntes Werk')}</h1>
             <p style="font-size:4.5mm; color:#475569; font-family:sans-serif;">von ${app.utils.sanitize(author)}</p>
         </div>`;
@@ -237,8 +260,10 @@ Object.assign(app.studio, {
     // docs/KONZEPT-SchreibZauber.md, Nachtrag "KDP-Druckvorgaben
     // recherchiert"): echte 3mm-Beschnittzugabe (die Dokumentseite ist dafür
     // tatsächlich größer als das Trimm-Format, nicht nur optisch
-    // randabfallend wie beim normalen Druck oben) und 6,4mm
-    // Sicherheitsabstand für Text vom Trimm-Rand. Bewusst eine EIGENE
+    // randabfallend wie beim normalen Druck oben), Sicherheitsabstand für
+    // Text vom Trimm-Rand (0,375" mit Bleed, 0,25" ohne - siehe
+    // KDP_SAFE_MM_BLEED/NOBLEED oben) UND ein zusätzlicher Bundsteg-
+    // Innenrand je nach Gesamtseitenzahl (kdpGutterMm()). Bewusst eine EIGENE
     // Funktion statt eines weiteren Parameters an printSpreads(): andere
     // Regeln (immer Bleed bzw. immer "mit Rand" je nach Werktyp, andere
     // Seitengröße, kein Sprechblasen-Umschalter, nur zwei erlaubte
@@ -260,6 +285,15 @@ Object.assign(app.studio, {
             app.ui.toast('KDP-Export gibt es nur für die Papierformate "A5 hoch"/"A4 hoch" - im Bauplan (Stufe 1) änderbar.', '⚠️');
             return;
         }
+        // NEU: KDP verlangt für Taschenbücher mit Standardfarbe mindestens
+        // 72 Seiten, mit Premiumfarbe mindestens 24 (per Websuche am
+        // 19.09.2026 gegen kdp.amazon.com geprüft) - project.spec.totalPages
+        // erreicht über den Bauplan aktuell maximal 40. Nicht blockierend
+        // (die Wahl der Farbstufe passiert erst bei der Einreichung selbst),
+        // aber ein klarer Hinweis statt einer stillen Ablehnung bei KDP.
+        if (project.spec.totalPages < 72) {
+            app.ui.toast(`Achtung: ${project.spec.totalPages} Seiten reichen bei KDP nur mit "Premiumfarbe" (Minimum 24) - bei "Standardfarbe" sind mindestens 72 Seiten nötig.`, 'ℹ️');
+        }
 
         const printWindow = window.open('', '_blank');
         if (!printWindow) {
@@ -271,7 +305,18 @@ Object.assign(app.studio, {
         const trim = TRIM_PAPER_MM[project.spec.trim];
         const pageW = trim.w + 2 * KDP_BLEED_MM;
         const pageH = trim.h + 2 * KDP_BLEED_MM;
-        const safeInset = KDP_BLEED_MM + KDP_SAFE_MM;
+        const gutter = kdpGutterMm(project.spec.totalPages);
+        // safeBleed: für die Bilderbuch-Seiten (haben echten Bleed-Bildinhalt
+        // bis zum Rand) - safeNoBleed: für die Comic-Seiten (kein Bleed-
+        // Bildinhalt, aber die .sz-print-page-Box ist trotzdem einheitlich
+        // die um KDP_BLEED_MM vergrößerte Seite, siehe pageW/pageH oben -
+        // ALLE Seiten einer KDP-PDF müssen dieselbe physische Größe haben.
+        // Der KDP_BLEED_MM-Zuschlag gehört deshalb in BEIDE Fälle, nur der
+        // eigentliche Sicherheitsabstand unterscheidet sich). "side" nimmt
+        // jeweils den GRÖSSEREN von Sicherheitsabstand/Bundsteg, siehe
+        // kdpGutterMm() oben.
+        const safeBleed = { topBottom: KDP_BLEED_MM + KDP_SAFE_MM_BLEED, side: KDP_BLEED_MM + Math.max(KDP_SAFE_MM_BLEED, gutter) };
+        const safeNoBleed = { topBottom: KDP_BLEED_MM + KDP_SAFE_MM_NOBLEED, side: KDP_BLEED_MM + Math.max(KDP_SAFE_MM_NOBLEED, gutter) };
         const isComic = project.type === 'comic';
 
         let pagesHtml;
@@ -293,12 +338,12 @@ Object.assign(app.studio, {
                         targetWidth: targetWidthForTrim(project.spec.trim)
                     });
                 }));
-                pagesHtml = project.spreads.map((s, i) => kdpComicPageHtml(images[i]?.full, i)).join('');
+                pagesHtml = project.spreads.map((s, i) => kdpComicPageHtml(images[i]?.full, i, safeNoBleed)).join('');
             } finally {
                 app.ui.hideLoader();
             }
         } else {
-            pagesHtml = project.spreads.map((s, i) => kdpPageHtml(s, i, project, safeInset)).join('');
+            pagesHtml = project.spreads.map((s, i) => kdpPageHtml(s, i, project, safeBleed)).join('');
         }
 
         if (printWindow.closed) {
@@ -320,7 +365,7 @@ Object.assign(app.studio, {
                 </style>
             </head>
             <body>
-                ${kdpTitlePageHtml(project, safeInset)}
+                ${kdpTitlePageHtml(project, safeBleed)}
                 ${pagesHtml}
             </body>
             </html>
