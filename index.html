@@ -41,7 +41,7 @@
                     <p id="streakBadge" class="hidden text-xs font-bold text-amber-600 mt-0.5"></p>
                     <!-- NEU: Belohnung - Anzahl komplett geschaffter Bücher/Hefte -->
                     <p id="medalBadge" class="hidden text-xs font-bold text-emerald-600 mt-0.5"></p>
-                    <p class="text-[10px] text-slate-400 font-semibold mt-0.5">v0.30.5-beta</p>
+                    <p class="text-[10px] text-slate-400 font-semibold mt-0.5">v0.30.6-beta</p>
                 </div>
                 <div class="flex items-center gap-2 flex-shrink-0">
                     <button onclick="app.nav.go('help')" aria-label="Hilfe öffnen" title="Hilfe" class="w-10 h-10 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-600 hover:bg-slate-100 shadow-sm transition active:scale-95">
@@ -1414,6 +1414,22 @@
                         </button>
                     </div>
                     <input id="importFileInput" type="file" accept="application/json" onchange="app.actions.importLibrary(event)" class="hidden">
+                </div>
+
+                <!-- NEU (v0.30.6-beta): freiwillige Unterstützung per PayPal - bewusst
+                     KEIN Pro-Modell/keine Gegenleistung, siehe Nutzerentscheid
+                     (Spenden-Option statt Feature-Paywall). Reiner externer Link,
+                     kein eigener Zahlungscode in der App - dafür bräuchte es ohnehin
+                     einen Server, um Zahlungen sicher zu prüfen (siehe CLAUDE.md,
+                     "Architektur-Grundprinzip"). -->
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-2 text-center">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-500">
+                        LeseZauber Pro unterstützen
+                    </label>
+                    <p class="text-[11px] text-slate-500">LeseZauber Pro ist kostenlos und bleibt es. Wer mag, kann die Weiterentwicklung freiwillig unterstützen - ganz ohne Gegenleistung, keine Funktion wird dadurch freigeschaltet.</p>
+                    <a href="https://paypal.me/PascalBoysen" target="_blank" rel="noopener" class="block w-full bg-amber-400 hover:bg-amber-500 text-amber-950 font-bold py-2.5 rounded-xl text-sm transition">
+                        💛 Über PayPal unterstützen
+                    </a>
                 </div>
 
                 <button onclick="app.settingsConfig.save()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl shadow-lg transition active:scale-98">

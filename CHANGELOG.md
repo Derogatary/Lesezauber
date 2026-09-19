@@ -6,6 +6,16 @@ vollständige Historie, neueste Version zuerst. Diese Datei wurde aus
 `CLAUDE.md` ausgelagert, weil der Abschnitt dort mit der Zeit zu groß für
 schnellen Kontext wurde; inhaltlich unverändert übernommen.
 
+## v0.30.6-beta
+
+Freiwillige Unterstützung per PayPal eingebaut (Nutzerentscheid: Spenden-Option statt Pro-Modell/Paywall - siehe Abwägung dazu im Chat/CHANGELOG-Kontext, keine Feature-Freischaltung gegen Bezahlung):
+
+- **Neuer Knopf "💛 Über PayPal unterstützen"** in den Einstellungen (`index.html`, vor "Einstellungen speichern") - ein einfacher externer Link zu `https://paypal.me/PascalBoysen` (der ursprünglich vom Nutzer genannte Link `paypal.me/@PascalBoysen` war nicht ganz korrekt - PayPal.me-Links bestehen laut PayPal selbst nur aus alphanumerischen Zeichen ohne "@", das "@" ist nur die Anzeige-Handle-Schreibweise, nicht Teil der echten URL).
+- Bewusst **kein eigener Zahlungscode/Paywall-Logik** in der App - ein echter Zahlungsstatus-Check würde einen Server brauchen (siehe die Architekturdiskussion zu IONOS), den es laut CLAUDE.md-Grundprinzip bewusst nicht gibt. Die Funktion ist ein reiner Link, für alle Nutzer identisch.
+- **`datenschutz.html`** ergänzt um einen Abschnitt "Freiwillige Unterstützung (PayPal)" - der Link verlässt die App zu PayPal, LeseZauber Pro selbst bekommt dabei keine Daten.
+- **`nutzungsbedingungen.html`** ergänzt um Abschnitt 6 "Freiwillige Unterstützung" (keine Gegenleistung, keine Funktionsfreischaltung) - nachfolgende Abschnitte umnummeriert (6→7 Verfügbarkeit, 7→8 Änderungen, 8→9 Anwendbares Recht).
+- **Steuerlich bewusst NICHT als reine "Spende" bezeichnet in den rechtlichen Texten** - siehe Recherche im Chat: Zahlungen an eine Privatperson für ein laufendes Projekt gelten beim Finanzamt typischerweise als Einnahme aus der Tätigkeit, nicht als steuerfreies Geschenk, unabhängig vom verwendeten Zahlungsweg (PayPal, Ko-fi, Patreon oder Überweisung) oder der gewählten Bezeichnung. Bei spürbarem Volumen sollte das mit einem Steuerberater geklärt werden - für die aktuelle Größenordnung kein akutes Thema, aber bewusst nicht verschwiegen.
+
 ## v0.30.5-beta
 
 Impressum/Datenschutzerklärung mit den echten Angaben ausgefüllt (Nutzerauftrag), plus dritte neue Seite `nutzungsbedingungen.html` ("alle nötigen und optionalen Seiten, volle Absicherung"):
