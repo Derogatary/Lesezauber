@@ -6,6 +6,10 @@ vollständige Historie, neueste Version zuerst. Diese Datei wurde aus
 `CLAUDE.md` ausgelagert, weil der Abschnitt dort mit der Zeit zu groß für
 schnellen Kontext wurde; inhaltlich unverändert übernommen.
 
+## v0.30.7-beta
+
+Korrektur: PayPal-Link auf `https://www.paypal.me/PascalBoysen` geändert (mit `www.`, nach Rückmeldung des Nutzers) - konnte in dieser Sitzung mangels Internetzugriff auf externe Domains nicht selbst verifiziert werden, siehe Hinweis an den Nutzer, den Link vor der Veröffentlichung selbst zu testen.
+
 ## v0.30.6-beta
 
 Freiwillige Unterstützung per PayPal eingebaut (Nutzerentscheid: Spenden-Option statt Pro-Modell/Paywall - siehe Abwägung dazu im Chat/CHANGELOG-Kontext, keine Feature-Freischaltung gegen Bezahlung):
