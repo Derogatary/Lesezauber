@@ -29,25 +29,25 @@ function characterCardSkeleton(characterId) {
             <div class="w-16 flex-shrink-0" data-role="sheetThumb"></div>
             <div class="flex-grow min-w-0 space-y-1.5">
                 <div class="flex gap-1.5">
-                    <input data-field="name" type="text" placeholder="Name" onchange="app.studio.updateCharacterField('${characterId}','name', this.value)" class="flex-grow text-sm font-bold bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 focus:outline-none focus:border-indigo-500">
+                    <input data-field="name" type="text" placeholder="Name" onchange="app.studio.updateCharacterField('${characterId}','name', this.value)" class="flex-grow text-sm font-bold text-slate-900 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 focus:outline-none focus:border-indigo-500">
                     <button onclick="app.studio.deleteCharacter('${characterId}')" aria-label="Figur löschen" class="text-slate-300 hover:text-red-500 text-xs px-1">🗑️</button>
                 </div>
-                <input data-field="role" type="text" placeholder="Rolle, z.B. Hauptfigur" onchange="app.studio.updateCharacterField('${characterId}','role', this.value)" class="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 focus:outline-none focus:border-indigo-500">
+                <input data-field="role" type="text" placeholder="Rolle, z.B. Hauptfigur" onchange="app.studio.updateCharacterField('${characterId}','role', this.value)" class="w-full text-xs text-slate-900 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 focus:outline-none focus:border-indigo-500">
             </div>
         </div>
         <div class="grid grid-cols-2 gap-1.5">
-            <input data-field="age" type="text" placeholder="Alter" onchange="app.studio.updateCharacterField('${characterId}','age', this.value)" class="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 focus:outline-none focus:border-indigo-500">
-            <input data-field="kind" type="text" placeholder="Art (Kind/Tier/...)" onchange="app.studio.updateCharacterField('${characterId}','kind', this.value)" class="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 focus:outline-none focus:border-indigo-500">
+            <input data-field="age" type="text" placeholder="Alter" onchange="app.studio.updateCharacterField('${characterId}','age', this.value)" class="text-xs text-slate-900 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 focus:outline-none focus:border-indigo-500">
+            <input data-field="kind" type="text" placeholder="Art (Kind/Tier/...)" onchange="app.studio.updateCharacterField('${characterId}','kind', this.value)" class="text-xs text-slate-900 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 focus:outline-none focus:border-indigo-500">
         </div>
-        <textarea data-field="look" rows="2" placeholder="Aussehen (Körperbau, Haare/Fell, Gesicht)" onchange="app.studio.updateCharacterField('${characterId}','look', this.value)" class="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:border-indigo-500"></textarea>
-        <input data-field="clothing" type="text" placeholder="Kleidung" onchange="app.studio.updateCharacterField('${characterId}','clothing', this.value)" class="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 focus:outline-none focus:border-indigo-500">
+        <textarea data-field="look" rows="2" placeholder="Aussehen (Körperbau, Haare/Fell, Gesicht)" onchange="app.studio.updateCharacterField('${characterId}','look', this.value)" class="w-full text-xs text-slate-900 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:border-indigo-500"></textarea>
+        <input data-field="clothing" type="text" placeholder="Kleidung" onchange="app.studio.updateCharacterField('${characterId}','clothing', this.value)" class="w-full text-xs text-slate-900 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 focus:outline-none focus:border-indigo-500">
         <div class="flex items-center gap-2">
             <span class="text-[10px] text-slate-500 font-semibold">Farben:</span>
             <input data-color="0" type="color" onchange="app.studio.updateCharacterColor('${characterId}', 0, this.value)" class="w-7 h-7 rounded border border-slate-200 cursor-pointer">
             <input data-color="1" type="color" onchange="app.studio.updateCharacterColor('${characterId}', 1, this.value)" class="w-7 h-7 rounded border border-slate-200 cursor-pointer">
             <input data-color="2" type="color" onchange="app.studio.updateCharacterColor('${characterId}', 2, this.value)" class="w-7 h-7 rounded border border-slate-200 cursor-pointer">
         </div>
-        <input data-field="quirk" type="text" placeholder="Unverwechselbare Eigenart" onchange="app.studio.updateCharacterField('${characterId}','quirk', this.value)" class="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 focus:outline-none focus:border-indigo-500">
+        <input data-field="quirk" type="text" placeholder="Unverwechselbare Eigenart" onchange="app.studio.updateCharacterField('${characterId}','quirk', this.value)" class="w-full text-xs text-slate-900 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 focus:outline-none focus:border-indigo-500">
         <button onclick="app.studio.regenerateCharacterSheet('${characterId}')" data-role="sheetBtn" class="w-full text-xs font-bold text-indigo-600 border border-indigo-200 rounded-lg py-1.5 hover:bg-indigo-50 transition"></button>
         <p data-role="staleHint" class="text-[10px] text-amber-700 font-semibold hidden"></p>
     </div>`;

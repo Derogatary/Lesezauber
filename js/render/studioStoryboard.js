@@ -35,7 +35,7 @@ function storyboardCardHtml(spread, project, total) {
         </div>
         <div>
             <label class="text-[10px] font-bold text-slate-500 block mb-0.5">💡 Bildidee (Stichwort)</label>
-            <textarea rows="2" placeholder="z.B. Der Fuchs rennt durch hohes Gras, Blick von der Seite" onchange="app.studio.updateSketchPrompt(${spread.index}, this.value)" class="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:border-indigo-500">${app.utils.sanitize(spread.sketchPrompt)}</textarea>
+            <textarea rows="2" placeholder="z.B. Der Fuchs rennt durch hohes Gras, Blick von der Seite" onchange="app.studio.updateSketchPrompt(${spread.index}, this.value)" class="w-full text-xs text-slate-900 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:border-indigo-500">${app.utils.sanitize(spread.sketchPrompt)}</textarea>
         </div>
         ${characterChipsHtml(project, spread)}
     </div>`;

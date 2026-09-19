@@ -109,7 +109,7 @@ function spreadCardHtml(spread, index) {
                 <span class="text-[10px] font-bold text-slate-400 uppercase">Doppelseite ${index + 1}</span>
                 <button onclick="app.studio.deleteSpread(${index})" aria-label="Doppelseite löschen" class="text-slate-300 hover:text-red-500 text-xs">🗑️</button>
             </div>
-            <textarea rows="3" onchange="app.studio.updateSpreadText(${index}, this.value)" class="w-full text-sm bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:border-indigo-500">${app.utils.sanitize(spread.text)}</textarea>
+            <textarea rows="3" onchange="app.studio.updateSpreadText(${index}, this.value)" class="w-full text-sm text-slate-900 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:border-indigo-500">${app.utils.sanitize(spread.text)}</textarea>
             ${spread.pageTurnHook ? `<p class="text-[10px] text-amber-700 mt-1 italic">👉 Umblätter-Moment: ${app.utils.sanitize(spread.pageTurnHook)}</p>` : ''}
         </div>
     </div>`;
@@ -126,7 +126,7 @@ function comicPanelCardHtml(spreadIndex, panel, panelIndex, panelCount) {
     const balloonRows = panel.balloons.map(b => `
         <div class="flex gap-1.5 items-start">
             <input type="text" value="${app.utils.sanitize(b.speaker)}" placeholder="Wer?" oninput="app.studio.updateBalloon(${spreadIndex}, ${panelIndex}, '${b.id}', {speaker: this.value})" class="w-16 flex-shrink-0 text-xs font-bold text-indigo-700 bg-white border border-slate-200 rounded-lg px-1.5 py-1 focus:outline-none focus:border-indigo-500">
-            <input type="text" value="${app.utils.sanitize(b.text)}" placeholder="Sprechblasentext" oninput="app.studio.updateBalloon(${spreadIndex}, ${panelIndex}, '${b.id}', {text: this.value})" class="flex-grow text-xs bg-white border border-slate-200 rounded-lg px-1.5 py-1 focus:outline-none focus:border-indigo-500">
+            <input type="text" value="${app.utils.sanitize(b.text)}" placeholder="Sprechblasentext" oninput="app.studio.updateBalloon(${spreadIndex}, ${panelIndex}, '${b.id}', {text: this.value})" class="flex-grow text-xs text-slate-900 bg-white border border-slate-200 rounded-lg px-1.5 py-1 focus:outline-none focus:border-indigo-500">
             <button onclick="app.studio.deleteBalloon(${spreadIndex}, ${panelIndex}, '${b.id}')" aria-label="Sprechblase löschen" class="text-slate-300 hover:text-red-500 text-xs px-1 py-1">🗑️</button>
         </div>`).join('');
 
@@ -141,8 +141,8 @@ function comicPanelCardHtml(spreadIndex, panel, panelIndex, panelCount) {
                     <span class="text-[9px] font-bold text-slate-400 uppercase">Panel ${panelIndex + 1}</span>
                     ${panelCount > 1 ? `<button onclick="app.studio.deletePanel(${spreadIndex}, ${panelIndex})" aria-label="Panel löschen" class="text-slate-300 hover:text-red-500 text-xs">🗑️</button>` : ''}
                 </div>
-                <input type="text" value="${app.utils.sanitize(panel.visual)}" placeholder="Bildidee: wer/was/wo" onchange="app.studio.updatePanelVisual(${spreadIndex}, ${panelIndex}, this.value)" class="w-full text-xs bg-white border border-slate-200 rounded-lg px-1.5 py-1 focus:outline-none focus:border-indigo-500">
-                <input type="text" value="${app.utils.sanitize(panel.soundEffect)}" placeholder="💥 Geräuschwort (optional, z.B. BUMM)" onchange="app.studio.updatePanelSoundEffect(${spreadIndex}, ${panelIndex}, this.value)" class="w-full text-xs bg-white border border-slate-200 rounded-lg px-1.5 py-1 focus:outline-none focus:border-indigo-500">
+                <input type="text" value="${app.utils.sanitize(panel.visual)}" placeholder="Bildidee: wer/was/wo" onchange="app.studio.updatePanelVisual(${spreadIndex}, ${panelIndex}, this.value)" class="w-full text-xs text-slate-900 bg-white border border-slate-200 rounded-lg px-1.5 py-1 focus:outline-none focus:border-indigo-500">
+                <input type="text" value="${app.utils.sanitize(panel.soundEffect)}" placeholder="💥 Geräuschwort (optional, z.B. BUMM)" onchange="app.studio.updatePanelSoundEffect(${spreadIndex}, ${panelIndex}, this.value)" class="w-full text-xs text-slate-900 bg-white border border-slate-200 rounded-lg px-1.5 py-1 focus:outline-none focus:border-indigo-500">
             </div>
         </div>
         ${balloonRows}

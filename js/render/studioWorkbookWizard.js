@@ -49,7 +49,7 @@ function pageGoalRowHtml(chapterIdx, page, pageIdx) {
         <span class="text-[10px] font-bold text-slate-400 w-5 flex-shrink-0">${pageIdx + 1}.</span>
         <input type="text" value="${app.utils.sanitize(page.goal)}" placeholder="Was übt diese Seite?"
             onchange="app.studio.updatePageField(${chapterIdx}, ${pageIdx}, 'goal', this.value)"
-            class="flex-grow text-xs bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:border-indigo-500">
+            class="flex-grow text-xs text-slate-900 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:border-indigo-500">
         <label class="flex items-center gap-1 text-[10px] font-semibold text-amber-700 flex-shrink-0">
             <input type="checkbox" ${page.kind === 'wiederholung' ? 'checked' : ''}
                 onchange="app.studio.updatePageField(${chapterIdx}, ${pageIdx}, 'kind', this.checked ? 'wiederholung' : 'neu')">
@@ -65,12 +65,12 @@ function chapterCardHtml(chapter, chapterIdx) {
         <div class="flex items-center gap-2">
             <input type="text" value="${app.utils.sanitize(chapter.title)}" placeholder="Kapiteltitel"
                 onchange="app.studio.updateChapterField(${chapterIdx}, 'title', this.value)"
-                class="flex-grow text-sm font-bold bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:border-indigo-500">
+                class="flex-grow text-sm font-bold text-slate-900 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:border-indigo-500">
             <button onclick="app.studio.deleteChapter(${chapterIdx})" aria-label="Kapitel löschen" class="text-slate-300 hover:text-red-500 text-xs flex-shrink-0">🗑️</button>
         </div>
         <textarea rows="2" placeholder="Kapitelziel: Das Kind kann ..."
             onchange="app.studio.updateChapterField(${chapterIdx}, 'goal', this.value)"
-            class="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:border-indigo-500">${app.utils.sanitize(chapter.goal)}</textarea>
+            class="w-full text-xs text-slate-900 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:border-indigo-500">${app.utils.sanitize(chapter.goal)}</textarea>
         <div class="space-y-1.5">
             ${chapter.pages.map((p, i) => pageGoalRowHtml(chapterIdx, p, i)).join('')}
         </div>
@@ -114,7 +114,7 @@ function taskDataFieldsHtml(chapterIdx, pageIdx, taskIdx, content) {
     const field = (label, value, key, placeholder = '') => `
         <div><label class="text-[10px] font-bold text-slate-400 block mb-0.5">${label}</label>
         <input type="text" value="${app.utils.sanitize(value)}" placeholder="${placeholder}" onchange="${onData(key)}"
-            class="w-full text-xs bg-white border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:border-indigo-500"></div>`;
+            class="w-full text-xs text-slate-900 bg-white border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:border-indigo-500"></div>`;
 
     if (content.type === 'luecke') {
         return field('Satz mit ___ als Lücke', d.sentence, 'sentence')
@@ -129,7 +129,7 @@ function taskDataFieldsHtml(chapterIdx, pageIdx, taskIdx, content) {
     if (content.type === 'rechnen') {
         return `<div><label class="text-[10px] font-bold text-slate-400 block mb-0.5">Aufgaben (eine pro Zeile)</label>
             <textarea rows="3" onchange="app.studio.updateTaskData(${chapterIdx}, ${pageIdx}, ${taskIdx}, 'problems', this.value)"
-                class="w-full text-xs bg-white border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:border-indigo-500">${app.utils.sanitize((d.problems || []).join('\n'))}</textarea></div>`
+                class="w-full text-xs text-slate-900 bg-white border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:border-indigo-500">${app.utils.sanitize((d.problems || []).join('\n'))}</textarea></div>`
             + field('Lösungen (Komma-getrennt, gleiche Reihenfolge)', (d.answers || []).join(', '), 'answers');
     }
     if (content.type === 'zuordnen') {
@@ -158,13 +158,13 @@ function taskCardHtml(chapterIdx, pageIdx, task, taskIdx) {
         </div>
         <textarea rows="2" placeholder="Aufgabenstellung"
             onchange="app.studio.updateTaskField(${chapterIdx}, ${pageIdx}, ${taskIdx}, 'instruction', this.value)"
-            class="w-full text-xs bg-white border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:border-indigo-500">${app.utils.sanitize(content.instruction)}</textarea>
+            class="w-full text-xs text-slate-900 bg-white border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:border-indigo-500">${app.utils.sanitize(content.instruction)}</textarea>
         ${taskDataFieldsHtml(chapterIdx, pageIdx, taskIdx, content)}
         ${task.type !== 'frei' ? `
         <div><label class="text-[10px] font-bold text-slate-400 block mb-0.5">Lösung (für den Lösungsteil am Heftende)</label>
             <input type="text" value="${app.utils.sanitize(content.solution)}"
                 onchange="app.studio.updateTaskField(${chapterIdx}, ${pageIdx}, ${taskIdx}, 'solution', this.value)"
-                class="w-full text-xs bg-white border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:border-indigo-500"></div>` : ''}
+                class="w-full text-xs text-slate-900 bg-white border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:border-indigo-500"></div>` : ''}
     </div>`;
 }
 

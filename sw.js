@@ -1,7 +1,15 @@
 // Bei jeder inhaltlichen Änderung an einer dieser Dateien diese Nummer
 // erhöhen - sonst bekommen wiederkehrende Besucher weiter die alte
 // zwischengespeicherte Version ausgeliefert.
-const CACHE_NAME = 'lesezauber-shell-v46';
+const CACHE_NAME = 'lesezauber-shell-v47';
+
+// NEU (v47): Dark-Mode-Kontrastfix - mehrere neuere SchreibZauber-Eingabefelder
+// (Figuren-Bibel, Comic-Sprechblasen/Panels, Doppelseiten-Textfeld, Layout-
+// Auswahlfelder, Storyboard-Skizzenhinweis, Arbeitsheft-Wizard) hatten die
+// Klasse text-slate-900 vergessen und blieben dadurch im Dark Mode
+// schwarzer-auf-dunklem-Grund-Text (die Dark-Mode-Regeln in css/style.css
+// greifen nur an dieser Klasse, siehe CHANGELOG v0.20.1-beta für denselben
+// Fehler an anderer Stelle). Keine neuen Dateien. Siehe CHANGELOG.md.
 
 // NEU (v46): KDP-Innenteil-Export (studioPrint.js) korrigiert/vervollständigt
 // - Sicherheitsabstand jetzt korrekt 0,375" MIT Bleed (vorher pauschal

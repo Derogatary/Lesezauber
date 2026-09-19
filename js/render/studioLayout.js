@@ -33,7 +33,7 @@ function layoutCardHtml(spread, project) {
         <div class="grid grid-cols-2 gap-2">
             <div>
                 <label class="text-[10px] font-bold text-slate-500 block mb-0.5">Textposition</label>
-                <select onchange="app.studio.updateSpreadLayout(${spread.index}, {textPos: this.value})" class="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:border-indigo-500">
+                <select onchange="app.studio.updateSpreadLayout(${spread.index}, {textPos: this.value})" class="w-full text-xs text-slate-900 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:border-indigo-500">
                     <option value="oben" ${layout.textPos === 'oben' ? 'selected' : ''}>oben</option>
                     <option value="unten" ${layout.textPos === 'unten' || !layout.textPos ? 'selected' : ''}>unten</option>
                     <option value="links" ${layout.textPos === 'links' ? 'selected' : ''}>links</option>
@@ -84,7 +84,7 @@ function balloonControlsHtml(spreadIndex, panelIndex, balloon) {
                 <input type="range" min="20" max="90" value="${balloon.w}" onchange="app.studio.updateBalloon(${spreadIndex}, ${panelIndex}, '${balloon.id}', {w: parseInt(this.value)})" class="w-full">
             </div>
         </div>
-        <select onchange="app.studio.updateBalloon(${spreadIndex}, ${panelIndex}, '${balloon.id}', {tail: this.value})" class="w-full text-[10px] bg-white border border-slate-200 rounded-lg px-1.5 py-1 focus:outline-none focus:border-indigo-500">
+        <select onchange="app.studio.updateBalloon(${spreadIndex}, ${panelIndex}, '${balloon.id}', {tail: this.value})" class="w-full text-[10px] text-slate-900 bg-white border border-slate-200 rounded-lg px-1.5 py-1 focus:outline-none focus:border-indigo-500">
             <option value="unten-links" ${balloon.tail === 'unten-links' ? 'selected' : ''}>Schwänzchen unten-links</option>
             <option value="unten-rechts" ${balloon.tail === 'unten-rechts' ? 'selected' : ''}>Schwänzchen unten-rechts</option>
             <option value="oben-links" ${balloon.tail === 'oben-links' ? 'selected' : ''}>Schwänzchen oben-links</option>

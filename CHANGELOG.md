@@ -6,6 +6,14 @@ vollständige Historie, neueste Version zuerst. Diese Datei wurde aus
 `CLAUDE.md` ausgelagert, weil der Abschnitt dort mit der Zeit zu groß für
 schnellen Kontext wurde; inhaltlich unverändert übernommen.
 
+## v0.30.8-beta
+
+Dark-Mode-Kontrastfix (Nutzer-Feedback mit Screenshot: "sind wieder die Schriften falsch kontrastet, an fast allen neuen Auswahlfeldern" - Figuren-Bibel in Stufe 4 des SchreibZauber-Assistenten):
+
+- Ursache: die Dark-Mode-Regeln in `css/style.css` überschreiben Hintergrundfarben (z.B. `.bg-slate-50`) fest auf einen dunklen Ton, aber die Textfarbe wird nur dann mit umgefärbt, wenn das Element selbst eine explizite `text-slate-*`-Klasse trägt (siehe Kommentarblock am Kopf der Datei). Fehlt diese Klasse an einem Eingabefeld, bleibt die Browser-Standard-Schriftfarbe (schwarz) bestehen - auf dunklem Grund praktisch unlesbar. Exakt derselbe Fehler wie schon einmal in v0.20.1-beta behoben, hier aber an neueren, seitdem hinzugekommenen SchreibZauber-Feldern erneut aufgetreten, die die Klasse nie bekommen hatten.
+- Betroffen und korrigiert (`text-slate-900` ergänzt): `js/render/studioCharacters.js` (alle sieben Eingabefelder der Figuren-Bibel: Name, Rolle, Alter, Art, Aussehen, Kleidung, Eigenart), `js/render/studioWizard.js` (Doppelseiten-Textfeld sowie die Comic-Sprechblasentext-/Panel-Bildidee-/Geräuschwort-Felder), `js/render/studioLayout.js` (Textpositions-Auswahlfeld, Sprechblasen-Schwänzchen-Auswahlfeld), `js/render/studioStoryboard.js` (Skizzenhinweis-Textfeld), `js/render/studioWorkbookWizard.js` (Seitenziel-, Kapiteltitel-, Kapitelziel-Felder sowie alle generischen Aufgaben-Datenfelder inkl. Rechenaufgaben-Textarea, Aufgabenstellung, Lösung).
+- Keine neuen Dateien, keine funktionale Änderung - reine Kontrastkorrektur, betrifft nur den Dark Mode.
+
 ## v0.30.7-beta
 
 Korrektur: PayPal-Link auf `https://www.paypal.me/PascalBoysen` geändert (mit `www.`, nach Rückmeldung des Nutzers) - konnte in dieser Sitzung mangels Internetzugriff auf externe Domains nicht selbst verifiziert werden, siehe Hinweis an den Nutzer, den Link vor der Veröffentlichung selbst zu testen.
