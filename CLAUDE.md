@@ -96,7 +96,7 @@ import './actions/meineNeueDatei.js';
 | `js/render/cinema.js` | Video-Export Teil 1: Canvas-Renderer (`app.cinema`) - zeichnet EINEN Frame zum Zeitpunkt t (Seitenbild + Ken-Burns + Untertitel mit Wort-Hervorhebung), verwaltet bewusst keine Zeit und spielt nichts ab |
 | `js/actions/videoTimeline.js` | Zeitplan/"Regie" dazu (`app.cinema.buildTimeline`): welche Szene über welchem **Seitenbereich** wann läuft - nutzt echte Segmente aus `renderPageSegments()`, sonst Längen-Schätzung aus dem Text |
 | `js/actions/videoPreview.js` | Film-Vorschau ("🎬 Film"): spielt den Zeitplan live auf sichtbarem Canvas ab, bewusst stumm/ohne Synthese - kostet also nichts |
-| `js/actions/videoExport.js` | Video-Export Teil 2: Ton aus `renderPageSegments()`, Frames per `VideoEncoder`, Ton per `AudioEncoder`, Datei per `mp4-muxer` über OPFS. Codec-Leiter statt festem Codec, Fortschritt+Abbruch, Größenschätzung vorab. **Nur bei `origin: 'authored'`** |
+| `js/actions/videoExport.js` | Video-Export Teil 2: Ton aus `renderPageSegments()`, Frames per `VideoEncoder`, Ton per `AudioEncoder`, Datei per `mp4-muxer` über OPFS. Codec-Leiter statt festem Codec, Fortschritt+Abbruch, Größenschätzung vorab. Bei `origin: 'scan'` seit v0.36.0-beta kein Komplett-Block mehr, sondern Passwort-Abfrage (`app.actions.videoExportNeedsPassword()`, fest verdrahtetes Passwort `admin` - keine echte Zugriffskontrolle, nur eine Absichts-Bremse mit Rechte-Hinweis, siehe Kommentar in der Datei und docs/KONZEPT-Video.md Abschnitt 7) |
 | `js/studio/studioCore.js` | SchreibZauber: `app.studio`-Projekt-CRUD, Stufen-Logik (Idee/Bauplan/Geschichte), Platzhalter-Aufruf pro Doppelseite |
 | `js/studio/studioPrompts.js` | SchreibZauber: alle Prompt-Bausteine inkl. `guardrailsBlock()` (Veröffentlichungs-Leitplanken, Entscheidung 6) |
 | `js/studio/studioApi.js` | SchreibZauber: eigener Gemini/Mistral-Textaufruf fürs Manuskript (gleiche Keys wie `js/api.js`, getrennte Funktionen) |
@@ -125,7 +125,9 @@ import './actions/meineNeueDatei.js';
                      // IMMER über app.utils.resolveBookOrigin(book) lesen. Steuert NUR den
                      // Video-Export (eine weitergegebene Videodatei eines fremden
                      // Kinderbuchs wäre eine Vervielfältigung) - siehe docs/KONZEPT-Video.md
-                     // Abschnitt 7
+                     // Abschnitt 7. Seit v0.36.0-beta kein Komplett-Block mehr bei 'scan',
+                     // sondern Passwort-Abfrage (Nutzerwunsch) - app.actions.exportVideo()
+                     // in js/actions/videoExport.js
   publisher, series, // optional: von der KI auf der Titelseite erkannt (analyzePage)
   titlePageId, backCoverPageId, tocPageId, authorBioPageId,  // optional: Seiten-IDs, manuell
                      // per "Seiten-Rollen" markiert (app.actions.setPageRole) - überschreiben
@@ -303,6 +305,6 @@ Feste Regeln:
 
 ## Versionsstand
 
-Aktuell `v0.35.2-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Version bei größeren Änderungen hochzählen (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).
+Aktuell `v0.36.0-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Version bei größeren Änderungen hochzählen (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).
 
 **Die vollständige Versionshistorie (was mit welcher Version kam, inkl. aller Entscheidungen) steht in [`CHANGELOG.md`](CHANGELOG.md), neueste Version zuerst.** Vor dem Einplanen eines Features dort nachsehen, sonst werden bereits gefallene Entscheidungen neu diskutiert. Neuer Eintrag bei jeder Versionserhöhung: oben in `CHANGELOG.md` ergänzen, nicht hier.

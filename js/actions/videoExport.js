@@ -15,11 +15,19 @@ import { app } from '../core.js';
 // (ffmpeg.wasm, 25-30 MB Zusatz-Download, braucht auf GitHub Pages einen
 // Service-Worker-Trick) sind verworfen. Nicht neu aufrollen.
 //
-// Der Export gibt es laut Abschnitt 7 NUR für selbst geschriebene Bücher
-// (`origin: 'authored'`, siehe app.utils.resolveBookOrigin) - ein
-// exportiertes und weitergegebenes Video eines abfotografierten fremden
-// Kinderbuchs wäre eine Vervielfältigung. Die Film-Vorschau bleibt für alle
-// Bücher offen, die ist wie der Kino-Modus reines Vorlesen zu Hause.
+// Der Export ist laut Abschnitt 7 bei abfotografierten Büchern
+// (`origin: 'scan'`, siehe app.utils.resolveBookOrigin) rechtlich riskant -
+// ein exportiertes und weitergegebenes Video eines fremden Kinderbuchs wäre
+// eine Vervielfältigung. Kein technischer Fremdkörper-Schutz (die App hat
+// keinen Server, ein Passwort im Client ist keine echte Sicherung - siehe
+// "Reine Kindersicherung, kein Passwortschutz" bei den Profilen,
+// js/profiles.js), sondern dieselbe Art Absichts-Bremse: NEU
+// (Nutzerwunsch) statt eines kompletten Blocks fragt exportVideo() unten
+// bei einem gescannten Buch nach dem Passwort "admin" und zeigt dabei den
+// Rechte-Hinweis noch einmal - wer bewusst weitermacht, tut das auf eigene
+// Verantwortung für den rein privaten Gebrauch, nicht zur Weitergabe.
+// Die Film-Vorschau bleibt für alle Bücher offen, die ist wie der
+// Kino-Modus reines Vorlesen zu Hause.
 
 const FPS = 25;
 // Schlüsselbild alle 2 Sekunden: ohne regelmäßige Schlüsselbilder kann ein
@@ -85,9 +93,6 @@ Object.assign(app.actions, {
     // (asynchron) läuft erst beim Start.
     videoExportBlocker(book) {
         if (!book) return 'Buch nicht gefunden.';
-        if (app.utils.resolveBookOrigin(book) !== 'authored') {
-            return 'Videodatei nur bei selbst geschriebenen Büchern (SchreibZauber) - bei abfotografierten Büchern wäre die Weitergabe eine Vervielfältigung.';
-        }
         if (typeof VideoEncoder === 'undefined' || typeof AudioEncoder === 'undefined') {
             return 'Dieser Browser kann (noch) keine Videos kodieren. Chrome, Edge oder ein neueres Safari können es.';
         }
@@ -95,6 +100,15 @@ Object.assign(app.actions, {
             return 'Der Film braucht eine KI-Stimme (Einstellungen) - die Gerätestimme kann keine Tonspur herausgeben.';
         }
         return null;
+    },
+
+    // NEU (Nutzerwunsch): abfotografierte Bücher brauchen ab jetzt statt
+    // einem kompletten Block nur noch das Passwort "admin" (siehe Kommentar
+    // oben an der Datei) - eine eigene Stelle, damit UI (Knopf-Beschriftung/
+    // Hinweistext) und der tatsächliche Aufruf unten dieselbe Bedingung
+    // benutzen.
+    videoExportNeedsPassword(book) {
+        return !!book && app.utils.resolveBookOrigin(book) !== 'authored';
     },
 
     // Grobe Dateigröße in Bytes. Eine Stelle für beide Anzeigen (Knopf in
@@ -112,6 +126,21 @@ Object.assign(app.actions, {
         const book = app.library[bookId];
         const blocker = this.videoExportBlocker(book);
         if (blocker) { app.ui.toast(blocker, '🚫'); return; }
+
+        // NEU (Nutzerwunsch): kein kompletter Block mehr, sondern eine
+        // Absichts-Bremse mit Passwort - der Rechte-Hinweis (docs/KONZEPT-
+        // Video.md Abschnitt 7) steht dabei jedes Mal im Klartext, damit
+        // niemand aus Versehen ein fremdes Buch weitergibt. Kein Passwortfeld
+        // in den Einstellungen, bewusst fest verdrahtet - das ist keine
+        // echte Zugriffskontrolle (steht im Quelltext), nur eine bewusste
+        // zweite Bestätigung wie bei anderen "Kindersicherungen" der App.
+        if (this.videoExportNeedsPassword(book)) {
+            const pw = prompt('Dieses Buch wurde abfotografiert, kein selbst geschriebenes Werk. Ein weitergegebenes Video davon wäre eine Vervielfältigung eines fremden Buchs - bitte nur für den rein privaten Gebrauch fortfahren, niemals weitergeben.\n\nPasswort zum Fortfahren:');
+            if (pw !== 'admin') {
+                app.ui.toast(pw === null ? 'Abgebrochen.' : 'Falsches Passwort.', '🚫');
+                return;
+            }
+        }
 
         if (app.state.apiBusy) { app.ui.toast('Es läuft schon etwas - bitte kurz warten.', '⏳'); return; }
 

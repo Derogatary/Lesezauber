@@ -6,6 +6,14 @@ vollständige Historie, neueste Version zuerst. Diese Datei wurde aus
 `CLAUDE.md` ausgelagert, weil der Abschnitt dort mit der Zeit zu groß für
 schnellen Kontext wurde; inhaltlich unverändert übernommen.
 
+## v0.36.0-beta
+
+Video-Export für abfotografierte Bücher: Passwort statt Komplett-Block (Nutzerwunsch: "Mach den Videoexport bei gescannten Büchern als Passwort: admin"):
+
+- Bisher war der Video-Export bei `origin: 'scan'` (abfotografierte fremde Kinderbücher) komplett gesperrt - ein exportiertes, weitergegebenes Video eines fremden Werks wäre eine Vervielfältigung (docs/KONZEPT-Video.md Abschnitt 7). Jetzt fragt `exportVideo()` (`js/actions/videoExport.js`) bei solchen Büchern stattdessen nach dem Passwort `admin` und zeigt dabei den Rechte-Hinweis noch einmal im Klartext.
+- **Kein echter Zugriffsschutz** - das Passwort steht im Quelltext, die App hat keinen Server für eine echte Prüfung. Dieselbe Art "Absichts-Bremse" wie die bestehende Kindersicherung bei den Profilen (`js/profiles.js`: "reine Kindersicherung, kein Passwortschutz") - es geht darum, dass niemand aus Versehen (v.a. ein Kind) ein fremdes Buch als Video weitergibt, nicht um Sicherheit vor jemandem, der die App selbst bedienen darf.
+- Der "Als Videodatei speichern"-Knopf in der Film-Vorschau war für gescannte Bücher bisher komplett ausgeblendet, ist jetzt sichtbar (mit 🔒-Hinweis in Knopf-Beschriftung und Hinweistext) - `app.actions.videoExportNeedsPassword()` als neue, eigene Bedingung getrennt von den echten technischen Blockern (Browser-Unterstützung, KI-Stimme aktiv) in `videoExportBlocker()`.
+
 ## v0.35.2-beta
 
 Speechify-Modell für Deutsch korrigiert (Nutzer-Screenshots aus dem Speechify-Dashboard):

@@ -493,11 +493,17 @@ Object.assign(app.actions, {
         if (state.timeline.skipped.length) {
             parts.push(`${state.timeline.skipped.length} Seite/n übersprungen (noch nicht ausgelesen).`);
         }
-        // Geht der Export gerade nicht (fremdes Buch, kein WebCodecs, keine
-        // KI-Stimme), steht der Grund hier - ein Knopf, der einfach fehlt,
-        // wäre für den Betreiber nicht erklärbar.
+        // Geht der Export gerade nicht (kein WebCodecs, keine KI-Stimme),
+        // steht der Grund hier - ein Knopf, der einfach fehlt, wäre für den
+        // Betreiber nicht erklärbar.
         const blocker = app.actions.videoExportBlocker(app.library[state.bookId]);
         if (blocker) parts.push(`Kein Video-Export: ${blocker}`);
+        // NEU (Nutzerwunsch): abfotografierte Bücher sind nicht mehr
+        // komplett gesperrt, brauchen aber das Passwort - Hinweis statt
+        // Sperrgrund, siehe app.actions.videoExportNeedsPassword.
+        else if (app.actions.videoExportNeedsPassword(app.library[state.bookId])) {
+            parts.push('🔒 Abfotografiertes Buch - Video-Export fragt nach dem Passwort (nur für den privaten Gebrauch, nicht weitergeben).');
+        }
         hint.innerText = parts.join(' ');
     },
 
@@ -516,7 +522,10 @@ Object.assign(app.actions, {
             // nennt sie noch einmal, aus derselben Rechnung).
             const bytes = app.actions.estimateVideoBytes(state.timeline.formatId, state.timeline.totalDurationSec);
             const mb = Math.max(1, Math.round(bytes / 1_000_000));
-            label.innerText = `Als Videodatei speichern (ca. ${mb} MB)`;
+            // NEU (Nutzerwunsch): Schloss-Symbol als Vorwarnung, dass gleich
+            // nach dem Passwort gefragt wird (abfotografiertes Buch).
+            const lock = app.actions.videoExportNeedsPassword(app.library[state.bookId]) ? '🔒 ' : '';
+            label.innerText = `${lock}Als Videodatei speichern (ca. ${mb} MB)`;
         }
     },
 
