@@ -6,6 +6,14 @@ vollständige Historie, neueste Version zuerst. Diese Datei wurde aus
 `CLAUDE.md` ausgelagert, weil der Abschnitt dort mit der Zeit zu groß für
 schnellen Kontext wurde; inhaltlich unverändert übernommen.
 
+## v0.36.3-beta
+
+FIX: KI-Stimmen-Aufnahmen laufen jetzt in einer eigenen, unabhängigen Hintergrund-Schleife (Nutzerhinweis: "Die Prio ist eine andere Schleife, da es einen anderen Anbieter callt."):
+
+- Der in v0.36.2-beta eingebaute Audio-Vorbereitungs-Schritt lief als niedrigste Prioritätsstufe in DERSELBEN Schleife wie Grundanalyse/Personas/Buch-Quiz/Birkenbihl (`findNextMissingTask()`) - architektonisch falsch, wie richtig angemerkt: diese vier Aufgaben teilen sich alle dasselbe Gemini/Mistral-Tageskontingent und müssen sich deshalb tatsächlich einen Slot teilen, eine KI-Stimmen-Aufnahme ruft aber einen KOMPLETT ANDEREN Anbieter mit eigenem, unabhängigem Kontingent auf (die eingestellte KI-Stimme - Speechify/ElevenLabs/Google Cloud/OpenAI/Gemini-TTS). In der gemeinsamen Schleife hätte Audio-Vorbereitung bei einer großen Bibliothek unnötig lange auf den textlichen Abschluss warten müssen, obwohl beim Sprach-Anbieter währenddessen nichts passiert wäre.
+- `js/backgroundPregen.js` hat jetzt zwei komplett unabhängige Schleifen: die bestehende Text-Schleife (`runOneBackgroundTask()`/`scheduleNext()`, gated über `app.state.apiBusy`) und eine neue, parallele Audio-Schleife (`runOneAudioBackgroundTask()`/`scheduleNextAudio()`, eigener Lauf-Schutz `audioTaskRunning`) - beide können gleichzeitig aktiv sein, ohne sich gegenseitig zu blockieren.
+- Verhalten für den Nutzer unverändert (gleicher Schalter, gleiche Zähler-Anzeige), nur die Priorität untereinander ist jetzt korrekt getrennt.
+
 ## v0.36.2-beta
 
 KI-Stimmen-Aufnahmen als vierte Hintergrund-Aufgabe, eigener Zusatz-Schalter (Nutzerwunsch: "Hier auch wieder die background Durchführung der fehlenden gesprochenen Teile als eigener Toggle"):

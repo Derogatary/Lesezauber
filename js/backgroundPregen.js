@@ -34,6 +34,14 @@ import { app } from './core.js';
 // eine document.visibilityState-Prüfung) - nur ein komplett geschlossener
 // Tab/Browser stoppt es zwangsläufig, das kann eine reine Client-App ohne
 // eigenen Server (Push-Benachrichtigungen bräuchten einen) nicht umgehen.
+//
+// FIX (Nutzerhinweis: "Die Prio ist eine andere Schleife, da es einen
+// anderen Anbieter callt."): KI-Stimmen-Aufnahmen (app.settings.
+// backgroundPregenAudio) sind NICHT Teil dieser Prioritäts-Kette - sie
+// rufen einen anderen Anbieter mit eigenem Kontingent auf (die Sprach-API
+// statt Gemini/Mistral) und laufen deshalb in einer komplett eigenen,
+// parallelen Schleife ganz unten in dieser Datei (runOneAudioBackgroundTask/
+// scheduleNextAudio), unabhängig vom app.state.apiBusy dieser Schleife hier.
 const BACKGROUND_PAUSE_MS = 9000;
 
 async function findNextMissingTask() {
@@ -103,18 +111,6 @@ async function findNextMissingTask() {
     if (app.settings.backgroundPregenBirkenbihl) {
         const [first] = app.utils.findMissingBirkenbihlPages();
         if (first) return { type: 'birkenbihl', bookId: first.bookId, pageIdx: first.pageIdx };
-    }
-
-    // NEU (Nutzerwunsch: "auch wieder die background Durchführung der
-    // fehlenden gesprochenen Teile als eigener Toggle") - niedrigste
-    // Priorität von allen, aus demselben Grund wie Birkenbihl: eigens
-    // bestätigt (app.settings.backgroundPregenAudio), weil jede vorbereitete
-    // Aufnahme bei einer bezahlten KI-Stimme echtes Geld/Kontingent kostet.
-    // findMissingAudioPages() prüft selbst, ob überhaupt eine KI-Stimme
-    // aktiv ist, und liefert sonst eine leere Liste.
-    if (app.settings.backgroundPregenAudio) {
-        const [first] = await app.utils.findMissingAudioPages();
-        if (first) return { type: 'audio', bookId: first.bookId, pageIdx: first.pageIdx };
     }
 
     return null;
@@ -252,10 +248,6 @@ async function runOneBackgroundTask() {
             if (app.state.currentBookId === task.bookId && app.state.currentView === 'reader' && app.state.currentPageIdx === task.pageIdx) {
                 app.render.birkenbihlTab(app.library[task.bookId].pages[task.pageIdx]);
             }
-        } else if (task.type === 'audio') {
-            // NEU: landet nur im ttsCache, verändert kein Buch-Feld - deshalb
-            // hier kein Neuzeichnen einer Ansicht nötig.
-            await generateAudioForPageInBackground(app.library[task.bookId], task.pageIdx);
         }
 
         // NEU: hält den kleinen "⏳ X im Hintergrund offen"-Hinweis in der
@@ -278,3 +270,54 @@ function scheduleNext() {
 }
 
 scheduleNext();
+
+// ========== Zweite, unabhängige Schleife: KI-Stimmen-Aufnahmen ==========
+// FIX (Nutzerhinweis: "Die Prio ist eine andere Schleife, da es einen
+// anderen Anbieter callt."): Audio-Vorbereitung lief bisher als niedrigste
+// Stufe in DERSELBEN Schleife wie Grundanalyse/Personas/Buch-Quiz/
+// Birkenbihl (findNextMissingTask() oben). Das war architektonisch falsch:
+// jene vier Aufgaben teilen sich alle dasselbe Gemini/Mistral-
+// Tageskontingent und MÜSSEN sich deshalb tatsächlich einen Slot alle 9
+// Sekunden teilen. Eine KI-Stimmen-Aufnahme ruft dagegen einen KOMPLETT
+// ANDEREN Anbieter auf (Speechify/ElevenLabs/Google Cloud/OpenAI/
+// Gemini-TTS, je nach app.settings.ttsProvider) mit eigenem, unabhängigem
+// Kontingent - sie hätte in der gemeinsamen Schleife unnötig lange warten
+// müssen, bis eine große Bibliothek komplett textlich fertig ist, obwohl
+// beim Sprach-Anbieter währenddessen nichts passiert wäre. Läuft deshalb
+// als eigene, parallele Schleife mit eigenem Lauf-Schutz (audioTaskRunning
+// statt des gemeinsamen app.state.apiBusy, das nur die Text-Anfragen
+// serialisiert) - kann also gleichzeitig mit der Text-Schleife oben aktiv
+// sein, ohne sich gegenseitig zu blockieren. Landet nur im ttsCache
+// (IndexedDB), verändert kein Buch-Feld, deshalb auch kein Neuzeichnen
+// einer Ansicht nötig.
+let audioTaskRunning = false;
+
+async function runOneAudioBackgroundTask() {
+    if (!app.settings.backgroundPregenEnabled) return;
+    if (!app.settings.backgroundPregenAudio) return;
+    if (audioTaskRunning) return;
+
+    // findMissingAudioPages() prüft selbst, ob überhaupt eine KI-Stimme
+    // aktiv ist und der Stimmen-Speicher eingeschaltet ist, und liefert
+    // sonst eine leere Liste.
+    const [first] = await app.utils.findMissingAudioPages();
+    if (!first) return;
+
+    audioTaskRunning = true;
+    try {
+        await generateAudioForPageInBackground(app.library[first.bookId], first.pageIdx);
+    } catch (e) {
+        console.warn('Hintergrund-Vorbereitung (KI-Stimme): ein Versuch fehlgeschlagen, wird später erneut versucht.', e);
+    } finally {
+        audioTaskRunning = false;
+    }
+}
+
+function scheduleNextAudio() {
+    setTimeout(async () => {
+        await runOneAudioBackgroundTask();
+        scheduleNextAudio();
+    }, BACKGROUND_PAUSE_MS);
+}
+
+scheduleNextAudio();
