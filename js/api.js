@@ -96,6 +96,131 @@ Nutze exakt dieses Schema:
 Das Feld "vocabulary" listet GENAU die Nomen (in Grundform, z.B. "Baum" statt "Bäume"), die du in "simplifiedText" durch ein Emoji ersetzt hast, zusammen mit dem jeweils verwendeten Emoji.`;
 }
 
+// NEU (Nutzerwunsch: "so viel wie möglich aus einem Call rausbekommen") -
+// bündelt ALLE konfigurierten Personas UND die Birkenbihl-Zerlegung in
+// EINEN Scan-Aufruf, statt wie bisher nur die aktuell gewählte Persona zu
+// erzeugen (Rest kam bisher erst später on-demand/im Hintergrund einzeln
+// nach - je 1 eigener Aufruf). Nur für bookType 'story' - ein Übungsheft
+// hat weder mehrere sinnvolle Personas-Varianten noch einen Birkenbihl-Tab
+// (siehe js/actions/scanner.js für die Weiche).
+//
+// Ändert die Kostenrechnung fundamental: die alte, explizit getroffene
+// Entscheidung "NICHT alle Personas sofort generieren, 5 Personas sofort =
+// 5x Kosten" (siehe CLAUDE.md Datenmodell-Abschnitt) galt, solange die
+// ANFRAGEZAHL mit der Personazahl mitwuchs. Bei EINEM gemeinsamen Aufruf
+// bleibt es bei 1 Anfrage - nur mit einer entsprechend größeren, aber
+// dank des großzügigen Minuten-Token-Kontingents (siehe Modell-Rotation,
+// v0.34.0-beta) quasi kostenlosen Antwort.
+//
+// Persona-UNABHÄNGIGE Fakten (originalText, hasIllustration, Kapitel,
+// Cover-Angaben) werden bewusst nur EINMAL im "core"-Block erfragt, nicht
+// pro Persona dupliziert - das wäre unnötig teure Textmenge für exakt
+// denselben Sachverhalt (in der alten Architektur lief das OCR bei jeder
+// weiteren Persona faktisch nochmal mit, obwohl der gedruckte Text sich ja
+// nicht ändert). Nur die stilistisch geprägten Felder (vereinfachter Text,
+// Sprech-Fassung, Bildbeschreibung, Rätsel) kommen pro Persona.
+//
+// FORMAT bewusst wie beim SchreibZauber-Master-Prompt (siehe
+// js/studio/studioPrompts.js, buildMasterSetupPrompt()/
+// parseMasterSetupResponse()): JEDER Abschnitt ein eigener Codeblock mit
+// eigenem JSON statt EINES riesigen verschachtelten JSON-Objekts. Grund:
+// bei einem einzigen großen JSON reicht EIN vom Modell nicht sauber
+// escapetes Anführungszeichen irgendwo (z.B. in wörtlicher Rede bei einer
+// Persona) aus, um die GESAMTE Antwort für JSON.parse() unbrauchbar zu
+// machen - exakt das Problem, das beim Birkenbihl-Bugfix in v0.32.2-beta
+// auftrat. Mit einem Codeblock PRO Abschnitt kostet ein kaputter Abschnitt
+// nur SEINEN eigenen Inhalt - alle anderen Personas/der Grundtext bleiben
+// nutzbar, siehe parseMultiPersonaResponse() unten.
+function buildMultiPersonaAnalyzePrompt(isCover, knownText, forceToc, birkenbihlLangId) {
+    const knownTextBlock = knownText
+        ? `\nDer exakte Text dieser Seite ist bereits bekannt (aus der Textebene, NICHT per Bilderkennung raten):\n"${knownText}"\nNutze GENAU diesen Wortlaut UNVERÄNDERT nur für "originalText" im "core"-Block. Jedes "simplifiedText" MUSS trotzdem eine eigene, wirklich vereinfachte Version mit Emojis sein - NICHT einfach der bekannte Text unverändert kopiert.\n`
+        : '';
+
+    const tocInstruction = forceToc
+        ? `Diese Seite wurde vom Nutzer als Inhaltsverzeichnis markiert - extrahiere UNBEDINGT die Kapitelüberschriften in 'tocEntries' (Array, OHNE Seitenzahlen), auch bei ungewöhnlichem Layout.`
+        : `Falls diese Seite ein Inhaltsverzeichnis/eine Kapitelübersicht ist: Array der Kapitelüberschriften in gedruckter Reihenfolge, OHNE Seitenzahlen. Sonst null.`;
+
+    const coverFields = isCover
+        ? `,\n  "title": "Der auf dieser Seite gedruckte Buchtitel, so genau wie erkennbar (auch bei kunstvoller/kursiver Schrift genau hinschauen) - nur null, falls WIRKLICH kein Titel zu sehen ist", "author": "Der gedruckte Autorenname - nur null, falls wirklich keiner zu sehen ist", "publisher": "Der erkennbare Verlagsname (z.B. aus Logo/Impressum auf dieser Seite) - nur null, falls wirklich keiner zu sehen ist", "series": "Der Name der Buchreihe, falls auf dieser Seite als Reihenbezeichnung erkennbar - nur null, falls keine erkennbar ist"`
+        : '';
+
+    const personaBlocks = app.personas.map(p => `
+\`\`\`persona:${p.id}
+{
+  "simplifiedText": "GENAU der Originaltext (aus dem \\"core\\"-Block) mit GLEICHEM Satzbau - ersetze NUR 2-4 einzelne Nomen direkt an ihrer Stelle durch ein passendes Emoji. KEINE Umformulierung, KEINE Vereinfachung des Satzbaus, KEINE neuen/anderen Sätze - nur die Emoji-Ersetzung. Rolle dabei: ${p.instruction}",
+  "vocabulary": [{"word": "Beispiel-Nomen", "emoji": "🌳"}],
+  "imageDescription": "Falls die Seite laut \\"core\\"-Block eine Illustration zeigt: sie in 2 Sätzen passend zur Rolle (${p.instruction}) beschreiben. Sonst null.",
+  "quizQuestion": "Falls eine Illustration vorhanden ist: leichte Frage ZUM BILD. Sonst: leichte Frage zum Textinhalt. Passend zur Rolle (${p.instruction}).",
+  "quizAnswer": "Die kurze Antwort darauf.",
+  "speechText": "NUR fürs Vorlesen, NICHT für die Anzeige: GENAU der Originaltext, WORTGLEICH und mit gleicher Satzstellung, aber an ein paar wenigen, wirklich passenden Stellen mit Sprech-Anweisungen mitten im Satz in eckigen Klammern angereichert (z.B. [flüstert], [lacht], [aufgeregt], [seufzt], [gähnt]), passend zur Rolle (${p.instruction}). KEIN Wort am eigentlichen Text ändern, hinzufügen oder weglassen - nur Tags EINFÜGEN. Sparsam einsetzen, nicht bei jedem Satz. Gibt der Text keinen erkennbaren Anlass für Emotionen her: identisch zum Originaltext."
+}
+\`\`\``).join('\n');
+
+    const birkenbihlBlock = (() => {
+        const langInfo = app.birkenbihlLanguages.find(l => l.id === birkenbihlLangId) || app.birkenbihlLanguages[0];
+        return `
+
+Zusätzlich EIN Block "birkenbihl" nach der Birkenbihl-Methode (Sprachenlernen durch wörtliche Übersetzung, nach Vera F. Birkenbihl - KEINE Grammatikregeln): übersetze den Originaltext aus dem "core"-Block natürlich und kindgerecht ins ${langInfo.promptLabel} und zerlege den ${langInfo.promptLabel}en Satz in kurze Wort-/Sinneinheiten (meist einzelne Wörter, ein Artikel darf mit seinem Nomen zusammenbleiben). Gib zu JEDER Einheit eine WÖRTLICHE deutsche Übersetzung, die exakt die Wortstellung des ${langInfo.promptLabel}en Satzes beibehält - auch wenn das auf Deutsch ungewöhnlich klingt (z.B. Englisch "The dog is running" wörtlich "Der Hund ist rennend", NICHT "Der Hund rennt"). Das ist bei dieser Methode ausdrücklich so gewollt.
+\`\`\`birkenbihl
+{
+  "pairs": [{"target": "Wort/Einheit auf ${langInfo.promptLabel}", "gloss": "wörtliche deutsche Übersetzung dieser Einheit"}]
+}
+\`\`\``;
+    })();
+
+    return `Analysiere die Kinderbuch-Seite für MEHRERE Vorlese-Rollen gleichzeitig. Antworte AUSSCHLIESSLICH mit den unten verlangten Codeblöcken, jeder mit eigenem, validem JSON - keine Markdown-Formatierung außerhalb der Blöcke, kein zusätzlicher Fließtext.
+${knownTextBlock}
+\`\`\`core
+{
+  "originalText": "Der exakte gedruckte Text (Wenn leer: 'Kein Text.')",
+  "hasIllustration": true oder false - true NUR wenn die Seite eine echte Illustration/Zeichnung/Foto zeigt, false bei einer reinen Textseite ohne Bild,
+  "chapterTitle": "Falls diese Seite sichtbar ein NEUES Kapitel beginnt (eigene Kapitelüberschrift): die Überschrift GENAU wie gedruckt. Sonst null - die meisten Seiten sind KEIN Kapitelanfang.",
+  "tocEntries": "${tocInstruction}"${coverFields}
+}
+\`\`\`
+
+Für JEDE der folgenden Rollen einen eigenen Block mit demselben Schema, angepasst an die jeweilige Rolle - alle beziehen sich auf den "originalText" aus dem "core"-Block oben:
+${personaBlocks}
+${birkenbihlBlock}`;
+}
+
+// NEU: Gegenstück zu buildMultiPersonaAnalyzePrompt() oben - zerlegt die
+// Antwort in ihre Codeblöcke und parst JEDEN EINZELN FÜR SICH. Ein von der
+// KI nicht sauber escapetes Anführungszeichen in EINER Persona (z.B.
+// wörtliche Rede) lässt dadurch nur DIESE eine Persona fehlschlagen, nicht
+// die ganze Seite - fehlende Personas holt der bestehende Mechanismus
+// (on-demand im Reader bzw. app.backgroundPregen) genauso nach, wie er es
+// heute schon für eine noch nie analysierte Persona tut.
+function parseMultiPersonaResponse(rawText) {
+    const text = String(rawText || '');
+    const blocks = {};
+    const fenceRe = /```\s*([\w:-]+)\s*\n([\s\S]*?)```/g;
+    let m;
+    while ((m = fenceRe.exec(text))) {
+        blocks[m[1].trim()] = m[2].trim();
+    }
+
+    const parseBlock = (key) => {
+        if (!blocks[key]) return null;
+        try {
+            return parseModelJson(blocks[key]);
+        } catch (e) {
+            console.warn(`Analyse-Block "${key}" konnte nicht gelesen werden, wird übersprungen:`, e.message);
+            return null;
+        }
+    };
+
+    const core = parseBlock('core') || {};
+    const personas = {};
+    app.personas.forEach(p => {
+        const data = parseBlock(`persona:${p.id}`);
+        if (data) personas[p.id] = data;
+    });
+    const birkenbihl = parseBlock('birkenbihl');
+
+    return { core, personas, birkenbihl };
+}
+
 // NEU: eigener Prompt für Übungshefte (bookType 'workbook'). Der normale
 // Analyse-Prompt oben ist auf eine ERZÄHL-Seite zugeschnitten und ersetzt
 // Nomen durch Emojis - bei einer Arbeitsanweisung ("Male alle Dreiecke an")
@@ -312,6 +437,71 @@ async function callMistralAnalyze(prompt, base64Image) {
     const data = await res.json();
     const textResult = data.choices?.[0]?.message?.content || '{}';
     return parseModelJson(textResult);
+}
+
+// NEU (Mehrere-Personas-Analyse): wie callGeminiAnalyze() oben, aber OHNE
+// den abschließenden parseModelJson() - die Antwort enthält jetzt mehrere
+// Codeblöcke (siehe buildMultiPersonaAnalyzePrompt()), die JEDER FÜR SICH
+// geparst werden müssen (parseMultiPersonaResponse()). Ein Versuch, die
+// GANZE Antwort auf einmal zu parsen, würde sowieso scheitern (es ist ja
+// kein einzelnes JSON-Objekt) und hier keinen Sinn ergeben.
+async function callGeminiAnalyzeRaw(prompt, base64Image) {
+    if (!app.settings.apiKey) throw new Error('API_KEY_MISSING');
+
+    const payload = {
+        contents: [{ parts: [{ text: prompt }, { inlineData: { mimeType: 'image/webp', data: base64Image } }] }],
+        generationConfig: { temperature: 0.3 }
+    };
+
+    const text = await withGeminiModelRotation(async (model) => {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${app.settings.apiKey}`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+        });
+        if (!res.ok) {
+            if (res.status === 400) throw new Error('Falscher API-Key (400)');
+            if (res.status === 403) throw new Error('API-Key ungültig (403)');
+            if (res.status === 429) throw new Error('RATE_LIMITED');
+            throw new Error(`Gemini-Fehler ${res.status}`);
+        }
+        const data = await res.json();
+        return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    });
+
+    app.costMeter.trackGeminiText(prompt.length);
+    return text;
+}
+
+// NEU (Mehrere-Personas-Analyse): Mistral-Gegenstück zu
+// callGeminiAnalyzeRaw() oben - nur als allerletzter Rückfall gebraucht,
+// wenn WIRKLICH jedes Gemini-Modell 429 meldet (siehe analyzeAllPersonas()
+// unten). Mistral bekommt denselben Block-Prompt und liefert im besten
+// Fall dieselbe Struktur zurück - hält sich ein schwächeres Modell nicht
+// exakt daran, verliert parseMultiPersonaResponse() eben nur die Blöcke,
+// die nicht ordentlich zu finden waren, statt komplett zu scheitern.
+async function callMistralAnalyzeRaw(prompt, base64Image) {
+    if (!app.settings.mistralApiKey) throw new Error('MISTRAL_KEY_MISSING');
+
+    const res = await fetch('https://api.mistral.ai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${app.settings.mistralApiKey}`
+        },
+        body: JSON.stringify({
+            model: MISTRAL_MODEL,
+            messages: [{
+                role: 'user',
+                content: [
+                    { type: 'text', text: prompt },
+                    { type: 'image_url', image_url: `data:image/webp;base64,${base64Image}` }
+                ]
+            }]
+        })
+    });
+
+    if (!res.ok) throw new Error(`Mistral-Fehler ${res.status}`);
+    const data = await res.json();
+    return data.choices?.[0]?.message?.content || '';
 }
 
 // NEU: reiner Text-Aufruf (kein Bild) fürs Buch-Quiz und den Heft-Generator,
@@ -545,6 +735,38 @@ Object.assign(app.api, {
                 throw geminiError;
             }
         }
+    },
+
+    // NEU (Nutzerwunsch: "so viel wie möglich aus einem Call rausbekommen") -
+    // liefert ALLE konfigurierten Personas UND die Birkenbihl-Zerlegung aus
+    // EINEM Aufruf, siehe buildMultiPersonaAnalyzePrompt() für die
+    // ausführliche Begründung. Rückgabe: { core, personas: {[personaId]:
+    // {...}}, birkenbihl: {pairs} | null } - core/personas/birkenbihl
+    // können je nach dem, was beim Parsen gefunden wurde, auch leer/null
+    // sein (siehe parseMultiPersonaResponse()), das ruft NIEMALS selbst
+    // einen Fehler hervor - app.actions.analyzePage() entscheidet, was bei
+    // einem leeren Ergebnis passiert (Rückfall auf den bewährten
+    // Einzel-Personas-Weg analyze() oben).
+    async analyzeAllPersonas(base64Image, isCover, knownText, forceToc, birkenbihlLangId) {
+        const prompt = buildMultiPersonaAnalyzePrompt(isCover, knownText, forceToc, birkenbihlLangId);
+
+        let rawText;
+        try {
+            rawText = await callGeminiAnalyzeRaw(prompt, base64Image);
+        } catch (geminiError) {
+            if (!app.settings.mistralApiKey) throw geminiError;
+
+            console.warn('Gemini fehlgeschlagen, versuche Mistral-Fallback:', geminiError.message);
+            try {
+                rawText = await callMistralAnalyzeRaw(prompt, base64Image);
+                app.ui.toast('Gemini nicht erreichbar - Mistral eingesprungen', '🔄');
+            } catch (mistralError) {
+                console.error('Auch Mistral-Fallback fehlgeschlagen:', mistralError);
+                throw geminiError;
+            }
+        }
+
+        return parseMultiPersonaResponse(rawText);
     },
 
     async answerQuestion(base64Image, question) {

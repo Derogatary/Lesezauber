@@ -74,14 +74,14 @@ import './actions/meineNeueDatei.js';
 | `js/state.js` | `app.state` (Laufzeit) + `app.settings` (persistiert, localStorage) - **Reihenfolge: settings vor state**, da state teils von settings liest |
 | `js/db.js` | IndexedDB-Speicher-Engine (`app.library`, `app.vocabulary`, `ttsCache`, `projects`). **Version 4** - neuer Object Store: `DB_VERSION` erhöhen und `onupgradeneeded` erweitern |
 | `js/nav.js` | Router zwischen den `<main id="view...">`-Ansichten |
-| `js/api.js` | Gemini/Mistral-Aufrufe, der komplette Analyse-Prompt lebt hier. `GEMINI_MODELS`+`withGeminiModelRotation()`: Modell-Rotation bei 429 (jedes Modell eigenes Tageskontingent), Mistral erst wenn ALLE Modelle 429 melden |
+| `js/api.js` | Gemini/Mistral-Aufrufe, der komplette Analyse-Prompt lebt hier. `GEMINI_MODELS`+`withGeminiModelRotation()`: Modell-Rotation bei 429 (jedes Modell eigenes Tageskontingent), Mistral erst wenn ALLE Modelle 429 melden. Seit v0.35.0-beta zusätzlich `app.api.analyzeAllPersonas()`: EIN Aufruf liefert alle Personas + Birkenbihl-Übersetzung als Fenced-Code-Blöcke, `parseMultiPersonaResponse()` parst jeden Block einzeln (Ausfallsicherheit) |
 | `js/tts.js` | Sprachausgabe: Weiche Gerätestimme/KI-Stimme, Auto-Vorlesen, Wort-Hervorhebung (SpeechSynthesis `boundary`-Event), Rätsel-Modus |
 | `js/ttsProviders.js` | KI-Stimmen-Anbieter als Liste (`app.ttsProviders.list`) - neuer Anbieter = neuer Eintrag, UI baut sich automatisch auf |
 | `js/ttsNeural.js` | Wiedergabe der KI-Stimmen: IndexedDB-Zwischenspeicher, eigene Wort-Hervorhebung per `requestAnimationFrame`, Vorbereitung der nächsten Seite, Rückfall auf Gerätestimme |
 | `js/profiles.js` | Lokale Profile (kein Server/Login), inkl. `__all__`-Sonderfilter |
 | `js/backgroundPregen.js` | Opt-in Hintergrund-Vorbereitung fehlender Persona-Varianten/Buch-Quiz/Birkenbihl-Übersetzungen (Prioritäts-Reihenfolge: Varianten → Quiz → Birkenbihl, letzteres eigener Zusatz-Schalter) |
 | `js/keyboard.js`, `js/gestures.js` | Desktop-Tastatur bzw. Touch-Wisch-Navigation im Reader |
-| `js/actions/scanner.js` | Kamera, Foto-Aufnahme, Galerie-Import, **die zentrale `analyzePage()`-Funktion** |
+| `js/actions/scanner.js` | Kamera, Foto-Aufnahme, Galerie-Import, **die zentrale `analyzePage()`-Funktion** - ruft bei `bookType: 'story'` seit v0.35.0-beta `app.api.analyzeAllPersonas()` auf (alle Personas + Birkenbihl in einem Call), fällt bei Total-Ausfall auf die alte Einzel-Persona-Funktion zurück; `applyPageMetadata()` ist die gemeinsame Stelle für Titel/Autor/Kapitel/Inhaltsverzeichnis, egal ob Einzel- oder Mehrere-Personas-Pfad |
 | `js/actions/pdfImport.js`, `epubImport.js` | Datei-Import, beide nutzen lazy-geladene Vendor-Libs |
 | `js/actions/workbook.js` | Heft-Modus: Buchart umschalten (inkl. Neu-Auslesen), Lösung aufdecken |
 | `js/render/workbook.js` | Hilfe-/Lösungs-Karte im Reader, Art-Umschalter in Bibliothek/Buchansicht |
@@ -184,7 +184,7 @@ import './actions/meineNeueDatei.js';
 - `app.utils.resolvePageVariant(page, personaId)` - exakt diese Persona, sonst `null`
 - `app.utils.resolveAnyVariant(page, preferredPersonaId)` - diese Persona, sonst IRGENDEINE vorhandene (Druck/Buch-Quiz, wo der Text ohnehin persona-unabhängig sein sollte)
 
-**Wichtiges Verhalten:** Beim Scannen/Batch wird NUR die aktuell gewählte Persona generiert (1 API-Call/Seite) - andere Personas entstehen erst on-demand im Reader (5 Personas sofort = 5x Kosten). NICHT eigenmächtig "alle Personas sofort generieren" umbauen - explizit besprochen und verworfen.
+**Wichtiges Verhalten (seit v0.35.0-beta revidiert):** Beim Scannen/Batch werden bei `bookType: 'story'` ALLE Personas UND die Birkenbihl-Übersetzung in EINEM API-Aufruf erzeugt (`app.api.analyzeAllPersonas()` in `js/api.js`, aufgerufen aus `analyzePage()` in `js/actions/scanner.js`). Grund für die Revision der ursprünglichen Entscheidung ("5 Personas sofort = 5x Kosten"): der Modell-Rotations-Fund (v0.34.0-beta) zeigte, dass die **Tages-Anfragezahl** der eigentliche Engpass ist (~20-500 je nach Modell), nicht die Textmenge pro Anfrage (250K Token/Minute, kaum ausgeschöpft) - mehrere Personas in einem Aufruf kosten also weiterhin nur 1 Anfrage, nicht 5. Format: ein Fenced-Code-Block `core` (persona-unabhängige Fakten), je ein Block `persona:<id>`, ein Block `birkenbihl` - jeder Block wird EINZELN geparst (`parseMultiPersonaResponse()`), damit ein kaputter Block (z.B. unescapetes Anführungszeichen in einer Persona-Antwort) nicht die anderen mitreißt. Liefert der Aufruf gar keine lesbare Persona, fällt `analyzePage()` auf die alte Einzel-Persona-Funktion `app.api.analyze()` zurück (Sicherheitsnetz, damit eine Seite nie ganz ohne Inhalt bleibt). Bei `bookType: 'workbook'` UNVERÄNDERT: weiterhin nur die aktuell gewählte Persona (Hefte haben ohnehin meist nur eine relevante Ansprache). Der Hintergrund-Vorbereiter (`js/backgroundPregen.js`) erzeugt bei fehlenden einzelnen Persona-Varianten (z.B. alte Seiten, oder ein einzelner Persona-Block ist beim Scan fehlgeschlagen) weiterhin gezielt NUR die fehlende Persona nach - dafür bleibt `app.api.analyze()` unverändert nutzbar.
 
 ## Persona-System
 
@@ -303,6 +303,6 @@ Feste Regeln:
 
 ## Versionsstand
 
-Aktuell `v0.34.0-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Version bei größeren Änderungen hochzählen (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).
+Aktuell `v0.35.0-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Version bei größeren Änderungen hochzählen (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).
 
 **Die vollständige Versionshistorie (was mit welcher Version kam, inkl. aller Entscheidungen) steht in [`CHANGELOG.md`](CHANGELOG.md), neueste Version zuerst.** Vor dem Einplanen eines Features dort nachsehen, sonst werden bereits gefallene Entscheidungen neu diskutiert. Neuer Eintrag bei jeder Versionserhöhung: oben in `CHANGELOG.md` ergänzen, nicht hier.

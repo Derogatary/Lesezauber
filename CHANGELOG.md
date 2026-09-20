@@ -6,6 +6,19 @@ vollständige Historie, neueste Version zuerst. Diese Datei wurde aus
 `CLAUDE.md` ausgelagert, weil der Abschnitt dort mit der Zeit zu groß für
 schnellen Kontext wurde; inhaltlich unverändert übernommen.
 
+## v0.35.0-beta
+
+Alle Personas + Birkenbihl-Übersetzung in EINEM API-Aufruf statt mehrerer einzelner (Nutzerwunsch, nach dem Modell-Rotations-Fund in v0.34.0-beta: "am besten so viel wie möglich rausbekommen aus einem prompt/call wie möglich... Originaltext, erstleser, personas, birkenbihl mit übersetzungen, Bildbeschreibung, rätselfrage"):
+
+- **Revidiert die in CLAUDE.md ursprünglich als "explizit besprochen und verworfen" dokumentierte Entscheidung.** Die alte Begründung ("5 Personas sofort = 5x Kosten") ging von Kosten pro Textmenge aus - der Modell-Rotations-Fund zeigte aber, dass die **Tages-Anfragezahl** (nicht die Tokenmenge) der eigentliche Engpass ist. Mehrere Personas in einem Aufruf verbrauchen weiterhin nur 1 Anfrage, nur mit größerer (quasi kostenloser) Antwort - die alte Kostenrechnung stimmte für das falsche Kontingent.
+- **Neu `app.api.analyzeAllPersonas()`** (`js/api.js`): ein Prompt fragt gleichzeitig nach dem persona-unabhängigen "Kern" (Originaltext, Kapitelüberschrift, Inhaltsverzeichnis, bei der Titelseite zusätzlich Titel/Autor/Verlag/Reihe), JEDER hinterlegten Persona (vereinfachter Text, Vokabeln, Bildbeschreibung, Rätselfrage/-antwort, Vorlesetext) und optional der Birkenbihl-Wort-für-Wort-Übersetzung - jeweils als eigener Fenced-Code-Block (` ```core``` `, ` ```persona:<id>``` `, ` ```birkenbihl``` `).
+- **Ausfallsicher pro Block:** `parseMultiPersonaResponse()` parst jeden Block EINZELN - ein kaputter Block (z.B. ein unescapetes Anführungszeichen in einer Persona-Antwort, genau der Fehler, der zuvor die Birkenbihl-Funktion lahmgelegt hatte) wirft nur diesen einen Block weg, alle anderen Personas/der Kern/Birkenbihl kommen trotzdem an. Mit einem simulierten Fehlerfall gegengetestet (ein Skript mit absichtlich kaputtem `persona:papa`-Block bestätigte: nur "papa" fehlt, alle anderen vier Personas plus Kern plus Birkenbihl kamen fehlerfrei durch).
+- **Sicherheitsnetz:** liefert der Aufruf gar keine einzige lesbare Persona, fällt `analyzePage()` (`js/actions/scanner.js`) auf die alte, bewährte Einzel-Persona-Funktion `app.api.analyze()` für die gerade gewählte Persona zurück - eine Seite bleibt nie ganz ohne Inhalt.
+- Betrifft nur `bookType: 'story'` (Geschichten) - Übungshefte (`bookType: 'workbook'`) laufen unverändert über die Einzel-Persona-Funktion, da dort ohnehin meist nur eine Ansprache relevant ist.
+- Der Hintergrund-Vorbereiter (`js/backgroundPregen.js`) bleibt unverändert - er füllt gezielt einzelne fehlende Persona-Varianten (alte Seiten, oder ein einzelner Block ist beim Scan fehlgeschlagen) weiterhin über `app.api.analyze()` nach.
+- Neue gemeinsame Hilfsfunktion `applyPageMetadata()` (`js/actions/scanner.js`) - vorher doppelter Code für Titel/Autor/Kapitelüberschrift/Inhaltsverzeichnis, jetzt eine Stelle für beide Pfade (Einzel- und Mehrere-Personas-Analyse).
+- **Konnte nicht gegen die echte Gemini-API in dieser Umgebung getestet werden** (Netzwerk-Sandbox erlaubt nur `generativelanguage.googleapis.com`, kein Live-Aufruf mit echtem Key) - ob das Modell das neue Mehrere-Blöcke-Format zuverlässig einhält, muss sich im echten Betrieb zeigen. Die Ausfallsicherheit (siehe oben) fängt Abweichungen pro Block ab, das Sicherheitsnetz fängt einen kompletten Fehlschlag ab.
+
 ## v0.34.0-beta
 
 Modell-Rotation bei Ratenbegrenzung (Nutzerwunsch: "rotierende Funktion von absteigender Qualität", nach einem weiteren Nutzer-Screenshot mit Live-Nutzungszahlen aus AI Studio):
