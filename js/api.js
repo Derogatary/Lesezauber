@@ -85,10 +85,10 @@ Nutze exakt dieses Schema:
   "simplifiedText": "GENAU der Originaltext mit GLEICHEM Satzbau - ersetze NUR 2-4 einzelne Nomen direkt an ihrer Stelle durch ein passendes Emoji. KEINE Umformulierung, KEINE Vereinfachung des Satzbaus, KEINE neuen/anderen Sätze - nur die Emoji-Ersetzung.",
   "vocabulary": [{"word": "Beispiel-Nomen", "emoji": "🌳"}],
   "hasIllustration": true oder false - true NUR wenn die Seite eine echte Illustration/Zeichnung/Foto zeigt, false bei einer reinen Textseite ohne Bild,
-  "imageDescription": "Falls hasIllustration=true: die Illustration in 2 Sätzen passend zur Rolle beschreiben. Falls hasIllustration=false: null",
-  "quizQuestion": "Falls hasIllustration=true: leichte Frage ZUM BILD. Falls hasIllustration=false: leichte Frage zum Textinhalt dieser Seite.",
+  "imageDescription": "Falls hasIllustration=true: die Illustration in 2 Sätzen passend zur Rolle beschreiben - beginne mit einer Formulierung, die klarmacht, dass hier ein BILD beschrieben wird (z.B. 'Auf dem Bild siehst du...', 'Hier sehen wir...'), NICHT wie ein normaler Erzählsatz ohne diesen Bezug. Falls hasIllustration=false: null",
+  "quizQuestion": "Eine leichte Frage zum TEXTINHALT dieser Seite (nicht zum Bild) - wahlweise auch zu den Gefühlen einer Figur an dieser Stelle der Geschichte, passend zur Rolle.",
   "quizAnswer": "Die kurze Antwort darauf.",
-  "chapterTitle": "Falls diese Seite sichtbar ein NEUES Kapitel beginnt (eigene Kapitelüberschrift, z.B. 'Kapitel 3: Der geheime Wald'): die Überschrift GENAU wie gedruckt. Sonst null - die meisten Seiten sind KEIN Kapitelanfang.",
+  "chapterTitle": "Falls diese Seite sichtbar ein NEUES Kapitel beginnt: die Überschrift GENAU wie gedruckt. Erkennungsmerkmale: sie steht meist ALLEIN am oberen Seitenrand, deutlich GRÖSSER/FETTER als der übrige Text, mit eigenem Abstand zum Fließtext danach - zählt AUCH OHNE das Wort 'Kapitel' oder eine Nummer davor (z.B. nur 'Der geheime Wald' allein oben auf der Seite). Ein normaler erster Satz der Geschichte, auch wenn er kurz/prägnant klingt, zählt NICHT als Überschrift. Sonst null - die meisten Seiten sind KEIN Kapitelanfang.",
   "tocEntries": "${tocInstruction}",
   "speechText": "NUR fürs Vorlesen, NICHT für die Anzeige: GENAU der Text aus 'originalText', WORTGLEICH und mit gleicher Satzstellung, aber an ein paar wenigen, wirklich passenden Stellen mit Sprech-Anweisungen mitten im Satz in eckigen Klammern angereichert (z.B. [flüstert], [lacht], [aufgeregt], [seufzt], [gähnt]), passend zur Rolle (${personaInstruction(personaId)}) und zur Stimmung der jeweiligen Stelle. KEIN Wort am eigentlichen Text ändern, hinzufügen oder weglassen - nur Tags EINFÜGEN. Sparsam einsetzen, nicht bei jedem Satz. Gibt der Text keinen erkennbaren Anlass für Emotionen her: identisch zu 'originalText'."
   ${isCover ? ', "title": "Der auf dieser Seite gedruckte Buchtitel, so genau wie erkennbar (auch bei kunstvoller/kursiver Schrift genau hinschauen) - nur null, falls WIRKLICH kein Titel zu sehen ist", "author": "Der gedruckte Autorenname - nur null, falls wirklich keiner zu sehen ist", "publisher": "Der erkennbare Verlagsname (z.B. aus Logo/Impressum auf dieser Seite) - nur null, falls wirklich keiner zu sehen ist", "series": "Der Name der Buchreihe, falls auf dieser Seite als Reihenbezeichnung erkennbar (z.B. Bildermaus) - nur null, falls keine erkennbar ist"' : ''}
@@ -149,8 +149,8 @@ function buildMultiPersonaAnalyzePrompt(isCover, knownText, forceToc, birkenbihl
 {
   "simplifiedText": "GENAU der Originaltext (aus dem \\"core\\"-Block) mit GLEICHEM Satzbau - ersetze NUR 2-4 einzelne Nomen direkt an ihrer Stelle durch ein passendes Emoji. KEINE Umformulierung, KEINE Vereinfachung des Satzbaus, KEINE neuen/anderen Sätze - nur die Emoji-Ersetzung. Rolle dabei: ${p.instruction}",
   "vocabulary": [{"word": "Beispiel-Nomen", "emoji": "🌳"}],
-  "imageDescription": "Falls die Seite laut \\"core\\"-Block eine Illustration zeigt: sie in 2 Sätzen passend zur Rolle (${p.instruction}) beschreiben. Sonst null.",
-  "quizQuestion": "Falls eine Illustration vorhanden ist: leichte Frage ZUM BILD. Sonst: leichte Frage zum Textinhalt. Passend zur Rolle (${p.instruction}).",
+  "imageDescription": "Falls die Seite laut \\"core\\"-Block eine Illustration zeigt: sie in 2 Sätzen passend zur Rolle (${p.instruction}) beschreiben - beginne mit einer Formulierung, die klarmacht, dass hier ein BILD beschrieben wird (z.B. 'Auf dem Bild siehst du...', 'Hier sehen wir...'), NICHT wie ein normaler Erzählsatz ohne diesen Bezug. Sonst null.",
+  "quizQuestion": "Eine leichte Frage zum TEXTINHALT dieser Seite (nicht zum Bild) - wahlweise auch zu den Gefühlen einer Figur an dieser Stelle, passend zur Rolle (${p.instruction}).",
   "quizAnswer": "Die kurze Antwort darauf.",
   "speechText": "NUR fürs Vorlesen, NICHT für die Anzeige: GENAU der Originaltext, WORTGLEICH und mit gleicher Satzstellung, aber an ein paar wenigen, wirklich passenden Stellen mit Sprech-Anweisungen mitten im Satz in eckigen Klammern angereichert (z.B. [flüstert], [lacht], [aufgeregt], [seufzt], [gähnt]), passend zur Rolle (${p.instruction}). KEIN Wort am eigentlichen Text ändern, hinzufügen oder weglassen - nur Tags EINFÜGEN. Sparsam einsetzen, nicht bei jedem Satz. Gibt der Text keinen erkennbaren Anlass für Emotionen her: identisch zum Originaltext."
 }
@@ -174,7 +174,7 @@ ${knownTextBlock}
 {
   "originalText": "Der exakte gedruckte Text (Wenn leer: 'Kein Text.')",
   "hasIllustration": true oder false - true NUR wenn die Seite eine echte Illustration/Zeichnung/Foto zeigt, false bei einer reinen Textseite ohne Bild,
-  "chapterTitle": "Falls diese Seite sichtbar ein NEUES Kapitel beginnt (eigene Kapitelüberschrift): die Überschrift GENAU wie gedruckt. Sonst null - die meisten Seiten sind KEIN Kapitelanfang.",
+  "chapterTitle": "Falls diese Seite sichtbar ein NEUES Kapitel beginnt: die Überschrift GENAU wie gedruckt. Erkennungsmerkmale: sie steht meist ALLEIN am oberen Seitenrand, deutlich GRÖSSER/FETTER als der übrige Text, mit eigenem Abstand zum Fließtext danach - zählt AUCH OHNE das Wort 'Kapitel' oder eine Nummer davor (z.B. nur 'Der geheime Wald' allein oben auf der Seite). Ein normaler erster Satz der Geschichte, auch wenn er kurz/prägnant klingt, zählt NICHT als Überschrift. Sonst null - die meisten Seiten sind KEIN Kapitelanfang.",
   "tocEntries": "${tocInstruction}"${coverFields}
 }
 \`\`\`

@@ -182,7 +182,11 @@ Object.assign(app.utils, {
             // sinnlose Bildbeschreibung - bleibt leer, die Anzeige/das
             // Vorlesen blendet das dann einfach aus.
             desc: result.hasIllustration === false ? null : (result.imageDescription || null),
-            quizQ: result.quizQuestion || (result.hasIllustration === false ? 'Worum ging es auf dieser Seite?' : 'Was siehst du auf dem Bild?'),
+            // FIX (Nutzerwunsch: "Rätselfragen sollen sich auf den Text
+            // beziehen, nicht aufs Bild") - der Rückfall-Text griff bisher
+            // nur, wenn die KI keine eigene Frage geliefert hat, folgte
+            // aber trotzdem noch dem alten "Bild vs. Text"-Unterschied.
+            quizQ: result.quizQuestion || 'Worum ging es auf dieser Seite?',
             quizA: result.quizAnswer || 'Schau genau hin!',
             // NEU (Audio-Tags): nur fürs Vorlesen gedacht, NIE für die
             // Anzeige - siehe app.tts._pickSpeechVariant(). Ist bei

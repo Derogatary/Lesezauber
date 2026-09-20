@@ -6,6 +6,16 @@ vollständige Historie, neueste Version zuerst. Diese Datei wurde aus
 `CLAUDE.md` ausgelagert, weil der Abschnitt dort mit der Zeit zu groß für
 schnellen Kontext wurde; inhaltlich unverändert übernommen.
 
+## v0.36.6-beta
+
+Erste echte Test-Runde mit dem Nutzer ausgewertet - mehrere Funde behoben:
+
+- **Wort-Hervorhebung hinkte am Seitenanfang hinterher, war zum Seitenende wieder synchron:** vermutlich verursacht durch die SSML-Emotion-Umstellung (v0.36.5-beta) - ein Wort-Zeitstempel, der Speechify zufolge INNERHALB des `<speak><speechify:style emotion="...">`-Tag-Bereichs liegt (kann bei der Tag-Verarbeitung als Ausreißer entstehen), wurde bisher fälschlich auf Zeichen-Index 0 gemappt und hätte dort die echte Anfangszeit überschrieben - genau das beobachtete Muster. `alignmentFromSpeechMarks()` bekommt jetzt `contentBounds` (Start/Ende des echten Sprechbereichs im SSML-String) und verwirft Zeitstempel außerhalb davon, statt ihnen Index 0 unterzuschieben. Mit einem Testskript gegen genau dieses Szenario gegengeprüft.
+- **Kapitelüberschriften im Buch selbst wurden schlecht erkannt:** der Analyse-Prompt (`js/api.js`, beide Varianten) verlangte bisher implizit das Wort "Kapitel" oder eine Nummer - jetzt zusätzliche typografische Erkennungsmerkmale (allein am oberen Seitenrand, deutlich größer/fetter, eigener Abstand zum Fließtext) und die ausdrückliche Klarstellung, dass eine Überschrift AUCH OHNE das Wort "Kapitel" zählt (z.B. nur der Kapitelname allein oben auf der Seite).
+- **Bildbeschreibung machte nicht klar, dass sie ein Bild beschreibt:** `imageDescription` verlangt jetzt eine einleitende Formulierung wie "Auf dem Bild siehst du..." statt eines direkten Erzählsatzes ohne Bildbezug.
+- **Rätselfragen bezogen sich bei einer Illustration automatisch aufs Bild:** jetzt IMMER zum Textinhalt (nicht zum Bild), wahlweise auch zu den Gefühlen einer Figur - sowohl im Prompt (`js/api.js`) als auch im Rückfall-Text ohne KI-Antwort (`js/utils.js`). Die vom Nutzer vorgeschlagenen drei Schwierigkeitsstufen ("Anrufung, Anwendung, Überführen") noch nicht umgesetzt - Begriffe erst klären, bevor sie fest in den Prompt einfließen.
+- **Bildseiten ohne eigenen Text sagten beim automatischen Vorlesen wörtlich "Kein Text." an:** `js/tts.js` überspringt diese Ansage jetzt und springt direkt zur Bildbeschreibung, falls eine vorhanden ist.
+
 ## v0.36.5-beta
 
 Speechify: vollen Funktionsumfang genutzt - SSML-Emotionen pro Persona + Concurrency-Schutz (Nutzerwunsch: "Es wäre doch schön den vollen Umfang von Speechify auszunutzen? ... Speechify hat ein RPM ... daran solltest du dich anpassen", plus hochgeladene SSML-Doku):

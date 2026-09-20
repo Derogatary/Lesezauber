@@ -324,17 +324,30 @@ async function openaiSynthesize(text, { voice, rate, styleHint, signal }) {
 // Anbieters zu nutzen - bei jeder Emotion-Persona unbemerkt auf die
 // ungenaue Schätz-Methode zurückfallen (Längen-Check in
 // ttsNeural._wordStartTimes() würde sonst fehlschlagen).
-function alignmentFromSpeechMarks(marks, text, offsetMap) {
+//
+// FIX (Nutzer-Feedback: "Hervorhebung fing meist zu spät an, war zum
+// Schluss jeder Seite aber wieder gleich"): vierter Parameter
+// contentBounds - ein Wort-Zeitstempel, dessen "start" INNERHALB des
+// SSML-Vorspanns (<speak><speechify:style...>) oder -Nachspanns
+// (</speechify:style></speak>) landet, kann kein echtes gesprochenes Wort
+// sein - diese Tags werden nicht mitgesprochen. Ohne diesen Filter wären
+// solche (vermutlich durch die Tag-Verarbeitung entstandenen) Ausreißer
+// über offsetMap alle auf Zeichen-Index 0 gefallen und hätten dort
+// gegenseitig die echte Anfangszeit überschrieben - genau das Muster, das
+// "am Seitenanfang hinterher, gegen Seitenende plötzlich wieder synchron"
+// erklären würde. Chunks außerhalb der Grenzen werden jetzt übersprungen
+// statt ihnen (fälschlich) Zeichen-Index 0 zuzuweisen.
+function alignmentFromSpeechMarks(marks, text, offsetMap, contentBounds) {
     const chunks = marks && marks.chunks;
     if (!Array.isArray(chunks) || !chunks.length) return null;
 
     const startSecByCharIndex = new Map();
     for (const chunk of chunks) {
-        if (chunk.type === 'word' && typeof chunk.start === 'number') {
-            const charIndex = offsetMap ? offsetMap[chunk.start] : chunk.start;
-            if (typeof charIndex === 'number') {
-                startSecByCharIndex.set(charIndex, (chunk.start_time || 0) / 1000);
-            }
+        if (chunk.type !== 'word' || typeof chunk.start !== 'number') continue;
+        if (contentBounds && (chunk.start < contentBounds.start || chunk.start >= contentBounds.end)) continue;
+        const charIndex = offsetMap ? offsetMap[chunk.start] : chunk.start;
+        if (typeof charIndex === 'number') {
+            startSecByCharIndex.set(charIndex, (chunk.start_time || 0) / 1000);
         }
     }
     if (!startSecByCharIndex.size) return null;
@@ -380,7 +393,14 @@ function buildSpeechifySsml(text, emotion) {
     const suffix = emotion ? '</speechify:style></speak>' : '</speak>';
     const { escaped, offsetMap } = escapeSsmlWithOffsets(text);
     const fullOffsetMap = new Array(prefix.length).fill(0).concat(offsetMap);
-    return { ssml: prefix + escaped + suffix, offsetMap: fullOffsetMap };
+    // NEU (siehe Kommentar an alignmentFromSpeechMarks): Grenzen des
+    // tatsächlich gesprochenen Textabschnitts innerhalb des SSML-Strings -
+    // alles davor/danach sind reine Tags, dort kann kein echtes Wort beginnen.
+    return {
+        ssml: prefix + escaped + suffix,
+        offsetMap: fullOffsetMap,
+        contentBounds: { start: prefix.length, end: prefix.length + escaped.length }
+    };
 }
 
 async function speechifySynthesize(text, { voice, signal, emotion }) {
@@ -396,10 +416,12 @@ async function speechifySynthesize(text, { voice, signal, emotion }) {
     // am <speak>-Wurzelelement, kein separates Feld nötig laut API-Doku.
     let input = text;
     let offsetMap = null;
+    let contentBounds = null;
     if (emotion) {
         const built = buildSpeechifySsml(text, emotion);
         input = built.ssml;
         offsetMap = built.offsetMap;
+        contentBounds = built.contentBounds;
     }
 
     let res;
@@ -429,7 +451,7 @@ async function speechifySynthesize(text, { voice, signal, emotion }) {
 
     return {
         blob: new Blob([base64ToBytes(data.audio_data)], { type: 'audio/mpeg' }),
-        alignment: alignmentFromSpeechMarks(data.speech_marks, text, offsetMap)
+        alignment: alignmentFromSpeechMarks(data.speech_marks, text, offsetMap, contentBounds)
     };
 }
 

@@ -557,6 +557,16 @@ Object.assign(app.tts, {
         };
 
         const startPageText = () => {
+            // NEU (Nutzerwunsch): eine reine Bildseite ohne eigenen Text
+            // (originalText war leer, buildPageVariant() setzt dafür den
+            // Platzhalter "Kein Text.") soll beim automatischen Vorlesen
+            // nicht wörtlich "Kein Text." ansagen - direkt zur
+            // Bildbeschreibung springen, falls eine vorhanden ist, statt
+            // die Seite mit einer verwirrenden Ansage zu eröffnen.
+            if (variant.text === 'Kein Text.' && variant.desc) {
+                describeImage();
+                return;
+            }
             // NEU: im Mitmachmodus den Erstleser-Text mit Rate-Pausen
             // vorlesen, aber nur wenn er auch existiert - sonst wie gewohnt
             // Originaltext. Wechselt auch sichtbar zum Erstleser-Tab, damit
