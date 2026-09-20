@@ -306,6 +306,11 @@ async function runOneAudioBackgroundTask() {
     audioTaskRunning = true;
     try {
         await generateAudioForPageInBackground(app.library[first.bookId], first.pageIdx);
+        // NEU: hält den kleinen "⏳ X im Hintergrund offen"-Hinweis in der
+        // Bibliothek aktuell - dieselbe Begründung wie in
+        // runOneBackgroundTask() oben, hier separat, weil beide Schleifen
+        // unabhängig voneinander laufen.
+        if (app.state.currentView === 'lib') app.render.library();
     } catch (e) {
         console.warn('Hintergrund-Vorbereitung (KI-Stimme): ein Versuch fehlgeschlagen, wird später erneut versucht.', e);
     } finally {
@@ -313,11 +318,26 @@ async function runOneAudioBackgroundTask() {
     }
 }
 
+// NEU (Nutzerwunsch: "Passe die Calls an die RPM an"): die Pause zwischen
+// zwei Audio-Vorbereitungen richtet sich nach dem GERADE eingestellten
+// Sprach-Anbieter (app.ttsProviders.current().bgPregenIntervalMs, siehe
+// js/ttsProviders.js) statt fest nach BACKGROUND_PAUSE_MS - Speechify
+// erlaubt laut eigenem Dashboard 1 Anfrage/Sekunde, viel schneller als der
+// für Gemini/Mistral gedachte 9-Sekunden-Standard. Wird bei jedem Zyklus
+// neu ermittelt, damit ein Anbieterwechsel mitten in der Vorbereitung
+// sofort die passende Geschwindigkeit übernimmt. Anbieter ohne bestätigten
+// Wert fallen auf denselben vorsichtigen Standard wie die Text-Schleife
+// zurück.
+function audioLoopDelayMs() {
+    const provider = app.ttsProviders.current();
+    return provider.bgPregenIntervalMs || BACKGROUND_PAUSE_MS;
+}
+
 function scheduleNextAudio() {
     setTimeout(async () => {
         await runOneAudioBackgroundTask();
         scheduleNextAudio();
-    }, BACKGROUND_PAUSE_MS);
+    }, audioLoopDelayMs());
 }
 
 scheduleNextAudio();

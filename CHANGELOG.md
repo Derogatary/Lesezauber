@@ -6,6 +6,13 @@ vollständige Historie, neueste Version zuerst. Diese Datei wurde aus
 `CLAUDE.md` ausgelagert, weil der Abschnitt dort mit der Zeit zu groß für
 schnellen Kontext wurde; inhaltlich unverändert übernommen.
 
+## v0.36.4-beta
+
+KI-Stimmen-Hintergrundvorbereitung schneller + sichtbarer (Nutzerhinweis: "Passe die calls an die rpm an" + "Man sieht auch nicht die Anzahl der verbleibenden speechify calls"):
+
+- **Tempo:** die neue Audio-Schleife (v0.36.3-beta) nutzte noch denselben vorsichtigen 9-Sekunden-Standard wie die Text-Schleife (für Gemini/Mistral gedacht, wo die Tages-Anfragezahl der Engpass ist). Laut Speechify-Dashboard des Nutzers erlaubt der Free-Tarif aber "1 req/s" - ein komplett anderes Limit. Neues Feld `bgPregenIntervalMs` pro Anbieter in `js/ttsProviders.js` (Speechify: 1200ms, mit etwas Sicherheitsabstand zum dokumentierten Limit), `js/backgroundPregen.js` liest es für die Audio-Schleife jeden Zyklus neu aus (`audioLoopDelayMs()`) - ca. 7,5× schneller als vorher. Andere Anbieter ohne bestätigten Wert bleiben vorsichtig beim 9-Sekunden-Standard.
+- **Sichtbarkeit:** der kleine "⏳ X im Hintergrund offen"-Hinweis im Bibliotheks-Kopf (`js/render/library.js`) zählte bisher nur Erzähler-Varianten/Buch-Quiz/Birkenbihl - weder die noch gar nicht ausgelesenen Seiten (seit v0.35.1-beta) noch die KI-Stimmen-Aufnahmen (seit v0.36.2-beta) waren mitgezählt, obwohl der Zähler in den Einstellungen beide schon kannte. Jetzt vollständig, KI-Stimmen-Anteil wird asynchron nachgereicht (ttsCache-Abfrage), ohne die restliche Bibliotheks-Ansicht zu blockieren.
+
 ## v0.36.3-beta
 
 FIX: KI-Stimmen-Aufnahmen laufen jetzt in einer eigenen, unabhängigen Hintergrund-Schleife (Nutzerhinweis: "Die Prio ist eine andere Schleife, da es einen anderen Anbieter callt."):

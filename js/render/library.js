@@ -49,14 +49,33 @@ Object.assign(app.render, {
         // Aufgaben offen sind - nur wenn die Hintergrund-Vorbereitung
         // überhaupt eingeschaltet ist, sonst wäre die Zahl irreführend
         // (sie würde ja gar nicht automatisch abgearbeitet).
+        // FIX (Nutzerhinweis: "man sieht auch nicht die Anzahl der
+        // verbleibenden Speechify-Calls"): countMissingScans() (seit
+        // v0.35.1-beta) und countMissingAudio() (seit v0.36.2-beta) fehlten
+        // hier bisher - der Zähler in den Einstellungen kannte beide schon
+        // lange, dieser kleine Bibliotheks-Hinweis war seitdem nicht mehr
+        // vollständig. countMissingAudio() ist async (fragt den ttsCache
+        // ab) - wird deshalb nachgereicht, statt die ganze Bibliotheks-
+        // Ansicht dafür synchron zu blockieren.
         const pregenBadge = document.getElementById('pregenBadge');
         if (pregenBadge) {
-            const total = app.settings.backgroundPregenEnabled
-                ? app.utils.countMissingVariants() + app.utils.countMissingBookQuiz()
+            const syncMissing = app.settings.backgroundPregenEnabled
+                ? app.utils.countMissingScans() + app.utils.countMissingVariants() + app.utils.countMissingBookQuiz()
                     + (app.settings.backgroundPregenBirkenbihl ? app.utils.countMissingBirkenbihl() : 0)
                 : 0;
-            pregenBadge.classList.toggle('hidden', total === 0);
-            if (total > 0) pregenBadge.innerText = `⏳ ${total} im Hintergrund offen`;
+
+            const showPregenBadge = (total) => {
+                pregenBadge.classList.toggle('hidden', total === 0);
+                if (total > 0) pregenBadge.innerText = `⏳ ${total} im Hintergrund offen`;
+            };
+            showPregenBadge(syncMissing);
+
+            if (app.settings.backgroundPregenEnabled && app.settings.backgroundPregenAudio) {
+                app.utils.countMissingAudio().then(audioMissing => {
+                    // Ansicht kann bis zur Antwort gewechselt haben.
+                    if (document.getElementById('pregenBadge')) showPregenBadge(syncMissing + audioMissing);
+                });
+            }
         }
 
         // NEU: Lese-Serie (Streak) anzeigen, wenn mindestens 2 Tage in Folge

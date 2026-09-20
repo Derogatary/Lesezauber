@@ -580,6 +580,18 @@ Object.assign(app.ttsProviders, {
             // einfach den normalen Text. Wer es testen will, setzt es auf true.
             supportsTags: false,
             supportsVoiceFetch: true,
+            // NEU (Nutzerwunsch: "Passe die Calls an die RPM an"): laut
+            // eigenem Speechify-Dashboard (Free-Tarif, Nutzer-Screenshot)
+            // "TTS rate limit: 1 req/s", "Concurrent TTS requests: 1" - das
+            // ist VIEL schneller als der 9-Sekunden-Standard, den die
+            // Hintergrund-Vorbereitung für Gemini/Mistral (Tages-
+            // Anfragezahl als Engpass) nutzt. js/backgroundPregen.js liest
+            // dieses Feld für die eigene Audio-Schleife; 1200ms statt exakt
+            // 1000ms lässt etwas Sicherheitsabstand zum dokumentierten
+            // Limit. Andere Anbieter unten haben (noch) keinen bestätigten
+            // Wert - fallen auf denselben vorsichtigen 9-Sekunden-Standard
+            // zurück.
+            bgPregenIntervalMs: 1200,
             synthesize: speechifySynthesize
         }
     ],
