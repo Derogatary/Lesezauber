@@ -6,6 +6,17 @@ vollständige Historie, neueste Version zuerst. Diese Datei wurde aus
 `CLAUDE.md` ausgelagert, weil der Abschnitt dort mit der Zeit zu groß für
 schnellen Kontext wurde; inhaltlich unverändert übernommen.
 
+## v0.34.0-beta
+
+Modell-Rotation bei Ratenbegrenzung (Nutzerwunsch: "rotierende Funktion von absteigender Qualität", nach einem weiteren Nutzer-Screenshot mit Live-Nutzungszahlen aus AI Studio):
+
+- Die Live-Zahlen zeigten es eindeutig: `gemini-3.6-flash` lag bei 44 von 20 erlaubten Tages-Anfragen, `gemini-3.8-flash` bei 22 von 20 - beide über dem Limit, während das Minuten-Token-Kontingent (250K) mit max. 10K kaum ausgeschöpft war. **Jedes Gemini-Modell hat sein eigenes, komplett getrenntes Tageskontingent** - die Tages-Anfragezahl ist der Engpass, nicht die Textmenge.
+- **`GEMINI_MODELS`-Liste statt einem einzelnen Modell** (`js/api.js`, `js/studio/studioApi.js`) - absteigend nach Modellgüte: `gemini-3.8-flash` → `3.7` → `3.6` → `3.5` → zuletzt `gemini-3.1-flash-lite` als großzügigste Reserve (~500/Tag). Neue Funktion `withGeminiModelRotation()` probiert die Liste der Reihe nach durch, sobald ein Modell mit HTTP 429 antwortet - ein anderer Fehler (falscher Key, Netzwerk) bricht sofort ab, ohne die übrigen Modelle sinnlos durchzuprobieren. Der bestehende Mistral-Fallback greift unverändert erst, wenn WIRKLICH jedes Gemini-Modell 429 meldet.
+- Dabei einen bisher übersehenen vierten Aufrufer gefunden und mitkorrigiert: `app.api.answerQuestion()` ("Frag den Zauberer") baute seinen Gemini-Aufruf bisher direkt selbst statt über die gemeinsamen Funktionen - bekam dadurch nie die Rotation, obwohl er dasselbe Tageskontingent verbraucht.
+- Mit Node-Tests gegen drei Szenarien geprüft (Rotation bei mehreren 429, finaler Fehler wenn alle Modelle erschöpft sind, sofortiger Abbruch bei einem Nicht-429-Fehler ohne die anderen Modelle zu verschwenden).
+- **Live-API und Batching eingeordnet, aber nicht umgesetzt** (siehe Chat-Antwort): Live-API ist für Echtzeit-Sprachgespräche gedacht (WebSocket-Streaming), kein Ersatz für einzelne Bild-Analyse-Anfragen - "unbegrenzte" RPM dort ist irreführend, die echten Grenzen sind Sitzungsanzahl/-dauer und Token-Kontingent. Die Idee, mehrere Personas in EINEM Aufruf statt mehrerer einzelner zu erzeugen (kehrt die frühere "5 Personas sofort = 5x Kosten"-Ablehnung teilweise um, weil jetzt klar ist: die ANFRAGEZAHL ist teuer, nicht die Textmenge) - bewusst noch nicht umgesetzt, da sie eine bereits explizit getroffene Entscheidung neu aufrollen würde. Erst mit dem Nutzer abgestimmt, siehe `docs/TODO-GESAMT.md`.
+- Keine neuen Dateien.
+
 ## v0.33.1-beta
 
 Zwei Funde aus einem Nutzer-Screenshot der AI-Studio-Ratenbegrenzungs-Seite behoben:

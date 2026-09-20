@@ -1,22 +1,56 @@
 import { app } from './core.js';
 
 // FIX (Nutzer-Screenshot der Ratenbegrenzungs-Seite in AI Studio, Sept.
-// 2026): gemini-3.6-flash war zwar der von Google empfohlene Nachfolger von
-// gemini-2.5-flash, taucht in der aktuellen Ratenbegrenzungs-Übersicht des
-// kostenlosen Tarifs aber gar nicht mehr auf (nur noch ~20 kostenlose
-// Anfragen/Tag laut Recherche) - vermutlich seitdem nachträglich
-// eingeschränkt. gemini-3.1-flash-lite bietet auf dem kostenlosen Tarif
-// dagegen die großzügigste Grenze aller Textausgabemodelle (15 Anfragen/
-// Minute, ca. 500/Tag) UND unterstützt wie jedes "Textausgabemodell" auch
-// Bild-Eingabe (das hier gebrauchte analyzePage() schickt ein Foto mit) -
-// "Textausgabe" beschreibt nur das, was zurückkommt, nicht was reingeht.
-// Ändert sich das wieder, reicht ein Update dieser einen Zeile.
-const GEMINI_MODEL = 'gemini-3.1-flash-lite';
+// 2026): gemini-3.6-flash lief laut Live-Nutzung mehrfach ins Tageslimit
+// (44 von 20 erlaubten Anfragen), ebenso gemini-3.8-flash (22 von 20) -
+// JEDES Modell hat sein EIGENES, komplett getrenntes Tageskontingent, und
+// bei den "vollen" Flash-Modellen liegt es bei nur ~20 Anfragen/Tag. Das
+// Minuten-Token-Kontingent (250K) blieb dabei fast ungenutzt (max. 10K) -
+// die Tages-ANFRAGEZAHL ist der eigentliche Engpass, nicht die Textmenge.
+//
+// NEU (Nutzerwunsch: "rotierende Funktion von absteigender Qualität"):
+// deshalb jetzt eine Liste statt eines einzelnen Modells - withGeminiModelRotation()
+// unten probiert sie der Reihe nach, sobald eins mit HTTP 429 antwortet.
+// Absteigend nach Modellgüte: neuere "volle" Flash-Modelle zuerst,
+// gemini-3.1-flash-lite bewusst GANZ am Ende - "Lite" ist die schwächere
+// Modellwahl, hat aber mit ~500 Anfragen/Tag das mit Abstand großzügigste
+// Kontingent alle Flash-Modelle - als letzte Gemini-Reserve, bevor der
+// bestehende Mistral-Fallback greift. Neue Version in der Liste ergänzen
+// reicht, keine weitere Code-Änderung nötig.
+const GEMINI_MODELS = [
+    'gemini-3.8-flash',
+    'gemini-3.7-flash',
+    'gemini-3.6-flash',
+    'gemini-3.5-flash',
+    'gemini-3.1-flash-lite'
+];
 
 // Mistral als optionaler Fallback, falls Gemini mal ausfällt oder das
 // Tageslimit erreicht ist. Wird nur genutzt, wenn ein Mistral-Key in den
 // Einstellungen hinterlegt ist - sonst verhält sich die App exakt wie vorher.
 const MISTRAL_MODEL = 'mistral-small-latest';
+
+// NEU (Modell-Rotation): EIN Ort für "welches Modell aus GEMINI_MODELS
+// probieren wir gerade" - alle drei Gemini-Aufrufer unten (Bildanalyse,
+// reiner Text, Birkenbihls nachsichtiger Text-Aufruf) reichen ihren
+// jeweiligen fetch() als callModel(model) durch. callModel muss bei HTTP
+// 429 exakt "RATE_LIMITED" werfen, jeder andere Fehler (falscher Key,
+// Netzwerk, Server down) bricht sofort ab - ein anderes Modell hätte
+// exakt dasselbe Problem, es weiterzuprobieren wäre nur verschenkte Zeit.
+// Erst wenn WIRKLICH jedes Modell 429 meldet, kommt der bestehende
+// Mistral-Fallback in runTextPrompt()/runTextPromptLenient()/analyze() zum
+// Zug - für den ändert sich nichts, er sieht nur einen einzigen Fehler.
+async function withGeminiModelRotation(callModel) {
+    for (const model of GEMINI_MODELS) {
+        try {
+            return await callModel(model);
+        } catch (e) {
+            if (e.message !== 'RATE_LIMITED') throw e;
+            console.warn(`${model}: Ratenbegrenzung erreicht, versuche nächstes Modell`);
+        }
+    }
+    throw new Error('Gemini-Limit bei allen Modellen erreicht (429)');
+}
 
 // NEU: nimmt jetzt eine explizite personaId statt immer die globale
 // Einstellung zu lesen - so kann man beim Lesen eine andere Persona
@@ -229,19 +263,22 @@ async function callGeminiAnalyze(prompt, base64Image) {
         generationConfig: { temperature: 0.2 }
     };
 
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${app.settings.apiKey}`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+    const textResult = await withGeminiModelRotation(async (model) => {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${app.settings.apiKey}`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) {
+            if (res.status === 400) throw new Error('Falscher API-Key (400)');
+            if (res.status === 403) throw new Error('API-Key ungültig (403)');
+            if (res.status === 429) throw new Error('RATE_LIMITED');
+            throw new Error(`Gemini-Fehler ${res.status}`);
+        }
+
+        const data = await res.json();
+        return data.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
     });
 
-    if (!res.ok) {
-        if (res.status === 400) throw new Error('Falscher API-Key (400)');
-        if (res.status === 403) throw new Error('API-Key ungültig (403)');
-        if (res.status === 429) throw new Error('Gemini-Limit erreicht (429)');
-        throw new Error(`Gemini-Fehler ${res.status}`);
-    }
-
-    const data = await res.json();
-    const textResult = data.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
     // NEU: Kosten-/Verbrauchsanzeige - nur der Text-Anteil (Prompt), da die
     // tatsaechlichen Kosten bei Bildanalysen stark vom Bild abhaengen und
     // sich nicht sinnvoll aus Zeichen schaetzen lassen (siehe costMeter.js).
@@ -308,25 +345,29 @@ async function callMistralText(prompt) {
 async function callGeminiText(prompt, generationConfig = {}) {
     if (!app.settings.apiKey) throw new Error('API_KEY_MISSING');
 
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${app.settings.apiKey}`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig })
+    const { text, finishReason } = await withGeminiModelRotation(async (model) => {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${app.settings.apiKey}`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig })
+        });
+        if (!res.ok) {
+            if (res.status === 429) throw new Error('RATE_LIMITED');
+            throw new Error(`Gemini-Fehler ${res.status}`);
+        }
+        const data = await res.json();
+        return { text: data.candidates?.[0]?.content?.parts?.[0]?.text || '', finishReason: data.candidates?.[0]?.finishReason };
     });
 
-    if (!res.ok) throw new Error(`Gemini-Fehler ${res.status}`);
-
-    const data = await res.json();
-    const textResult = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
     app.costMeter.trackGeminiText(prompt.length);
 
     // Bei sehr langen Antworten (z.B. ein Heft mit 12 Blättern) kann das
     // Modell mitten im JSON abbrechen. Das als eigenen, verständlichen
     // Fehler melden statt als kryptischen JSON-Parse-Fehler.
-    if (data.candidates?.[0]?.finishReason === 'MAX_TOKENS') {
+    if (finishReason === 'MAX_TOKENS') {
         throw new Error('Antwort der KI war zu lang und wurde abgeschnitten');
     }
 
-    return parseModelJson(textResult || '{}');
+    return parseModelJson(text || '{}');
 }
 
 // NEU (Birkenbihl-Methode, Bugreport "Übersetzung schlägt fehl"): Rückfall
@@ -358,29 +399,34 @@ function extractPairsLoosely(rawText) {
 async function callGeminiTextLenient(prompt, generationConfig = {}) {
     if (!app.settings.apiKey) throw new Error('API_KEY_MISSING');
 
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${app.settings.apiKey}`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig })
+    const { text, finishReason } = await withGeminiModelRotation(async (model) => {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${app.settings.apiKey}`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig })
+        });
+        if (!res.ok) {
+            if (res.status === 429) throw new Error('RATE_LIMITED');
+            throw new Error(`Gemini-Fehler ${res.status}`);
+        }
+        const data = await res.json();
+        return { text: data.candidates?.[0]?.content?.parts?.[0]?.text || '', finishReason: data.candidates?.[0]?.finishReason };
     });
-    if (!res.ok) throw new Error(`Gemini-Fehler ${res.status}`);
 
-    const data = await res.json();
-    const textResult = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
     app.costMeter.trackGeminiText(prompt.length);
 
     // Auch aus einer wegen MAX_TOKENS abgeschnittenen Antwort lässt sich oft
     // noch retten, was bis zum Abbruch bereits vollständige Wortpaare waren
     // - lieber eine unvollständige Übersetzung als gar keine.
-    if (data.candidates?.[0]?.finishReason === 'MAX_TOKENS') {
-        const pairs = extractPairsLoosely(textResult);
+    if (finishReason === 'MAX_TOKENS') {
+        const pairs = extractPairsLoosely(text);
         if (pairs.length > 0) return { pairs };
         throw new Error('Antwort der KI war zu lang und wurde abgeschnitten');
     }
 
     try {
-        return parseModelJson(textResult || '{}');
+        return parseModelJson(text || '{}');
     } catch (parseError) {
-        const pairs = extractPairsLoosely(textResult);
+        const pairs = extractPairsLoosely(text);
         if (pairs.length > 0) return { pairs };
         throw parseError;
     }
@@ -506,14 +552,25 @@ Object.assign(app.api, {
 
         try {
             if (!app.settings.apiKey) throw new Error('API_KEY_MISSING');
-            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${app.settings.apiKey}`, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }, { inlineData: { mimeType: 'image/webp', data: base64Image } }] }] })
+            // FIX (Modell-Rotation): dieser Aufruf baute seinen fetch() bisher
+            // direkt hier und nicht über callGeminiAnalyze()/callGeminiText()
+            // - dadurch fehlte ihm die Rotation über GEMINI_MODELS, obwohl er
+            // dasselbe Tageskontingent verbraucht. Jetzt über
+            // withGeminiModelRotation() wie die anderen drei Aufrufer oben.
+            const text = await withGeminiModelRotation(async (model) => {
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${app.settings.apiKey}`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }, { inlineData: { mimeType: 'image/webp', data: base64Image } }] }] })
+                });
+                if (!res.ok) {
+                    if (res.status === 429) throw new Error('RATE_LIMITED');
+                    throw new Error('API Fehler');
+                }
+                const data = await res.json();
+                return data.candidates?.[0]?.content?.parts?.[0]?.text || 'Das weiß ich leider nicht.';
             });
-            if (!res.ok) throw new Error('API Fehler');
-            const data = await res.json();
             app.costMeter.trackGeminiText(prompt.length);
-            return data.candidates?.[0]?.content?.parts?.[0]?.text || 'Das weiß ich leider nicht.';
+            return text;
         } catch (geminiError) {
             if (!app.settings.mistralApiKey) throw new Error('Verbindungsfehler');
             try {

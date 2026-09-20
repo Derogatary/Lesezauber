@@ -9,14 +9,22 @@ import './studioPrompts.js';
 // sich die Werkstatt genauso verhält wie der Rest der App (kein zweiter
 // API-Key, kein anderes Fehlerbild).
 
-// Gleiche Modell-Konstante wie js/api.js, bewusst hier dupliziert statt
+// Gleiche Modell-Liste wie js/api.js, bewusst hier dupliziert statt
 // importiert - beide Dateien sollen unabhängig voneinander änderbar
 // bleiben (siehe Konzept D.4), ein Modellwechsel bleibt trotzdem in jeder
 // Datei nur eine Zeile.
-// FIX (Sept. 2026, siehe ausführliche Begründung in js/api.js):
-// gemini-3.1-flash-lite statt gemini-3.6-flash - deutlich großzügigeres
-// kostenloses Kontingent.
-const GEMINI_MODEL = 'gemini-3.1-flash-lite';
+// FIX (Sept. 2026, siehe ausführliche Begründung in js/api.js): Rotation
+// über mehrere Modelle statt eines einzelnen - jedes hat sein eigenes
+// Tageskontingent (~20 Anfragen bei den "vollen" Flash-Modellen laut
+// Nutzer-Screenshot), absteigend nach Modellgüte, gemini-3.1-flash-lite
+// als letzte, großzügigste Reserve (~500/Tag) vor dem Mistral-Fallback.
+const GEMINI_MODELS = [
+    'gemini-3.8-flash',
+    'gemini-3.7-flash',
+    'gemini-3.6-flash',
+    'gemini-3.5-flash',
+    'gemini-3.1-flash-lite'
+];
 const MISTRAL_MODEL = 'mistral-small-latest';
 
 // Gleiche Aufräum-Logik wie js/api.js: manche Modelle wrappen die
@@ -26,23 +34,41 @@ function parseModelJson(rawText) {
     return JSON.parse(cleaned);
 }
 
+// NEU (Modell-Rotation, siehe ausführliche Begründung in js/api.js): probiert
+// GEMINI_MODELS der Reihe nach, sobald eins mit HTTP 429 antwortet. Jeder
+// andere Fehler bricht sofort ab - ein anderes Modell hätte dasselbe Problem.
+async function withGeminiModelRotation(callModel) {
+    for (const model of GEMINI_MODELS) {
+        try {
+            return await callModel(model);
+        } catch (e) {
+            if (e.message !== 'RATE_LIMITED') throw e;
+            console.warn(`${model}: Ratenbegrenzung erreicht, versuche nächstes Modell`);
+        }
+    }
+    throw new Error('Gemini-Limit bei allen Modellen erreicht (429)');
+}
+
 async function callGeminiText(prompt) {
     if (!app.settings.apiKey) throw new Error('API_KEY_MISSING');
 
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${app.settings.apiKey}`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.7 } })
+    const textResult = await withGeminiModelRotation(async (model) => {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${app.settings.apiKey}`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.7 } })
+        });
+
+        if (!res.ok) {
+            if (res.status === 400) throw new Error('Falscher API-Key (400)');
+            if (res.status === 403) throw new Error('API-Key ungültig (403)');
+            if (res.status === 429) throw new Error('RATE_LIMITED');
+            throw new Error(`Gemini-Fehler ${res.status}`);
+        }
+
+        const data = await res.json();
+        return data.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
     });
 
-    if (!res.ok) {
-        if (res.status === 400) throw new Error('Falscher API-Key (400)');
-        if (res.status === 403) throw new Error('API-Key ungültig (403)');
-        if (res.status === 429) throw new Error('Gemini-Limit erreicht (429)');
-        throw new Error(`Gemini-Fehler ${res.status}`);
-    }
-
-    const data = await res.json();
-    const textResult = data.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
     return parseModelJson(textResult);
 }
 

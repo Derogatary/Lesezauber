@@ -17,7 +17,7 @@ Seit v0.10.0-beta gibt es den **Heft-Modus**: ein Buch kann statt einer Geschich
 - HTML/CSS/JS, ES-Module (`<script type="module">`)
 - Tailwind CSS v4, eigener Build - KEIN CDN (siehe Build-Schritt unten)
 - PDF.js, JSZip (vendored, lazy-geladen) für PDF-/EPUB-Import
-- Google Gemini API (aktuell `gemini-3.1-flash-lite`, `js/api.js` - Wahl nach kostenlosem Kontingent, siehe Kommentar dort) für Bildanalyse/Text, Mistral als optionaler Fallback
+- Google Gemini API (Modell-Rotation über `GEMINI_MODELS` in `js/api.js`/`js/studio/studioApi.js` - jedes Modell hat sein eigenes Tageskontingent, bei 429 probiert `withGeminiModelRotation()` das nächste, absteigend nach Modellgüte, `gemini-3.1-flash-lite` als großzügigste Reserve am Ende) für Bildanalyse/Text, Mistral als optionaler Fallback erst wenn ALLE Modelle 429 melden
 - Neuronale TTS-Anbieter (optional, opt-in): Gemini TTS, Google Cloud Chirp 3 HD, ElevenLabs, OpenAI, Speechify (`js/ttsProviders.js`)
 - Service Worker für PWA/Offline-Fähigkeit
 - Kein Bundler nötig (reine ES-Module) - nur Tailwind braucht einen Build-Schritt
@@ -74,7 +74,7 @@ import './actions/meineNeueDatei.js';
 | `js/state.js` | `app.state` (Laufzeit) + `app.settings` (persistiert, localStorage) - **Reihenfolge: settings vor state**, da state teils von settings liest |
 | `js/db.js` | IndexedDB-Speicher-Engine (`app.library`, `app.vocabulary`, `ttsCache`, `projects`). **Version 4** - neuer Object Store: `DB_VERSION` erhöhen und `onupgradeneeded` erweitern |
 | `js/nav.js` | Router zwischen den `<main id="view...">`-Ansichten |
-| `js/api.js` | Gemini/Mistral-Aufrufe, der komplette Analyse-Prompt lebt hier |
+| `js/api.js` | Gemini/Mistral-Aufrufe, der komplette Analyse-Prompt lebt hier. `GEMINI_MODELS`+`withGeminiModelRotation()`: Modell-Rotation bei 429 (jedes Modell eigenes Tageskontingent), Mistral erst wenn ALLE Modelle 429 melden |
 | `js/tts.js` | Sprachausgabe: Weiche Gerätestimme/KI-Stimme, Auto-Vorlesen, Wort-Hervorhebung (SpeechSynthesis `boundary`-Event), Rätsel-Modus |
 | `js/ttsProviders.js` | KI-Stimmen-Anbieter als Liste (`app.ttsProviders.list`) - neuer Anbieter = neuer Eintrag, UI baut sich automatisch auf |
 | `js/ttsNeural.js` | Wiedergabe der KI-Stimmen: IndexedDB-Zwischenspeicher, eigene Wort-Hervorhebung per `requestAnimationFrame`, Vorbereitung der nächsten Seite, Rückfall auf Gerätestimme |
@@ -303,6 +303,6 @@ Feste Regeln:
 
 ## Versionsstand
 
-Aktuell `v0.33.1-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Version bei größeren Änderungen hochzählen (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).
+Aktuell `v0.34.0-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Version bei größeren Änderungen hochzählen (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).
 
 **Die vollständige Versionshistorie (was mit welcher Version kam, inkl. aller Entscheidungen) steht in [`CHANGELOG.md`](CHANGELOG.md), neueste Version zuerst.** Vor dem Einplanen eines Features dort nachsehen, sonst werden bereits gefallene Entscheidungen neu diskutiert. Neuer Eintrag bei jeder Versionserhöhung: oben in `CHANGELOG.md` ergänzen, nicht hier.

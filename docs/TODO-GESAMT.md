@@ -248,6 +248,12 @@ Alle sechs sind inzwischen entschieden (Sept. 2026) - Details in `KONZEPT-Video.
 **Aus der Diskussion entstanden und inzwischen erledigt:** Kinder-/Elternbereich
 (Profil-Rollen) - siehe Bereich „App & Plattform" unten.
 
+**Neu, noch offen (Sept. 2026, v0.34.0-beta):**
+
+| # | Entscheidung | Stand |
+|---|---|---|
+| 7 | Mehrere Personas in EINEM API-Aufruf statt mehrerer einzelner erzeugen | Ursprünglich explizit verworfen ("NICHT eigenmächtig alle Personas sofort generieren umbauen", siehe CLAUDE.md Datenmodell-Abschnitt) - Begründung damals: "5 Personas sofort = 5x Kosten". Nach dem Modell-Rotations-Fund (v0.34.0-beta) ist aber klar: die **Tages-Anfragezahl** ist der eigentliche Engpass (~20-500 je nach Modell), nicht die Textmenge pro Anfrage (250K Token/Minute, kaum ausgeschöpft) - "5 Personas in EINEM Aufruf" würde denselben Anfrage-Verbrauch wie heute (1 Aufruf) verursachen, nur mit einer entsprechend größeren, aber quasi kostenlosen Antwort. Kehrt die alte Kostenrechnung damit teilweise um. Trotzdem NICHT einfach umgesetzt, weil die alte Entscheidung explizit war - braucht erst eine bewusste Ansage des Betreibers, ob sie revidiert werden soll, und dann eine eigene, von der Live-Scan-Funktion (`app.api.analyze()`) getrennte Funktion nur für die Hintergrund-Vorbereitung (`js/backgroundPregen.js`), um das bestehende Verhalten beim Scannen nicht anzufassen |
+
 ---
 
 ## 1. In v0.12.0 fertig geworden

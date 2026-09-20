@@ -1,7 +1,19 @@
 // Bei jeder inhaltlichen Änderung an einer dieser Dateien diese Nummer
 // erhöhen - sonst bekommen wiederkehrende Besucher weiter die alte
 // zwischengespeicherte Version ausgeliefert.
-const CACHE_NAME = 'lesezauber-shell-v55';
+const CACHE_NAME = 'lesezauber-shell-v56';
+
+// NEU (v56): Modell-Rotation bei Ratenbegrenzung (Nutzerwunsch: "rotierende
+// Funktion von absteigender Qualität") - js/api.js/js/studio/studioApi.js
+// probieren jetzt mehrere Gemini-Modelle nacheinander (GEMINI_MODELS,
+// absteigend nach Modellgüte, gemini-3.1-flash-lite als großzügigste
+// Reserve am Ende), sobald eins mit HTTP 429 antwortet. Jedes Modell hat
+// laut Nutzer-Screenshot sein eigenes, komplett getrenntes Tageskontingent
+// (~20 bei den "vollen" Flash-Modellen) - eine Rotation über 4-5 Modelle
+// vervielfacht das effektive Tageskontingent, bevor überhaupt der
+// bestehende Mistral-Fallback greift. Auch der bisher übersehene direkte
+// Gemini-Aufruf in app.api.answerQuestion() ("Frag den Zauberer") bekommt
+// jetzt dieselbe Rotation. Keine neuen Dateien.
 
 // NEU (v55): Zwei Funde aus einem Nutzer-Screenshot der AI-Studio-
 // Ratenbegrenzungs-Seite behoben. 1) Modellwechsel: gemini-3.6-flash
