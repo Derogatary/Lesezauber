@@ -6,6 +6,16 @@ vollständige Historie, neueste Version zuerst. Diese Datei wurde aus
 `CLAUDE.md` ausgelagert, weil der Abschnitt dort mit der Zeit zu groß für
 schnellen Kontext wurde; inhaltlich unverändert übernommen.
 
+## v0.36.2-beta
+
+KI-Stimmen-Aufnahmen als vierte Hintergrund-Aufgabe, eigener Zusatz-Schalter (Nutzerwunsch: "Hier auch wieder die background Durchführung der fehlenden gesprochenen Teile als eigener Toggle"):
+
+- Bisher bereitete die Hintergrund-Vorbereitung nur TEXT vor (Erzähler-Varianten, Buch-Quiz, Birkenbihl) - die eigentliche KI-Stimmen-Aufnahme (teuer bei bezahlten Anbietern wie ElevenLabs/Speechify/Google Cloud) musste weiterhin manuell über "🎧 Buch hörfertig machen" pro Buch angestoßen werden.
+- Neuer, niedrigste Priorität-Schalter "🎧 Auch KI-Stimme automatisch vorbereiten" in den Einstellungen (nur sichtbar, wenn gerade eine KI-Stimme aktiv ist - mit Gerätestimme ergibt das keinen Sinn, siehe `app.ttsNeural.isActive()`). Bewusst wie Birkenbihl ein EIGENER Schalter statt im Hauptschalter mitgebündelt, weil jede vorbereitete Aufnahme bei einer bezahlten Stimme echtes Geld/Kontingent kostet.
+- Neu `app.utils.findMissingAudioPages()`/`countMissingAudio()` (`js/utils.js`) - prüft asynchron gegen den `ttsCache` (IndexedDB), ob eine Seite für die aktuelle Standard-Persona schon eine Aufnahme hat, über denselben cache-only-Weg wie die Ton-Vorschau beim Video-Export (`app.ttsNeural.renderAudio(..., {cacheOnly:true})` - ein Fehltreffer kostet nichts).
+- `js/backgroundPregen.js`: neue Aufgaben-Art `'audio'`, läuft über `app.ttsNeural.renderAudio()` genau wie das manuelle "Buch hörfertig machen" (`js/actions/prepareAudio.js`), aber Seite für Seite statt gleich das ganze Buch. Landet direkt im `ttsCache`, verändert kein Buch-Feld - kein `saveBook()` nötig.
+- Neue Übersichtszeile "🎧 KI-Stimme: X offen" in den Einstellungen, ebenfalls nur mit aktiver KI-Stimme sichtbar.
+
 ## v0.36.1-beta
 
 Speechify: Stimmen-Nachladen filtert jetzt auf Deutsch (Nutzer-Feedback: "die voreingestellten Stimmen sind aber noch die englischen. Und redet auch mit englischen Akzent"):

@@ -36,7 +36,7 @@ import { app } from './core.js';
 // eigenen Server (Push-Benachrichtigungen bräuchten einen) nicht umgehen.
 const BACKGROUND_PAUSE_MS = 9000;
 
-function findNextMissingTask() {
+async function findNextMissingTask() {
     for (const bookId of Object.keys(app.library)) {
         const book = app.library[bookId];
         const bookType = app.utils.resolveBookType(book);
@@ -105,6 +105,18 @@ function findNextMissingTask() {
         if (first) return { type: 'birkenbihl', bookId: first.bookId, pageIdx: first.pageIdx };
     }
 
+    // NEU (Nutzerwunsch: "auch wieder die background Durchführung der
+    // fehlenden gesprochenen Teile als eigener Toggle") - niedrigste
+    // Priorität von allen, aus demselben Grund wie Birkenbihl: eigens
+    // bestätigt (app.settings.backgroundPregenAudio), weil jede vorbereitete
+    // Aufnahme bei einer bezahlten KI-Stimme echtes Geld/Kontingent kostet.
+    // findMissingAudioPages() prüft selbst, ob überhaupt eine KI-Stimme
+    // aktiv ist, und liefert sonst eine leere Liste.
+    if (app.settings.backgroundPregenAudio) {
+        const [first] = await app.utils.findMissingAudioPages();
+        if (first) return { type: 'audio', bookId: first.bookId, pageIdx: first.pageIdx };
+    }
+
     return null;
 }
 
@@ -151,6 +163,28 @@ async function generateBirkenbihlForPageInBackground(book, pageIdx) {
     app.dbOps.saveBook(book);
 }
 
+// NEU (Nutzerwunsch: "auch wieder die background Durchführung der
+// fehlenden gesprochenen Teile als eigener Toggle") - Gegenstück zu
+// app.actions.prepareBookAudio() (js/actions/prepareAudio.js), aber ohne
+// Loader/Toast (läuft ja im Hintergrund), über die GLOBALE Standard-Persona
+// statt der gerade im Reader gewählten, und nur EINE Seite statt gleich dem
+// ganzen Buch (Priorität und Kosten bleiben so vergleichbar mit den anderen
+// Hintergrund-Aufgaben). Speichert NICHTS am Buch - die Aufnahme landet
+// direkt im ttsCache (IndexedDB) über denselben Weg wie beim normalen
+// Vorlesen, deshalb hier kein app.dbOps.saveBook() nötig.
+async function generateAudioForPageInBackground(book, pageIdx) {
+    const page = book.pages[pageIdx];
+    const personaId = app.settings.persona;
+    const variant = app.utils.resolvePageVariant(page, personaId);
+    if (!variant || !variant.text) return;
+
+    // Gleiche Weiche wie beim tatsächlichen Vorlesen (app.tts.speak()) bzw.
+    // beim manuellen "Buch hörfertig machen" - sonst wird die falsche
+    // Fassung vorbereitet und beim Lesen trotzdem neu synthetisiert.
+    const { plain, tagged } = app.tts._pickSpeechVariant(variant);
+    await app.ttsNeural.renderAudio(tagged || plain, { personaId });
+}
+
 async function generateBookQuizInBackground(book) {
     const personaId = app.settings.persona;
     const compiledText = book.pages
@@ -187,7 +221,7 @@ async function runOneBackgroundTask() {
     // App/ein anderes Fenster im Vordergrund" funktioniert es damit,
     // für "App komplett geschlossen" grundsätzlich nicht.
 
-    const task = findNextMissingTask();
+    const task = await findNextMissingTask();
     if (!task) return;
 
     app.state.apiBusy = true;
@@ -218,6 +252,10 @@ async function runOneBackgroundTask() {
             if (app.state.currentBookId === task.bookId && app.state.currentView === 'reader' && app.state.currentPageIdx === task.pageIdx) {
                 app.render.birkenbihlTab(app.library[task.bookId].pages[task.pageIdx]);
             }
+        } else if (task.type === 'audio') {
+            // NEU: landet nur im ttsCache, verändert kein Buch-Feld - deshalb
+            // hier kein Neuzeichnen einer Ansicht nötig.
+            await generateAudioForPageInBackground(app.library[task.bookId], task.pageIdx);
         }
 
         // NEU: hält den kleinen "⏳ X im Hintergrund offen"-Hinweis in der

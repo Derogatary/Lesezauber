@@ -286,6 +286,41 @@ Object.assign(app.utils, {
         return app.utils.findMissingBirkenbihlPages().length;
     },
 
+    // NEU (Nutzerwunsch: "auch wieder die background Durchführung der
+    // fehlenden gesprochenen Teile als eigener Toggle") - Gegenstück zu
+    // findMissingBirkenbihlPages() oben, aber ASYNC: ob eine KI-Stimmen-
+    // Aufnahme schon existiert, steht im ttsCache (IndexedDB), nicht im
+    // Buch selbst - lässt sich also nicht synchron aus app.library ablesen.
+    // Nutzt denselben Cache-Nur-Weg wie die Ton-Vorschau beim Video-Export
+    // (app.ttsNeural.renderAudio(..., {cacheOnly:true})) - ein Cache-
+    // Fehltreffer liefert null zurück, OHNE einen bezahlten Synthese-Aufruf
+    // auszulösen. Ohne aktive KI-Stimme (Gerätestimme liefert keine Datei)
+    // oder abgeschaltetem Stimmen-Speicher gibt es nichts zu prüfen.
+    async findMissingAudioPages() {
+        if (!app.ttsNeural.isActive() || app.settings.ttsCacheEnabled === false) return [];
+
+        const found = [];
+        const personaId = app.settings.persona;
+        for (const book of Object.values(app.library)) {
+            for (let pageIdx = 0; pageIdx < book.pages.length; pageIdx++) {
+                const page = book.pages[pageIdx];
+                if (page.excluded) continue;
+                if (page.status !== 'done') continue;
+                const variant = app.utils.resolvePageVariant(page, personaId);
+                if (!variant || !variant.text) continue;
+
+                const { plain, tagged } = app.tts._pickSpeechVariant(variant);
+                const cached = await app.ttsNeural.renderAudio(tagged || plain, { personaId, cacheOnly: true });
+                if (!cached) found.push({ bookId: book.id, pageIdx });
+            }
+        }
+        return found;
+    },
+
+    async countMissingAudio() {
+        return (await app.utils.findMissingAudioPages()).length;
+    },
+
     // NEU: Lese-Serie (Streak) - pro Profil getrennt, da Familienmitglieder
     // an unterschiedlichen Tagen lesen können.
     _dateStr(d) {

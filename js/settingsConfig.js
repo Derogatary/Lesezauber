@@ -44,6 +44,14 @@ Object.assign(app.settingsConfig, {
         app.ui.toast(enabled ? 'Birkenbihl-Hintergrundvorbereitung aktiviert' : 'Birkenbihl-Hintergrundvorbereitung deaktiviert', enabled ? '🌍' : '⏸️');
     },
 
+    // NEU (Nutzerwunsch): eigener Zusatz-Schalter fürs Vorbereiten der
+    // KI-Stimmen-Aufnahmen im Hintergrund, analog zu Birkenbihl oben.
+    toggleBackgroundPregenAudio(enabled) {
+        app.settings.backgroundPregenAudio = enabled;
+        localStorage.setItem('lz_bg_pregen_audio', enabled ? '1' : '0');
+        app.ui.toast(enabled ? 'KI-Stimme-Hintergrundvorbereitung aktiviert' : 'KI-Stimme-Hintergrundvorbereitung deaktiviert', enabled ? '🎧' : '⏸️');
+    },
+
     // NEU: zweiseitiges Layout (Bild links, Text rechts) ein-/ausschalten -
     // wirkt sich per CSS-Media-Query ohnehin erst ab Tablet-Breite aus,
     // auf dem Handy bleibt es immer wie gewohnt untereinander.

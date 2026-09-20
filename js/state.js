@@ -16,6 +16,15 @@ Object.assign(app.settings, {
     // Anfragen als Erzähler-Varianten/Quiz, das soll niemand ungefragt
     // mitbekommen, nur weil "Im Hintergrund vorbereiten" schon an war.
     backgroundPregenBirkenbihl: localStorage.getItem('lz_bg_pregen_birkenbihl') === '1',
+    // NEU (Nutzerwunsch: "auch wieder die background Durchführung der
+    // fehlenden gesprochenen Teile als eigener Toggle") - eigener
+    // Zusatz-Schalter wie bei Birkenbihl: jede vorbereitete Aufnahme kostet
+    // bei einer bezahlten KI-Stimme echtes Geld/Kontingent, das soll
+    // niemand ungefragt anstoßen, nur weil "Im Hintergrund vorbereiten"
+    // schon an war. Nur mit aktiver KI-Stimme sinnvoll (siehe
+    // app.ttsNeural.isActive), die Gerätestimme liefert keine Datei zum
+    // Zwischenspeichern.
+    backgroundPregenAudio: localStorage.getItem('lz_bg_pregen_audio') === '1',
     // NEU: einstellbare Vorlesegeschwindigkeit (0.5 = langsam, 1.5 = schnell)
     speechRate: parseFloat(localStorage.getItem('lz_speech_rate') || '0.9'),
     // NEU: einstellbare Farbe fuer die Wort-Hervorhebung beim Vorlesen

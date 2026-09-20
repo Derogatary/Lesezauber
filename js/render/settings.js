@@ -222,6 +222,16 @@ Object.assign(app.render, {
         const bgBirkenbihlToggle = document.getElementById('toggleBackgroundPregenBirkenbihl');
         if (bgBirkenbihlToggle) bgBirkenbihlToggle.checked = app.settings.backgroundPregenBirkenbihl;
 
+        // NEU (Nutzerwunsch: "auch wieder die background Durchführung der
+        // fehlenden gesprochenen Teile als eigener Toggle") - nur sichtbar
+        // mit aktiver KI-Stimme, die Gerätestimme liefert keine Datei zum
+        // Zwischenspeichern (siehe app.ttsNeural.isActive).
+        const bgAudioRow = document.getElementById('toggleBackgroundPregenAudioRow');
+        const bgAudioToggle = document.getElementById('toggleBackgroundPregenAudio');
+        const neuralActive = app.ttsNeural.isActive();
+        if (bgAudioRow) bgAudioRow.classList.toggle('hidden', !neuralActive);
+        if (bgAudioToggle) bgAudioToggle.checked = app.settings.backgroundPregenAudio;
+
         // NEU: zweiseitiges Layout - Schalterstellung anzeigen
         const twoPageToggle = document.getElementById('toggleTwoPageLayout');
         if (twoPageToggle) twoPageToggle.checked = app.settings.twoPageLayout;
@@ -250,12 +260,20 @@ Object.assign(app.render, {
             const missingQuiz = app.utils.countMissingBookQuiz();
             const missingBirkenbihl = app.utils.countMissingBirkenbihl();
             const line = (label, count) => count > 0 ? `${label}: ${count} offen` : `${label}: alles fertig ✅`;
-            pregenOverview.innerHTML = [
+            const lines = [
                 line('📷 Nicht ausgelesene Seiten', missingScans),
                 line('🧑 Erzähler-Varianten', missingVariants),
                 line('❓ Buch-Quiz', missingQuiz),
                 line('🌍 Birkenbihl', missingBirkenbihl)
-            ].map(l => `<p>${app.utils.sanitize(l)}</p>`).join('');
+            ];
+            // NEU (Nutzerwunsch): nur mit aktiver KI-Stimme aussagekräftig -
+            // ohne sie liefert countMissingAudio() ohnehin immer 0, das
+            // sähe fälschlich nach "alles fertig" statt "nicht zutreffend"
+            // aus. async wie der Stimmen-Speicher-Stand weiter unten.
+            if (neuralActive) {
+                lines.push(line('🎧 KI-Stimme', await app.utils.countMissingAudio()));
+            }
+            pregenOverview.innerHTML = lines.map(l => `<p>${app.utils.sanitize(l)}</p>`).join('');
         }
 
         // NEU: Kino-Effekte (Ken-Burns + Kreuzblende) - Schalterstellung anzeigen

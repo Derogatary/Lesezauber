@@ -48,7 +48,7 @@
                          Nur sichtbar, wenn die Hintergrund-Vorbereitung
                          überhaupt eingeschaltet ist UND etwas offen ist. -->
                     <button id="pregenBadge" onclick="app.nav.go('settings')" class="hidden text-xs font-bold text-indigo-600 mt-0.5 hover:underline"></button>
-                    <p class="text-[10px] text-slate-400 font-semibold mt-0.5">v0.36.1-beta</p>
+                    <p class="text-[10px] text-slate-400 font-semibold mt-0.5">v0.36.2-beta</p>
                 </div>
                 <div class="flex items-center gap-2 flex-shrink-0">
                     <button onclick="app.nav.go('help')" aria-label="Hilfe öffnen" title="Hilfe" class="w-10 h-10 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-600 hover:bg-slate-100 shadow-sm transition active:scale-95">
@@ -1314,11 +1314,23 @@
                         🌍 Auch Birkenbihl-Übersetzungen automatisch vorbereiten (niedrigste Priorität)
                     </label>
 
+                    <!-- NEU (Nutzerwunsch: "auch wieder die background
+                         Durchführung der fehlenden gesprochenen Teile als
+                         eigener Toggle") - eigener Zusatz-Schalter wie bei
+                         Birkenbihl, nur sichtbar mit aktiver KI-Stimme
+                         (js/render/settings.js blendet die Zeile sonst aus -
+                         die Gerätestimme liefert keine Datei zum
+                         Zwischenspeichern). Niedrigste Priorität von allen. -->
+                    <label id="toggleBackgroundPregenAudioRow" class="hidden flex items-center gap-2 text-[11px] font-semibold text-slate-600 border-t border-slate-100 pt-2">
+                        <input id="toggleBackgroundPregenAudio" type="checkbox" onchange="app.settingsConfig.toggleBackgroundPregenAudio(this.checked)" class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+                        🎧 Auch KI-Stimme automatisch vorbereiten (kostet Kontingent der gewählten Stimme, niedrigste Priorität)
+                    </label>
+
                     <!-- NEU: Übersicht statt nur einer einzelnen Zeile - zeigt
-                         alle vier Hintergrund-Aufgaben getrennt, siehe
+                         alle fünf Hintergrund-Aufgaben getrennt, siehe
                          app.utils.countMissingScans()/countMissingVariants()/
-                         countMissingBookQuiz()/countMissingBirkenbihl() in
-                         js/utils.js. -->
+                         countMissingBookQuiz()/countMissingBirkenbihl()/
+                         countMissingAudio() in js/utils.js. -->
                     <div id="pregenOverview" class="text-[11px] text-slate-500 font-semibold space-y-0.5"></div>
                 </div>
 
