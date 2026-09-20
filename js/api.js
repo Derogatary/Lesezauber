@@ -322,6 +322,81 @@ async function callGeminiText(prompt, generationConfig = {}) {
     return parseModelJson(textResult || '{}');
 }
 
+// NEU (Birkenbihl-Methode, Bugreport "Übersetzung schlägt fehl"): Rückfall
+// für den Fall, dass parseModelJson() an einer einzigen kaputten Stelle
+// scheitert. Eine Seite mit wörtlicher Rede erzeugt schnell ein Dutzend
+// Wort-Paare - reicht bei EINEM davon ein vom Modell nicht sauber
+// escapetes Anführungszeichen (z.B. in „Hallo!", rief der Fuchs), macht das
+// JSON.parse() für die GESAMTE Antwort unbrauchbar, obwohl der Rest
+// technisch in Ordnung wäre. Zieht deshalb alle {"target": "...",
+// "gloss": "..."}-Fundstellen einzeln per Regex heraus - eine kaputte
+// Stelle kostet dann nur dieses eine Wortpaar statt der ganzen Übersetzung.
+function extractPairsLoosely(rawText) {
+    const pairs = [];
+    const re = /"target"\s*:\s*"((?:[^"\\]|\\.)*)"\s*,\s*"gloss"\s*:\s*"((?:[^"\\]|\\.)*)"/g;
+    const unescape = (s) => s.replace(/\\(.)/g, '$1');
+    let m;
+    while ((m = re.exec(rawText))) {
+        const target = unescape(m[1]).trim();
+        if (target) pairs.push({ target, gloss: unescape(m[2]).trim() });
+    }
+    return pairs;
+}
+
+// NEU: wie callGeminiText() oben, aber mit dem nachsichtigen Rückfall aus
+// extractPairsLoosely() statt striktem Scheitern bei kaputtem JSON oder
+// einer abgeschnittenen (MAX_TOKENS-)Antwort - nur für Birkenbihl gebraucht,
+// deshalb eine eigene, kleine Funktion statt callGeminiText() für ALLE
+// anderen Aufrufer (Buch-Quiz, Figuren-Vorschläge, ...) mit zu verändern.
+async function callGeminiTextLenient(prompt, generationConfig = {}) {
+    if (!app.settings.apiKey) throw new Error('API_KEY_MISSING');
+
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${app.settings.apiKey}`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig })
+    });
+    if (!res.ok) throw new Error(`Gemini-Fehler ${res.status}`);
+
+    const data = await res.json();
+    const textResult = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    app.costMeter.trackGeminiText(prompt.length);
+
+    // Auch aus einer wegen MAX_TOKENS abgeschnittenen Antwort lässt sich oft
+    // noch retten, was bis zum Abbruch bereits vollständige Wortpaare waren
+    // - lieber eine unvollständige Übersetzung als gar keine.
+    if (data.candidates?.[0]?.finishReason === 'MAX_TOKENS') {
+        const pairs = extractPairsLoosely(textResult);
+        if (pairs.length > 0) return { pairs };
+        throw new Error('Antwort der KI war zu lang und wurde abgeschnitten');
+    }
+
+    try {
+        return parseModelJson(textResult || '{}');
+    } catch (parseError) {
+        const pairs = extractPairsLoosely(textResult);
+        if (pairs.length > 0) return { pairs };
+        throw parseError;
+    }
+}
+
+async function runTextPromptLenient(prompt, generationConfig, fallbackToastMsg) {
+    try {
+        return await callGeminiTextLenient(prompt, generationConfig);
+    } catch (geminiError) {
+        if (!app.settings.mistralApiKey) throw geminiError;
+
+        console.warn('Gemini fehlgeschlagen, versuche Mistral-Fallback:', geminiError.message);
+        try {
+            const result = await callMistralText(prompt);
+            app.ui.toast(fallbackToastMsg, '🔄');
+            return result;
+        } catch (mistralError) {
+            console.error('Auch Mistral-Fallback fehlgeschlagen:', mistralError);
+            throw geminiError;
+        }
+    }
+}
+
 // NEU: Text-Aufruf mit demselben Mistral-Fallback wie analyze() - erst
 // Gemini, bei jedem Fehler (auch fehlendem Gemini-Key) Mistral, sofern dort
 // ein Key hinterlegt ist.
@@ -504,7 +579,9 @@ Antworte AUSSCHLIESSLICH in validem JSON, ohne Markdown-Blöcke, exakt in diesem
   ]
 }`;
 
-        const result = await runTextPrompt(prompt, { temperature: 0.3 });
+        // NEU (Bugreport "Übersetzung schlägt fehl"): runTextPromptLenient()
+        // statt runTextPrompt() - siehe extractPairsLoosely() oben.
+        const result = await runTextPromptLenient(prompt, { temperature: 0.3 }, 'Gemini nicht erreichbar - Mistral eingesprungen (Birkenbihl)');
         const pairs = Array.isArray(result?.pairs)
             ? result.pairs
                 .filter(p => p && typeof p.target === 'string' && p.target.trim())

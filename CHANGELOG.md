@@ -6,6 +6,14 @@ vollständige Historie, neueste Version zuerst. Diese Datei wurde aus
 `CLAUDE.md` ausgelagert, weil der Abschnitt dort mit der Zeit zu groß für
 schnellen Kontext wurde; inhaltlich unverändert übernommen.
 
+## v0.32.2-beta
+
+Bugfix (Nutzer-Screenshot: "Übersetzung schlägt fehl" bei "🌍 Birkenbihl") - `js/api.js`:
+
+- **Ursache:** eine Seite mit wörtlicher Rede erzeugt beim Zerlegen in Wort-Paare leicht ein Dutzend Einträge - reichte EIN vom Modell nicht sauber escapetes Anführungszeichen (z.B. in „Hallo!", rief der Fuchs), machte `JSON.parse()` die GESAMTE Antwort unbrauchbar, obwohl der Rest technisch in Ordnung war. Ebenso riskant: eine wegen `MAX_TOKENS` abgeschnittene Antwort führte bisher zum Totalausfall statt einer teilweisen Übersetzung.
+- **Fix:** neuer nachsichtiger Aufrufweg nur für Birkenbihl (`extractPairsLoosely()`, `callGeminiTextLenient()`, `runTextPromptLenient()`) - bei einem JSON-Parse-Fehler oder einer abgeschnittenen Antwort werden alle `{"target": "...", "gloss": "..."}`-Fundstellen einzeln per Regex herausgezogen, statt komplett aufzugeben. Eine kaputte Stelle kostet dann nur dieses eine Wortpaar. Der bestehende, strikte `runTextPrompt()`-Weg für alle anderen Aufrufer (Buch-Quiz, Figuren-Vorschläge, ...) bleibt unverändert.
+- **Zusätzlich:** der Fehler-Toast zeigt jetzt den tatsächlichen Grund (`js/actions/birkenbihl.js`) statt immer derselben Pauschalmeldung "Übersetzung konnte nicht erstellt werden" - auf dem Handy sieht man ja keine Konsole.
+
 ## v0.32.1-beta
 
 Künstliches Nutzer-Feedback simuliert (Nutzerauftrag: "unterschiedliche Gruppen von Menschen einnehmen und schauen, was sie sagen könnten, danach anpassen") - fünf Personas gedanklich durch die App geschickt (vielbeschäftigte Mutter/Vorlesealter, wenig technikaffiner Opa, Familie mit mehreren Kind-Profilen, SchreibZauber-Nutzerin, KDP-Selfpublisher), die tatsächliche Codebasis dabei konkret geprüft statt nur spekuliert. Zwei echte, verifizierte Funde behoben:

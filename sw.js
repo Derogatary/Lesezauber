@@ -1,7 +1,18 @@
 // Bei jeder inhaltlichen Änderung an einer dieser Dateien diese Nummer
 // erhöhen - sonst bekommen wiederkehrende Besucher weiter die alte
 // zwischengespeicherte Version ausgeliefert.
-const CACHE_NAME = 'lesezauber-shell-v52';
+const CACHE_NAME = 'lesezauber-shell-v53';
+
+// NEU (v53): Bugfix "Birkenbihl-Übersetzung schlägt fehl" - eine Seite mit
+// wörtlicher Rede erzeugt viele Wort-Paare, ein einziges nicht sauber
+// escapetes Anführungszeichen im Modell-Output machte bisher das GESAMTE
+// JSON unbrauchbar (js/api.js). Neuer nachsichtiger Rückfall
+// (extractPairsLoosely()/callGeminiTextLenient()/runTextPromptLenient())
+// zieht Wortpaare einzeln per Regex heraus, rettet auch aus einer wegen
+// MAX_TOKENS abgeschnittenen Antwort noch die vollständigen Paare. Toast
+// bei einem Fehlschlag zeigt jetzt den tatsächlichen Grund statt einer
+// immer gleichen Pauschalmeldung (js/actions/birkenbihl.js). Keine neuen
+// Dateien.
 
 // NEU (v52): Künstliches Nutzer-Feedback simuliert (mehrere Personas
 // durchgespielt) - zwei Funde behoben. 1) Bug: bei "🔍 Alle Profile"

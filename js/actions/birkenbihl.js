@@ -38,9 +38,15 @@ Object.assign(app.actions, {
             app.render.birkenbihlTab(page);
         } catch (e) {
             console.error('Birkenbihl-Zerlegung fehlgeschlagen:', e);
+            // FIX (Bugreport "Übersetzung schlägt fehl"): bisher stand hier
+            // IMMER derselbe pauschale Satz, egal was wirklich schiefging -
+            // auf dem Handy sieht man aber keine Konsole. Jetzt der
+            // tatsächliche Grund im Toast (z.B. "Gemini-Fehler 429" bei
+            // Tageslimit, oder der Hinweis auf eine abgeschnittene Antwort),
+            // damit sich ein erneuter Versuch gezielt einschätzen lässt.
             const msg = e.message === 'API_KEY_MISSING'
                 ? 'Bitte zuerst einen Gemini-API-Key in den Einstellungen eintragen.'
-                : 'Übersetzung konnte nicht erstellt werden.';
+                : `Übersetzung fehlgeschlagen: ${e.message}. Bitte nochmal versuchen.`;
             app.ui.toast(msg, '❌');
         } finally {
             app.state.apiBusy = false;
