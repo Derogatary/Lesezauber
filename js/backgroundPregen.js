@@ -8,12 +8,26 @@ import { app } from './core.js';
 // Erhöht von 6s auf 9s - Hintergrundarbeit hat keine Eile und soll das
 // Minutenlimit nicht zusätzlich zu regulären Analysen strapazieren.
 //
-// Drei Aufgaben-Arten, in fester Prioritäts-Reihenfolge (Nutzerwunsch:
+// Vier Aufgaben-Arten, in fester Prioritäts-Reihenfolge (Nutzerwunsch:
 // "erst Seiten, dann anderer Kram") - siehe findNextMissingTask():
+// 0. Grundanalyse einer noch gar nicht ausgelesenen Seite (NEU - vorher
+//    liefen frisch fotografierte/importierte, aber noch nie analysierte
+//    Seiten der Hintergrund-Vorbereitung nie hinein, siehe Nutzerhinweis
+//    "es sind nicht die fehlenden Seiten der Bücher mit drinnen")
 // 1. Persona-Variante einer Seite (Grundlage fürs Lesen überhaupt)
-// 2. Buch-Quiz (erst wenn Punkt 1 für ALLE Bücher erledigt ist)
+// 2. Buch-Quiz (erst wenn Punkt 0+1 für ALLE Bücher erledigt ist)
 // 3. Birkenbihl-Übersetzung (niedrigste Priorität, eigener Zusatz-Schalter
 //    app.settings.backgroundPregenBirkenbihl, siehe js/state.js)
+//
+// NEU (Nutzerwunsch: "könnten diese Unterthemen nicht mit einem Prompt oder
+// mehreren wenig Prompts erledigt werden?"): Punkt 0 und 1 laufen bei
+// Geschichten (bookType 'story') beide über denselben Analyse-Kern
+// (app.actions._analyzePageCore() in js/actions/scanner.js), der seit
+// v0.35.0-beta ALLE Personas UND die Birkenbihl-Zerlegung in EINEM
+// API-Aufruf liefert - eine Seite mit mehreren fehlenden Personas braucht
+// dadurch nur noch einen einzigen Hintergrund-Durchlauf statt einem pro
+// fehlender Persona. Bei Übungsheften (nur eine relevante Persona) bleibt
+// es beim gezielten Einzel-Aufruf.
 //
 // NEU (Nutzerwunsch): läuft absichtlich auch, wenn der Tab nicht der
 // gerade sichtbare ist (siehe runOneBackgroundTask(), früher gab es dort
@@ -25,26 +39,54 @@ const BACKGROUND_PAUSE_MS = 9000;
 function findNextMissingTask() {
     for (const bookId of Object.keys(app.library)) {
         const book = app.library[bookId];
+        const bookType = app.utils.resolveBookType(book);
 
         for (let i = 0; i < book.pages.length; i++) {
             const page = book.pages[i];
-            if (page.status !== 'done') continue; // nur fertig gescannte Seiten haben überhaupt Grundmaterial
+            // NEU: ausgeschlossene Seiten (Leerseiten, Impressum etc.) nie
+            // automatisch anfassen - dieselbe Regel wie beim manuellen Scan.
+            if (page.excluded) continue;
 
-            for (const persona of app.personas) {
-                const hasVariant = page.variants && page.variants[persona.id];
-                if (!hasVariant) {
-                    return { type: 'persona', bookId, pageIdx: i, personaId: persona.id };
+            // NEU (höchste Priorität): eine noch gar nicht ausgelesene oder
+            // zuletzt fehlgeschlagene Seite hat noch KEIN Grundmaterial -
+            // ohne das ergibt weder eine Persona-Variante noch Buch-Quiz
+            // noch Birkenbihl überhaupt Sinn. Nutzt denselben Analyse-Kern
+            // wie der manuelle Scan (app.actions._analyzePageCore), der bei
+            // Geschichten gleich ALLE Personas + Birkenbihl mitliefert.
+            if (page.status === 'pending' || page.status === 'error') {
+                return { type: 'scan', bookId, pageIdx: i };
+            }
+            if (page.status !== 'done') continue;
+
+            if (bookType === 'story') {
+                // NEU: EIN fehlender Aufruf für die ganze Seite reicht -
+                // app.api.analyzeAllPersonas() erzeugt ohnehin ALLE
+                // Personas auf einmal, ein erneuter Aufruf mit irgendeiner
+                // Persona-ID füllt also automatisch auch die übrigen.
+                const missingAny = app.personas.some(p => !(page.variants && page.variants[p.id]));
+                if (missingAny) {
+                    return { type: 'persona', bookId, pageIdx: i, personaId: app.settings.persona };
+                }
+            } else {
+                for (const persona of app.personas) {
+                    const hasVariant = page.variants && page.variants[persona.id];
+                    if (!hasVariant) {
+                        return { type: 'persona', bookId, pageIdx: i, personaId: persona.id };
+                    }
                 }
             }
         }
 
-        // Buch-Quiz erst vorschlagen, wenn wirklich JEDE Seite mindestens
-        // eine Version hat (Buch vollständig gescannt).
+        // Buch-Quiz erst vorschlagen, wenn wirklich JEDE relevante Seite
+        // mindestens eine Version hat (Buch vollständig gescannt).
         // NEU: Übungshefte übersprungen - Verständnisfragen "zur Geschichte"
         // ergeben bei Arbeitsblättern keinen Sinn und würden nur API-Aufrufe
-        // verbrennen.
-        const allDone = book.pages.length > 0 && book.pages.every(p => p.status === 'done');
-        if (allDone && !book.bookQuiz && app.utils.resolveBookType(book) !== 'workbook') {
+        // verbrennen. FIX: ausgeschlossene Seiten (bleiben absichtlich für
+        // immer 'pending') dürfen "allDone" nicht blockieren, siehe
+        // app.utils.countMissingBookQuiz() in js/utils.js (identische Logik).
+        const relevantPages = book.pages.filter(p => !p.excluded);
+        const allDone = relevantPages.length > 0 && relevantPages.every(p => p.status === 'done');
+        if (allDone && !book.bookQuiz && bookType !== 'workbook') {
             return { type: 'bookQuiz', bookId };
         }
     }
@@ -66,35 +108,25 @@ function findNextMissingTask() {
     return null;
 }
 
-// Erzeugt EINE Persona-Variante für eine bestimmte Seite. Arbeitet
-// bewusst NICHT über app.state.currentBookId (das würde die gerade
-// sichtbare Ansicht der Person durcheinanderbringen, falls sie parallel
-// ein anderes Buch offen hat) - alles läuft über direkt übergebene
-// Objekte.
-async function generatePersonaVariantForPage(book, pageIdx, personaId) {
+// Erledigt die Grundanalyse ODER eine fehlende Persona-Variante für eine
+// bestimmte Seite - beides läuft seit v0.35.0-beta über denselben Analyse-
+// Kern app.actions._analyzePageCore() (js/actions/scanner.js), der bei
+// Geschichten ALLE Personas + Birkenbihl in einem Aufruf liefert und bei
+// Übungsheften gezielt nur die übergebene Persona erzeugt. Arbeitet bewusst
+// NICHT über app.state.currentBookId (das würde die gerade sichtbare
+// Ansicht der Person durcheinanderbringen, falls sie parallel ein anderes
+// Buch offen hat) - alles läuft über direkt übergebene Objekte.
+async function analyzePageInBackground(book, pageIdx, personaId) {
     const page = book.pages[pageIdx];
-    const b64 = page.imgUrl.split(',')[1];
-    const isCover = (pageIdx === 0 && (!book.title || book.title === 'Neues Buch'));
-    // FIX: bookType landete hier auf der Positions-Stelle von forceToc
-    // (app.api.analyze() erwartet knownText, forceToc, DANN bookType) - ein
-    // im Hintergrund für eine weitere Persona nachgezogenes Übungsheft bekam
-    // dadurch immer den Geschichten-Prompt statt des Heft-Prompts. Gleiche
-    // forceToc-Ermittlung wie im manuellen Scan (js/actions/scanner.js),
-    // damit ein als Inhaltsverzeichnis markiertes Blatt auch im Hintergrund
-    // korrekt erkannt wird.
-    const forceToc = !!book.tocPageId && page.id === book.tocPageId;
-    // NEU: auch im Hintergrund gilt die Buchart - ein Übungsheft bekommt
-    // sonst plötzlich Erzähltext-Varianten, sobald man die Persona wechselt.
-    const bookType = app.utils.resolveBookType(book);
-    const result = await app.api.analyze(b64, isCover, personaId, page.pdfSourceText || null, forceToc, bookType);
-
-    if (!page.variants) page.variants = {};
-    // Gemeinsame Umrechnung mit dem Scanner (js/utils.js) - hier lag vorher
-    // eine zweite Kopie derselben Felder-Zuordnung.
-    page.variants[personaId] = app.utils.buildPageVariant(result, page, bookType);
-    // NEU: auch bei im Hintergrund vorbereiteten Varianten Vokabeln sammeln
-    app.actions.recordVocabulary(result.vocabulary);
-    app.dbOps.saveBook(book);
+    page.status = 'processing';
+    try {
+        await app.actions._analyzePageCore(book, pageIdx, personaId);
+    } catch (e) {
+        page.status = 'error';
+        throw e;
+    } finally {
+        app.dbOps.saveBook(book);
+    }
 }
 
 // NEU (Birkenbihl-Hintergrundvorbereitung, Nutzerwunsch): Gegenstück zu
@@ -160,8 +192,12 @@ async function runOneBackgroundTask() {
 
     app.state.apiBusy = true;
     try {
-        if (task.type === 'persona') {
-            await generatePersonaVariantForPage(app.library[task.bookId], task.pageIdx, task.personaId);
+        if (task.type === 'scan' || task.type === 'persona') {
+            // NEU: 'scan' (noch gar nicht ausgelesene Seite) und 'persona'
+            // (fehlende Variante einer schon ausgelesenen Seite) laufen
+            // beide über denselben Analyse-Kern - bei 'scan' ist personaId
+            // noch nicht bekannt, dann zählt die globale Standard-Persona.
+            await analyzePageInBackground(app.library[task.bookId], task.pageIdx, task.personaId || app.settings.persona);
             // Nur neu zeichnen, wenn genau dieses Buch/diese Seite gerade
             // sichtbar ist - sonst nicht in eine fremde Ansicht eingreifen.
             if (app.state.currentBookId === task.bookId) {

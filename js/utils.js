@@ -201,12 +201,32 @@ Object.assign(app.utils, {
         return (page && page.check && page.check[id]) || null;
     },
 
+    // NEU (Nutzerhinweis: "es sind nicht die fehlenden Seiten der Bücher mit
+    // drinnen") - zählt Seiten, die noch GAR KEINE Grundanalyse haben (frisch
+    // fotografiert/importiert oder zuletzt fehlgeschlagen). Vorher liefen
+    // solche Seiten der Hintergrund-Vorbereitung nie hinein (sie prüfte nur
+    // bereits fertige Seiten auf fehlende Personas) - jetzt höchste Priorität
+    // in js/backgroundPregen.js findNextMissingTask(), da ohne Grundanalyse
+    // überhaupt kein Text existiert, aus dem sich Varianten/Quiz/Birkenbihl
+    // ableiten liessen.
+    countMissingScans() {
+        let missing = 0;
+        Object.values(app.library).forEach(book => {
+            book.pages.forEach(page => {
+                if (page.excluded) return;
+                if (page.status === 'pending' || page.status === 'error') missing++;
+            });
+        });
+        return missing;
+    },
+
     // NEU: zählt, wie viele Persona-Varianten in der gesamten Bibliothek
     // noch fehlen - für die Fortschrittsanzeige der Hintergrund-Vorbereitung.
     countMissingVariants() {
         let missing = 0;
         Object.values(app.library).forEach(book => {
             book.pages.forEach(page => {
+                if (page.excluded) return; // FIX: ausgeschlossene Seiten nie mitzählen (werden nie analysiert)
                 if (page.status !== 'done') return;
                 app.personas.forEach(persona => {
                     if (!(page.variants && page.variants[persona.id])) missing++;
@@ -224,7 +244,12 @@ Object.assign(app.utils, {
         let missing = 0;
         Object.values(app.library).forEach(book => {
             if (app.utils.resolveBookType(book) === 'workbook') return;
-            const allDone = book.pages.length > 0 && book.pages.every(p => p.status === 'done');
+            // FIX: ausgeschlossene Seiten (bleiben absichtlich für immer
+            // 'pending', werden nie analysiert) durften "allDone" nie
+            // verhindern - sonst bekam ein Buch mit auch nur einer
+            // ausgeschlossenen Seite (z.B. Impressum) NIE ein Buch-Quiz.
+            const relevantPages = book.pages.filter(p => !p.excluded);
+            const allDone = relevantPages.length > 0 && relevantPages.every(p => p.status === 'done');
             if (allDone && !book.bookQuiz) missing++;
         });
         return missing;
@@ -245,6 +270,7 @@ Object.assign(app.utils, {
         Object.values(app.library).forEach(book => {
             if (app.utils.resolveBookType(book) === 'workbook') return;
             book.pages.forEach((page, pageIdx) => {
+                if (page.excluded) return; // FIX: ausgeschlossene Seiten nie mitzählen (werden nie analysiert)
                 if (page.status !== 'done') return;
                 const variant = app.utils.resolveAnyVariant(page, app.settings.persona);
                 if (!variant || !variant.text) return;

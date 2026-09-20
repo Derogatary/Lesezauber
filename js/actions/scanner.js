@@ -22,7 +22,69 @@ function applyPageMetadata(book, page, data, isCover) {
     page.tocEntries = Array.isArray(data.tocEntries) && data.tocEntries.length > 0 ? data.tocEntries : null;
 }
 
+// NEU (Hintergrund-Vorbereitung soll auch die eigentliche Grundanalyse
+// übernehmen können, nicht nur fehlende Personas nachziehen): der bisher
+// direkt in analyzePage() liegende Analyse-Kern, jetzt eine eigene Funktion,
+// die EXPLIZIT das Buch-Objekt entgegennimmt statt über
+// app.state.currentBookId zu gehen - js/backgroundPregen.js arbeitet an
+// einem anderen Buch als dem gerade geöffneten und darf dessen Ansicht
+// nicht durcheinanderbringen (gleiche Begründung wie zuvor bei der jetzt
+// ersetzten generatePersonaVariantForPage() dort). analyzePage() unten
+// bleibt der Aufrufer für Kamera/Galerie/Reader/manuelle Stapel-Analyse,
+// über app.actions._analyzePageCore auch für den Hintergrund nutzbar.
+async function runPageAnalysisCore(book, pageIdx, personaId) {
+    const page = book.pages[pageIdx];
+    const b64 = page.imgUrl.split(',')[1];
+    const isCover = book.titlePageId
+        ? page.id === book.titlePageId
+        : (pageIdx === 0 && (!book.title || book.title === 'Neues Buch'));
+    const forceToc = !!book.tocPageId && page.id === book.tocPageId;
+    const bookType = app.utils.resolveBookType(book);
+
+    if (bookType === 'story') {
+        const { core, personas, birkenbihl } = await app.api.analyzeAllPersonas(
+            b64, isCover, page.pdfSourceText || null, forceToc, app.settings.birkenbihlLanguage
+        );
+
+        if (!page.variants) page.variants = {};
+        const personaIds = Object.keys(personas);
+
+        if (personaIds.length === 0) {
+            console.warn('Mehrere-Personas-Analyse lieferte keine einzige lesbare Persona - Rückfall auf Einzel-Analyse.');
+            const result = await app.api.analyze(b64, isCover, personaId, page.pdfSourceText || null, forceToc, bookType);
+            page.variants[personaId] = app.utils.buildPageVariant(result, page, bookType);
+            app.actions.recordVocabulary(result.vocabulary);
+            applyPageMetadata(book, page, result, isCover);
+        } else {
+            personaIds.forEach(id => {
+                page.variants[id] = app.utils.buildPageVariant({ ...core, ...personas[id] }, page, bookType);
+                app.actions.recordVocabulary(personas[id].vocabulary);
+            });
+            applyPageMetadata(book, page, core, isCover);
+        }
+
+        if (birkenbihl && Array.isArray(birkenbihl.pairs) && birkenbihl.pairs.length > 0) {
+            page.birkenbihl = { lang: app.settings.birkenbihlLanguage, pairs: birkenbihl.pairs, generatedAt: Date.now() };
+        }
+    } else {
+        const result = await app.api.analyze(b64, isCover, personaId, page.pdfSourceText || null, forceToc, bookType);
+        if (!page.variants) page.variants = {};
+        page.variants[personaId] = app.utils.buildPageVariant(result, page, bookType);
+        app.actions.recordVocabulary(result.vocabulary);
+        applyPageMetadata(book, page, result, isCover);
+    }
+
+    page.status = 'done';
+}
+
 Object.assign(app.actions, {
+    // NEU: Zugriffspunkt für js/backgroundPregen.js (siehe Kommentar oben
+    // an runPageAnalysisCore) - Unterstrich, weil kein Button diese Funktion
+    // direkt aufruft, nur analyzePage() unten und der Hintergrund-Vorbereiter.
+    _analyzePageCore(book, pageIdx, personaId) {
+        return runPageAnalysisCore(book, pageIdx, personaId);
+    },
+
     cancelAnalysis() {
         app.state.cancelAnalysis = true;
         const sub = document.getElementById('processSub');
@@ -215,79 +277,13 @@ Object.assign(app.actions, {
         }
 
         try {
-            const b64 = page.imgUrl.split(',')[1];
-            // NEU: explizite Titelseiten-Markierung (siehe app.actions.setPageRole)
-            // hat Vorrang vor der bisherigen Standard-Annahme "Seite 1 ist die
-            // Titelseite" - ohne Markierung bleibt das alte Verhalten unverändert.
-            const isCover = book.titlePageId
-                ? page.id === book.titlePageId
-                : (pageIdx === 0 && (!book.title || book.title === 'Neues Buch'));
-            const forceToc = !!book.tocPageId && page.id === book.tocPageId;
-            // NEU: bei einem Übungsheft wird ein anderer Prompt genutzt -
-            // die KI soll die Aufgabe erklären, nicht eine Geschichte
-            // vereinfachen.
-            const bookType = app.utils.resolveBookType(book);
-
-            if (bookType === 'story') {
-                // NEU (Nutzerwunsch: "so viel wie möglich aus einem Call
-                // rausbekommen") - EIN Aufruf liefert ALLE konfigurierten
-                // Personas UND die Birkenbihl-Zerlegung gleich mit, statt
-                // nur die aktuell gewählte Persona zu erzeugen. Nur bei
-                // Geschichten - ein Übungsheft hat weder mehrere sinnvolle
-                // Personas-Varianten noch einen Birkenbihl-Tab.
-                const { core, personas, birkenbihl } = await app.api.analyzeAllPersonas(
-                    b64, isCover, page.pdfSourceText || null, forceToc, app.settings.birkenbihlLanguage
-                );
-
-                if (!page.variants) page.variants = {};
-                const personaIds = Object.keys(personas);
-
-                if (personaIds.length === 0) {
-                    // FIX: im Extremfall war KEIN einziger Persona-Block
-                    // lesbar (z.B. eine ungewöhnlich formatierte Antwort) -
-                    // dann lieber die aktuell gewählte Persona sicher über
-                    // den bewährten Einzel-Aufruf nachholen, als eine Seite
-                    // ganz ohne Text stehen zu lassen.
-                    console.warn('Mehrere-Personas-Analyse lieferte keine einzige lesbare Persona - Rückfall auf Einzel-Analyse.');
-                    const result = await app.api.analyze(b64, isCover, personaId, page.pdfSourceText || null, forceToc, bookType);
-                    page.variants[personaId] = app.utils.buildPageVariant(result, page, bookType);
-                    app.actions.recordVocabulary(result.vocabulary);
-                    applyPageMetadata(book, page, result, isCover);
-                } else {
-                    personaIds.forEach(id => {
-                        // core+persona zusammengeführt ergibt exakt dieselbe
-                        // flache Form, die buildPageVariant() schon immer
-                        // erwartet (originalText/hasIllustration aus core,
-                        // simplifiedText/imageDescription/... aus der Persona).
-                        page.variants[id] = app.utils.buildPageVariant({ ...core, ...personas[id] }, page, bookType);
-                        app.actions.recordVocabulary(personas[id].vocabulary);
-                    });
-                    applyPageMetadata(book, page, core, isCover);
-                }
-
-                // NEU: Birkenbihl-Zerlegung direkt mitspeichern, wenn sie
-                // mitgeliefert wurde - dieselbe Form wie beim on-demand-Weg
-                // (js/actions/birkenbihl.js), also weiterhin sprach-geprüft
-                // und manuell neu erzeugbar, falls die Zielsprache seither
-                // gewechselt wurde.
-                if (birkenbihl && Array.isArray(birkenbihl.pairs) && birkenbihl.pairs.length > 0) {
-                    page.birkenbihl = { lang: app.settings.birkenbihlLanguage, pairs: birkenbihl.pairs, generatedAt: Date.now() };
-                }
-            } else {
-                const result = await app.api.analyze(b64, isCover, personaId, page.pdfSourceText || null, forceToc, bookType);
-
-                // NEU: Ergebnis landet unter der jeweiligen Persona, statt die
-                // alten Felder zu überschreiben - so bleiben bereits erzeugte
-                // Versionen anderer Personas erhalten.
-                if (!page.variants) page.variants = {};
-                page.variants[personaId] = app.utils.buildPageVariant(result, page, bookType);
-
-                // NEU: gefundene Nomen+Emoji-Paare in den Vokabeltrainer übernehmen
-                app.actions.recordVocabulary(result.vocabulary);
-                applyPageMetadata(book, page, result, isCover);
-            }
-
-            page.status = 'done';
+            // NEU: der eigentliche Analyse-Kern (Mehrere-Personas-Aufruf bei
+            // Geschichten inkl. Birkenbihl, Einzel-Aufruf bei Übungsheften)
+            // steckt jetzt in runPageAnalysisCore() oben, damit
+            // js/backgroundPregen.js dieselbe Logik über
+            // app.actions._analyzePageCore() für ein anderes als das gerade
+            // geöffnete Buch wiederverwenden kann.
+            await runPageAnalysisCore(book, pageIdx, personaId);
         } catch (e) {
             page.status = 'error';
             app.ui.toast(e.message, '❌');

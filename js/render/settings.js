@@ -241,11 +241,17 @@ Object.assign(app.render, {
         // ("erst Seiten, dann anderer Kram").
         const pregenOverview = document.getElementById('pregenOverview');
         if (pregenOverview) {
+            // NEU (Nutzerhinweis: "es sind nicht die fehlenden Seiten der
+            // Bücher mit drinnen") - eigene Zeile für Seiten ohne jede
+            // Grundanalyse, in derselben Prioritäts-Reihenfolge wie
+            // js/backgroundPregen.js findNextMissingTask() (höchste zuerst).
+            const missingScans = app.utils.countMissingScans();
             const missingVariants = app.utils.countMissingVariants();
             const missingQuiz = app.utils.countMissingBookQuiz();
             const missingBirkenbihl = app.utils.countMissingBirkenbihl();
             const line = (label, count) => count > 0 ? `${label}: ${count} offen` : `${label}: alles fertig ✅`;
             pregenOverview.innerHTML = [
+                line('📷 Nicht ausgelesene Seiten', missingScans),
                 line('🧑 Erzähler-Varianten', missingVariants),
                 line('❓ Buch-Quiz', missingQuiz),
                 line('🌍 Birkenbihl', missingBirkenbihl)
