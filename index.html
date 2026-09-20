@@ -48,7 +48,7 @@
                          Nur sichtbar, wenn die Hintergrund-Vorbereitung
                          überhaupt eingeschaltet ist UND etwas offen ist. -->
                     <button id="pregenBadge" onclick="app.nav.go('settings')" class="hidden text-xs font-bold text-indigo-600 mt-0.5 hover:underline"></button>
-                    <p class="text-[10px] text-slate-400 font-semibold mt-0.5">v0.33.0-beta</p>
+                    <p class="text-[10px] text-slate-400 font-semibold mt-0.5">v0.33.1-beta</p>
                 </div>
                 <div class="flex items-center gap-2 flex-shrink-0">
                     <button onclick="app.nav.go('help')" aria-label="Hilfe öffnen" title="Hilfe" class="w-10 h-10 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-600 hover:bg-slate-100 shadow-sm transition active:scale-95">
@@ -1300,7 +1300,7 @@
                         </label>
                         <input id="toggleBackgroundPregen" type="checkbox" onchange="app.settingsConfig.toggleBackgroundPregen(this.checked)" class="w-5 h-5 accent-indigo-600">
                     </div>
-                    <p class="text-[11px] text-slate-500">Erstellt automatisch fehlende Erzähler-Varianten und Buch-Quiz, wenn gerade nichts anderes läuft. Verbraucht zusätzliche KI-Anfragen im Hintergrund - bei knappem Tageslimit lieber ausgeschaltet lassen.</p>
+                    <p class="text-[11px] text-slate-500">Erstellt automatisch fehlende Erzähler-Varianten, Buch-Quiz (und optional Birkenbihl-Übersetzungen), wenn gerade nichts anderes läuft - auch während du in einer anderen App bist, solange der Tab dabei offen bleibt. Verbraucht zusätzliche KI-Anfragen im Hintergrund - bei knappem Tageslimit lieber ausgeschaltet lassen. Bei komplett geschlossenem Tab/Browser oder nach längerer Zeit im Hintergrund (vor allem beim iPhone) pausiert es automatisch - das kann eine reine Browser-App ohne eigenen Server nicht verhindern, macht beim nächsten Öffnen aber einfach weiter.</p>
 
                     <!-- NEU (Birkenbihl-Hintergrundvorbereitung, Nutzerwunsch):
                          eigener Zusatz-Schalter statt im Hauptschalter

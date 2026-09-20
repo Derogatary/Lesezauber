@@ -14,6 +14,12 @@ import { app } from './core.js';
 // 2. Buch-Quiz (erst wenn Punkt 1 für ALLE Bücher erledigt ist)
 // 3. Birkenbihl-Übersetzung (niedrigste Priorität, eigener Zusatz-Schalter
 //    app.settings.backgroundPregenBirkenbihl, siehe js/state.js)
+//
+// NEU (Nutzerwunsch): läuft absichtlich auch, wenn der Tab nicht der
+// gerade sichtbare ist (siehe runOneBackgroundTask(), früher gab es dort
+// eine document.visibilityState-Prüfung) - nur ein komplett geschlossener
+// Tab/Browser stoppt es zwangsläufig, das kann eine reine Client-App ohne
+// eigenen Server (Push-Benachrichtigungen bräuchten einen) nicht umgehen.
 const BACKGROUND_PAUSE_MS = 9000;
 
 function findNextMissingTask() {
@@ -133,7 +139,21 @@ async function generateBookQuizInBackground(book) {
 async function runOneBackgroundTask() {
     if (!app.settings.backgroundPregenEnabled) return;
     if (app.state.apiBusy) return;
-    if (document.visibilityState !== 'visible') return;
+    // FIX (Nutzerwunsch: "es soll auch laufen, wenn der Tab nicht offen
+    // ist"): die bisherige document.visibilityState-Prüfung verlangte, dass
+    // LeseZauber Pro der GERADE aktiv angeschaute Tab ist - ein Wechsel zu
+    // einer anderen App/einem anderen Tab (auch nur kurz) stoppte die
+    // Vorbereitung sofort. Jetzt läuft sie weiter, solange der Tab
+    // überhaupt noch offen/geladen ist. Ehrliche Grenze, die sich OHNE
+    // eigenen Server (Push-Benachrichtigungen bräuchten einen) nicht
+    // umgehen lässt: schließt du den Tab/Browser ganz, endet JEDE
+    // JavaScript-Ausführung sofort - dagegen hilft kein Code. Browser
+    // drosseln außerdem Timer in nicht sichtbaren Tabs (meist auf ca. 1x/
+    // Minute) und können einen lange im Hintergrund liegenden Tab nach
+    // einer Weile ganz einfrieren, um Akku zu sparen - besonders iPhones
+    // (Safari) tun das aggressiv. Für "Tab offen, aber gerade eine andere
+    // App/ein anderes Fenster im Vordergrund" funktioniert es damit,
+    // für "App komplett geschlossen" grundsätzlich nicht.
 
     const task = findNextMissingTask();
     if (!task) return;

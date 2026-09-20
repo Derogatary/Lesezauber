@@ -6,6 +6,14 @@ vollständige Historie, neueste Version zuerst. Diese Datei wurde aus
 `CLAUDE.md` ausgelagert, weil der Abschnitt dort mit der Zeit zu groß für
 schnellen Kontext wurde; inhaltlich unverändert übernommen.
 
+## v0.33.1-beta
+
+Zwei Funde aus einem Nutzer-Screenshot der AI-Studio-Ratenbegrenzungs-Seite behoben:
+
+- **Modellwechsel: `gemini-3.6-flash` → `gemini-3.1-flash-lite`** (`js/api.js`, `js/studio/studioApi.js`) - der Screenshot zeigte die aktuelle Ratenbegrenzung des kostenlosen Tarifs für das Projekt, `gemini-3.6-flash` taucht darin gar nicht mehr auf (Recherche: nur noch ca. 20 kostenlose Anfragen/Tag), während `gemini-3.1-flash-lite` mit 15 Anfragen/Minute (ca. 500/Tag) die großzügigste Grenze aller Textausgabemodelle hat - eine ~25-fache Verbesserung. Unterstützt wie jedes "Textausgabemodell" weiterhin Bild-Eingabe (die Kategorie beschreibt nur, was zurückkommt), `analyzePage()` funktioniert also unverändert. `GEMINI_IMAGE_MODEL` (Bildgenerierung in der Werkstatt) bleibt unverändert - dort zeigte der Screenshot ohnehin 0 im kostenlosen Tarif, deckt sich mit der bereits bestehenden Zahlungsmethoden-Pflicht.
+- **Hintergrund-Vorbereitung läuft jetzt auch bei nicht sichtbarem Tab** (Nutzerwunsch) - `js/backgroundPregen.js` prüfte bisher `document.visibilityState !== 'visible'` und stoppte damit sofort, sobald man zu einer anderen App/einem anderen Tab wechselte. Diese Prüfung ist jetzt entfernt; die Vorbereitung läuft weiter, solange der Tab offen bleibt. Ehrliche Grenze bleibt bestehen und lässt sich ohne eigenen Server (Push-Benachrichtigungen bräuchten einen) nicht umgehen: ein komplett geschlossener Tab/Browser beendet jede JavaScript-Ausführung sofort, und Browser drosseln/frieren Timer in lange nicht sichtbaren Tabs ein (besonders aggressiv bei iPhones/Safari) - macht beim nächsten Öffnen aber einfach weiter. Einstellungstext entsprechend angepasst.
+- Keine neuen Dateien.
+
 ## v0.33.0-beta
 
 Birkenbihl-Übersetzungen in die Hintergrund-Vorbereitung aufgenommen (Nutzerwunsch, Antwort auf die Frage "funktioniert die background Nutzung des API Keys?"):

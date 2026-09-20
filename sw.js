@@ -1,7 +1,17 @@
 // Bei jeder inhaltlichen Änderung an einer dieser Dateien diese Nummer
 // erhöhen - sonst bekommen wiederkehrende Besucher weiter die alte
 // zwischengespeicherte Version ausgeliefert.
-const CACHE_NAME = 'lesezauber-shell-v54';
+const CACHE_NAME = 'lesezauber-shell-v55';
+
+// NEU (v55): Zwei Funde aus einem Nutzer-Screenshot der AI-Studio-
+// Ratenbegrenzungs-Seite behoben. 1) Modellwechsel: gemini-3.6-flash
+// (bisher) taucht in der aktuellen kostenlosen Ratenbegrenzung gar nicht
+// mehr auf (nur noch ~20 Anfragen/Tag laut Recherche) - gemini-3.1-flash-
+// lite hat die großzügigste Grenze aller Textausgabemodelle (~500/Tag,
+// 15 RPM), js/api.js + js/studio/studioApi.js. 2) Hintergrund-Vorbereitung
+// läuft jetzt auch, wenn der Tab nicht der gerade sichtbare ist (nur ein
+// komplett geschlossener Tab/Browser stoppt sie zwangsläufig - ehrliche
+// Grenze ohne eigenen Server). Keine neuen Dateien.
 
 // NEU (v54): Birkenbihl-Übersetzungen als dritte, niedrigste Priorität in
 // die Hintergrund-Vorbereitung aufgenommen (Nutzerwunsch: "erst Seiten,

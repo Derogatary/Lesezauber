@@ -13,7 +13,10 @@ import './studioPrompts.js';
 // importiert - beide Dateien sollen unabhängig voneinander änderbar
 // bleiben (siehe Konzept D.4), ein Modellwechsel bleibt trotzdem in jeder
 // Datei nur eine Zeile.
-const GEMINI_MODEL = 'gemini-3.6-flash';
+// FIX (Sept. 2026, siehe ausführliche Begründung in js/api.js):
+// gemini-3.1-flash-lite statt gemini-3.6-flash - deutlich großzügigeres
+// kostenloses Kontingent.
+const GEMINI_MODEL = 'gemini-3.1-flash-lite';
 const MISTRAL_MODEL = 'mistral-small-latest';
 
 // Gleiche Aufräum-Logik wie js/api.js: manche Modelle wrappen die

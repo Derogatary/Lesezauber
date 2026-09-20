@@ -17,7 +17,7 @@ Seit v0.10.0-beta gibt es den **Heft-Modus**: ein Buch kann statt einer Geschich
 - HTML/CSS/JS, ES-Module (`<script type="module">`)
 - Tailwind CSS v4, eigener Build - KEIN CDN (siehe Build-Schritt unten)
 - PDF.js, JSZip (vendored, lazy-geladen) für PDF-/EPUB-Import
-- Google Gemini API (aktuell `gemini-3.6-flash`, `js/api.js`) für Bildanalyse/Text, Mistral als optionaler Fallback
+- Google Gemini API (aktuell `gemini-3.1-flash-lite`, `js/api.js` - Wahl nach kostenlosem Kontingent, siehe Kommentar dort) für Bildanalyse/Text, Mistral als optionaler Fallback
 - Neuronale TTS-Anbieter (optional, opt-in): Gemini TTS, Google Cloud Chirp 3 HD, ElevenLabs, OpenAI, Speechify (`js/ttsProviders.js`)
 - Service Worker für PWA/Offline-Fähigkeit
 - Kein Bundler nötig (reine ES-Module) - nur Tailwind braucht einen Build-Schritt
@@ -303,6 +303,6 @@ Feste Regeln:
 
 ## Versionsstand
 
-Aktuell `v0.33.0-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Version bei größeren Änderungen hochzählen (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).
+Aktuell `v0.33.1-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Version bei größeren Änderungen hochzählen (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).
 
 **Die vollständige Versionshistorie (was mit welcher Version kam, inkl. aller Entscheidungen) steht in [`CHANGELOG.md`](CHANGELOG.md), neueste Version zuerst.** Vor dem Einplanen eines Features dort nachsehen, sonst werden bereits gefallene Entscheidungen neu diskutiert. Neuer Eintrag bei jeder Versionserhöhung: oben in `CHANGELOG.md` ergänzen, nicht hier.

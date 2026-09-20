@@ -1,10 +1,17 @@
 import { app } from './core.js';
 
-// gemini-2.5-flash läuft im Oktober 2026 aus. Von Google empfohlener
-// Nachfolger: gemini-3.6-flash - Stand jetzt weiterhin im kostenlosen
-// Tarif verfügbar. Ändert sich das wieder, reicht ein Update dieser
-// einen Zeile.
-const GEMINI_MODEL = 'gemini-3.6-flash';
+// FIX (Nutzer-Screenshot der Ratenbegrenzungs-Seite in AI Studio, Sept.
+// 2026): gemini-3.6-flash war zwar der von Google empfohlene Nachfolger von
+// gemini-2.5-flash, taucht in der aktuellen Ratenbegrenzungs-Übersicht des
+// kostenlosen Tarifs aber gar nicht mehr auf (nur noch ~20 kostenlose
+// Anfragen/Tag laut Recherche) - vermutlich seitdem nachträglich
+// eingeschränkt. gemini-3.1-flash-lite bietet auf dem kostenlosen Tarif
+// dagegen die großzügigste Grenze aller Textausgabemodelle (15 Anfragen/
+// Minute, ca. 500/Tag) UND unterstützt wie jedes "Textausgabemodell" auch
+// Bild-Eingabe (das hier gebrauchte analyzePage() schickt ein Foto mit) -
+// "Textausgabe" beschreibt nur das, was zurückkommt, nicht was reingeht.
+// Ändert sich das wieder, reicht ein Update dieser einen Zeile.
+const GEMINI_MODEL = 'gemini-3.1-flash-lite';
 
 // Mistral als optionaler Fallback, falls Gemini mal ausfällt oder das
 // Tageslimit erreicht ist. Wird nur genutzt, wenn ein Mistral-Key in den
