@@ -6,7 +6,7 @@ import { app } from '../core.js';
 // Kostenzähler (project.costLog). Ob "echt" überhaupt möglich ist,
 // entscheidet einzig app.studio.resolveImageSourceId() (studioCore.js).
 
-const SOURCE_LABEL = { placeholder: '🖼️ Platzhalter', upload: '📷 eigenes Bild', gemini: '✨ KI-Bild' };
+const SOURCE_LABEL = { placeholder: '🖼️ Platzhalter', upload: '📷 eigenes Bild', gemini: '✨ KI-Bild', pollinations: '🎨 KI-Bild (kostenlos)' };
 
 function imageCardHtml(spread) {
     const source = spread.imageMeta?.source;
@@ -39,13 +39,17 @@ Object.assign(app.render, {
         const replaceBtn = document.getElementById('studioReplacePlaceholdersBtn');
         if (replaceBtn) {
             const placeholderCount = project.spreads.filter(s => s.imageMeta?.source === 'placeholder').length;
-            replaceBtn.classList.toggle('hidden', sourceId !== 'gemini' || placeholderCount === 0);
+            // NEU (Pollinations-Quelle): "alle Platzhalter ersetzen" ist jetzt
+            // bei JEDER echten Quelle möglich, nicht mehr nur bei Gemini.
+            replaceBtn.classList.toggle('hidden', sourceId === 'placeholder' || placeholderCount === 0);
         }
         const hint = document.getElementById('studioImageSourceHint');
         if (hint) {
             hint.innerText = sourceId === 'gemini'
-                ? '✨ Echte KI-Bildgenerierung ist aktiv (Einstellungen → Werkstatt).'
-                : '🖼️ Es werden Platzhalter erzeugt. Echte KI-Bilder lassen sich in den Einstellungen bestätigen, sobald die Zahlungsmethode am Google-Konto steht (siehe docs/KONZEPT-SchreibZauber.md).';
+                ? '✨ Echte KI-Bildgenerierung (Gemini) ist aktiv (Einstellungen → Werkstatt).'
+                : sourceId === 'pollinations'
+                    ? '🎨 Kostenlose KI-Bildgenerierung (Pollinations) ist aktiv - ohne Referenzbilder, Figuren bleiben nur ähnlich (Einstellungen → Werkstatt).'
+                    : '🖼️ Es werden Platzhalter erzeugt. Echte KI-Bilder lassen sich in den Einstellungen bestätigen (Gemini kostenpflichtig mit Zahlungsmethode am Google-Konto, oder Pollinations kostenlos ohne Key).';
         }
 
         const costEl = document.getElementById('studioCostDisplay');

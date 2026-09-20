@@ -48,7 +48,7 @@
                          Nur sichtbar, wenn die Hintergrund-Vorbereitung
                          überhaupt eingeschaltet ist UND etwas offen ist. -->
                     <button id="pregenBadge" onclick="app.nav.go('settings')" class="hidden text-xs font-bold text-indigo-600 mt-0.5 hover:underline"></button>
-                    <p class="text-[10px] text-slate-400 font-semibold mt-0.5">v0.36.8-beta</p>
+                    <p class="text-[10px] text-slate-400 font-semibold mt-0.5">v0.37.0-beta</p>
                 </div>
                 <div class="flex items-center gap-2 flex-shrink-0">
                     <button onclick="app.nav.go('help')" aria-label="Hilfe öffnen" title="Hilfe" class="w-10 h-10 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-600 hover:bg-slate-100 shadow-sm transition active:scale-95">
@@ -1345,6 +1345,20 @@
                         <input id="toggleStudioImageGen" type="checkbox" onchange="app.settingsConfig.toggleStudioImageGen(this.checked)" class="w-5 h-5 accent-indigo-600">
                     </div>
                     <p class="text-[11px] text-slate-500">Solange ausgeschaltet, erzeugt SchreibZauber nur kostenlose Platzhalter-Bilder. Einschalten nutzt den echten Gemini-Bild-Endpunkt - der kostet Geld (grob 0,07 $ pro Bild) und braucht eine hinterlegte Zahlungsmethode am Google-Konto hinter deinem Gemini-Key.</p>
+                </div>
+
+                <!-- NEU (Nutzerwunsch "kostenlos Bilderbücher erstellen"): Pollinations.ai
+                     als zweite, kostenlose Bildquelle - siehe js/studio/imageSource.js
+                     providers.pollinations. Greift nur, wenn Gemini-Bilder (oben) NICHT
+                     aktiv/verfügbar sind, siehe resolveImageSourceId() in studioCore.js. -->
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-2">
+                    <div class="flex items-center justify-between">
+                        <label for="toggleStudioImagePollinations" class="text-xs font-bold uppercase tracking-wider text-slate-500">
+                            🎨 Kostenlose KI-Bilder (Pollinations)
+                        </label>
+                        <input id="toggleStudioImagePollinations" type="checkbox" onchange="app.settingsConfig.toggleStudioImagePollinations(this.checked)" class="w-5 h-5 accent-indigo-600">
+                    </div>
+                    <p class="text-[11px] text-slate-500">Kein Key, keine Zahlungsmethode nötig - läuft über den kostenlosen Dienst Pollinations.ai. Dafür ohne Referenzbilder: Figuren bleiben über mehrere Seiten hinweg nur ähnlich, nicht exakt gleich wie bei Gemini, und ohne eigenen Pollinations-Account ist nur etwa 1 Bild alle 15 Sekunden erlaubt. Wird ignoriert, solange oben "Echte KI-Bilder" (Gemini) aktiv ist.</p>
                 </div>
 
                 <!-- NEU: zweiseitiges Layout (Option) -->

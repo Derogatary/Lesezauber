@@ -140,15 +140,19 @@ function spreadSceneHint(spread) {
     return '';
 }
 
-// NEU: welche Bildquelle gerade tatsächlich benutzt werden soll. Solange
-// die echte Bildgenerierung nicht in den Einstellungen ausdrücklich
-// bestätigt wurde (siehe app.settingsConfig.toggleStudioImageGen,
+// NEU: welche Bildquelle gerade tatsächlich benutzt werden soll. EIN Ort für
+// diese Weiche, damit kein Aufrufer versehentlich selbst eine Quelle fest
+// verdrahtet. Reihenfolge ist Absicht: Gemini (echte Referenzbilder, bessere
+// Figuren-Konsistenz) geht vor, wenn ausdrücklich bestätigt UND ein Key da
+// ist (siehe app.settingsConfig.toggleStudioImageGen,
 // docs/KONZEPT-SchreibZauber.md TEIL G Punkt 1 - Zahlungsmethode am
-// Google-Konto noch nicht bestätigt), bleibt es beim kostenlosen
-// Platzhalter. EIN Ort für diese Weiche, damit kein Aufrufer versehentlich
-// selbst "gemini" fest verdrahtet.
+// Google-Konto). Pollinations (NEU, Nutzerwunsch "kostenlos Bilderbücher
+// erstellen") ist der kostenlose Zweite-Wahl-Pfad ohne Key/Zahlungsmethode,
+// siehe app.settingsConfig.toggleStudioImagePollinations. Ohne beide
+// Bestätigungen bleibt es beim Platzhalter.
 function resolveImageSourceId() {
     if (app.settings.studioImageGenEnabled && app.settings.apiKey) return 'gemini';
+    if (app.settings.studioImagePollinationsEnabled) return 'pollinations';
     return 'placeholder';
 }
 

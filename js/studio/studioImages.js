@@ -5,11 +5,13 @@ import { app } from '../core.js';
 // echtes Bild, einzeln anstoßbar, NIE automatisch fürs ganze Buch auf
 // einmal (Konzept C.2, "Warum Stufe 5 vor Stufe 6 nicht übersprungen werden
 // darf" - dieselbe Zurückhaltung wie beim bestehenden Persona-System, siehe
-// CLAUDE.md). Ob dabei wirklich die Gemini-Bild-API oder weiterhin der
-// kostenlose Platzhalter läuft, entscheidet AUSSCHLIESSLICH
-// app.studio.resolveImageSourceId() (studioCore.js) anhand der
-// ausdrücklichen Bestätigung in den Einstellungen - dieses Modul fragt nie
-// selbst danach, ob "gemini" erlaubt ist.
+// CLAUDE.md). Ob dabei wirklich die Gemini-Bild-API, die kostenlose
+// Pollinations-Quelle (NEU) oder weiterhin der Platzhalter läuft,
+// entscheidet AUSSCHLIESSLICH app.studio.resolveImageSourceId()
+// (studioCore.js) anhand der ausdrücklichen Bestätigung in den
+// Einstellungen - dieses Modul fragt nie selbst danach, welche Quelle
+// erlaubt ist, und arbeitet überall mit der zurückgegebenen sourceId statt
+// eine Quelle selbst fest zu verdrahten.
 //
 // NEU (Ausbaustufe 5, Panels): beim Comic erzeugt dieses Modul NICHT ein
 // Bild pro Seite, sondern eins PRO PANEL (siehe generateComicPage() unten) -
@@ -53,7 +55,7 @@ Object.assign(app.studio, {
         }
 
         const sourceId = app.studio.resolveImageSourceId();
-        app.ui.showLoader('Bild wird erzeugt...', sourceId === 'gemini' ? 'Das kann einige Sekunden dauern' : 'Platzhalter wird gezeichnet');
+        app.ui.showLoader('Bild wird erzeugt...', sourceId !== 'placeholder' ? 'Das kann einige Sekunden dauern' : 'Platzhalter wird gezeichnet');
         app.state.apiBusy = true;
         try {
             const result = await app.studio.imageSource.request(sourceId, {
@@ -118,7 +120,13 @@ Object.assign(app.studio, {
         try {
             for (let i = 0; i < spread.panels.length; i++) {
                 const panel = spread.panels[i];
-                app.ui.showLoader('Panels werden gezeichnet...', `${i + 1} von ${spread.panels.length}${sourceId === 'gemini' ? ' - das kann einige Sekunden dauern' : ''}`);
+                app.ui.showLoader('Panels werden gezeichnet...', `${i + 1} von ${spread.panels.length}${sourceId !== 'placeholder' ? ' - das kann einige Sekunden dauern' : ''}`);
+                // NEU (Pollinations-Quelle): Pause VOR jedem weiteren Panel
+                // außer dem ersten - ohne eigenen Account erlaubt Pollinations
+                // nur ~1 Anfrage alle 15 Sekunden (siehe imageSource.js).
+                if (i > 0 && sourceId === 'pollinations') {
+                    await new Promise(r => setTimeout(r, app.studio.imageSource.pollinationsThrottleMs));
+                }
                 const result = await app.studio.imageSource.request(sourceId, {
                     formatId: 'comicPanel',
                     sketch: panel.visual || app.studio.spreadSceneHint(spread),
@@ -169,13 +177,14 @@ Object.assign(app.studio, {
     async replaceAllPlaceholders() {
         const project = currentProject();
         if (!project) return;
-        if (app.studio.resolveImageSourceId() !== 'gemini') {
+        const sourceId = app.studio.resolveImageSourceId();
+        if (sourceId === 'placeholder') {
             app.ui.toast('Echte Bildgenerierung ist noch nicht in den Einstellungen bestätigt.', 'ℹ️');
             return;
         }
 
         if (project.type === 'comic') {
-            await replaceAllComicPanelPlaceholders(project);
+            await replaceAllComicPanelPlaceholders(project, sourceId);
             return;
         }
 
@@ -186,7 +195,13 @@ Object.assign(app.studio, {
             app.ui.toast('Keine Platzhalter zum Ersetzen gefunden.', 'ℹ️');
             return;
         }
-        if (!confirm(`${targets.length} Platzhalter durch echte KI-Bilder ersetzen? Das kostet ca. ${(targets.length * app.studio.GEMINI_IMAGE_PRICE_USD).toFixed(2)} $ (grobe Schätzung).`)) return;
+        // NEU (Pollinations-Quelle): kostet nichts, dafür ohne eigenen
+        // Account nur ~1 Bild alle 15 Sekunden - das darf die Abfrage vorher
+        // ehrlich sagen, statt einen Geldbetrag zu nennen, der gar nicht anfällt.
+        const confirmMsg = sourceId === 'gemini'
+            ? `${targets.length} Platzhalter durch echte KI-Bilder ersetzen? Das kostet ca. ${(targets.length * app.studio.GEMINI_IMAGE_PRICE_USD).toFixed(2)} $ (grobe Schätzung).`
+            : `${targets.length} Platzhalter durch kostenlose KI-Bilder (Pollinations) ersetzen? Das dauert wegen des Anfrage-Limits ca. ${Math.ceil(targets.length * app.studio.imageSource.pollinationsThrottleMs / 60000)} Minute(n).`;
+        if (!confirm(confirmMsg)) return;
 
         app.ui.showLoader('Bilder werden erzeugt...', `0 von ${targets.length}`);
         app.state.apiBusy = true;
@@ -194,8 +209,13 @@ Object.assign(app.studio, {
         try {
             for (const { s, i } of targets) {
                 app.ui.showLoader('Bilder werden erzeugt...', `${done + failed} von ${targets.length}`);
+                // NEU (Pollinations-Quelle): siehe Kommentar oben bei
+                // generateComicPage() - dieselbe Pause vor jedem weiteren Bild.
+                if (done + failed > 0 && sourceId === 'pollinations') {
+                    await new Promise(r => setTimeout(r, app.studio.imageSource.pollinationsThrottleMs));
+                }
                 try {
-                    const result = await app.studio.imageSource.request('gemini', {
+                    const result = await app.studio.imageSource.request(sourceId, {
                         formatId: app.studio.trimToFormat(project.spec.trim, project.type),
                         rawPrompt: s.imagePrompt,
                         characterImages: characterImagesFor(project, s),
@@ -234,7 +254,7 @@ Object.assign(app.studio, {
 // NEU (Ausbaustufe 5, Panels): Comic-Gegenstück zu "alle Platzhalter
 // ersetzen" - läuft über ALLE Panels ALLER Seiten (nicht über Seiten
 // direkt), setzt betroffene Seiten danach neu zusammen.
-async function replaceAllComicPanelPlaceholders(project) {
+async function replaceAllComicPanelPlaceholders(project, sourceId) {
     const targets = [];
     project.spreads.forEach((spread, spreadIndex) => {
         spread.panels.forEach((panel, panelIndex) => {
@@ -245,7 +265,12 @@ async function replaceAllComicPanelPlaceholders(project) {
         app.ui.toast('Keine Platzhalter zum Ersetzen gefunden.', 'ℹ️');
         return;
     }
-    if (!confirm(`${targets.length} Panel-Platzhalter durch echte KI-Bilder ersetzen? Das kostet ca. ${(targets.length * app.studio.GEMINI_IMAGE_PRICE_USD).toFixed(2)} $ (grobe Schätzung).`)) return;
+    // NEU (Pollinations-Quelle): siehe replaceAllPlaceholders() oben - gleiche
+    // ehrliche Ansage (Zeit statt Geld) für den kostenlosen Pfad.
+    const confirmMsg = sourceId === 'gemini'
+        ? `${targets.length} Panel-Platzhalter durch echte KI-Bilder ersetzen? Das kostet ca. ${(targets.length * app.studio.GEMINI_IMAGE_PRICE_USD).toFixed(2)} $ (grobe Schätzung).`
+        : `${targets.length} Panel-Platzhalter durch kostenlose KI-Bilder (Pollinations) ersetzen? Das dauert wegen des Anfrage-Limits ca. ${Math.ceil(targets.length * app.studio.imageSource.pollinationsThrottleMs / 60000)} Minute(n).`;
+    if (!confirm(confirmMsg)) return;
 
     app.ui.showLoader('Panels werden erzeugt...', `0 von ${targets.length}`);
     app.state.apiBusy = true;
@@ -254,8 +279,11 @@ async function replaceAllComicPanelPlaceholders(project) {
     try {
         for (const { spread, panel, spreadIndex } of targets) {
             app.ui.showLoader('Panels werden erzeugt...', `${done + failed} von ${targets.length}`);
+            if (done + failed > 0 && sourceId === 'pollinations') {
+                await new Promise(r => setTimeout(r, app.studio.imageSource.pollinationsThrottleMs));
+            }
             try {
-                const result = await app.studio.imageSource.request('gemini', {
+                const result = await app.studio.imageSource.request(sourceId, {
                     formatId: 'comicPanel',
                     rawPrompt: panel.imagePrompt,
                     characterImages: characterImagesForPanel(project, panel),

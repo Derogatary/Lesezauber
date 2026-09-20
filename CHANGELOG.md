@@ -6,6 +6,16 @@ vollständige Historie, neueste Version zuerst. Diese Datei wurde aus
 `CLAUDE.md` ausgelagert, weil der Abschnitt dort mit der Zeit zu groß für
 schnellen Kontext wurde; inhaltlich unverändert übernommen.
 
+## v0.37.0-beta
+
+Pollinations.ai als zweite, kostenlose Bildquelle in der SchreibZauber-Werkstatt (Nutzerwunsch, nach eigener Recherche zu KI-Bildgenerierung mit vorgeschlagener Architektur "Gemini Pro" - Rückmeldung dazu: die App hat bereits eine Adapter-Schicht `app.studio.imageSource` mit genau diesem Erweiterungspunkt, ein eigener Server mit dort hinterlegtem API-Key (zwei der drei vorgeschlagenen Varianten) hätte die bewusst gesetzte Architekturentscheidung "komplett client-seitig, kein eigener Server" aus CLAUDE.md aufgebrochen und wurde deshalb NICHT übernommen):
+
+- **Neue Bildquelle `pollinations`** (`js/studio/imageSource.js`): kein API-Key, keine Zahlungsmethode nötig, reiner URL-Aufruf (`https://image.pollinations.ai/prompt/...`). Ergänzt `gemini`, ersetzt es nicht - `app.studio.resolveImageSourceId()` (`js/studio/studioCore.js`) wählt weiterhin zuerst `gemini` (falls bestätigt + Key vorhanden), sonst `pollinations` (falls bestätigt), sonst den Platzhalter.
+- **`private: true` fest verdrahtet, keine Einstellung dafür:** ohne dieses Flag landen bei Pollinations erzeugte Bilder laut deren Doku im öffentlichen Feed der Seite - für eine "rein private Familie" (CLAUDE.md) inakzeptabel, deshalb kein Abschalten vorgesehen.
+- **Bewusste Schwächen gegenüber Gemini, im Einstellungen-Dialog und in der Werkstatt-Ansicht offen benannt:** keine Referenzbilder möglich (nur Text-Prompt + ein aus den Figurennamen abgeleiteter fester Seed) - Figuren bleiben über mehrere Seiten hinweg nur ÄHNLICH, nicht exakt gleich wie bei Gemini mit echten Referenzbildern. Ohne eigenen Pollinations-Account außerdem nur ~1 Anfrage alle 15 Sekunden erlaubt (`imageSource.pollinationsThrottleMs`) - "alle Platzhalter ersetzen" (`js/studio/studioImages.js`, Bilderbuch UND Comic-Panels) pausiert deshalb entsprechend zwischen den Bildern und sagt die ungefähre Wartezeit vorher an (statt eines Kostenbetrags wie bei Gemini, hier fällt ja nichts an).
+- Neuer Einstellungen-Schalter "🎨 Kostenlose KI-Bilder (Pollinations)" (`toggleStudioImagePollinations`) - eigenes, unabhängiges Opt-in trotz Kostenlosigkeit, weil es sich um einen unmoderierten Drittanbieter-Dienst handelt.
+- `js/studio/studioImages.js`/`studioCharacters.js` fragen jetzt überall generisch nach `sourceId !== 'placeholder'`/mit der zurückgegebenen `sourceId` statt eine echte Quelle als `'gemini'` fest zu verdrahten - Figurenblätter, Doppelseiten UND Comic-Panels funktionieren dadurch identisch mit beiden echten Quellen.
+
 ## v0.36.8-beta
 
 Schwierige Wörter werden jetzt nach dem Textteil kurz erklärt, Rätselfragen-Stufen präzisiert (Nutzerwunsch, mit Screenshot der echten Schul-Anforderungsbereiche AFB I-III):

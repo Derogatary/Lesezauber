@@ -160,7 +160,7 @@ Object.assign(app.studio, {
         const hadPreviousSheet = !!character.sheetImgUrl;
         const sourceId = app.studio.resolveImageSourceId();
 
-        app.ui.showLoader('Figurenblatt wird erzeugt...', sourceId === 'gemini' ? 'Das kann einige Sekunden dauern' : 'Platzhalter wird gezeichnet');
+        app.ui.showLoader('Figurenblatt wird erzeugt...', sourceId !== 'placeholder' ? 'Das kann einige Sekunden dauern' : 'Platzhalter wird gezeichnet');
         app.state.apiBusy = true;
         try {
             const result = await app.studio.imageSource.request(sourceId, {

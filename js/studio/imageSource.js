@@ -68,19 +68,31 @@ function dataUrlToInlineData(dataUrl) {
     return { mimeType: match[1], data: match[2] };
 }
 
-// Lädt eine bereits im Speicher liegende data:-URL als <img>-Element -
-// gebraucht, um das von Gemini gelieferte Bild wie jedes andere über
-// app.utils.createImageVariants() in die zwei WebP-Größen zu bringen.
-// Bewusst eine eigene, kleine Funktion statt app.utils.loadImageElement():
-// die dort erwartet eine hochgeladene File(), hier liegt die Daten-URL
-// schon fertig im Speicher.
-function loadImageFromDataUrl(dataUrl) {
+// Lädt eine bereits im Speicher liegende data:- oder blob:-URL als
+// <img>-Element - gebraucht, um ein von Gemini ODER Pollinations geliefertes
+// Bild wie jedes andere über app.utils.createImageVariants() in die zwei
+// WebP-Größen zu bringen. Bewusst eine eigene, kleine Funktion statt
+// app.utils.loadImageElement(): die dort erwartet eine hochgeladene File(),
+// hier liegt die Bild-URL schon fertig im Speicher.
+function loadImageFromUrl(url) {
     return new Promise((resolve, reject) => {
         const img = new Image();
         img.onload = () => resolve(img);
-        img.onerror = () => reject(new Error('Von Gemini geliefertes Bild konnte nicht gelesen werden.'));
-        img.src = dataUrl;
+        img.onerror = () => reject(new Error('Geliefertes Bild konnte nicht gelesen werden.'));
+        img.src = url;
     });
+}
+
+// NEU (Pollinations-Quelle): "gleicher Text -> gleiche Zahl", keine
+// Kryptographie nötig - nur damit dieselbe(n) Figur(en) über mehrere Seiten
+// hinweg denselben Seed bekommen (etwas konsistenterer Stil, siehe
+// providers.pollinations unten).
+function hashSeed(str) {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+        hash = (Math.imul(hash, 31) + str.charCodeAt(i)) >>> 0;
+    }
+    return hash;
 }
 
 const providers = {
@@ -176,7 +188,7 @@ const providers = {
         if (!inlinePart) throw new Error('Antwort enthielt kein Bild.');
 
         const dataUrl = `data:${inlinePart.inlineData.mimeType};base64,${inlinePart.inlineData.data}`;
-        const img = await loadImageFromDataUrl(dataUrl);
+        const img = await loadImageFromUrl(dataUrl);
         // NEU (KDP-Hochauflösend-Umschalter): siehe Kommentar bei
         // providers.upload() oben - Gemini bekommt dabei KEINE andere
         // Anfrage, nur die Weiterverarbeitung des zurückgelieferten Bildes
@@ -199,13 +211,93 @@ const providers = {
                 aspectMismatch: Math.abs((img.naturalWidth / img.naturalHeight) - (fmt.genW / fmt.genH)) > 0.12
             }
         };
-    }
+    },
 
-    // 4) HIER könnte später 'pollinations' als weitere KI-Quelle dazukommen.
-    //    Muss nur dieselbe Form { full, thumb, meta } zurückgeben und
-    //    meta.source entsprechend setzen - sonst ändert sich nichts.
-    //    Bewertung der Optionen: docs/KONZEPT-Bildquellen.md
+    // 4) Pollinations.ai (Nutzerwunsch: "kostenlos Bilderbücher erstellen") -
+    //    KEIN API-Key, KEINE Zahlungsmethode nötig, läuft rein über eine
+    //    URL. NUR erreichbar, wenn app.studio.resolveImageSourceId()
+    //    (studioCore.js) 'pollinations' liefert - genau wie bei 'gemini'
+    //    prüft diese Funktion selbst nichts nach, die Weiche sitzt zentral.
+    //
+    //    Bewusst EIGENE, schwächere Klasse als 'gemini', kein Ersatz:
+    //    - KEINE Referenzbilder möglich (die Pollinations-Bild-API nimmt nur
+    //      Text entgegen) - Figuren bleiben über mehrere Seiten hinweg nur
+    //      ÄHNLICH (gleicher Prompt-Baustein + gleicher Seed aus
+    //      hashSeed(Figurennamen)), nicht exakt gleich wie bei Gemini mit
+    //      echten Referenzbildern.
+    //    - ohne eigenen Pollinations-Account nur ~1 Anfrage alle 15 Sekunden
+    //      erlaubt (Stand 2026) - deshalb POLLINATIONS_THROTTLE_MS unten und
+    //      die Pause zwischen Bildern in "alle Platzhalter ersetzen"
+    //      (js/studio/studioImages.js).
+    //    - `private: 'true'` ist FEST verdrahtet, keine Einstellung: ohne
+    //      dieses Flag landen erzeugte Bilder laut Pollinations-Doku im
+    //      öffentlichen Feed der Seite - für private Familienfotos/
+    //      Kindergeschichten (CLAUDE.md "eine Familie, rein privat")
+    //      inakzeptabel.
+    async pollinations(spec) {
+        const fmt = app.studio.formats.get(spec.formatId);
+        if (!fmt) throw new Error('Unbekanntes Bildformat.');
+
+        const promptText = spec.rawPrompt || buildPrompt(spec);
+        const seedSource = (spec.characters || []).map(c => c.name).filter(Boolean).join('|') || spec.formatId || 'lesezauber';
+        const seed = spec.seed ?? hashSeed(seedSource);
+        const params = new URLSearchParams({
+            width: String(fmt.genW),
+            height: String(fmt.genH),
+            seed: String(seed),
+            nologo: 'true',
+            private: 'true',
+            model: POLLINATIONS_MODEL
+        });
+        const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(promptText)}?${params}`;
+
+        let res;
+        try {
+            res = await fetch(url);
+        } catch (e) {
+            throw new Error('Pollinations nicht erreichbar (Netzwerkfehler).');
+        }
+        if (res.status === 429) throw new Error('Pollinations-Limit erreicht (429) - bitte kurz warten und erneut versuchen.');
+        if (!res.ok) throw new Error(`Pollinations-Fehler ${res.status}`);
+        const blob = await res.blob();
+        if (!blob.type.startsWith('image/')) throw new Error('Pollinations hat kein Bild zurückgeliefert.');
+
+        const objectUrl = URL.createObjectURL(blob);
+        let img;
+        try {
+            img = await loadImageFromUrl(objectUrl);
+        } finally {
+            URL.revokeObjectURL(objectUrl);
+        }
+
+        const variants = spec.targetWidth
+            ? app.utils.createHiResPrintVariant(img, img.naturalWidth, img.naturalHeight, spec.targetWidth)
+            : app.utils.createImageVariants(img, img.naturalWidth, img.naturalHeight);
+
+        return {
+            full: variants.full,
+            thumb: variants.thumb,
+            meta: {
+                formatId: spec.formatId,
+                width: img.naturalWidth,
+                height: img.naturalHeight,
+                source: 'pollinations',
+                created: Date.now(),
+                seed,
+                aspectMismatch: Math.abs((img.naturalWidth / img.naturalHeight) - (fmt.genW / fmt.genH)) > 0.12
+            }
+        };
+    }
 };
+
+// NEU: Modell-Konstante für Pollinations, analog zu GEMINI_IMAGE_MODEL oben.
+const POLLINATIONS_MODEL = 'flux';
+
+// NEU: Pause vor dem nächsten Pollinations-Aufruf innerhalb einer Schleife
+// (siehe js/studio/studioImages.js "alle Platzhalter ersetzen"/Comic-Panels) -
+// EIN Ort für die Wartezeit statt doppelt in beiden Schleifen. Grund und
+// Quelle: Kommentar bei providers.pollinations oben.
+const POLLINATIONS_THROTTLE_MS = 15000;
 
 // NEU: Kopier-Knopf für den kostenlosen "Prompt-Export"-Weg (siehe
 // docs/KONZEPT-Bildquellen.md, Abschnitt 1.1). Solange keine Bild-API
@@ -250,6 +342,9 @@ app.studio = app.studio || {};
 app.studio.imageSource = {
     buildPrompt,
     copyPrompt,
+    // NEU (Pollinations-Quelle): siehe providers.pollinations oben - EIN Ort
+    // für die Wartezeit zwischen zwei Aufrufen, genutzt von studioImages.js.
+    pollinationsThrottleMs: POLLINATIONS_THROTTLE_MS,
 
     // Welche Quellen stehen gerade zur Verfügung?
     available() {

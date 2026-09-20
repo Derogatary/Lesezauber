@@ -88,7 +88,15 @@ Object.assign(app.settings, {
     // app.settingsConfig.toggleStudioImageGen(). Ohne diese Bestätigung
     // bleibt app.studio.resolveImageSourceId() (studioCore.js) immer bei
     // 'placeholder'.
-    studioImageGenEnabled: localStorage.getItem('lz_studio_image_gen') === '1'
+    studioImageGenEnabled: localStorage.getItem('lz_studio_image_gen') === '1',
+
+    // NEU (Nutzerwunsch "kostenlos Bilderbücher erstellen"): kostenlose,
+    // schlüsselfreie Bildquelle Pollinations.ai als Alternative zu Gemini -
+    // ebenfalls bewusst NICHT Standard (Default false), auch wenn sie nichts
+    // kostet: unmoderierter Drittanbieter-Dienst, schwächere Figuren-
+    // Konsistenz als Gemini (kein Referenzbild-Mechanismus). Siehe
+    // app.settingsConfig.toggleStudioImagePollinations().
+    studioImagePollinationsEnabled: localStorage.getItem('lz_studio_image_pollinations') === '1'
 });
 
 Object.assign(app.state, {
