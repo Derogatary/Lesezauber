@@ -314,14 +314,27 @@ async function openaiSynthesize(text, { voice, rate, styleHint, signal }) {
 // dasselbe { characters, starts }-Format umgerechnet, das
 // ttsNeural._wordStartTimes() bereits für ElevenLabs erwartet - so bleibt
 // die Hervorhebungs-Berechnung an einer einzigen Stelle.
-function alignmentFromSpeechMarks(marks, text) {
+//
+// NEU (Nutzerwunsch: "vollen Umfang von Speechify ausnutzen", SSML für
+// Persona-Emotionen): optionaler dritter Parameter offsetMap - laut
+// Speechify-Doku beziehen sich die Zeichen-Offsets bei SSML-Eingabe auf
+// den GESENDETEN SSML-String (inkl. Tags und Escaping), nicht auf den
+// ANGEZEIGTEN Text. Ohne Rückrechnung würde die zeichengenaue Wort-
+// Hervorhebung - der Hauptgrund, Speechify statt eines günstigeren
+// Anbieters zu nutzen - bei jeder Emotion-Persona unbemerkt auf die
+// ungenaue Schätz-Methode zurückfallen (Längen-Check in
+// ttsNeural._wordStartTimes() würde sonst fehlschlagen).
+function alignmentFromSpeechMarks(marks, text, offsetMap) {
     const chunks = marks && marks.chunks;
     if (!Array.isArray(chunks) || !chunks.length) return null;
 
     const startSecByCharIndex = new Map();
     for (const chunk of chunks) {
         if (chunk.type === 'word' && typeof chunk.start === 'number') {
-            startSecByCharIndex.set(chunk.start, (chunk.start_time || 0) / 1000);
+            const charIndex = offsetMap ? offsetMap[chunk.start] : chunk.start;
+            if (typeof charIndex === 'number') {
+                startSecByCharIndex.set(charIndex, (chunk.start_time || 0) / 1000);
+            }
         }
     }
     if (!startSecByCharIndex.size) return null;
@@ -336,10 +349,57 @@ function alignmentFromSpeechMarks(marks, text) {
     return { characters, starts };
 }
 
-async function speechifySynthesize(text, { voice, signal }) {
+// NEU (SSML, Nutzerwunsch): Pflicht-Escaping laut SSML-Doku - unescapetes
+// &/</> würde die XML als kaputt zurückweisen (HTTP 400, "Malformed XML"),
+// " und ' kommen in Kinderbuchtext (wörtliche Rede) ebenfalls oft vor.
+// Baut GLEICHZEITIG die Versatz-Tabelle: offsetMap[escapedIndex] =
+// ursprünglicher Zeichen-Index - jedes escapete Zeichen (z.B. "&" -> 5
+// Zeichen "&amp;") zeigt auf denselben Original-Index, damit ein
+// Wort-Start irgendwo innerhalb der Entity trotzdem korrekt zurückfindet.
+const SSML_ESCAPES = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' };
+function escapeSsmlWithOffsets(text) {
+    let escaped = '';
+    const offsetMap = [];
+    for (let i = 0; i < text.length; i++) {
+        const replacement = SSML_ESCAPES[text[i]] || text[i];
+        for (let j = 0; j < replacement.length; j++) offsetMap.push(i);
+        escaped += replacement;
+    }
+    return { escaped, offsetMap };
+}
+
+// Baut das komplette SSML-Dokument (ein <speak>-Wurzelelement mit
+// speechify:style-Emotion drumherum, siehe SSML-Doku "Supported SSML
+// Tags") plus die volle Versatz-Tabelle (Länge = SSML-String), die jede
+// Position im gesendeten SSML auf die passende Position im ANGEZEIGTEN
+// Text zurückführt. Die Positionen im Vorspann (<speak><speechify:style...)
+// zeigen auf 0 - dort kann laut Speechify ohnehin nie ein Wortanfang
+// liegen, die Tags selbst werden nicht mitgesprochen.
+function buildSpeechifySsml(text, emotion) {
+    const prefix = emotion ? `<speak><speechify:style emotion="${emotion}">` : '<speak>';
+    const suffix = emotion ? '</speechify:style></speak>' : '</speak>';
+    const { escaped, offsetMap } = escapeSsmlWithOffsets(text);
+    const fullOffsetMap = new Array(prefix.length).fill(0).concat(offsetMap);
+    return { ssml: prefix + escaped + suffix, offsetMap: fullOffsetMap };
+}
+
+async function speechifySynthesize(text, { voice, signal, emotion }) {
     const key = app.settings.speechifyKey;
     if (!key) {
         throw new TtsError('Kein Speechify-API-Key hinterlegt.', { fatal: true, code: 'NO_KEY' });
+    }
+
+    // NEU (Nutzerwunsch: "vollen Umfang von Speechify ausnutzen"): mit
+    // eingeschaltetem Persona-Stil und einer für die aktuelle Persona
+    // hinterlegten Emotion (js/config.js speechifyEmotion) wird der Text in
+    // SSML verpackt statt roh gesendet - Speechify erkennt SSML automatisch
+    // am <speak>-Wurzelelement, kein separates Feld nötig laut API-Doku.
+    let input = text;
+    let offsetMap = null;
+    if (emotion) {
+        const built = buildSpeechifySsml(text, emotion);
+        input = built.ssml;
+        offsetMap = built.offsetMap;
     }
 
     let res;
@@ -348,7 +408,7 @@ async function speechifySynthesize(text, { voice, signal }) {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
             body: JSON.stringify({
-                input: text,
+                input,
                 voice_id: voice || 'beatrice_32',
                 model: SPEECHIFY_MODEL,
                 audio_format: 'mp3',
@@ -369,7 +429,7 @@ async function speechifySynthesize(text, { voice, signal }) {
 
     return {
         blob: new Blob([base64ToBytes(data.audio_data)], { type: 'audio/mpeg' }),
-        alignment: alignmentFromSpeechMarks(data.speech_marks, text)
+        alignment: alignmentFromSpeechMarks(data.speech_marks, text, offsetMap)
     };
 }
 
@@ -572,6 +632,15 @@ Object.assign(app.ttsProviders, {
             ],
             defaultVoice: 'beatrice_32',
             supportsStyle: false,
+            // NEU (Nutzerwunsch: "vollen Umfang von Speechify ausnutzen"):
+            // eigene Emotion-Markierung statt Freitext-Stilhinweis (den
+            // versteht Speechify nicht) - siehe emotionHintFor() unten und
+            // speechifyEmotion in js/config.js. Bewusst ein ZWEITES Feld statt
+            // supportsStyle umzuwidmen: Gemini/OpenAI bekommen einen freien
+            // Satz als Sprechanweisung, Speechify nur eine von 13 festen
+            // Emotionen über SSML - unterschiedliche Mechanismen, die sich
+            // nicht sauber in ein Feld pressen lassen.
+            supportsEmotionTag: true,
             // NEU (Zusammenführung): Speechify kam mit dem Anbieter-Paket dazu,
             // die Audio-Tags entstanden parallel auf einem Zweig ohne diesen
             // Anbieter - deshalb fehlte das Feld hier ganz. Bewusst auf false:
@@ -592,6 +661,13 @@ Object.assign(app.ttsProviders, {
             // Wert - fallen auf denselben vorsichtigen 9-Sekunden-Standard
             // zurück.
             bgPregenIntervalMs: 1200,
+            // NEU (Nutzerwunsch, zweiter Nutzer-Screenshot bestätigt "Concurrent
+            // requests: 1"): manuelles Vorlesen und Hintergrund-Vorbereitung
+            // laufen unabhängig voneinander und könnten sonst genau
+            // gleichzeitig synthetisieren - app.ttsNeural._getAudio() reiht
+            // echte Synthese-Aufrufe pro Anbieter-ID hintereinander, sobald
+            // dieses Feld gesetzt ist (siehe withProviderLock() dort).
+            maxConcurrentRequests: 1,
             synthesize: speechifySynthesize
         }
     ],
@@ -629,6 +705,19 @@ Object.assign(app.ttsProviders, {
         // Rückfall, damit ältere/eigene Personas weiter funktionieren.
         const style = persona.ttsStyle || persona.instruction;
         return `${style} Lies den folgenden Kinderbuch-Text in genau dieser Art vor - warm, deutlich und nicht gehetzt. Sprich ausschließlich den Text selbst, nicht diese Anweisung:`;
+    },
+
+    // NEU (Nutzerwunsch: "vollen Umfang von Speechify ausnutzen"): Gegenstück
+    // zu styleHintFor() oben, aber für Anbieter mit supportsEmotionTag
+    // (aktuell nur Speechify) - liefert eine der 13 festen Speechify-
+    // Emotionen aus der Persona (speechifyEmotion in js/config.js) statt
+    // eines Freitext-Satzes, den Speechify nicht verstehen würde. Dieselbe
+    // Einstellung "Stimme an Erzähler-Persona anpassen" schaltet beides ab -
+    // EIN Schalter für "soll die Persona die Stimme färben", nicht zwei.
+    emotionHintFor(personaId) {
+        if (!app.settings.ttsPersonaStyle) return null;
+        const persona = app.personas.find(p => p.id === personaId);
+        return (persona && persona.speechifyEmotion) || null;
     },
 
     // Eigene/geklonte Stimmen aus dem ElevenLabs-Konto nachladen, damit man

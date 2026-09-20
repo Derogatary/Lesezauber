@@ -36,6 +36,26 @@ function hashText(text) {
     return (hash >>> 0).toString(36);
 }
 
+// NEU (Nutzerwunsch: "vollen Umfang von Speechify ausnutzen", laut eigenem
+// Dashboard "Concurrent requests: 1"): manche Anbieter erlauben zu jedem
+// Zeitpunkt nur EINE gleichzeitige Anfrage. Ein manueller Vorlese-Tipp
+// genau in dem Moment, in dem die Hintergrund-Vorbereitung (js/
+// backgroundPregen.js) gerade synthetisiert, würde das sonst verletzen -
+// beide laufen unabhängig voneinander und wissen nichts voneinander. Diese
+// kleine Warteschlange pro Anbieter-ID ist die EINE Stelle, an der sich
+// echte Synthese-Aufrufe (Cache-Treffer laufen nie hier durch) zwangsläufig
+// treffen, und reiht sie einfach hintereinander statt sie gleichzeitig
+// loszuschicken. Nur aktiv, wenn ein Anbieter maxConcurrentRequests setzt
+// (js/ttsProviders.js) - für alle anderen ein reiner Durchreicher.
+const _providerLocks = {};
+function withProviderLock(providerId, maxConcurrent, fn) {
+    if (!maxConcurrent) return fn();
+    const previous = _providerLocks[providerId] || Promise.resolve();
+    const next = previous.catch(() => {}).then(fn);
+    _providerLocks[providerId] = next.catch(() => {});
+    return next;
+}
+
 Object.assign(app.ttsNeural, {
     _audio: null,
     _objectUrl: null,
@@ -66,8 +86,15 @@ Object.assign(app.ttsNeural, {
         return this._audio;
     },
 
+    // FIX (Nutzerwunsch: "vollen Umfang von Speechify ausnutzen"): styleKey
+    // prüfte bisher nur supportsStyle - Speechify färbt die Persona aber
+    // über eine eigene Emotion-Markierung (supportsEmotionTag,
+    // emotionHintFor()), nicht über den Gemini/OpenAI-Stilhinweis. Ohne
+    // diese Ergänzung hätten zwei Personas mit unterschiedlicher Emotion
+    // denselben Cache-Schlüssel bekommen und sich gegenseitig die falsche
+    // (Emotion der zuerst gecachten Persona) Aufnahme untergeschoben.
     _cacheKey(text, provider, voice, rate, personaId) {
-        const styleKey = (provider.supportsStyle && app.settings.ttsPersonaStyle) ? personaId : 'plain';
+        const styleKey = ((provider.supportsStyle || provider.supportsEmotionTag) && app.settings.ttsPersonaStyle) ? personaId : 'plain';
         const rateKey = provider.supportsRate ? String(rate) : 'x';
         return `${provider.id}|${voice}|${styleKey}|${rateKey}|${text.length}|${hashText(text)}`;
     },
@@ -125,7 +152,14 @@ Object.assign(app.ttsNeural, {
         if (cacheOnly) return null;
 
         const styleHint = provider.supportsStyle ? app.ttsProviders.styleHintFor(personaId) : null;
-        const result = await provider.synthesize(text, { voice, rate, styleHint });
+        // NEU (Nutzerwunsch: "vollen Umfang von Speechify ausnutzen"):
+        // eigene Emotion-Markierung statt Freitext-Stilhinweis - siehe
+        // app.ttsProviders.emotionHintFor() und den Kommentar an
+        // supportsEmotionTag in js/ttsProviders.js.
+        const emotion = provider.supportsEmotionTag ? app.ttsProviders.emotionHintFor(personaId) : null;
+        const result = await withProviderLock(provider.id, provider.maxConcurrentRequests, () =>
+            provider.synthesize(text, { voice, rate, styleHint, emotion })
+        );
         // NEU: Kosten-/Verbrauchsanzeige - zaehlt nur hier, NACH einem
         // Cache-Fehlschlag, weil erst ab hier wirklich synthetisiert (und
         // damit bezahlt) wird. Ein Cache-Treffer weiter oben kostet nichts.

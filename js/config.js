@@ -12,31 +12,45 @@ import { app } from './core.js';
 // nur bei Anbietern, die Sprech-Anweisungen verstehen (Gemini, OpenAI),
 // und nur wenn in den Einstellungen "Stimme an Erzähler-Persona anpassen"
 // eingeschaltet ist.
+//
+// NEU (Nutzerwunsch: "vollen Umfang von Speechify ausnutzen"): speechifyEmotion
+// ist das Speechify-Gegenstück zu ttsStyle - Speechify versteht aber KEINEN
+// Freitext-Stilhinweis, sondern nur eine von 13 festen Emotionen über SSML
+// (<speechify:style emotion="...">, siehe js/ttsProviders.js
+// emotionHintFor()/supportsEmotionTag). Werte: angry, cheerful, sad,
+// terrified, relaxed, fearful, surprised, calm, assertive, energetic,
+// warm, direct, bright. Optional wie ttsStyle - fehlt es, bleibt die
+// Persona bei Speechify klanglich neutral (kein SSML-Umweg nötig).
 app.personas = [
     {
         id: 'standard', label: 'Standard (Neutral & Freundlich)',
         instruction: 'Du bist freundlich und neutral.',
-        ttsStyle: 'Sprich freundlich, klar und in ruhigem Tempo, wie beim Vorlesen am Abend.'
+        ttsStyle: 'Sprich freundlich, klar und in ruhigem Tempo, wie beim Vorlesen am Abend.',
+        speechifyEmotion: 'warm'
     },
     {
         id: 'papa', label: 'Lustiger Papa',
         instruction: 'Du bist ein lustiger, gemütlicher Papa.',
-        ttsStyle: 'Sprich gemütlich und warm, mit einem Schmunzeln in der Stimme und kleinen spielerischen Betonungen.'
+        ttsStyle: 'Sprich gemütlich und warm, mit einem Schmunzeln in der Stimme und kleinen spielerischen Betonungen.',
+        speechifyEmotion: 'cheerful'
     },
     {
         id: 'professor', label: 'Weiser Professor',
         instruction: 'Du bist ein weiser Professor.',
-        ttsStyle: 'Sprich bedächtig und deutlich, mit ruhiger, tiefer Stimme und kleinen Pausen vor wichtigen Wörtern.'
+        ttsStyle: 'Sprich bedächtig und deutlich, mit ruhiger, tiefer Stimme und kleinen Pausen vor wichtigen Wörtern.',
+        speechifyEmotion: 'calm'
     },
     {
         id: 'freund', label: 'Beste Freundin',
         instruction: 'Du bist die beste Freundin, sehr motivierend.',
-        ttsStyle: 'Sprich lebhaft und begeistert, als würdest du einer Freundin etwas Spannendes erzählen.'
+        ttsStyle: 'Sprich lebhaft und begeistert, als würdest du einer Freundin etwas Spannendes erzählen.',
+        speechifyEmotion: 'energetic'
     },
     {
         id: 'fee', label: 'Gute-Nacht-Fee',
         instruction: 'Du bist eine sanfte Gute-Nacht-Fee.',
-        ttsStyle: 'Sprich sehr sanft, leise und langsam, fast flüsternd, mit langen ruhigen Pausen - zum Einschlafen.'
+        ttsStyle: 'Sprich sehr sanft, leise und langsam, fast flüsternd, mit langen ruhigen Pausen - zum Einschlafen.',
+        speechifyEmotion: 'relaxed'
     }
 ];
 

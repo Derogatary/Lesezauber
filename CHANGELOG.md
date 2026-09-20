@@ -6,6 +6,16 @@ vollständige Historie, neueste Version zuerst. Diese Datei wurde aus
 `CLAUDE.md` ausgelagert, weil der Abschnitt dort mit der Zeit zu groß für
 schnellen Kontext wurde; inhaltlich unverändert übernommen.
 
+## v0.36.5-beta
+
+Speechify: vollen Funktionsumfang genutzt - SSML-Emotionen pro Persona + Concurrency-Schutz (Nutzerwunsch: "Es wäre doch schön den vollen Umfang von Speechify auszunutzen? ... Speechify hat ein RPM ... daran solltest du dich anpassen", plus hochgeladene SSML-Doku):
+
+- **Persona-Emotionen über SSML:** Speechify versteht keinen Freitext-Stilhinweis wie Gemini/OpenAI, sondern nur eine von 13 festen Emotionen über `<speechify:style emotion="...">` (laut hochgeladener API-Doku). Neues Feld `speechifyEmotion` pro Persona (`js/config.js`: Standard→warm, Papa→cheerful, Professor→calm, Freundin→energetic, Fee→relaxed), `app.ttsProviders.emotionHintFor()`/`supportsEmotionTag` als Speechify-eigenes Gegenstück zu `styleHintFor()`/`supportsStyle`. Derselbe Einstellungen-Schalter ("Stimme an Erzähler-Persona anpassen") schaltet beides.
+- **Versatz-Rechnung korrekt gelöst** (der in der vorigen Antwort benannte Haken): Speechify liefert Wort-Zeitstempel bei SSML-Eingabe laut eigener Doku relativ zum GESENDETEN SSML-String inklusive Tags/Escaping, nicht zum angezeigten Text. `buildSpeechifySsml()`/`escapeSsmlWithOffsets()` bauen deshalb eine vollständige Zeichen-Versatz-Tabelle beim Erzeugen des SSML-Dokuments, `alignmentFromSpeechMarks()` rechnet jeden Wort-Zeitstempel darüber auf die Original-Textposition zurück - mit einem eigenen Testskript gegen einen Text mit Sonderzeichen (`&`, `"`) gegengeprüft, die zeichengenaue Wort-Hervorhebung bleibt erhalten statt unbemerkt auf die Schätz-Methode zurückzufallen.
+- **Bug gefunden und mitbehoben:** der Cache-Schlüssel (`app.ttsNeural._cacheKey()`) prüfte bisher nur `supportsStyle` für die Persona-Aufschlüsselung - zwei Personas mit unterschiedlicher Speechify-Emotion hätten sich sonst denselben Zwischenspeicher-Eintrag (und damit die falsche Emotion) geteilt.
+- **Concurrency-Schutz:** laut Speechify-Dashboard (zweiter Nutzer-Screenshot, "Concurrent requests: 1") darf zu jedem Zeitpunkt nur eine Anfrage laufen - manuelles Vorlesen und die unabhängige Hintergrund-Vorbereitung (v0.36.3-beta) könnten sonst gleichzeitig anklopfen. Neues `maxConcurrentRequests: 1` am Speechify-Eintrag, `app.ttsNeural._getAudio()` reiht echte Synthese-Aufrufe über `withProviderLock()` pro Anbieter-ID hintereinander statt sie parallel loszuschicken (Cache-Treffer sind davon nicht betroffen). Erklärt vermutlich den vom Nutzer beobachteten Fehler "nach 7 Calls kurzer Fehler über 7 Seiten" bei einem kompletten Buch (vor der Pausen-Korrektur in v0.36.4-beta).
+- Keine Änderungen an den Analyse-Prompts (`js/api.js`) nötig - die Emotion-Zuordnung ist eine feste Tabelle pro Persona, kein KI-Output, der geparst werden müsste.
+
 ## v0.36.4-beta
 
 KI-Stimmen-Hintergrundvorbereitung schneller + sichtbarer (Nutzerhinweis: "Passe die calls an die rpm an" + "Man sieht auch nicht die Anzahl der verbleibenden speechify calls"):
