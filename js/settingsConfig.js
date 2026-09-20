@@ -187,13 +187,16 @@ Object.assign(app.settingsConfig, {
     },
 
     // NEU: dasselbe für Speechify (5. Anbieter, siehe ttsProviders.js).
+    // FIX (Nutzer-Feedback "redet mit englischem Akzent"): fetchSpeechifyVoices()
+    // filtert seither serverseitig auf locale=de-DE, dieser Knopf lädt also
+    // gezielt echte deutsche Stimmen statt der akzentbehafteten Vorauswahl.
     async loadSpeechifyVoices() {
         persistProviderKey(app.ttsProviders.get('speechify'));
-        app.ui.toast('Stimmen werden geladen...', '⏳');
+        app.ui.toast('Deutsche Stimmen werden geladen...', '⏳');
         try {
             const voices = await app.ttsProviders.fetchSpeechifyVoices();
             if (!voices.length) {
-                app.ui.toast('Keine Stimmen im Konto gefunden.', 'ℹ️');
+                app.ui.toast('Keine deutschen Stimmen im Konto gefunden.', 'ℹ️');
                 return;
             }
             app.settings.speechifyVoices = voices;

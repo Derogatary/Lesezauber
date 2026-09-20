@@ -545,22 +545,30 @@ Object.assign(app.ttsProviders, {
             // Minuten Sprach-Agenten pro Monat (EIN gemeinsames Guthaben,
             // teilbar), danach pausiert es bis zum nächsten Monat statt
             // automatisch kostenpflichtig weiterzulaufen.
-            hint: 'Ähnlich günstig wie OpenAI, hält die Wort-Hervorhebung aber zeichengenau synchron (wie ElevenLabs) - 10 US-Dollar je 1 Mio. Zeichen (simba-3.0, für Deutsch) statt ElevenLabs\' ca. 100 US-Dollar. Gratis-Konto: 500.000 Zeichen (oder 60 Minuten Sprach-Agenten, gemeinsames Guthaben) pro Monat.',
+            hint: 'Ähnlich günstig wie OpenAI, hält die Wort-Hervorhebung aber zeichengenau synchron (wie ElevenLabs) - 10 US-Dollar je 1 Mio. Zeichen (simba-3.0, für Deutsch) statt ElevenLabs\' ca. 100 US-Dollar. Gratis-Konto: 500.000 Zeichen (oder 60 Minuten Sprach-Agenten, gemeinsames Guthaben) pro Monat. ⚠️ Die unten vorausgewählten Stimmen sprechen Deutsch mit englischem Akzent (englische Standardstimmen, keine deutschen) - auf "🔄 Stimmen aus meinem Konto laden" tippen, das lädt jetzt gezielt echte deutsche Stimmen nach.',
             keySetting: 'speechifyKey',
             keyUrl: 'https://console.speechify.ai/api-keys',
             pricingUrl: 'https://speechify.com/pricing-api/',
-            // Bekannte simba-Standardstimmen laut Anbieter-Doku; eigene/
-            // geklonte Stimmen lassen sich in den Einstellungen per Knopf aus
-            // dem Konto nachladen (wie bei ElevenLabs).
+            // FIX (Nutzer-Feedback: "redet mit englischem Akzent"): diese 8
+            // Stimmen sind laut Anbieter-Doku die bekannten simba-3.2-
+            // Standardstimmen (die "_32"-Endung) - simba-3.2 ist rein
+            // englisch, die Stimmen selbst sind also englische Muttersprache
+            // und behalten ihren Akzent, auch wenn simba-3.0 sie zum
+            // Deutschsprechen bringt. Bewusst NICHT durch geratene deutsche
+            // Stimmen-IDs ersetzt (ein falscher Name würde die Synthese hart
+            // scheitern lassen) - stattdessen liefert fetchSpeechifyVoices()
+            // seit demselben Fund gezielt nach "locale=de-DE" gefilterte,
+            // wirklich deutsche Stimmen über den Nachlade-Knopf. Diese Liste
+            // bleibt nur der Rückfall, falls (noch) kein Key hinterlegt ist.
             voices: [
-                { id: 'beatrice_32', label: 'Beatrice - weiblich' },
-                { id: 'harper_32', label: 'Harper - weiblich' },
-                { id: 'imogen_32', label: 'Imogen - weiblich' },
-                { id: 'dominic_32', label: 'Dominic - männlich' },
-                { id: 'edmund_32', label: 'Edmund - männlich' },
-                { id: 'geffen_32', label: 'Geffen - männlich' },
-                { id: 'hugh_32', label: 'Hugh - männlich' },
-                { id: 'wyatt_32', label: 'Wyatt - männlich' }
+                { id: 'beatrice_32', label: 'Beatrice - weiblich (englischer Akzent)' },
+                { id: 'harper_32', label: 'Harper - weiblich (englischer Akzent)' },
+                { id: 'imogen_32', label: 'Imogen - weiblich (englischer Akzent)' },
+                { id: 'dominic_32', label: 'Dominic - männlich (englischer Akzent)' },
+                { id: 'edmund_32', label: 'Edmund - männlich (englischer Akzent)' },
+                { id: 'geffen_32', label: 'Geffen - männlich (englischer Akzent)' },
+                { id: 'hugh_32', label: 'Hugh - männlich (englischer Akzent)' },
+                { id: 'wyatt_32', label: 'Wyatt - männlich (englischer Akzent)' }
             ],
             defaultVoice: 'beatrice_32',
             supportsStyle: false,
@@ -631,13 +639,23 @@ Object.assign(app.ttsProviders, {
 
     // NEU: eigene/geklonte Stimmen aus dem Speechify-Konto nachladen, analog
     // zu fetchElevenVoices() oben.
+    // FIX (Nutzer-Feedback: die 8 fest hinterlegten Standardstimmen oben
+    // sprechen Deutsch zwar über simba-3.0, aber mit hörbarem englischen
+    // Akzent - die "_32"-Namensendung deutet darauf hin, dass diese Stimmen
+    // eigentlich fürs englische simba-3.2 gedacht sind, nicht für Deutsch
+    // trainiert wurden). Laut Speechify-API-Doku (Sept. 2026) akzeptiert
+    // GET /v1/voices jetzt einen "locale"-Filter - hier fest auf "de-DE"
+    // gesetzt, damit dieser Knopf nur noch WIRKLICH deutsche Stimmen aus dem
+    // riesigen (>1000 Stimmen, 36 Sprachen) Gesamtkatalog liefert, statt der
+    // ungefilterten Liste. locale/gender kommen mit in die Beschriftung,
+    // damit in der Auswahl sofort erkennbar ist, was man bekommt.
     async fetchSpeechifyVoices() {
         const key = app.settings.speechifyKey;
         if (!key) throw new TtsError('Kein Speechify-API-Key hinterlegt.', { fatal: true, code: 'NO_KEY' });
 
         let res;
         try {
-            res = await fetch('https://api.sws.speechify.com/v1/voices?limit=200', {
+            res = await fetch('https://api.sws.speechify.com/v1/voices?limit=200&locale=de-DE', {
                 headers: { 'Authorization': `Bearer ${key}` }
             });
         } catch (e) {
@@ -647,7 +665,11 @@ Object.assign(app.ttsProviders, {
 
         const data = await res.json();
         const voices = data.voices || data || [];
-        return voices.map(v => ({ id: v.id || v.voice_id, label: v.display_name || v.name || v.id }));
+        return voices.map(v => {
+            const name = v.display_name || v.name || v.id;
+            const extra = [v.gender, v.locale].filter(Boolean).join(', ');
+            return { id: v.id || v.voice_id, label: extra ? `${name} (${extra})` : name };
+        });
     },
 
     // NEU: Tarif-Lock (siehe CLAUDE.md/ROADMAP.md "Tarif-Lock"). Prüft, ob

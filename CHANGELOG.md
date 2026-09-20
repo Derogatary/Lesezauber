@@ -6,6 +6,14 @@ vollständige Historie, neueste Version zuerst. Diese Datei wurde aus
 `CLAUDE.md` ausgelagert, weil der Abschnitt dort mit der Zeit zu groß für
 schnellen Kontext wurde; inhaltlich unverändert übernommen.
 
+## v0.36.1-beta
+
+Speechify: Stimmen-Nachladen filtert jetzt auf Deutsch (Nutzer-Feedback: "die voreingestellten Stimmen sind aber noch die englischen. Und redet auch mit englischen Akzent"):
+
+- **Ursache gefunden:** die 8 fest hinterlegten Speechify-Standardstimmen (`beatrice_32`, `harper_32`, ...) sind laut Anbieter-Doku die bekannten Stimmen des rein englischen Modells `simba-3.2` - die "_32"-Namensendung war der Hinweis. `simba-3.0` (seit v0.35.2-beta korrekt für Deutsch eingestellt) kann diese Stimmen zwar zum Deutschsprechen bringen, sie bleiben aber englische Muttersprachler-Stimmen und behalten ihren Akzent.
+- Recherchiert (Speechify-API-Doku, Sept. 2026): `GET /v1/voices` akzeptiert inzwischen einen `locale`-Filter. `fetchSpeechifyVoices()` (`js/ttsProviders.js`) fragt jetzt gezielt `locale=de-DE` ab, statt den kompletten Katalog (über 1000 Stimmen, 36 Sprachen) ungefiltert zurückzugeben - der Knopf in den Einstellungen ("🇩🇪 Deutsche Stimmen laden", vorher "🎙️ Eigene Stimmen laden") liefert damit jetzt wirklich deutsche Stimmen mit Geschlecht/Sprachcode in der Beschriftung.
+- Die 8 hart hinterlegten Rückfall-Stimmen (nur genutzt, solange nichts nachgeladen wurde) sind jetzt als "(englischer Akzent)" gekennzeichnet, dazu ein Warnhinweis im Anbieter-Text - bewusst NICHT durch geratene deutsche Stimmen-IDs ersetzt, ein falscher Name hätte die Synthese komplett scheitern lassen. Nächster Schritt für dich: einmal auf "🇩🇪 Deutsche Stimmen laden" tippen und eine der neu geladenen Stimmen auswählen.
+
 ## v0.36.0-beta
 
 Video-Export für abfotografierte Bücher: Passwort statt Komplett-Block (Nutzerwunsch: "Mach den Videoexport bei gescannten Büchern als Passwort: admin"):
