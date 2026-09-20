@@ -193,7 +193,15 @@ Object.assign(app.utils, {
             // bekanntem PDF-Text (s.o.) kein eigener speechText sinnvoll,
             // weil dort auch "text" schon feststeht statt von der KI erzeugt
             // zu werden - dann bleibt es beim normalen Text.
-            speechText: page.pdfSourceText ? null : (result.speechText || null)
+            speechText: page.pdfSourceText ? null : (result.speechText || null),
+            // NEU (Nutzerwunsch: "schwierige Wörter sollten nach dem
+            // Textteil leicht erklärt werden") - persona-unabhängig (kommt
+            // bei Geschichten aus dem "core"-Block, siehe js/api.js), daher
+            // hier immer aus "result" lesbar, egal ob Einzel- oder Mehrere-
+            // Personas-Pfad. app.tts liest das beim automatischen Vorlesen.
+            difficultWords: Array.isArray(result.difficultWords)
+                ? result.difficultWords.filter(w => w && w.word && w.explanation)
+                : []
         };
     },
 

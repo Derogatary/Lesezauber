@@ -6,6 +6,14 @@ vollständige Historie, neueste Version zuerst. Diese Datei wurde aus
 `CLAUDE.md` ausgelagert, weil der Abschnitt dort mit der Zeit zu groß für
 schnellen Kontext wurde; inhaltlich unverändert übernommen.
 
+## v0.36.8-beta
+
+Schwierige Wörter werden jetzt nach dem Textteil kurz erklärt, Rätselfragen-Stufen präzisiert (Nutzerwunsch, mit Screenshot der echten Schul-Anforderungsbereiche AFB I-III):
+
+- **Neue Erklärung schwieriger Wörter:** konkreter Anlass war "Bibliothek" am Ende eines Bildermaus-Buchs, das laut Nutzer langsamer bzw. mit Pause hätte vorgelesen werden sollen. Neues Feld `difficultWords` im "core"-Block (`js/api.js`, beide Prompt-Varianten) - die KI listet 0-4 Wörter aus dem Originaltext, die ein Kind mit 5 Jahren oder jünger wahrscheinlich noch nicht kennt (Fremdwörter, abstrakte Begriffe), je mit einer kurzen, einfachen Erklärung. `js/tts.js` liest diese beim automatischen Vorlesen NACH dem Textteil vor (`explainDifficultWords()`) - Wort und Erklärung als ZWEI getrennte Sprechvorgänge mit kurzer Pause dazwischen, löst damit nebenbei auch die "langsamer vorlesen"-Bitte, ohne SSML-Pausen-Tags zu brauchen (funktioniert dadurch auch mit der Gerätestimme). Läuft leer durch (kein Zeitverlust), wenn eine Seite keine schwierigen Wörter hat - der Regelfall laut Prompt.
+- **Rätselfragen-Stufen präzisiert:** die drei Fragetypen aus v0.36.7-beta waren eine eigene Näherung - jetzt an die tatsächlichen Anforderungsbereiche AFB I-III der Kultusministerkonferenz angelehnt (Nutzer-Screenshot einer Google-Suche dazu), aber kindgerecht übersetzt statt mit Schulverben ("beurteile", "diskutiere" wären für 5-Jährige ungeeignet): AFB I/Reproduktion (wiedergeben), AFB II/Anwendung (erklären/vergleichen, warum/Gefühle), AFB III/Transfer (das Kind selbst einbeziehen, z.B. "Was würdest du tun?").
+- Speicherplatz beim Video-Export (500 MB) und "mehr SSML-Funktionen bei Speechify" (Vorlesegeschwindigkeit jetzt nativ über `<prosody rate>`) bereits in v0.36.7-beta geklärt/umgesetzt.
+
 ## v0.36.7-beta
 
 Rätselfragen-Korrektur + Speechify-Vorlesegeschwindigkeit nativ über SSML (Nutzer-Feedback nach dem ersten Test):

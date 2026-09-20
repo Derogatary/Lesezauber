@@ -556,15 +556,43 @@ Object.assign(app.tts, {
             }
         };
 
+        // NEU (Nutzerwunsch: "schwierige Wörter sollten nach dem Textteil
+        // leicht erklärt werden", konkretes Beispiel "Bibliothek könnte
+        // langsamer bzw. mit Pausen vorgelesen werden"): Wort und Erklärung
+        // als ZWEI getrennte Sprechvorgänge mit kurzer Pause dazwischen -
+        // isoliert vom Satzfluss, mit echter Pause zum Verarbeiten, ohne
+        // SSML-Pausen-Tags zu brauchen (funktioniert so auch mit der
+        // Gerätestimme). Gleiches Pausen-Muster wie bei der Rätselfrage
+        // oben (maybeAskQuiz). Läuft leer durch, wenn die Seite keine
+        // schwierigen Wörter hat (der Regelfall laut Prompt-Vorgabe).
+        const explainDifficultWords = () => {
+            if (!app.state.autoReadActive) return;
+            const words = Array.isArray(variant.difficultWords) ? variant.difficultWords : [];
+            if (words.length === 0) { describeImage(); return; }
+            const speakNext = (i) => {
+                if (!app.state.autoReadActive) return;
+                if (i >= words.length) { describeImage(); return; }
+                const w = words[i];
+                this.speak(w.word, () => {
+                    if (!app.state.autoReadActive) return;
+                    setTimeout(() => {
+                        if (!app.state.autoReadActive) return;
+                        this.speak(w.explanation, () => speakNext(i + 1));
+                    }, 600);
+                });
+            };
+            speakNext(0);
+        };
+
         const startPageText = () => {
             // NEU (Nutzerwunsch): eine reine Bildseite ohne eigenen Text
             // (originalText war leer, buildPageVariant() setzt dafür den
             // Platzhalter "Kein Text.") soll beim automatischen Vorlesen
-            // nicht wörtlich "Kein Text." ansagen - direkt zur
-            // Bildbeschreibung springen, falls eine vorhanden ist, statt
+            // nicht wörtlich "Kein Text." ansagen - direkt weiter springen
+            // (schwierige Wörter/Bildbeschreibung, falls vorhanden), statt
             // die Seite mit einer verwirrenden Ansage zu eröffnen.
             if (variant.text === 'Kein Text.' && variant.desc) {
-                describeImage();
+                explainDifficultWords();
                 return;
             }
             // NEU: im Mitmachmodus den Erstleser-Text mit Rate-Pausen
@@ -575,10 +603,10 @@ Object.assign(app.tts, {
                 app.readerUI.setTab('erstleser');
                 // NEU: siehe speakCurrentText() oben - Pausen-Tags statt
                 // Gerätestimme, sofern der Anbieter das unterstützt.
-                app.ttsNeural.speakMitmach(variant.erstleserText, describeImage, this._currentTextElementId());
+                app.ttsNeural.speakMitmach(variant.erstleserText, explainDifficultWords, this._currentTextElementId());
             } else {
                 const { plain, tagged } = this._pickSpeechVariant(variant);
-                this.speak(plain, describeImage, this._currentTextElementId(), tagged);
+                this.speak(plain, explainDifficultWords, this._currentTextElementId(), tagged);
             }
         };
 

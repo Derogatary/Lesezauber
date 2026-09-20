@@ -75,7 +75,7 @@ import './actions/meineNeueDatei.js';
 | `js/db.js` | IndexedDB-Speicher-Engine (`app.library`, `app.vocabulary`, `ttsCache`, `projects`). **Version 4** - neuer Object Store: `DB_VERSION` erhöhen und `onupgradeneeded` erweitern |
 | `js/nav.js` | Router zwischen den `<main id="view...">`-Ansichten |
 | `js/api.js` | Gemini/Mistral-Aufrufe, der komplette Analyse-Prompt lebt hier. `GEMINI_MODELS`+`withGeminiModelRotation()`: Modell-Rotation bei 429 (jedes Modell eigenes Tageskontingent), Mistral erst wenn ALLE Modelle 429 melden. Seit v0.35.0-beta zusätzlich `app.api.analyzeAllPersonas()`: EIN Aufruf liefert alle Personas + Birkenbihl-Übersetzung als Fenced-Code-Blöcke, `parseMultiPersonaResponse()` parst jeden Block einzeln (Ausfallsicherheit) |
-| `js/tts.js` | Sprachausgabe: Weiche Gerätestimme/KI-Stimme, Auto-Vorlesen, Wort-Hervorhebung (SpeechSynthesis `boundary`-Event), Rätsel-Modus |
+| `js/tts.js` | Sprachausgabe: Weiche Gerätestimme/KI-Stimme, Auto-Vorlesen, Wort-Hervorhebung (SpeechSynthesis `boundary`-Event), Rätsel-Modus. Seit v0.36.8-beta `explainDifficultWords()` im Auto-Vorlese-Ablauf, direkt NACH dem Textteil, VOR der Bildbeschreibung - liest `variant.difficultWords` vor, Wort und Erklärung als zwei getrennte Sprechvorgänge mit kurzer Pause dazwischen (kein SSML nötig, funktioniert auch mit Gerätestimme) |
 | `js/ttsProviders.js` | KI-Stimmen-Anbieter als Liste (`app.ttsProviders.list`) - neuer Anbieter = neuer Eintrag, UI baut sich automatisch auf. Seit v0.36.5-beta: `supportsEmotionTag`/`emotionHintFor()` als Speechify-Gegenstück zu `supportsStyle`/`styleHintFor()` (13 feste SSML-Emotionen statt Freitext, siehe `speechifyEmotion` in `js/config.js`), `buildSpeechifySsml()`/`escapeSsmlWithOffsets()` bauen dabei die Zeichen-Versatz-Tabelle, die `alignmentFromSpeechMarks()` braucht, um trotz SSML zeichengenau zu bleiben. FIX v0.36.6-beta (Nutzer-Feedback "Hervorhebung hinkt am Seitenanfang hinterher"): `contentBounds` grenzt den echten Sprechbereich im SSML-String ein - ein Wort-Zeitstempel, der in den `<speak>`/`<speechify:style>`-Tag-Bereich fällt, wird jetzt verworfen statt (fälschlich) auf Zeichen-Index 0 gemappt zu werden. NEU v0.36.7-beta: `<prosody rate="...%">` setzt `app.settings.speechRate` bei Speechify jetzt NATIV um (statt nur über `audio.playbackRate` im Browser) - `buildSpeechifySsml()` verschachtelt Emotion- und Tempo-Tag unabhängig voneinander, `supportsRate: true` schaltet den Browser-Rückfall ab |
 | `js/ttsNeural.js` | Wiedergabe der KI-Stimmen: IndexedDB-Zwischenspeicher, eigene Wort-Hervorhebung per `requestAnimationFrame`, Vorbereitung der nächsten Seite, Rückfall auf Gerätestimme. Seit v0.36.5-beta `withProviderLock()` in `_getAudio()`: reiht echte Synthese-Aufrufe pro Anbieter-ID hintereinander, wenn der Anbieter `maxConcurrentRequests` setzt (Speechify: 1) - verhindert, dass manuelles Vorlesen und Hintergrund-Vorbereitung gleichzeitig beim selben Anbieter anklopfen |
 | `js/profiles.js` | Lokale Profile (kein Server/Login), inkl. `__all__`-Sonderfilter |
@@ -153,8 +153,12 @@ import './actions/meineNeueDatei.js';
   excluded,        // optional bool - Seite komplett von Analyse UND Auto-Vorlesen ausgeschlossen
                    // (Leerseiten, Impressum etc., togglePageExcluded) - manuelles Ansehen bleibt möglich
   variants: {
-    // bei bookType 'story':
-    [personaId]: { text, erstleserText, desc, quizQ, quizA }
+    // bei bookType 'story': difficultWords NEU seit v0.36.8-beta, persona-
+    // UNABHÄNGIG (kommt aus dem "core"-Block, siehe js/api.js) - Array
+    // {word, explanation}, wird beim automatischen Vorlesen NACH dem
+    // Textteil vorgelesen (js/tts.js explainDifficultWords()), Wort und
+    // Erklärung als zwei getrennte Sprechvorgänge mit Pause dazwischen.
+    [personaId]: { text, erstleserText, desc, quizQ, quizA, difficultWords: [{word, explanation}] }
     // bei bookType 'workbook' zusätzlich (quizQ/quizA dort null):
     //   { text: Aufgabenstellung, erstleserText: kindgerechte Erklärung,
     //     desc: Blatt-Beschreibung, taskType, materials, helpSteps: [], solution }
@@ -305,6 +309,6 @@ Feste Regeln:
 
 ## Versionsstand
 
-Aktuell `v0.36.7-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Version bei größeren Änderungen hochzählen (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).
+Aktuell `v0.36.8-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Version bei größeren Änderungen hochzählen (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).
 
 **Die vollständige Versionshistorie (was mit welcher Version kam, inkl. aller Entscheidungen) steht in [`CHANGELOG.md`](CHANGELOG.md), neueste Version zuerst.** Vor dem Einplanen eines Features dort nachsehen, sonst werden bereits gefallene Entscheidungen neu diskutiert. Neuer Eintrag bei jeder Versionserhöhung: oben in `CHANGELOG.md` ergänzen, nicht hier.
