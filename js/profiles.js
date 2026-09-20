@@ -206,6 +206,16 @@ Object.assign(app.actions, {
 
     // NEU: Profil umbenennen
     renameProfile(profileId) {
+        // FIX (künstliches Nutzer-Feedback): "__all__" ist kein echtes Profil
+        // (siehe ALL_PROFILES_ID) - dieser Aufruf lief bisher lautlos ins
+        // Leere, wenn "🔍 Alle Profile" gewählt war (der Knopf ist zwar seit
+        // demselben Fix in render/library.js dafür ausgeblendet, aber ein
+        // Fehler soll auch bei einem künftigen anderen Aufrufweg nicht still
+        // verschluckt werden, siehe CLAUDE.md Code-Konventionen).
+        if (profileId === ALL_PROFILES_ID) {
+            app.ui.toast('"Alle Profile" ist kein echtes Profil - bitte erst ein einzelnes wählen.', 'ℹ️');
+            return;
+        }
         const profile = app.profiles.find(p => p.id === profileId);
         if (!profile) return;
 
@@ -221,6 +231,12 @@ Object.assign(app.actions, {
     // NEU: Profil löschen - die Bücher darin gehen NICHT verloren, sondern
     // wandern automatisch in ein verbleibendes Profil.
     deleteProfile(profileId) {
+        // FIX (künstliches Nutzer-Feedback): gleicher Grund wie bei
+        // renameProfile() oben - "__all__" ist kein echtes Profil.
+        if (profileId === ALL_PROFILES_ID) {
+            app.ui.toast('"Alle Profile" ist kein echtes Profil - bitte erst ein einzelnes wählen.', 'ℹ️');
+            return;
+        }
         if (app.profiles.length <= 1) {
             app.ui.toast('Das letzte Profil kann nicht gelöscht werden.', 'ℹ️');
             return;

@@ -1,7 +1,16 @@
 // Bei jeder inhaltlichen Änderung an einer dieser Dateien diese Nummer
 // erhöhen - sonst bekommen wiederkehrende Besucher weiter die alte
 // zwischengespeicherte Version ausgeliefert.
-const CACHE_NAME = 'lesezauber-shell-v51';
+const CACHE_NAME = 'lesezauber-shell-v52';
+
+// NEU (v52): Künstliches Nutzer-Feedback simuliert (mehrere Personas
+// durchgespielt) - zwei Funde behoben. 1) Bug: bei "🔍 Alle Profile"
+// liefen renameProfile()/deleteProfile() lautlos ins Leere, die Knöpfe
+// blieben aber wirkungslos anklickbar - jetzt ausgeblendet
+// (render/library.js) UND defensiv mit Toast statt stillem Rückfall
+// (js/profiles.js). 2) SchreibZauber Stufe 1 hatte drei KI-Hilfe-Knöpfe
+// ungefragt vor dem Formular - jetzt in einer eingeklappten <details>-Karte
+// gebündelt, keine neue JS-Logik nötig. Keine neuen Dateien.
 
 // NEU (v51): Import-Funktion für Stufe 1 "Die Idee" - Gegenstück zum
 // Master-Prompt (Nutzerwunsch: "wenn ich dich oder eine andere KI außerhalb

@@ -34,6 +34,12 @@ Object.assign(app.render, {
                     : 'Kinderprofil - zu Erwachsenen-Profil wechseln (schaltet alle Einstellungen frei)';
             }
         }
+        // FIX (künstliches Nutzer-Feedback): dieselbe Begründung wie beim
+        // Rollen-Symbol oben - "🔍 Alle Profile" ist kein echtes Profil,
+        // renameProfile()/deleteProfile() liefen dafür bisher lautlos ins
+        // Leere. Jetzt konsequent ausgeblendet statt wirkungslos anklickbar.
+        document.getElementById('profileRenameBtn')?.classList.toggle('hidden', !profile);
+        document.getElementById('profileDeleteBtn')?.classList.toggle('hidden', !profile);
 
         // NEU: Auswahl "als was wird das nächste Buch angelegt" + Belohnungs-Zähler
         app.render.newBookTypeButtons();

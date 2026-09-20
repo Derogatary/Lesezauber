@@ -41,7 +41,7 @@
                     <p id="streakBadge" class="hidden text-xs font-bold text-amber-600 mt-0.5"></p>
                     <!-- NEU: Belohnung - Anzahl komplett geschaffter Bücher/Hefte -->
                     <p id="medalBadge" class="hidden text-xs font-bold text-emerald-600 mt-0.5"></p>
-                    <p class="text-[10px] text-slate-400 font-semibold mt-0.5">v0.32.0-beta</p>
+                    <p class="text-[10px] text-slate-400 font-semibold mt-0.5">v0.32.1-beta</p>
                 </div>
                 <div class="flex items-center gap-2 flex-shrink-0">
                     <button onclick="app.nav.go('help')" aria-label="Hilfe öffnen" title="Hilfe" class="w-10 h-10 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-600 hover:bg-slate-100 shadow-sm transition active:scale-95">
@@ -81,8 +81,16 @@
                      (siehe js/profiles.js toggleProfileRole). Nur bei einem
                      konkreten Profil sinnvoll, nicht beim "Alle Profile"-Filter. -->
                 <button id="profileRoleBadge" onclick="app.actions.toggleProfileRole(app.state.currentProfileId)" aria-label="Profil-Rolle umschalten" title="Profil-Rolle umschalten (Kind/Erwachsen)" class="w-10 h-10 flex-shrink-0 bg-white border border-slate-200 rounded-xl flex items-center justify-center text-lg hover:bg-slate-50 shadow-sm">🧒</button>
-                <button onclick="app.actions.renameProfile(app.state.currentProfileId)" aria-label="Profil umbenennen" title="Profil umbenennen" class="w-10 h-10 flex-shrink-0 bg-white border border-slate-200 rounded-xl flex items-center justify-center text-slate-500 hover:bg-slate-50 shadow-sm">✏️</button>
-                <button onclick="app.actions.deleteProfile(app.state.currentProfileId)" aria-label="Profil löschen" title="Profil löschen" class="w-10 h-10 flex-shrink-0 bg-white border border-slate-200 rounded-xl flex items-center justify-center text-slate-500 hover:bg-red-50 hover:text-red-600 shadow-sm">🗑️</button>
+                <!-- FIX (künstliches Nutzer-Feedback): bei "🔍 Alle Profile" gibt es
+                     kein echtes Profil zum Umbenennen/Löschen -
+                     renameProfile()/deleteProfile() fanden dafür bisher still
+                     nichts und taten gar nichts, ohne Rückmeldung (verletzte
+                     "Fehler nie stumm verschlucken"). Jetzt wie beim
+                     Rollen-Symbol oben ausgeblendet, statt wirkungslos
+                     anklickbar zu bleiben - siehe app.render.library() in
+                     render/library.js. -->
+                <button id="profileRenameBtn" onclick="app.actions.renameProfile(app.state.currentProfileId)" aria-label="Profil umbenennen" title="Profil umbenennen" class="w-10 h-10 flex-shrink-0 bg-white border border-slate-200 rounded-xl flex items-center justify-center text-slate-500 hover:bg-slate-50 shadow-sm">✏️</button>
+                <button id="profileDeleteBtn" onclick="app.actions.deleteProfile(app.state.currentProfileId)" aria-label="Profil löschen" title="Profil löschen" class="w-10 h-10 flex-shrink-0 bg-white border border-slate-200 rounded-xl flex items-center justify-center text-slate-500 hover:bg-red-50 hover:text-red-600 shadow-sm">🗑️</button>
             </div>
 
             <!-- NEU: Art des nächsten neuen Buches - muss VOR dem Anlegen
@@ -777,27 +785,41 @@
 
             <!-- Stufe 1: Die Idee (Exposé) -->
             <section id="studioStageBrief" class="space-y-3">
-                <!-- NEU: "Master-Prompt" (Bugreport: "Master-Prompt / Komplett-
-                     Setup") - kopiert einen Prompt, der in einem beliebigen
-                     KI-Chat (z.B. Google AI Studio) fertige Vorschläge für
-                     ALLE Felder dieser Stufe liefert, zum manuellen Zurück-
-                     kopieren. Kostenlos, kein eigener API-Aufruf - siehe
-                     app.studio.prompts.buildMasterSetupPrompt() in
-                     studioPrompts.js. -->
-                <button onclick="app.render.studioCopyMasterPrompt()" type="button" class="w-full text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-xl py-2.5 transition">📋 Master-Prompt kopieren (Ideen für alle Felder unten, in einem KI-Chat einfügen)</button>
-                <!-- NEU (Import-Funktion): Gegenstück zum Master-Prompt oben -
-                     liest die Antwort einer beliebigen KI (Claude, ChatGPT, ...)
-                     aus der Zwischenablage und füllt damit alle erkannten
-                     Felder unten auf einen Klick aus (siehe
-                     app.render.studioImportFromClipboard() in
-                     render/studioWizard.js). Klappt das Auto-Lesen der
-                     Zwischenablage nicht (Browser-Einschränkung), erscheint
-                     stattdessen das Textfeld darunter zum manuellen Einfügen. -->
-                <button onclick="app.render.studioImportFromClipboard()" type="button" class="w-full text-xs font-bold text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:opacity-95 rounded-xl py-2.5 transition">📥 KI-Antwort einfügen (aus Zwischenablage)</button>
-                <div id="studioImportFallbackRow" class="hidden space-y-1.5">
-                    <textarea id="studioImportTextarea" rows="4" placeholder="Antwort der KI hier einfügen (lange gedrückt halten bzw. Strg+V)" class="w-full text-xs text-slate-900 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500"></textarea>
-                    <button onclick="app.render.studioImportFromTextarea()" type="button" class="w-full text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl py-2 transition">✨ Felder daraus ausfüllen</button>
-                </div>
+                <!-- FIX (künstliches Nutzer-Feedback): Master-Prompt-Knopf,
+                     Zwischenablage-Import + Rückfall-Textfeld standen bisher
+                     alle drei ungefragt sichtbar VOR dem eigentlichen
+                     Formular - für "ich will nur schnell mein Buch anlegen"
+                     wirkte das wie drei gleich wichtige Pflicht-Schritte statt
+                     einer optionalen Abkürzung. Jetzt in einer eingeklappten
+                     Karte gebündelt (natives <details>, keine neue JS-Logik
+                     nötig) - wer keine externe KI befragen will, sieht auf
+                     Anhieb nur noch die zwei Vorlagen-Knöpfe und das Formular. -->
+                <details class="bg-indigo-50 border border-indigo-200 rounded-xl overflow-hidden">
+                    <summary class="cursor-pointer select-none text-xs font-bold text-indigo-700 px-3 py-2.5">🤖 Von einer externen KI ausfüllen lassen (optional)</summary>
+                    <div class="px-3 pb-3 space-y-2">
+                        <!-- NEU: "Master-Prompt" (Bugreport: "Master-Prompt / Komplett-
+                             Setup") - kopiert einen Prompt, der in einem beliebigen
+                             KI-Chat (z.B. Google AI Studio) fertige Vorschläge für
+                             ALLE Felder dieser Stufe liefert, zum manuellen Zurück-
+                             kopieren. Kostenlos, kein eigener API-Aufruf - siehe
+                             app.studio.prompts.buildMasterSetupPrompt() in
+                             studioPrompts.js. -->
+                        <button onclick="app.render.studioCopyMasterPrompt()" type="button" class="w-full text-xs font-bold text-indigo-700 bg-white hover:bg-indigo-100 border border-indigo-200 rounded-xl py-2.5 transition">📋 Master-Prompt kopieren (Ideen für alle Felder unten, in einem KI-Chat einfügen)</button>
+                        <!-- NEU (Import-Funktion): Gegenstück zum Master-Prompt oben -
+                             liest die Antwort einer beliebigen KI (Claude, ChatGPT, ...)
+                             aus der Zwischenablage und füllt damit alle erkannten
+                             Felder unten auf einen Klick aus (siehe
+                             app.render.studioImportFromClipboard() in
+                             render/studioWizard.js). Klappt das Auto-Lesen der
+                             Zwischenablage nicht (Browser-Einschränkung), erscheint
+                             stattdessen das Textfeld darunter zum manuellen Einfügen. -->
+                        <button onclick="app.render.studioImportFromClipboard()" type="button" class="w-full text-xs font-bold text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:opacity-95 rounded-xl py-2.5 transition">📥 KI-Antwort einfügen (aus Zwischenablage)</button>
+                        <div id="studioImportFallbackRow" class="hidden space-y-1.5">
+                            <textarea id="studioImportTextarea" rows="4" placeholder="Antwort der KI hier einfügen (lange gedrückt halten bzw. Strg+V)" class="w-full text-xs text-slate-900 bg-white border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500"></textarea>
+                            <button onclick="app.render.studioImportFromTextarea()" type="button" class="w-full text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl py-2 transition">✨ Felder daraus ausfüllen</button>
+                        </div>
+                    </div>
+                </details>
                 <!-- NEU (Ausbaustufe 6 - Politur): feste Vorlagen für häufige
                      Anlässe - füllen nur das Formular unten, speichern nichts
                      (siehe app.render.studioApplyTemplate() in

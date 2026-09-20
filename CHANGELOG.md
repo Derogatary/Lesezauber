@@ -6,6 +6,15 @@ vollständige Historie, neueste Version zuerst. Diese Datei wurde aus
 `CLAUDE.md` ausgelagert, weil der Abschnitt dort mit der Zeit zu groß für
 schnellen Kontext wurde; inhaltlich unverändert übernommen.
 
+## v0.32.1-beta
+
+Künstliches Nutzer-Feedback simuliert (Nutzerauftrag: "unterschiedliche Gruppen von Menschen einnehmen und schauen, was sie sagen könnten, danach anpassen") - fünf Personas gedanklich durch die App geschickt (vielbeschäftigte Mutter/Vorlesealter, wenig technikaffiner Opa, Familie mit mehreren Kind-Profilen, SchreibZauber-Nutzerin, KDP-Selfpublisher), die tatsächliche Codebasis dabei konkret geprüft statt nur spekuliert. Zwei echte, verifizierte Funde behoben:
+
+- **Bug: "🔍 Alle Profile" + Umbenennen/Löschen** - Persona "Familie mit mehreren Kind-Profilen" hätte beim Umschalten auf den Sammelfilter "Alle Profile" auf ✏️ oder 🗑️ getippt und NICHTS wäre passiert, ohne jede Rückmeldung: `renameProfile()`/`deleteProfile()` suchen `app.profiles.find(p => p.id === '__all__')`, das gibt es dort nie (`__all__` ist nur ein Anzeigefilter, kein echtes Profil), beide Funktionen kehrten bisher lautlos um. Verletzte die eigene Regel "Fehler nie stumm verschlucken" (CLAUDE.md, Code-Konventionen). Behoben zweifach: beide Knöpfe werden jetzt wie das Rollen-Symbol daneben ausgeblendet, sobald kein echtes Profil gewählt ist (`js/render/library.js`), UND `js/profiles.js` gibt bei `__all__` zusätzlich einen erklärenden Toast statt eines stillen Rückfalls - falls die Funktion künftig doch einmal anders aufgerufen wird.
+- **UX: SchreibZauber Stufe 1 zu viele KI-Hilfe-Knöpfe vorneweg** - Persona "will nur schnell ihr Geburtstagsbuch anlegen" hätte vor dem eigentlichen Formular vier Knöpfe übereinander gesehen (Master-Prompt kopieren, KI-Antwort einfügen, Rückfall-Textfeld, zwei Vorlagen) und nicht gewusst, was davon Pflicht ist. Die drei "externe KI befragen"-Bausteine (Master-Prompt, Zwischenablage-Import, Rückfall-Textfeld) sind jetzt in einer eingeklappten Karte ("🤖 Von einer externen KI ausfüllen lassen (optional)", natives `<details>`, keine neue JS-Logik) gebündelt - wer keine externe KI nutzen will, sieht auf Anhieb nur noch die zwei Vorlagen-Knöpfe und das Formular.
+- **Beobachtet, aber NICHT blind geändert** (bräuchte einen echten Bildschirmtest, keine Vermutung): der Reader-Tab-Balken hat mit dem neuen "🌍 Birkenbihl"-Tab jetzt vier statt drei Tabs in einer Zeile (`flex-1` je Tab) - ob "🎈 Erstleser (5J)" auf einem schmalen Handy noch bequem Platz hat, sollte einmal am echten Gerät geprüft werden, bevor daran etwas geändert wird.
+- Keine neuen Dateien.
+
 ## v0.32.0-beta
 
 Import-Funktion für Stufe 1 "Die Idee" - Gegenstück zum bestehenden Master-Prompt (Nutzerwunsch: "eine Import Funktion für den SchreibZauber, wenn ich dich oder eine andere KI außerhalb der Gemini API frage - die alle Felder abdeckt, One Click"):
