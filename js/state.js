@@ -10,6 +10,12 @@ Object.assign(app.settings, {
     birkenbihlLanguage: localStorage.getItem('lz_birkenbihl_lang') || 'en',
     voiceUri: localStorage.getItem('lz_voice') || '',
     backgroundPregenEnabled: localStorage.getItem('lz_bg_pregen') === '1',
+    // NEU (Birkenbihl-Hintergrundvorbereitung, Nutzerwunsch): bewusst ein
+    // EIGENER, zusätzlicher Schalter statt im Hauptschalter mitgebündelt -
+    // Birkenbihl-Übersetzungen kosten je nach Bibliotheksgröße spürbar mehr
+    // Anfragen als Erzähler-Varianten/Quiz, das soll niemand ungefragt
+    // mitbekommen, nur weil "Im Hintergrund vorbereiten" schon an war.
+    backgroundPregenBirkenbihl: localStorage.getItem('lz_bg_pregen_birkenbihl') === '1',
     // NEU: einstellbare Vorlesegeschwindigkeit (0.5 = langsam, 1.5 = schnell)
     speechRate: parseFloat(localStorage.getItem('lz_speech_rate') || '0.9'),
     // NEU: einstellbare Farbe fuer die Wort-Hervorhebung beim Vorlesen

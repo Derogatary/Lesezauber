@@ -6,6 +6,16 @@ vollständige Historie, neueste Version zuerst. Diese Datei wurde aus
 `CLAUDE.md` ausgelagert, weil der Abschnitt dort mit der Zeit zu groß für
 schnellen Kontext wurde; inhaltlich unverändert übernommen.
 
+## v0.33.0-beta
+
+Birkenbihl-Übersetzungen in die Hintergrund-Vorbereitung aufgenommen (Nutzerwunsch, Antwort auf die Frage "funktioniert die background Nutzung des API Keys?"):
+
+- **Dritte Aufgaben-Art mit niedrigster Priorität** ("erst Seiten, dann anderer Kram") - `js/backgroundPregen.js` arbeitet jetzt in fester Reihenfolge: 1) fehlende Erzähler-Varianten, 2) Buch-Quiz (erst wenn 1. für ALLE Bücher erledigt ist), 3) Birkenbihl-Übersetzungen (erst wenn 1. UND 2. für ALLE Bücher erledigt sind). Neue Funktion `generateBirkenbihlForPageInBackground()`.
+- **Eigener Zusatz-Schalter** "🌍 Auch Birkenbihl-Übersetzungen automatisch vorbereiten" unter dem bestehenden Hintergrund-Schalter in den Einstellungen (`app.settings.backgroundPregenBirkenbihl`, Default aus) - bewusst NICHT im Hauptschalter mitgebündelt, weil Birkenbihl je nach Bibliotheksgröße spürbar mehr Anfragen kosten kann als die bisherigen zwei Aufgaben.
+- **Übersicht statt nur einer Zahl** - die Einstellungen zeigten bisher nur "X Variante(n) noch offen"; jetzt eine kleine Übersicht aller drei Aufgaben-Arten (🧑 Erzähler-Varianten, ❓ Buch-Quiz, 🌍 Birkenbihl), gespeist aus drei neuen, von der eigentlichen Hintergrundarbeit geteilten Zähl-Funktionen in `js/utils.js` (`countMissingBookQuiz()`, `findMissingBirkenbihlPages()`/`countMissingBirkenbihl()`) - EIN Ort definiert, was als "fehlt" zählt, damit Anzeige und tatsächliche Arbeit nie auseinanderlaufen.
+- **Kleiner Hinweis im Bibliotheks-Kopf** ("⏳ X im Hintergrund offen", `#pregenBadge`) - nur sichtbar, wenn die Hintergrund-Vorbereitung eingeschaltet UND etwas offen ist, Tippen springt direkt zu den Einstellungen. Bleibt aktuell, falls die App gerade auf der Bibliotheksansicht offen daliegt, während im Hintergrund etwas fertig wird.
+- Keine neuen Dateien.
+
 ## v0.32.2-beta
 
 Bugfix (Nutzer-Screenshot: "Übersetzung schlägt fehl" bei "🌍 Birkenbihl") - `js/api.js`:

@@ -1,7 +1,20 @@
 // Bei jeder inhaltlichen Änderung an einer dieser Dateien diese Nummer
 // erhöhen - sonst bekommen wiederkehrende Besucher weiter die alte
 // zwischengespeicherte Version ausgeliefert.
-const CACHE_NAME = 'lesezauber-shell-v53';
+const CACHE_NAME = 'lesezauber-shell-v54';
+
+// NEU (v54): Birkenbihl-Übersetzungen als dritte, niedrigste Priorität in
+// die Hintergrund-Vorbereitung aufgenommen (Nutzerwunsch: "erst Seiten,
+// dann anderer Kram") - läuft erst, wenn ALLE Bücher weder eine fehlende
+// Persona-Variante noch ein fehlendes Buch-Quiz mehr haben. Eigener
+// Zusatz-Schalter "🌍 Auch Birkenbihl-Übersetzungen automatisch
+// vorbereiten" in den Einstellungen (app.settings.backgroundPregenBirkenbihl,
+// Default aus - kostet sonst ungefragt mehr Anfragen). Einstellungen zeigen
+// jetzt eine Übersicht aller drei Aufgaben-Arten statt nur einer Zahl
+// (app.utils.countMissingVariants()/countMissingBookQuiz()/
+// countMissingBirkenbihl()). Neu: kleiner "⏳ X im Hintergrund offen"-Hinweis
+// im Bibliotheks-Kopf, Tippen springt zu den Einstellungen. Keine neuen
+// Dateien.
 
 // NEU (v53): Bugfix "Birkenbihl-Übersetzung schlägt fehl" - eine Seite mit
 // wörtlicher Rede erzeugt viele Wort-Paare, ein einziges nicht sauber

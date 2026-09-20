@@ -45,6 +45,20 @@ Object.assign(app.render, {
         app.render.newBookTypeButtons();
         app.render.medalBadge();
 
+        // NEU (Nutzerwunsch): kleine Anzeige, ob im Hintergrund noch
+        // Aufgaben offen sind - nur wenn die Hintergrund-Vorbereitung
+        // überhaupt eingeschaltet ist, sonst wäre die Zahl irreführend
+        // (sie würde ja gar nicht automatisch abgearbeitet).
+        const pregenBadge = document.getElementById('pregenBadge');
+        if (pregenBadge) {
+            const total = app.settings.backgroundPregenEnabled
+                ? app.utils.countMissingVariants() + app.utils.countMissingBookQuiz()
+                    + (app.settings.backgroundPregenBirkenbihl ? app.utils.countMissingBirkenbihl() : 0)
+                : 0;
+            pregenBadge.classList.toggle('hidden', total === 0);
+            if (total > 0) pregenBadge.innerText = `⏳ ${total} im Hintergrund offen`;
+        }
+
         // NEU: Lese-Serie (Streak) anzeigen, wenn mindestens 2 Tage in Folge
         const streakInfo = app.utils.getStreakInfo();
         const streakEl = document.getElementById('streakBadge');

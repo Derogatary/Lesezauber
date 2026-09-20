@@ -41,7 +41,14 @@
                     <p id="streakBadge" class="hidden text-xs font-bold text-amber-600 mt-0.5"></p>
                     <!-- NEU: Belohnung - Anzahl komplett geschaffter Bücher/Hefte -->
                     <p id="medalBadge" class="hidden text-xs font-bold text-emerald-600 mt-0.5"></p>
-                    <p class="text-[10px] text-slate-400 font-semibold mt-0.5">v0.32.2-beta</p>
+                    <!-- NEU (Nutzerwunsch): kleine, unaufdringliche Anzeige, ob im
+                         Hintergrund noch Aufgaben offen sind (Varianten/Quiz/
+                         Birkenbihl zusammen) - Tippen springt direkt zu den
+                         Einstellungen mit der genauen Übersicht (#pregenOverview).
+                         Nur sichtbar, wenn die Hintergrund-Vorbereitung
+                         überhaupt eingeschaltet ist UND etwas offen ist. -->
+                    <button id="pregenBadge" onclick="app.nav.go('settings')" class="hidden text-xs font-bold text-indigo-600 mt-0.5 hover:underline"></button>
+                    <p class="text-[10px] text-slate-400 font-semibold mt-0.5">v0.33.0-beta</p>
                 </div>
                 <div class="flex items-center gap-2 flex-shrink-0">
                     <button onclick="app.nav.go('help')" aria-label="Hilfe öffnen" title="Hilfe" class="w-10 h-10 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-600 hover:bg-slate-100 shadow-sm transition active:scale-95">
@@ -1294,7 +1301,24 @@
                         <input id="toggleBackgroundPregen" type="checkbox" onchange="app.settingsConfig.toggleBackgroundPregen(this.checked)" class="w-5 h-5 accent-indigo-600">
                     </div>
                     <p class="text-[11px] text-slate-500">Erstellt automatisch fehlende Erzähler-Varianten und Buch-Quiz, wenn gerade nichts anderes läuft. Verbraucht zusätzliche KI-Anfragen im Hintergrund - bei knappem Tageslimit lieber ausgeschaltet lassen.</p>
-                    <p id="pregenStatus" class="text-[11px] text-slate-500 font-semibold"></p>
+
+                    <!-- NEU (Birkenbihl-Hintergrundvorbereitung, Nutzerwunsch):
+                         eigener Zusatz-Schalter statt im Hauptschalter
+                         mitgebündelt - kostet je nach Bibliotheksgröße
+                         spürbar mehr Anfragen, deshalb eine bewusste
+                         zusätzliche Zustimmung. Läuft mit niedrigster
+                         Priorität, erst wenn alle Varianten/Quiz erledigt
+                         sind (siehe js/backgroundPregen.js). -->
+                    <label class="flex items-center gap-2 text-[11px] font-semibold text-slate-600 border-t border-slate-100 pt-2">
+                        <input id="toggleBackgroundPregenBirkenbihl" type="checkbox" onchange="app.settingsConfig.toggleBackgroundPregenBirkenbihl(this.checked)" class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+                        🌍 Auch Birkenbihl-Übersetzungen automatisch vorbereiten (niedrigste Priorität)
+                    </label>
+
+                    <!-- NEU: Übersicht statt nur einer einzelnen Zeile - zeigt
+                         alle drei Hintergrund-Aufgaben getrennt, siehe
+                         app.utils.countMissingVariants()/countMissingBookQuiz()/
+                         countMissingBirkenbihl() in js/utils.js. -->
+                    <div id="pregenOverview" class="text-[11px] text-slate-500 font-semibold space-y-0.5"></div>
                 </div>
 
                 <!-- NEU (SchreibZauber Stufe 2): echte Bildgenerierung ist bewusst

@@ -35,6 +35,15 @@ Object.assign(app.settingsConfig, {
         app.ui.toast(enabled ? 'Hintergrund-Vorbereitung aktiviert' : 'Hintergrund-Vorbereitung deaktiviert', enabled ? '🔄' : '⏸️');
     },
 
+    // NEU (Birkenbihl-Hintergrundvorbereitung, Nutzerwunsch): eigener,
+    // zusätzlicher Schalter - siehe Begründung bei backgroundPregenBirkenbihl
+    // in js/state.js.
+    toggleBackgroundPregenBirkenbihl(enabled) {
+        app.settings.backgroundPregenBirkenbihl = enabled;
+        localStorage.setItem('lz_bg_pregen_birkenbihl', enabled ? '1' : '0');
+        app.ui.toast(enabled ? 'Birkenbihl-Hintergrundvorbereitung aktiviert' : 'Birkenbihl-Hintergrundvorbereitung deaktiviert', enabled ? '🌍' : '⏸️');
+    },
+
     // NEU: zweiseitiges Layout (Bild links, Text rechts) ein-/ausschalten -
     // wirkt sich per CSS-Media-Query ohnehin erst ab Tablet-Breite aus,
     // auf dem Handy bleibt es immer wie gewohnt untereinander.

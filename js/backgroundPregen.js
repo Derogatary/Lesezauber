@@ -2,12 +2,18 @@ import { app } from './core.js';
 
 // ================= Hintergrund-Vorbereitung (opt-in) =================
 // Läuft nur, wenn in den Einstellungen aktiviert. Sucht sich alle paar
-// Sekunden EINE fehlende Aufgabe (Persona-Variante einer Seite ODER
-// Buch-Quiz) und erledigt genau diese eine - nie mehr, und nie während
-// gerade etwas anderes mit der KI läuft. So bleibt die Kostenlos-Grenze
-// im Blick, auch wenn man das Feature aktiviert.
+// Sekunden EINE fehlende Aufgabe und erledigt genau diese eine - nie mehr,
+// und nie während gerade etwas anderes mit der KI läuft. So bleibt die
+// Kostenlos-Grenze im Blick, auch wenn man das Feature aktiviert.
 // Erhöht von 6s auf 9s - Hintergrundarbeit hat keine Eile und soll das
 // Minutenlimit nicht zusätzlich zu regulären Analysen strapazieren.
+//
+// Drei Aufgaben-Arten, in fester Prioritäts-Reihenfolge (Nutzerwunsch:
+// "erst Seiten, dann anderer Kram") - siehe findNextMissingTask():
+// 1. Persona-Variante einer Seite (Grundlage fürs Lesen überhaupt)
+// 2. Buch-Quiz (erst wenn Punkt 1 für ALLE Bücher erledigt ist)
+// 3. Birkenbihl-Übersetzung (niedrigste Priorität, eigener Zusatz-Schalter
+//    app.settings.backgroundPregenBirkenbihl, siehe js/state.js)
 const BACKGROUND_PAUSE_MS = 9000;
 
 function findNextMissingTask() {
@@ -36,6 +42,21 @@ function findNextMissingTask() {
             return { type: 'bookQuiz', bookId };
         }
     }
+
+    // NEU (Birkenbihl-Hintergrundvorbereitung, Nutzerwunsch: "erst Seiten,
+    // dann anderer Kram"): niedrigste Priorität - läuft erst, wenn ALLE
+    // Bücher weder eine fehlende Persona-Variante noch ein fehlendes
+    // Buch-Quiz mehr haben (obige Schleife ist dann ohne Treffer
+    // durchgelaufen). Zusätzlich eigens bestätigt
+    // (app.settings.backgroundPregenBirkenbihl) - kostet sonst ungefragt
+    // mehr Anfragen, als der allgemeine Schalter verspricht. Fundstelle
+    // kommt aus derselben Liste wie der Zähler in den Einstellungen (siehe
+    // app.utils.findMissingBirkenbihlPages() in js/utils.js).
+    if (app.settings.backgroundPregenBirkenbihl) {
+        const [first] = app.utils.findMissingBirkenbihlPages();
+        if (first) return { type: 'birkenbihl', bookId: first.bookId, pageIdx: first.pageIdx };
+    }
+
     return null;
 }
 
@@ -67,6 +88,28 @@ async function generatePersonaVariantForPage(book, pageIdx, personaId) {
     page.variants[personaId] = app.utils.buildPageVariant(result, page, bookType);
     // NEU: auch bei im Hintergrund vorbereiteten Varianten Vokabeln sammeln
     app.actions.recordVocabulary(result.vocabulary);
+    app.dbOps.saveBook(book);
+}
+
+// NEU (Birkenbihl-Hintergrundvorbereitung, Nutzerwunsch): Gegenstück zu
+// app.actions.generateBirkenbihlDecoding() in js/actions/birkenbihl.js,
+// aber ohne Loader/Toast (läuft ja im Hintergrund) und über die GLOBALE
+// Standard-Persona statt der gerade im Reader gewählten - dieselbe
+// Begründung wie bei generateBookQuizInBackground() unten: der Hintergrund
+// kennt keine "gerade geöffnete" Ansicht.
+async function generateBirkenbihlForPageInBackground(book, pageIdx) {
+    const page = book.pages[pageIdx];
+    const variant = app.utils.resolveAnyVariant(page, app.settings.persona);
+    if (!variant || !variant.text) return;
+
+    const langId = app.settings.birkenbihlLanguage;
+    const { pairs } = await app.api.generateBirkenbihlDecoding(variant.text, langId);
+    // Nichts Brauchbares zurückbekommen -> lieber nichts speichern und beim
+    // nächsten Zyklus erneut versuchen, als eine leere Übersetzung zu
+    // hinterlegen, die dann fälschlich als "erledigt" gilt.
+    if (pairs.length === 0) return;
+
+    page.birkenbihl = { lang: langId, pairs, generatedAt: Date.now() };
     app.dbOps.saveBook(book);
 }
 
@@ -112,7 +155,18 @@ async function runOneBackgroundTask() {
             if (app.state.currentBookId === task.bookId && app.state.currentView === 'reader') {
                 app.render.reader(app.state.currentPageIdx);
             }
+        } else if (task.type === 'birkenbihl') {
+            await generateBirkenbihlForPageInBackground(app.library[task.bookId], task.pageIdx);
+            // Nur neu zeichnen, wenn genau diese Seite gerade sichtbar ist -
+            // gleiche Vorsicht wie beim Persona-Zweig oben.
+            if (app.state.currentBookId === task.bookId && app.state.currentView === 'reader' && app.state.currentPageIdx === task.pageIdx) {
+                app.render.birkenbihlTab(app.library[task.bookId].pages[task.pageIdx]);
+            }
         }
+
+        // NEU: hält den kleinen "⏳ X im Hintergrund offen"-Hinweis in der
+        // Bibliothek aktuell, falls die App gerade dort offen daliegt.
+        if (app.state.currentView === 'lib') app.render.library();
     } catch (e) {
         // Einzelner Fehler im Hintergrund soll nicht störend auffallen -
         // beim nächsten Zyklus wird es automatisch erneut versucht.

@@ -216,6 +216,50 @@ Object.assign(app.utils, {
         return missing;
     },
 
+    // NEU (Hintergrund-Vorbereitung, Übersicht in den Einstellungen): dieselbe
+    // Bedingung wie in js/backgroundPregen.js findNextMissingTask() für den
+    // Buch-Quiz-Schritt - EIN Ort, damit Zähler und tatsächliche
+    // Hintergrundarbeit nie auseinanderlaufen.
+    countMissingBookQuiz() {
+        let missing = 0;
+        Object.values(app.library).forEach(book => {
+            if (app.utils.resolveBookType(book) === 'workbook') return;
+            const allDone = book.pages.length > 0 && book.pages.every(p => p.status === 'done');
+            if (allDone && !book.bookQuiz) missing++;
+        });
+        return missing;
+    },
+
+    // NEU (Birkenbihl-Hintergrundvorbereitung, Nutzerwunsch): Fundstellen-
+    // Liste statt nur einer Zahl - dieselbe Liste bedient sowohl den Zähler
+    // in den Einstellungen (Länge) als auch js/backgroundPregen.js (nimmt
+    // sich den ersten Eintrag), damit beide garantiert dieselbe Definition
+    // von "fehlt" benutzen. Nur Geschichten (Übungshefte haben keinen
+    // Birkenbihl-Tab, siehe applyBookTypeLabels() in render/reader.js) und
+    // nur bereits ausgelesene Seiten mit vorhandenem Text. Zählt eine Seite
+    // auch dann als "fehlt", wenn sie zwar schon eine Zerlegung hat, aber
+    // für eine inzwischen gewechselte Zielsprache - sonst würde die
+    // Hintergrund-Vorbereitung eine veraltete Übersetzung nie nachziehen.
+    findMissingBirkenbihlPages() {
+        const found = [];
+        Object.values(app.library).forEach(book => {
+            if (app.utils.resolveBookType(book) === 'workbook') return;
+            book.pages.forEach((page, pageIdx) => {
+                if (page.status !== 'done') return;
+                const variant = app.utils.resolveAnyVariant(page, app.settings.persona);
+                if (!variant || !variant.text) return;
+                if (!page.birkenbihl || page.birkenbihl.lang !== app.settings.birkenbihlLanguage) {
+                    found.push({ bookId: book.id, pageIdx });
+                }
+            });
+        });
+        return found;
+    },
+
+    countMissingBirkenbihl() {
+        return app.utils.findMissingBirkenbihlPages().length;
+    },
+
     // NEU: Lese-Serie (Streak) - pro Profil getrennt, da Familienmitglieder
     // an unterschiedlichen Tagen lesen können.
     _dateStr(d) {

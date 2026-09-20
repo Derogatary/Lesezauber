@@ -79,7 +79,7 @@ import './actions/meineNeueDatei.js';
 | `js/ttsProviders.js` | KI-Stimmen-Anbieter als Liste (`app.ttsProviders.list`) - neuer Anbieter = neuer Eintrag, UI baut sich automatisch auf |
 | `js/ttsNeural.js` | Wiedergabe der KI-Stimmen: IndexedDB-Zwischenspeicher, eigene Wort-Hervorhebung per `requestAnimationFrame`, Vorbereitung der nächsten Seite, Rückfall auf Gerätestimme |
 | `js/profiles.js` | Lokale Profile (kein Server/Login), inkl. `__all__`-Sonderfilter |
-| `js/backgroundPregen.js` | Opt-in Hintergrund-Vorbereitung fehlender Persona-Varianten/Buch-Quiz |
+| `js/backgroundPregen.js` | Opt-in Hintergrund-Vorbereitung fehlender Persona-Varianten/Buch-Quiz/Birkenbihl-Übersetzungen (Prioritäts-Reihenfolge: Varianten → Quiz → Birkenbihl, letzteres eigener Zusatz-Schalter) |
 | `js/keyboard.js`, `js/gestures.js` | Desktop-Tastatur bzw. Touch-Wisch-Navigation im Reader |
 | `js/actions/scanner.js` | Kamera, Foto-Aufnahme, Galerie-Import, **die zentrale `analyzePage()`-Funktion** |
 | `js/actions/pdfImport.js`, `epubImport.js` | Datei-Import, beide nutzen lazy-geladene Vendor-Libs |
@@ -303,6 +303,6 @@ Feste Regeln:
 
 ## Versionsstand
 
-Aktuell `v0.32.2-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Version bei größeren Änderungen hochzählen (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).
+Aktuell `v0.33.0-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Version bei größeren Änderungen hochzählen (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).
 
 **Die vollständige Versionshistorie (was mit welcher Version kam, inkl. aller Entscheidungen) steht in [`CHANGELOG.md`](CHANGELOG.md), neueste Version zuerst.** Vor dem Einplanen eines Features dort nachsehen, sonst werden bereits gefallene Entscheidungen neu diskutiert. Neuer Eintrag bei jeder Versionserhöhung: oben in `CHANGELOG.md` ergänzen, nicht hier.

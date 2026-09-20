@@ -217,6 +217,11 @@ Object.assign(app.render, {
         const bgToggle = document.getElementById('toggleBackgroundPregen');
         if (bgToggle) bgToggle.checked = app.settings.backgroundPregenEnabled;
 
+        // NEU (Birkenbihl-Hintergrundvorbereitung, Nutzerwunsch): eigener
+        // Zusatz-Schalter, siehe js/state.js/js/settingsConfig.js.
+        const bgBirkenbihlToggle = document.getElementById('toggleBackgroundPregenBirkenbihl');
+        if (bgBirkenbihlToggle) bgBirkenbihlToggle.checked = app.settings.backgroundPregenBirkenbihl;
+
         // NEU: zweiseitiges Layout - Schalterstellung anzeigen
         const twoPageToggle = document.getElementById('toggleTwoPageLayout');
         if (twoPageToggle) twoPageToggle.checked = app.settings.twoPageLayout;
@@ -230,10 +235,21 @@ Object.assign(app.render, {
             studioImgToggle.disabled = locked;
         }
 
-        const bgStatus = document.getElementById('pregenStatus');
-        if (bgStatus) {
-            const missing = app.utils.countMissingVariants();
-            bgStatus.innerText = missing > 0 ? `${missing} Variante(n) noch offen` : 'Alles vorbereitet ✅';
+        // NEU: Übersicht statt nur einer einzelnen Zeile (Nutzerwunsch) -
+        // zeigt alle drei Hintergrund-Aufgaben getrennt, in derselben
+        // Reihenfolge, in der js/backgroundPregen.js sie auch abarbeitet
+        // ("erst Seiten, dann anderer Kram").
+        const pregenOverview = document.getElementById('pregenOverview');
+        if (pregenOverview) {
+            const missingVariants = app.utils.countMissingVariants();
+            const missingQuiz = app.utils.countMissingBookQuiz();
+            const missingBirkenbihl = app.utils.countMissingBirkenbihl();
+            const line = (label, count) => count > 0 ? `${label}: ${count} offen` : `${label}: alles fertig ✅`;
+            pregenOverview.innerHTML = [
+                line('🧑 Erzähler-Varianten', missingVariants),
+                line('❓ Buch-Quiz', missingQuiz),
+                line('🌍 Birkenbihl', missingBirkenbihl)
+            ].map(l => `<p>${app.utils.sanitize(l)}</p>`).join('');
         }
 
         // NEU: Kino-Effekte (Ken-Burns + Kreuzblende) - Schalterstellung anzeigen
