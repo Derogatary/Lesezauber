@@ -6,6 +6,16 @@ vollständige Historie, neueste Version zuerst. Diese Datei wurde aus
 `CLAUDE.md` ausgelagert, weil der Abschnitt dort mit der Zeit zu groß für
 schnellen Kontext wurde; inhaltlich unverändert übernommen.
 
+## v0.32.0-beta
+
+Import-Funktion für Stufe 1 "Die Idee" - Gegenstück zum bestehenden Master-Prompt (Nutzerwunsch: "eine Import Funktion für den SchreibZauber, wenn ich dich oder eine andere KI außerhalb der Gemini API frage - die alle Felder abdeckt, One Click"):
+
+- **Neuer Knopf "📥 KI-Antwort einfügen (aus Zwischenablage)"** direkt unter dem "📋 Master-Prompt kopieren"-Knopf - liest per `navigator.clipboard.readText()` die Antwort, die man z.B. Claude oder ChatGPT in einem separaten Chat gegeben hat, und füllt damit auf einen Klick alle sieben Stufe-1-Felder aus (Titel, Thema, Ton, Botschaft, Autoren-Steckbrief, Verlag, Klappentext).
+- **`app.studio.prompts.parseMasterSetupResponse()`** (`js/studio/studioPrompts.js`) zerlegt die Antwort zweistufig: zuerst über die im Master-Prompt verlangten Codeblöcke (`` ```titel ... ``` ``), als Rückfall über einfache "Titel: ..."-Zeilen inkl. Markdown-Fettung/Aufzählungszeichen (`**Titel:**`, `- Titel: ...`, `### Titel`) - nötig, weil nicht jede extern gefragte KI die Codeblock-Anweisung exakt befolgt. Liefert nur tatsächlich gefundene Felder zurück, überschreibt also nie mit einem leeren String.
+- **Rückfall-Textfeld**, falls der automatische Zwischenablage-Zugriff nicht klappt (Browser-Einschränkung, z.B. älteres iOS Safari ohne Erlaubnis) - dann manuell einfügen und "✨ Felder daraus ausfüllen" tippen.
+- Fragt vor dem Überschreiben nach, falls im Formular schon eigene Angaben stehen (gleiche Haltung wie beim direkten API-Ausfüll-Knopf aus v0.30.9-beta).
+- Keine neuen Dateien - alles in `js/studio/studioPrompts.js`, `js/render/studioWizard.js`, `index.html`.
+
 ## v0.31.1-beta
 
 Niederländisch als weitere Birkenbihl-Zielsprache ergänzt (`app.birkenbihlLanguages`, `js/config.js`) - ein Zeileneintrag, erscheint automatisch im Einstellungen-Dropdown und im Übersetzungs-Prompt, keine weiteren Änderungen nötig (siehe Kommentar in `js/config.js`, "Neue Sprache hier ergänzen").

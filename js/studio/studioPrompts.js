@@ -137,10 +137,66 @@ Anreißer für die Buchrückseite, 2-3 Sätze, macht neugierig ohne das Ende zu 
 \`\`\``;
 }
 
+// NEU: Import-Funktion, Gegenstück zu buildMasterSetupPrompt() oben
+// (Nutzerwunsch: "wenn ich dich oder eine andere KI außerhalb der
+// Gemini-API frage... die alle Felder abdeckt, One-Click"). Liest die
+// Antwort einer BELIEBIGEN KI - nicht zwingend exakt Gemini, der
+// Master-Prompt lässt sich ja in jedem KI-Chat einfügen - und versucht,
+// die sieben Stufe-1-Felder herauszulesen:
+// 1. zuerst über die im Prompt verlangten Codeblöcke (```titel ... ```),
+// 2. als Rückfall über einfache "Titel: ..."-Zeilen, falls die
+//    aufrufende KI die Codeblock-Anweisung ignoriert hat (kommt vor,
+//    z.B. bei einer KI, die stattdessen eine Aufzählung liefert).
+// Liefert NUR tatsächlich gefundene Felder zurück - ein nicht erkanntes
+// Feld bleibt im Formular unangetastet, statt es mit einem leeren
+// String zu überschreiben.
+const MASTER_FIELD_KEYS = {
+    titel: 'title', thema: 'topic', ton: 'tone', botschaft: 'message',
+    autor: 'authorBio', verlag: 'publisher', klappentext: 'blurb'
+};
+
+const MASTER_FIELD_LABEL_FALLBACKS = {
+    title: /^(?:Arbeitstitel|Titel)\s*[:\-]\s*(.+)$/im,
+    topic: /^Thema\s*[:\-]\s*(.+)$/im,
+    tone: /^Ton(?:\/Stimmung)?\s*[:\-]\s*(.+)$/im,
+    message: /^Botschaft\s*[:\-]\s*(.+)$/im,
+    authorBio: /^Autor(?:en-?Steckbrief)?\s*[:\-]\s*(.+)$/im,
+    publisher: /^Verlag\s*[:\-]\s*(.+)$/im,
+    blurb: /^Klappentext\s*[:\-]\s*(.+)$/im
+};
+
+function parseMasterSetupResponse(rawText) {
+    const text = String(rawText || '');
+    const found = {};
+
+    const fenceRe = /```\s*(\w+)\s*\n([\s\S]*?)```/g;
+    let m;
+    while ((m = fenceRe.exec(text))) {
+        const key = MASTER_FIELD_KEYS[m[1].trim().toLowerCase()];
+        if (key && !found[key] && m[2].trim()) found[key] = m[2].trim();
+    }
+
+    // NEU: Rückfall greift auf eine von Markdown-Zierde befreite Fassung
+    // zu - manche KIs antworten trotz Anweisung mit "**Titel:** ..." statt
+    // dem verlangten Codeblock. Entfernt führende Aufzählungs-/Überschrift-
+    // zeichen (-, *, #, >) UND alle "**"-Fettungen, damit "**Titel:**" wie
+    // das einfache "Titel:" oben erkannt wird - ohne diesen Schritt müsste
+    // jedes Label-Regex selbst mit beliebig vielen Sternchen umgehen.
+    const cleaned = text.split('\n').map(line => line.replace(/^[\s>#*\-]+/, '').replace(/\*\*/g, '')).join('\n');
+    Object.entries(MASTER_FIELD_LABEL_FALLBACKS).forEach(([key, re]) => {
+        if (found[key]) return;
+        const match = re.exec(cleaned);
+        if (match && match[1].trim()) found[key] = match[1].trim();
+    });
+
+    return found;
+}
+
 Object.assign(app.studio, {
     prompts: {
         guardrailsBlock,
         buildMasterSetupPrompt,
+        parseMasterSetupResponse,
         GRADE_LABEL, SUBJECT_LABEL,
 
         // Stufe 4' – Progression: Kapitelfolge vom Leichten zum Schweren

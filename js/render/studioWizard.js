@@ -292,6 +292,70 @@ Object.assign(app.render, {
         app.studio.imageSource.copyPrompt(prompt);
     },
 
+    // NEU (Import-Funktion, Nutzerwunsch: "wenn ich dich oder eine andere
+    // KI außerhalb der Gemini-API frage... alle Felder... One-Click") -
+    // Gegenstück zu studioCopyMasterPrompt() oben: liest die Antwort der
+    // extern gefragten KI direkt aus der Zwischenablage und füllt damit
+    // ALLE erkannten Stufe-1-Felder auf einen Schlag - echtes "ein Klick"
+    // ohne Umweg über ein sichtbares Textfeld. Clipboard-Lesezugriff
+    // braucht einen sicheren Kontext UND eine Nutzer-Erlaubnis (auf
+    // manchen Browsern/iOS nicht verfügbar) - deshalb hier ein sichtbarer
+    // Rückfall statt eines stillen Fehlers (gleiche Haltung wie
+    // copyPrompt() in imageSource.js beim Schreiben).
+    async studioImportFromClipboard() {
+        if (!navigator.clipboard?.readText) {
+            document.getElementById('studioImportFallbackRow')?.classList.remove('hidden');
+            app.ui.toast('Automatisches Einfügen geht in diesem Browser nicht - bitte unten manuell einfügen.', 'ℹ️');
+            return;
+        }
+        try {
+            const text = await navigator.clipboard.readText();
+            app.render.studioApplyImportedFields(text);
+        } catch (e) {
+            console.error('Zwischenablage konnte nicht gelesen werden:', e);
+            document.getElementById('studioImportFallbackRow')?.classList.remove('hidden');
+            app.ui.toast('Zugriff auf die Zwischenablage nicht erlaubt - bitte unten manuell einfügen.', 'ℹ️');
+        }
+    },
+
+    // Rückfall-Weg: manuell in das Textfeld eingefügte Antwort auslesen.
+    studioImportFromTextarea() {
+        const text = document.getElementById('studioImportTextarea').value;
+        app.render.studioApplyImportedFields(text);
+    },
+
+    // Gemeinsamer Kern für beide Wege oben - siehe
+    // app.studio.prompts.parseMasterSetupResponse() für das eigentliche
+    // Zerlegen. Fragt vor dem Überschreiben nach, falls schon eigene
+    // Angaben im Formular stehen (gleiche Haltung wie studioSuggestBrief()).
+    studioApplyImportedFields(text) {
+        const fields = app.studio.prompts.parseMasterSetupResponse(text);
+        const keys = Object.keys(fields);
+        if (keys.length === 0) {
+            app.ui.toast('Keine passenden Felder in der Antwort gefunden - bitte Format prüfen.', '⚠️');
+            return;
+        }
+
+        const fieldToInput = {
+            title: 'studioTitleInput', topic: 'studioTopic', tone: 'studioTone',
+            message: 'studioMessage', authorBio: 'studioAuthorBio',
+            publisher: 'studioPublisher', blurb: 'studioBlurb'
+        };
+        const hasExisting = Object.values(fieldToInput).some(id => document.getElementById(id).value.trim());
+        if (hasExisting && !confirm(`${keys.length} Feld(er) erkannt. Vorhandene Angaben im Formular überschreiben?`)) {
+            return;
+        }
+
+        keys.forEach(key => {
+            const input = document.getElementById(fieldToInput[key]);
+            if (input) input.value = fields[key];
+        });
+        document.getElementById('studioImportFallbackRow')?.classList.add('hidden');
+        const importTextarea = document.getElementById('studioImportTextarea');
+        if (importTextarea) importTextarea.value = '';
+        app.ui.toast(`${keys.length} Feld(er) eingefügt - vor "Weiter" gern noch anpassen.`, '✨');
+    },
+
     // NEU (Nutzerwunsch: "Ausfüllfunktion durch API... man gibt einfach ein
     // Thema ein und KI füllt die Felder aus, wie beim Bildvorschlag") -
     // Ergänzung zum kostenlosen Copy-Paste-Weg oben (studioCopyMasterPrompt):

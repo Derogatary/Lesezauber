@@ -41,7 +41,7 @@
                     <p id="streakBadge" class="hidden text-xs font-bold text-amber-600 mt-0.5"></p>
                     <!-- NEU: Belohnung - Anzahl komplett geschaffter Bücher/Hefte -->
                     <p id="medalBadge" class="hidden text-xs font-bold text-emerald-600 mt-0.5"></p>
-                    <p class="text-[10px] text-slate-400 font-semibold mt-0.5">v0.31.1-beta</p>
+                    <p class="text-[10px] text-slate-400 font-semibold mt-0.5">v0.32.0-beta</p>
                 </div>
                 <div class="flex items-center gap-2 flex-shrink-0">
                     <button onclick="app.nav.go('help')" aria-label="Hilfe öffnen" title="Hilfe" class="w-10 h-10 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-600 hover:bg-slate-100 shadow-sm transition active:scale-95">
@@ -785,6 +785,19 @@
                      app.studio.prompts.buildMasterSetupPrompt() in
                      studioPrompts.js. -->
                 <button onclick="app.render.studioCopyMasterPrompt()" type="button" class="w-full text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-xl py-2.5 transition">📋 Master-Prompt kopieren (Ideen für alle Felder unten, in einem KI-Chat einfügen)</button>
+                <!-- NEU (Import-Funktion): Gegenstück zum Master-Prompt oben -
+                     liest die Antwort einer beliebigen KI (Claude, ChatGPT, ...)
+                     aus der Zwischenablage und füllt damit alle erkannten
+                     Felder unten auf einen Klick aus (siehe
+                     app.render.studioImportFromClipboard() in
+                     render/studioWizard.js). Klappt das Auto-Lesen der
+                     Zwischenablage nicht (Browser-Einschränkung), erscheint
+                     stattdessen das Textfeld darunter zum manuellen Einfügen. -->
+                <button onclick="app.render.studioImportFromClipboard()" type="button" class="w-full text-xs font-bold text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:opacity-95 rounded-xl py-2.5 transition">📥 KI-Antwort einfügen (aus Zwischenablage)</button>
+                <div id="studioImportFallbackRow" class="hidden space-y-1.5">
+                    <textarea id="studioImportTextarea" rows="4" placeholder="Antwort der KI hier einfügen (lange gedrückt halten bzw. Strg+V)" class="w-full text-xs text-slate-900 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500"></textarea>
+                    <button onclick="app.render.studioImportFromTextarea()" type="button" class="w-full text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl py-2 transition">✨ Felder daraus ausfüllen</button>
+                </div>
                 <!-- NEU (Ausbaustufe 6 - Politur): feste Vorlagen für häufige
                      Anlässe - füllen nur das Formular unten, speichern nichts
                      (siehe app.render.studioApplyTemplate() in

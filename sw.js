@@ -1,7 +1,17 @@
 // Bei jeder inhaltlichen Änderung an einer dieser Dateien diese Nummer
 // erhöhen - sonst bekommen wiederkehrende Besucher weiter die alte
 // zwischengespeicherte Version ausgeliefert.
-const CACHE_NAME = 'lesezauber-shell-v50';
+const CACHE_NAME = 'lesezauber-shell-v51';
+
+// NEU (v51): Import-Funktion für Stufe 1 "Die Idee" - Gegenstück zum
+// Master-Prompt (Nutzerwunsch: "wenn ich dich oder eine andere KI außerhalb
+// der Gemini-API frage... alle Felder... One-Click"). Neuer Knopf "📥
+// KI-Antwort einfügen" liest die Zwischenablage, zerlegt die Antwort per
+// app.studio.prompts.parseMasterSetupResponse() (Codeblöcke wie im
+// Master-Prompt verlangt, plus Rückfall auf einfache "Titel: ..."-Zeilen
+// samt Markdown-Fettung/Aufzählung) und füllt alle erkannten Felder auf
+// einen Schlag. Klappt der Zwischenablage-Zugriff nicht, erscheint ein
+// Textfeld zum manuellen Einfügen. Keine neuen Dateien. Siehe CHANGELOG.md.
 
 // NEU (v50): Niederländisch als weitere Birkenbihl-Zielsprache ergänzt
 // (app.birkenbihlLanguages, js/config.js) - Nutzerwunsch, ein Zeileneintrag,
