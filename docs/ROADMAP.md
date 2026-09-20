@@ -86,8 +86,10 @@ in den Einstellungen weiterhin frei wechseln - das ist bereits heute so gebaut.
 
 **Speechify als fünfter Anbieter eingebaut (Sept. 2026):** bietet wortgenaue Zeitstempel
 ("Speech Marks", technisch gleichwertig zu ElevenLabs), Deutsch unterstützt (Modell
-`simba-3.2`), zu **$6-10 je 1 Mio. Zeichen statt ElevenLabs' ~$100/Mio.** - grob Faktor
-10-15 günstiger, dazu 50.000 Zeichen/Monat gratis (fünfmal mehr als ElevenLabs). Umgesetzt
+`simba-3.0` - FIX v0.35.2-beta, vorher fälschlich `simba-3.2` eingetragen, das
+laut Anbieter NUR Englisch spricht), zu **$10 je 1 Mio. Zeichen statt ElevenLabs' ~$100/Mio.**
+- grob Faktor 10 günstiger, dazu 500.000 Zeichen/Monat gratis (Stand Sept. 2026 laut
+Speechify-Dashboard, geteiltes Guthaben mit 60 Freiminuten Sprach-Agenten). Umgesetzt
 in `js/ttsProviders.js` (`speechifySynthesize`/`fetchSpeechifyVoices`). Andere geprüfte
 Kandidaten (Inworld, Rime, Cartesia) zielen auf Echtzeit-Sprachassistenten - kein
 Zusatznutzen für vorab erzeugte Vorlese-Dateien, deshalb nicht aufgenommen.
@@ -170,7 +172,7 @@ Der Analyse-Prompt liefert bewusst den "exakten gedruckten Text" - richtig für 
 | Google Cloud Chirp 3 HD | 1 Mio. Zeichen/Monat | ~30 $/Mio. Zeichen | braucht Cloud-Projekt mit Zahlungsart |
 | ElevenLabs | 10.000 Zeichen/Monat (privat) ≈ 13-15 Min. Sprache | ~100 $/Mio. Zeichen | exakte Wort-Zeitstempel; seit v3 auch Emotions-Tags zum gleichen Preis |
 | OpenAI | – | ~1,3 ct/Minute Audio | Persona als Sprechanweisung |
-| Speechify | 50.000 Zeichen/Monat | 6-10 $/Mio. Zeichen | ebenfalls exakte Wort-Zeitstempel, **10-15× günstiger als ElevenLabs** - siehe Entscheidung 3 |
+| Speechify | 500.000 Zeichen/Monat (Stand Sept. 2026) | 10 $/Mio. Zeichen | ebenfalls exakte Wort-Zeitstempel, **ca. 10× günstiger als ElevenLabs** - siehe Entscheidung 3 |
 
 10.000 Zeichen (ElevenLabs-Gratistarif) entsprechen grob 6-10 neu vorgelesenen Bilderbüchern
 im Monat - danach ist alles gecacht und kostet beim erneuten Vorlesen nichts mehr.

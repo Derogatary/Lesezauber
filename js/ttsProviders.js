@@ -25,11 +25,14 @@ const ELEVEN_MODEL = 'eleven_v3';
 
 const OPENAI_TTS_MODEL = 'gpt-4o-mini-tts';
 
-// NEU: Speechify. simba-3.2 ist laut Anbieter-Doku (Stand Sept. 2026) das
-// aktuell empfohlene Modell - simba-multilingual (das alte Mehrsprachen-
-// Modell) wird zum 21.11.2026 abgeschaltet, simba-3.2 spricht Deutsch
-// direkt über das "language"-Feld.
-const SPEECHIFY_MODEL = 'simba-3.2';
+// FIX (Nutzer-Screenshot aus dem Speechify-Dashboard, Stand Sept. 2026):
+// simba-3.2 ist zwar das "Recommended"-Modell mit der geringsten Latenz,
+// spricht aber NUR Englisch - für Deutsch (und Spanisch/Französisch/
+// Italienisch/Portugiesisch) ist weiterhin simba-3.0 zuständig, geroutet
+// über das "language"-Feld im Request. War vorher fälschlich auf 3.2
+// gestellt, hätte auf Deutsch also gar nicht funktioniert bzw. wäre auf
+// Englisch ausgesprochen worden.
+const SPEECHIFY_MODEL = 'simba-3.0';
 const SPEECHIFY_LANGUAGE = 'de-DE';
 
 // NEU: Tarif-Lock (siehe Entscheidung in docs/ROADMAP.md). Reihenfolge der
@@ -536,11 +539,17 @@ Object.assign(app.ttsProviders, {
             tier: 'Bezahlt',
             costTier: 'cheap',
             neural: true,
-            hint: 'Ähnlich günstig wie OpenAI, hält die Wort-Hervorhebung aber zeichengenau synchron (wie ElevenLabs) - ca. 6-10 US-Dollar je 1 Mio. Zeichen statt ElevenLabs\' ca. 100 US-Dollar. Gratis-Konto: 50.000 Zeichen/Monat. Modell simba-3.2, Deutsch wird direkt unterstützt.',
+            // FIX (Nutzer-Screenshot, Stand Sept. 2026): Gratis-Kontingent war
+            // veraltet eingetragen (50.000 Zeichen/Monat) - das aktuelle
+            // Free-Konto zeigt 500.000 Zeichen Text-zu-Sprache ODER 60
+            // Minuten Sprach-Agenten pro Monat (EIN gemeinsames Guthaben,
+            // teilbar), danach pausiert es bis zum nächsten Monat statt
+            // automatisch kostenpflichtig weiterzulaufen.
+            hint: 'Ähnlich günstig wie OpenAI, hält die Wort-Hervorhebung aber zeichengenau synchron (wie ElevenLabs) - 10 US-Dollar je 1 Mio. Zeichen (simba-3.0, für Deutsch) statt ElevenLabs\' ca. 100 US-Dollar. Gratis-Konto: 500.000 Zeichen (oder 60 Minuten Sprach-Agenten, gemeinsames Guthaben) pro Monat.',
             keySetting: 'speechifyKey',
             keyUrl: 'https://console.speechify.ai/api-keys',
             pricingUrl: 'https://speechify.com/pricing-api/',
-            // Bekannte simba-3.2-Standardstimmen laut Anbieter-Doku; eigene/
+            // Bekannte simba-Standardstimmen laut Anbieter-Doku; eigene/
             // geklonte Stimmen lassen sich in den Einstellungen per Knopf aus
             // dem Konto nachladen (wie bei ElevenLabs).
             voices: [

@@ -73,7 +73,7 @@ Details: [`docs/ROADMAP.md`](ROADMAP.md)
 | Punkt | Aufwand | Anmerkung |
 |---|---|---|
 | ~~**Stimmen-Speicher auf 300 MB erhöhen**~~ | **S** | ✅ **erledigt (Sept. 2026)** - `TTS_CACHE_MAX_BYTES` in `js/db.js` auf 300 MB erhöht |
-| ~~**Speechify als 5. Anbieter ergänzen**~~ | **S** | ✅ **erledigt (Sept. 2026)** - `speechifySynthesize`/`fetchSpeechifyVoices` in `js/ttsProviders.js`, Modell `simba-3.2` |
+| ~~**Speechify als 5. Anbieter ergänzen**~~ | **S** | ✅ **erledigt (Sept. 2026)** - `speechifySynthesize`/`fetchSpeechifyVoices` in `js/ttsProviders.js`, Modell `simba-3.0` (FIX v0.35.2-beta: `simba-3.2` spricht nur Englisch, für Deutsch ist `simba-3.0` zuständig) |
 | ~~**Vorlese-Aufbereitung des erkannten Texts**~~ | **S** | ✅ **erledigt (Sept. 2026)** - `app.utils.prepareTextForSpeech()` in `js/utils.js`, eingehängt in `js/tts.js`/`js/ttsNeural.js` |
 | ~~**Mehr Stimmen freischalten**~~ | **S** | ✅ **erledigt (Sept. 2026)** - `js/ttsProviders.js` hat jetzt alle 30 Gemini- und alle 13 OpenAI-Stimmen |
 | ~~**„Buch hörfertig machen"**~~ | **S** | ✅ **erledigt (Sept. 2026)** - Knopf in der Buchansicht legt alle Seiten vorab in den `ttsCache` (`js/actions/prepareAudio.js`) |

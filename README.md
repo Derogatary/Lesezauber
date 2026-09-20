@@ -89,7 +89,7 @@ Alles läuft weiterhin ohne eigenen Server: Die App holt die Audiodatei direkt b
 | **Google Cloud Chirp 3 HD** | 1 Mio. Zeichen/Monat gratis, danach ca. 30 $/Mio. Zeichen | Der Alltags-Tipp fürs ganze Buch: 1 Mio. Zeichen sind grob mehrere tausend Buchseiten. Braucht ein Google-Cloud-Projekt mit hinterlegter Zahlungsart. | eigener API-Key |
 | **ElevenLabs** | 10.000 Zeichen/Monat gratis (privat), bezahlt ab ca. 5 $/Monat, danach ca. 100 $/Mio. Zeichen | Beste Vorlese-Qualität und zeichengenaue Zeitstempel → die Wort-Hervorhebung läuft exakt mit. Der teuerste Anbieter hier. | eigener API-Key |
 | **OpenAI** | kein Gratis-Kontingent, ca. 1,3 Cent je Minute Audio | Günstig und gut steuerbar - die Erzähler-Persona wird als Sprechanweisung mitgeschickt. | eigener API-Key |
-| **Speechify** | 50.000 Zeichen/Monat gratis, danach ca. 6-10 $/Mio. Zeichen | Ähnlich günstig wie OpenAI, aber ebenfalls zeichengenaue Zeitstempel wie ElevenLabs - grob 10-15× günstiger. | eigener API-Key |
+| **Speechify** | 500.000 Zeichen/Monat gratis (Stand Sept. 2026), danach ca. 10 $/Mio. Zeichen | Ähnlich günstig wie OpenAI, aber ebenfalls zeichengenaue Zeitstempel wie ElevenLabs - grob 10× günstiger. Deutsch läuft über Modell `simba-3.0`. | eigener API-Key |
 
 Faustregel: **Gemini** zum kostenlosen Reinschnuppern, **Google Cloud Chirp 3 HD** für den Dauerbetrieb, **Speechify**, wenn die Wort-Hervorhebung exakt sitzen soll ohne ElevenLabs' Preis, **ElevenLabs**, wenn es unbedingt die beste Qualität sein soll.
 

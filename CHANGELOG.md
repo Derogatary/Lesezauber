@@ -6,6 +6,13 @@ vollständige Historie, neueste Version zuerst. Diese Datei wurde aus
 `CLAUDE.md` ausgelagert, weil der Abschnitt dort mit der Zeit zu groß für
 schnellen Kontext wurde; inhaltlich unverändert übernommen.
 
+## v0.35.2-beta
+
+Speechify-Modell für Deutsch korrigiert (Nutzer-Screenshots aus dem Speechify-Dashboard):
+
+- **Bug:** `SPEECHIFY_MODEL` stand auf `simba-3.2` - laut aktuellem Anbieter-Dashboard ist das das "Recommended"-Modell mit der geringsten Latenz, spricht aber **nur Englisch**. Für Deutsch (und Spanisch/Französisch/Italienisch/Portugiesisch) ist `simba-3.0` zuständig, geroutet über das `language`-Feld im Request. Auf Deutsch wäre die Stimme also entweder fehlgeschlagen oder fälschlich auf Englisch ausgesprochen worden. Jetzt auf `simba-3.0` korrigiert (`js/ttsProviders.js`).
+- Veraltete Preis-/Kontingent-Angaben im Code-Kommentar und in `README.md`/`docs/ROADMAP.md`/`docs/TODO-GESAMT.md` aktualisiert: aktuell (Stand Sept. 2026 laut Speechify-Dashboard) 500.000 Zeichen Text-zu-Sprache ODER 60 Minuten Sprach-Agenten pro Monat gratis (ein gemeinsames, teilbares Guthaben, pausiert danach bis zum nächsten Monat statt automatisch kostenpflichtig weiterzulaufen), 10 US-Dollar je 1 Mio. Zeichen im Bezahltarif.
+
 ## v0.35.1-beta
 
 Hintergrund-Vorbereitung übernimmt jetzt auch die Grundanalyse, nicht nur den Feinschliff (Nutzerhinweis direkt nach v0.35.0-beta, Screenshot der Einstellungen: "Es sind nicht die fehlenden Seiten der Bücher mit drinnen" + "Könnten diese Unterthemen nicht mit einem Prompt oder mehreren wenig Prompts erledigt werden?"):
