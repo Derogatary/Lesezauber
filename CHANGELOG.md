@@ -6,6 +6,10 @@ vollständige Historie, neueste Version zuerst. Diese Datei wurde aus
 `CLAUDE.md` ausgelagert, weil der Abschnitt dort mit der Zeit zu groß für
 schnellen Kontext wurde; inhaltlich unverändert übernommen.
 
+## v0.31.1-beta
+
+Niederländisch als weitere Birkenbihl-Zielsprache ergänzt (`app.birkenbihlLanguages`, `js/config.js`) - ein Zeileneintrag, erscheint automatisch im Einstellungen-Dropdown und im Übersetzungs-Prompt, keine weiteren Änderungen nötig (siehe Kommentar in `js/config.js`, "Neue Sprache hier ergänzen").
+
 ## v0.31.0-beta
 
 Birkenbihl-Methode (Interlinear-Übersetzung) als erste Umsetzung des in v0.30.9-beta notierten Mehrsprachigkeits-Punkts (docs/TODO-GESAMT.md, Bereich "Mehrsprachigkeit"), auf Nutzerwunsch direkt begonnen statt nur geplant:

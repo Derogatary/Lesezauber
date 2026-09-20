@@ -1,7 +1,12 @@
 // Bei jeder inhaltlichen Änderung an einer dieser Dateien diese Nummer
 // erhöhen - sonst bekommen wiederkehrende Besucher weiter die alte
 // zwischengespeicherte Version ausgeliefert.
-const CACHE_NAME = 'lesezauber-shell-v49';
+const CACHE_NAME = 'lesezauber-shell-v50';
+
+// NEU (v50): Niederländisch als weitere Birkenbihl-Zielsprache ergänzt
+// (app.birkenbihlLanguages, js/config.js) - Nutzerwunsch, ein Zeileneintrag,
+// taucht automatisch im Einstellungen-Dropdown und im Prompt auf. Keine
+// neuen Dateien.
 
 // NEU (v49): Birkenbihl-Methode (Interlinear-Übersetzung) als neuer Reader-
 // Tab "🌍 Birkenbihl" - übersetzt den Seitentext per Gemini/Mistral in eine

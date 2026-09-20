@@ -63,5 +63,6 @@ app.birkenbihlLanguages = [
     { id: 'fr', promptLabel: 'Französisch', label: '🇫🇷 Französisch', speechLang: 'fr-FR' },
     { id: 'es', promptLabel: 'Spanisch', label: '🇪🇸 Spanisch', speechLang: 'es-ES' },
     { id: 'it', promptLabel: 'Italienisch', label: '🇮🇹 Italienisch', speechLang: 'it-IT' },
-    { id: 'tr', promptLabel: 'Türkisch', label: '🇹🇷 Türkisch', speechLang: 'tr-TR' }
+    { id: 'tr', promptLabel: 'Türkisch', label: '🇹🇷 Türkisch', speechLang: 'tr-TR' },
+    { id: 'nl', promptLabel: 'Niederländisch', label: '🇳🇱 Niederländisch', speechLang: 'nl-NL' }
 ];
