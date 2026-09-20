@@ -90,6 +90,8 @@ import './actions/meineNeueDatei.js';
 | `js/render/checkWork.js` | Ergebniskarte der Kontrolle (Lob, Rückmeldung, Tipps) |
 | `js/actions/workbookGenerator.js` | Heft-Generator: Formular auslesen, `app.api.generateWorksheets()` aufrufen, Blätter auf Canvas zeichnen, Heft anlegen |
 | `js/render/workbookGenerator.js` | Heft-Generator: Auswahl-Ansicht (Formular bzw. Blätter-Liste zum Abwählen) |
+| `js/actions/birkenbihl.js` | Birkenbihl-Methode (Interlinear-Übersetzung): erzeugt/cacht `page.birkenbihl` per Gemini/Mistral, liest die Zielsprache per Gerätestimme vor |
+| `js/render/birkenbihl.js` | Reader-Tab "🌍 Birkenbihl": Wort-für-Wort-Ansicht (Zielsprache oben, wörtliche deutsche Übersetzung darunter) |
 | `js/render/progress.js` | Fortschrittsbalken, Erledigt-Knopf, Belohnungs-Banner |
 | `js/render/cinema.js` | Video-Export Teil 1: Canvas-Renderer (`app.cinema`) - zeichnet EINEN Frame zum Zeitpunkt t (Seitenbild + Ken-Burns + Untertitel mit Wort-Hervorhebung), verwaltet bewusst keine Zeit und spielt nichts ab |
 | `js/actions/videoTimeline.js` | Zeitplan/"Regie" dazu (`app.cinema.buildTimeline`): welche Szene über welchem **Seitenbereich** wann läuft - nutzt echte Segmente aus `renderPageSegments()`, sonst Längen-Schätzung aus dem Text |
@@ -162,6 +164,12 @@ import './actions/meineNeueDatei.js';
   // app.utils.resolvePageCheck(page). thumbUrl ist absichtlich nur die kleine Vorschau,
   // das volle Kontroll-Foto wird NICHT gespeichert (sonst wächst jedes Heft pro Kontrolle).
   check: { [profileId]: { verdict, praise, feedback, hints: [], thumbUrl, checkedAt } },
+  // Birkenbihl-Methode (Interlinear-Übersetzung, js/actions/birkenbihl.js) -
+  // persona-UNABHÄNGIG (dekodiert wird der aktuelle Anzeige-Text, egal
+  // welche Persona ihn geschrieben hat), aber SPRACH-abhängig: lang muss
+  // gegen app.settings.birkenbihlLanguage geprüft werden, bevor pairs
+  // angezeigt werden - keine automatische Neu-Erzeugung bei Sprachwechsel.
+  birkenbihl: { lang, pairs: [{ target, gloss }], generatedAt },
   // Alte Bücher (vor der Variants-Architektur) haben stattdessen flache Felder
   // text/erstleserText/desc/quizQ/quizA direkt auf der Seite - IMMER über
   // app.utils.resolvePageVariant()/resolveAnyVariant() lesen, nie page.variants direkt.
@@ -258,7 +266,7 @@ Größere, noch nicht begonnene Features (brauchen erst Abstimmung mit dem Nutze
 | 🪄 "SchreibZauber" - Stufe 1-6 fertig. Die zweite Einstiegsseite/eigenes Manifest wird laut Nutzerentscheid (Sept. 2026) **nicht gebraucht** - endgültig verworfen, kein offener Punkt mehr (siehe CHANGELOG.md v0.25.0-beta für die ursprüngliche Abwägung) | [`docs/KONZEPT-SchreibZauber.md`](docs/KONZEPT-SchreibZauber.md), [`docs/KONZEPT-Bildquellen.md`](docs/KONZEPT-Bildquellen.md), [`docs/KONZEPT-Comic.md`](docs/KONZEPT-Comic.md) |
 | 🎨 KI-Illustrationen (Comic-Stil) für Text-only-EPUB-Kapitel (TEIL A - separates lokales Werkzeug, nicht Teil der PWA). Der SchreibZauber-Comic-Werktyp (TEIL B) ist seit Ausbaustufe 5 fertig | [`docs/KONZEPT-Comic.md`](docs/KONZEPT-Comic.md) |
 | 📱 Native Android-App - TWA-Weg gewählt (Paket-ID `app.lesezauber.pro`, Signierschlüssel erzeugt+übergeben, `.well-known/assetlinks.json`/`.nojekyll` im Repo). Noch offen: `bubblewrap init`/`build` tatsächlich ausführen (braucht volle Internetverbindung), Play-Console-Konto einrichten - siehe CHANGELOG.md v0.30.3-beta | [`docs/TODO-GESAMT.md`](docs/TODO-GESAMT.md), Bereich "App & Plattform" |
-| 🌍 Mehrsprachigkeit - Buch-Übersetzung in eine Zielsprache + Birkenbihl-Methode (Interlinear-Text, zwei Sprachen übereinander). Noch kein Konzeptpapier, nur aus dem Chat übernommen (Sept. 2026), kein Code | [`docs/TODO-GESAMT.md`](docs/TODO-GESAMT.md), Bereich "Mehrsprachigkeit / Übersetzung" |
+| 🌍 Mehrsprachigkeit - Birkenbihl-Methode (Interlinear-Text) seit v0.31.0-beta als erster Reader-Tab gebaut (nur Gerätestimme, seitenweise on-demand, kein Konzeptpapier dazu). Noch offen: ganzes Buch übersetzen (separate Funktion), KI-Stimme für die Zielsprache | [`docs/TODO-GESAMT.md`](docs/TODO-GESAMT.md), Bereich "Mehrsprachigkeit / Übersetzung" |
 
 **Vor jeder Arbeit an einem dieser Themen erst das verlinkte Dokument lesen** - sonst werden bereits gefallene Entscheidungen neu diskutiert und verworfene Wege erneut probiert.
 
@@ -295,6 +303,6 @@ Feste Regeln:
 
 ## Versionsstand
 
-Aktuell `v0.30.7-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Version bei größeren Änderungen hochzählen (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).
+Aktuell `v0.31.0-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Version bei größeren Änderungen hochzählen (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).
 
 **Die vollständige Versionshistorie (was mit welcher Version kam, inkl. aller Entscheidungen) steht in [`CHANGELOG.md`](CHANGELOG.md), neueste Version zuerst.** Vor dem Einplanen eines Features dort nachsehen, sonst werden bereits gefallene Entscheidungen neu diskutiert. Neuer Eintrag bei jeder Versionserhöhung: oben in `CHANGELOG.md` ergänzen, nicht hier.

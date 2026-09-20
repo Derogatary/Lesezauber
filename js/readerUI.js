@@ -3,7 +3,7 @@ import { app } from './core.js';
 Object.assign(app.readerUI, {
     setTab(tab) {
         app.state.activeTab = tab;
-        ['Original', 'Erstleser', 'Quiz'].forEach(t => {
+        ['Original', 'Erstleser', 'Quiz', 'Birkenbihl'].forEach(t => {
             const btn = document.getElementById(`tab${t}`);
             const content = document.getElementById(`content${t}`);
             if (t.toLowerCase() === tab) {

@@ -1,7 +1,17 @@
 // Bei jeder inhaltlichen Änderung an einer dieser Dateien diese Nummer
 // erhöhen - sonst bekommen wiederkehrende Besucher weiter die alte
 // zwischengespeicherte Version ausgeliefert.
-const CACHE_NAME = 'lesezauber-shell-v48';
+const CACHE_NAME = 'lesezauber-shell-v49';
+
+// NEU (v49): Birkenbihl-Methode (Interlinear-Übersetzung) als neuer Reader-
+// Tab "🌍 Birkenbihl" - übersetzt den Seitentext per Gemini/Mistral in eine
+// wählbare Zielsprache (Einstellungen) und zerlegt ihn in Wort-Einheiten mit
+// wörtlicher deutscher Übersetzung in Zielsprachen-Wortstellung darunter.
+// Ergebnis wird pro Seite gecacht (page.birkenbihl). Vorlesen der Zielsprache
+// über die Gerätestimme mit passendem Sprachcode (neues, optionales
+// langOverride-Argument in app.tts.speakWithDevice()). Nur bei Geschichten
+// sichtbar, nicht bei Übungsheften. Neue Dateien: js/actions/birkenbihl.js,
+// js/render/birkenbihl.js. Siehe CHANGELOG.md.
 
 // NEU (v48): Silbenfarben jetzt EIN Umschalter fürs ganze Buch (Stufe 7 "Das
 // Layout") statt vorher pro Doppelseite - schreibt beim Umschalten auf alle
@@ -149,6 +159,7 @@ const APP_SHELL = [
     './js/actions/reorder.js',
     './js/actions/backup.js',
     './js/actions/bookQuiz.js',
+    './js/actions/birkenbihl.js',
     './js/actions/focusMode.js',
     './js/actions/pdfImport.js',
     './js/actions/vocabTrainer.js',
@@ -164,6 +175,7 @@ const APP_SHELL = [
     './js/render/library.js',
     './js/render/book.js',
     './js/render/reader.js',
+    './js/render/birkenbihl.js',
     './js/render/settings.js',
     './js/render/vocab.js',
     './js/render/workbook.js',

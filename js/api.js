@@ -478,6 +478,41 @@ Antworte AUSSCHLIESSLICH als valides JSON-Array ohne Markdown-Blöcke, exakt in 
         return Array.isArray(questions) ? questions : [];
     },
 
+    // NEU (Birkenbihl-Methode, docs/TODO-GESAMT.md Bereich "Mehrsprachigkeit"):
+    // übersetzt den deutschen Seitentext in die Zielsprache UND zerlegt das
+    // Ergebnis in kurze Wort-/Sinneinheiten mit je einer WÖRTLICHEN
+    // deutschen Übersetzung in der Wortstellung der Zielsprache (nicht
+    // idiomatisch) - genau das Prinzip der Methode: die fremde Grammatik
+    // "entdecken", statt sie als Regel zu lernen. Reiner Text-Aufruf, nach
+    // demselben Muster wie generateBookQuiz() oben.
+    async generateBirkenbihlDecoding(text, langId) {
+        const langInfo = app.birkenbihlLanguages.find(l => l.id === langId) || app.birkenbihlLanguages[0];
+        const prompt = `Du hilfst bei der Birkenbihl-Methode (Sprachenlernen durch wörtliche Übersetzung, nach Vera F. Birkenbihl - KEINE Grammatikregeln, das Gehirn erkennt Muster selbst).
+
+Schritt 1: Übersetze den folgenden deutschen Kinderbuch-Text natürlich und kindgerecht ins ${langInfo.promptLabel}.
+Schritt 2: Zerlege den ${langInfo.promptLabel}en Satz in kurze Wort-/Sinneinheiten (meist einzelne Wörter, ein Artikel darf mit seinem Nomen zusammenbleiben). Gib zu JEDER Einheit eine WÖRTLICHE deutsche Übersetzung, die exakt die Wortstellung des ${langInfo.promptLabel}en Satzes beibehält - auch wenn das auf Deutsch ungewöhnlich oder falsch klingt (z.B. Englisch "The dog is running" wörtlich "Der Hund ist rennend", NICHT die flüssige Übersetzung "Der Hund rennt"). Das ist bei dieser Methode ausdrücklich so gewollt.
+
+Deutscher Text:
+"""
+${text}
+"""
+
+Antworte AUSSCHLIESSLICH in validem JSON, ohne Markdown-Blöcke, exakt in diesem Format:
+{
+  "pairs": [
+    {"target": "Wort/Einheit auf ${langInfo.promptLabel}", "gloss": "wörtliche deutsche Übersetzung dieser Einheit"}
+  ]
+}`;
+
+        const result = await runTextPrompt(prompt, { temperature: 0.3 });
+        const pairs = Array.isArray(result?.pairs)
+            ? result.pairs
+                .filter(p => p && typeof p.target === 'string' && p.target.trim())
+                .map(p => ({ target: p.target.trim(), gloss: typeof p.gloss === 'string' ? p.gloss.trim() : '' }))
+            : [];
+        return { pairs };
+    },
+
     // NEU (Heft-Generator): erzeugt ein komplettes Übungsheft in EINEM
     // Aufruf - nicht einen pro Blatt. Reiner Text-Aufruf ohne Bild, nach dem
     // Muster von generateBookQuiz() oben.

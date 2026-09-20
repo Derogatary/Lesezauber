@@ -50,3 +50,18 @@ app.bookTypes = [
     { id: 'story',    label: 'Geschichte', icon: '📖', hint: 'Bilderbuch zum Vorlesen' },
     { id: 'workbook', label: 'Übungsheft', icon: '📝', hint: 'Arbeitsblätter zum Mitmachen' }
 ];
+
+// NEU (Birkenbihl-Methode, docs/TODO-GESAMT.md Bereich "Mehrsprachigkeit"):
+// Zielsprachen für den Interlinear-Modus im Reader (js/actions/birkenbihl.js,
+// js/render/birkenbihl.js). Neue Sprache hier ergänzen - taucht automatisch
+// im Einstellungen-Dropdown auf (js/render/settings.js), kein zweiter Ort.
+// speechLang ist der BCP-47-Code für die Gerätestimme (SpeechSynthesis
+// kennt keine reinen "en"/"fr"-Kürzel), promptLabel der deutsche Name, den
+// der KI-Prompt nennt.
+app.birkenbihlLanguages = [
+    { id: 'en', promptLabel: 'Englisch', label: '🇬🇧 Englisch', speechLang: 'en-GB' },
+    { id: 'fr', promptLabel: 'Französisch', label: '🇫🇷 Französisch', speechLang: 'fr-FR' },
+    { id: 'es', promptLabel: 'Spanisch', label: '🇪🇸 Spanisch', speechLang: 'es-ES' },
+    { id: 'it', promptLabel: 'Italienisch', label: '🇮🇹 Italienisch', speechLang: 'it-IT' },
+    { id: 'tr', promptLabel: 'Türkisch', label: '🇹🇷 Türkisch', speechLang: 'tr-TR' }
+];

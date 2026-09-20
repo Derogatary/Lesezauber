@@ -193,6 +193,14 @@ Object.assign(app.render, {
         document.getElementById('inputMistralKey').value = app.settings.mistralApiKey;
         personaSelect.value = app.settings.persona;
 
+        // NEU (Birkenbihl-Methode): Zielsprachen-Liste kommt aus config.js,
+        // gleiches Muster wie die Persona-Liste oben.
+        const birkenbihlSelect = document.getElementById('selectBirkenbihlLanguage');
+        if (birkenbihlSelect) {
+            birkenbihlSelect.innerHTML = app.birkenbihlLanguages.map(l => `<option value="${l.id}">${app.utils.sanitize(l.label)}</option>`).join('');
+            birkenbihlSelect.value = app.settings.birkenbihlLanguage;
+        }
+
         // NEU: gespeicherte Vorlesegeschwindigkeit anzeigen
         const rateInput = document.getElementById('inputSpeechRate');
         const rateLabel = document.getElementById('speechRateValue');

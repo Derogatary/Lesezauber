@@ -208,6 +208,8 @@ Object.assign(app.settingsConfig, {
         const voice = document.getElementById('selectVoice').value;
         const speechRate = parseFloat(document.getElementById('inputSpeechRate').value);
         const highlightColor = document.getElementById('inputHighlightColor').value;
+        // NEU (Birkenbihl-Methode): Zielsprache für den Interlinear-Modus.
+        const birkenbihlLanguage = document.getElementById('selectBirkenbihlLanguage').value;
 
         if (!locked) {
             const key = document.getElementById('inputApiKey').value.trim();
@@ -225,11 +227,13 @@ Object.assign(app.settingsConfig, {
         app.settings.voiceUri = voice;
         app.settings.speechRate = speechRate;
         app.settings.highlightColor = highlightColor;
+        app.settings.birkenbihlLanguage = birkenbihlLanguage;
 
         localStorage.setItem('lz_persona', persona);
         localStorage.setItem('lz_voice', voice);
         localStorage.setItem('lz_speech_rate', String(speechRate));
         localStorage.setItem('lz_highlight_color', highlightColor);
+        localStorage.setItem('lz_birkenbihl_lang', birkenbihlLanguage);
         document.documentElement.style.setProperty('--speech-highlight-color', highlightColor);
 
         app.ui.toast('Einstellungen gespeichert!', '✅');

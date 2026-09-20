@@ -30,6 +30,10 @@ function applyBookTypeLabels(isWorkbook) {
     // Rätselfragen beim Auto-Vorlesen gibt es nur bei Geschichten.
     document.getElementById('autoQuizToggleRow')?.classList.toggle('hidden', isWorkbook);
     document.getElementById('pageQuizCard')?.classList.toggle('hidden', isWorkbook);
+
+    // NEU (Birkenbihl-Methode): der Tab passt nur zu Erzähltext, nicht zu
+    // einer Übungsheft-Aufgabenstellung - deshalb bei Heften ganz ausgeblendet.
+    document.getElementById('tabBirkenbihl')?.classList.toggle('hidden', isWorkbook);
 }
 
 // NEU: "Kino-Modus" (siehe docs/KONZEPT-Video.md, Abschnitt 3, Stufe 1) -
@@ -173,10 +177,20 @@ Object.assign(app.render, {
         }
 
         document.getElementById('chatHistory').innerHTML = '';
+
+        // NEU (Birkenbihl-Methode): unabhängig von der Persona-Variante oben -
+        // zeigt einen bereits vorhandenen Zwischenspeicher (page.birkenbihl)
+        // sofort an, oder sonst den "Erzeugen"-Knopf.
+        if (!isWorkbook) app.render.birkenbihlTab(page);
+
         // Den zuletzt gewählten Tab beibehalten statt immer auf "Original"
         // zurückzuspringen - nötig, damit der Auto-Vorlese-Modus beim
         // Seitenwechsel im gleichen Tab (z.B. Erstleser) weiterläuft.
-        app.readerUI.setTab(app.state.activeTab);
+        // FIX (Birkenbihl-Methode): der Tab existiert bei Übungsheften gar
+        // nicht (siehe applyBookTypeLabels oben) - ohne diese Abfrage bliebe
+        // sein Inhalt sichtbar, obwohl der zugehörige Tab-Knopf ausgeblendet
+        // ist, falls zuvor ein Geschichte-Buch auf diesem Tab offen war.
+        app.readerUI.setTab(isWorkbook && app.state.activeTab === 'birkenbihl' ? 'original' : app.state.activeTab);
 
         const autoBtn = document.getElementById('btnAutoRead');
         if (autoBtn) {

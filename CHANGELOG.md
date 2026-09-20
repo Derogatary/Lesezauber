@@ -6,6 +6,17 @@ vollständige Historie, neueste Version zuerst. Diese Datei wurde aus
 `CLAUDE.md` ausgelagert, weil der Abschnitt dort mit der Zeit zu groß für
 schnellen Kontext wurde; inhaltlich unverändert übernommen.
 
+## v0.31.0-beta
+
+Birkenbihl-Methode (Interlinear-Übersetzung) als erste Umsetzung des in v0.30.9-beta notierten Mehrsprachigkeits-Punkts (docs/TODO-GESAMT.md, Bereich "Mehrsprachigkeit"), auf Nutzerwunsch direkt begonnen statt nur geplant:
+
+- **Neuer Reader-Tab "🌍 Birkenbihl"** neben Original/Erstleser/Frag KI - übersetzt den aktuellen Seitentext per Gemini (Mistral-Fallback) in eine in den Einstellungen wählbare Zielsprache (Englisch/Französisch/Spanisch/Italienisch/Türkisch, Liste in `app.birkenbihlLanguages`, `js/config.js`) und zerlegt das Ergebnis in kurze Wort-/Sinneinheiten - jede mit einer WÖRTLICHEN deutschen Übersetzung darunter, die exakt die Wortstellung der Zielsprache beibehält (nicht die flüssige, idiomatische Übersetzung) - genau das Prinzip der Methode nach Vera F. Birkenbihl: die fremde Grammatik selbst "entdecken" statt sie als Regel zu pauken.
+- Nur bei Geschichten sichtbar, nicht bei Übungsheften (`js/render/reader.js`, `applyBookTypeLabels()`) - eine Aufgabenstellung eignet sich nicht für diese Lernmethode.
+- Ergebnis wird **pro Seite gecacht** (`page.birkenbihl: { lang, pairs: [{target, gloss}], generatedAt }`), gleiches Kostendenken wie beim Buch-Quiz - kein erneuter API-Aufruf beim erneuten Öffnen des Tabs, nur bei explizitem "Neu erzeugen" oder wenn seither eine andere Zielsprache gewählt wurde (dann erscheint ein Hinweis, aber KEINE automatische Neu-Erzeugung).
+- **Vorlesen der Zielsprache** über einen neuen 🔊-Knopf im Tab - bewusst über die Gerätestimme mit dem passenden Sprachcode, nicht über die konfigurierte deutsche KI-Stimme. Dafür bekommt `app.tts.speakWithDevice()` ein neues, optionales viertes Argument `langOverride` - ohne Angabe unverändertes Verhalten für den gesamten bestehenden Code.
+- Neue Dateien: `js/actions/birkenbihl.js` (Erzeugen + Vorlesen), `js/render/birkenbihl.js` (Tab-Inhalt). Neue Einstellung `app.settings.birkenbihlLanguage` (Default Englisch) mit eigenem Dropdown in den Einstellungen.
+- **Bewusst nicht Teil dieser ersten Fassung:** KI-Stimmen-Anbindung für die Zielsprache (nur Gerätestimme), automatische Buch-weite Übersetzung (dieser Tab übersetzt nur die gerade offene Seite, on-demand). Beides mögliche spätere Ausbauschritte, siehe `docs/TODO-GESAMT.md`.
+
 ## v0.30.9-beta
 
 Zwei Nutzerwünsche aus der Werkstatt-Rückmeldung umgesetzt, keine neuen Dateien:

@@ -140,7 +140,16 @@ Object.assign(app.tts, {
 
     // Die eingebaute Stimme des Geräts. Erwartet bereits aufbereiteten
     // Text aus _prepare() (emoji-frei, Hervorhebung steht schon im DOM).
-    speakWithDevice(cleanText, onEnd, highlightElementId) {
+    // NEU (Birkenbihl-Methode): optionales viertes Argument langOverride -
+    // BCP-47-Sprachcode (z.B. "en-GB"), wenn NICHT die konfigurierte
+    // deutsche Stimme gesprochen werden soll, sondern eine echte Fremd-
+    // sprache (siehe app.actions.speakBirkenbihlTarget(), js/actions/
+    // birkenbihl.js). Ohne Angabe unverändertes Verhalten - alle
+    // bestehenden Aufrufe bleiben deutsch wie bisher. Mit Angabe wird
+    // bewusst KEINE app.settings.voiceUri-Stimme genutzt (die ist für
+    // Deutsch gewählt) - der Browser sucht sich selbst eine zur Sprache
+    // passende Systemstimme, wenn nur utter.lang gesetzt ist.
+    speakWithDevice(cleanText, onEnd, highlightElementId, langOverride) {
         // Sehr seltener Fall (alter/eingeschränkter Browser): Ohne
         // Sprachausgabe würde das Auto-Vorlesen sonst stumm im
         // Sekundentakt durchs ganze Buch blättern - deshalb hier abbrechen
@@ -160,7 +169,10 @@ Object.assign(app.tts, {
         const utter = new SpeechSynthesisUtterance(cleanText);
         utter.rate = app.settings.speechRate || 0.9;
 
-        if (app.settings.voiceUri) {
+        if (langOverride) {
+            // Bewusst KEIN utter.voice setzen - siehe Kommentar oben.
+            utter.lang = langOverride;
+        } else if (app.settings.voiceUri) {
             const voices = this.synth.getVoices();
             const chosen = voices.find(v => v.voiceURI === app.settings.voiceUri);
             if (chosen) {

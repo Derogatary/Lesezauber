@@ -4,6 +4,10 @@ Object.assign(app.settings, {
     apiKey: localStorage.getItem('lz_api_key') || '',
     mistralApiKey: localStorage.getItem('lz_mistral_key') || '',
     persona: localStorage.getItem('lz_persona') || 'standard',
+    // NEU (Birkenbihl-Methode): Zielsprache für den Interlinear-Modus im
+    // Reader - global wie die Persona, nicht pro Buch (siehe app.birkenbihlLanguages
+    // in js/config.js, js/actions/birkenbihl.js).
+    birkenbihlLanguage: localStorage.getItem('lz_birkenbihl_lang') || 'en',
     voiceUri: localStorage.getItem('lz_voice') || '',
     backgroundPregenEnabled: localStorage.getItem('lz_bg_pregen') === '1',
     // NEU: einstellbare Vorlesegeschwindigkeit (0.5 = langsam, 1.5 = schnell)
