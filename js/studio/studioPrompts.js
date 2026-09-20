@@ -33,6 +33,25 @@ function guardrailsBlock() {
 - Text bleibt IMMER reiner Text - keine Formatierungsanweisungen, kein Bild wird hier beschrieben oder erzeugt.`;
 }
 
+// NEU (Nutzerwunsch: "was landet im Prompt" - Bild-Prompts hatten bisher
+// 1:1 denselben guardrailsBlock() wie die Text-Generierung bekommen, siehe
+// js/studio/imageSource.js buildPrompt(). Das ist bei Gemini (ein
+// Sprachmodell mit Bildausgabe, kann Meta-Regeln als solche erkennen und
+// ignorieren) wohl kein Problem, bei Pollinations (reines Text-zu-Bild-
+// Diffusionsmodell OHNE Sprachverständnis - jedes Wort wird als visueller
+// Hinweis gewichtet, nicht als Anweisung gelesen) aber vermutlich eher
+// Störung: Wörter wie "Urheberrecht", "Amazon KDP" oder der Satz "Text
+// bleibt reiner Text - kein Bild wird hier erzeugt" haben im Bild nichts zu
+// suchen und verdünnen nur die eigentliche Bildbeschreibung. Deshalb ein
+// EIGENER, kurzer Satz nur für Bild-Prompts statt des kompletten Blocks -
+// der einzige Teil aus guardrailsBlock(), der für ein BILD (statt Text)
+// überhaupt relevant ist (keine geschützten Figuren/Werke im Bild
+// nachzeichnen), der Rest (gemeinfreie Stoffe, Namen beibehalten, Text
+// bleibt Text) betrifft nur die Geschichte, nicht die Illustration.
+function imageGuardrailsLine() {
+    return 'Keine urheber- oder markenrechtlich geschützten Figuren, Welten oder Logos zeichnen - auch nicht "im Stil von ..." einer bekannten Marke/eines bekannten Werks.';
+}
+
 // NEU: Alters-/Lesestufenregeln. "Erstlesebuch" ist laut Konzept A.2 kein
 // eigener Werktyp, sondern ein Regelprofil auf dem Bilderbuch - genau das
 // bildet dieser Block ab, statt eine eigene Textgenerierung zu brauchen.
@@ -195,6 +214,7 @@ function parseMasterSetupResponse(rawText) {
 Object.assign(app.studio, {
     prompts: {
         guardrailsBlock,
+        imageGuardrailsLine,
         buildMasterSetupPrompt,
         parseMasterSetupResponse,
         GRADE_LABEL, SUBJECT_LABEL,

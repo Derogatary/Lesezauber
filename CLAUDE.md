@@ -98,7 +98,7 @@ import './actions/meineNeueDatei.js';
 | `js/actions/videoPreview.js` | Film-Vorschau ("🎬 Film"): spielt den Zeitplan live auf sichtbarem Canvas ab, bewusst stumm/ohne Synthese - kostet also nichts |
 | `js/actions/videoExport.js` | Video-Export Teil 2: Ton aus `renderPageSegments()`, Frames per `VideoEncoder`, Ton per `AudioEncoder`, Datei per `mp4-muxer` über OPFS. Codec-Leiter statt festem Codec, Fortschritt+Abbruch, Größenschätzung vorab. Bei `origin: 'scan'` seit v0.36.0-beta kein Komplett-Block mehr, sondern Passwort-Abfrage (`app.actions.videoExportNeedsPassword()`, fest verdrahtetes Passwort `admin` - keine echte Zugriffskontrolle, nur eine Absichts-Bremse mit Rechte-Hinweis, siehe Kommentar in der Datei und docs/KONZEPT-Video.md Abschnitt 7) |
 | `js/studio/studioCore.js` | SchreibZauber: `app.studio`-Projekt-CRUD, Stufen-Logik (Idee/Bauplan/Geschichte), Platzhalter-Aufruf pro Doppelseite |
-| `js/studio/studioPrompts.js` | SchreibZauber: alle Prompt-Bausteine inkl. `guardrailsBlock()` (Veröffentlichungs-Leitplanken, Entscheidung 6) |
+| `js/studio/studioPrompts.js` | SchreibZauber: alle Prompt-Bausteine inkl. `guardrailsBlock()` (Veröffentlichungs-Leitplanken, Entscheidung 6) - NUR für Text-Prompts. Seit v0.37.1-beta zusätzlich `imageGuardrailsLine()`: kurzer, bild-spezifischer Ersatz für Bild-Prompts (`js/studio/imageSource.js`) - der volle `guardrailsBlock()` (Amazon-KDP-Absatz, "Text bleibt reiner Text"...) gehört NICHT in einen Bild-Prompt, besonders nicht bei reinen Diffusionsmodellen ohne Sprachverständnis wie Pollinations |
 | `js/studio/studioApi.js` | SchreibZauber: eigener Gemini/Mistral-Textaufruf fürs Manuskript (gleiche Keys wie `js/api.js`, getrennte Funktionen) |
 | `js/studio/studioExport.js` | SchreibZauber: Projekt → normales Buch in `app.library` ("Ins Regal stellen") - fügt Titel-/Rück-/Autorenseite aus `studioMetaPages.js` ein |
 | `js/studio/studioMetaPages.js` | SchreibZauber: Titelseite/Klappentext/Autorenseite als Canvas-Textseiten (Platzhaltertext bei leeren Feldern) - `app.studio.buildMetaPages()`, nur von `studioExport.js` aufgerufen |
@@ -309,6 +309,6 @@ Feste Regeln:
 
 ## Versionsstand
 
-Aktuell `v0.37.0-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Version bei größeren Änderungen hochzählen (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).
+Aktuell `v0.37.1-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Version bei größeren Änderungen hochzählen (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).
 
 **Die vollständige Versionshistorie (was mit welcher Version kam, inkl. aller Entscheidungen) steht in [`CHANGELOG.md`](CHANGELOG.md), neueste Version zuerst.** Vor dem Einplanen eines Features dort nachsehen, sonst werden bereits gefallene Entscheidungen neu diskutiert. Neuer Eintrag bei jeder Versionserhöhung: oben in `CHANGELOG.md` ergänzen, nicht hier.

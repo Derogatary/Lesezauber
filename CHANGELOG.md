@@ -6,6 +6,13 @@ vollständige Historie, neueste Version zuerst. Diese Datei wurde aus
 `CLAUDE.md` ausgelagert, weil der Abschnitt dort mit der Zeit zu groß für
 schnellen Kontext wurde; inhaltlich unverändert übernommen.
 
+## v0.37.1-beta
+
+Bild-Prompts bekamen bisher den kompletten Text-Prompt-Leitplanken-Block mit (Nutzerfrage "was landet im Prompt?" anhand eines echten Pollinations-Beispiel-Screenshots):
+
+- **`buildPrompt()` (`js/studio/imageSource.js`) hängte an JEDEN Bild-Prompt (Gemini UND Pollinations) 1:1 den kompletten `guardrailsBlock()` an** - eigentlich für die Text-Generierung gedacht, inkl. eines Absatzes über Amazon-KDP-Veröffentlichung, gemeinfreie Stoffe und dem Satz "Text bleibt IMMER reiner Text - kein Bild wird hier beschrieben oder erzeugt". Bei Gemini (Sprachmodell mit Bildausgabe) vermutlich unproblematisch, bei Pollinations (reines Text-zu-Bild-Diffusionsmodell OHNE Sprachverständnis - jedes Wort zählt als visueller Hinweis, nicht als Regel) aber eher Störung: der lange, bildfremde Text verdünnt die eigentliche Bildbeschreibung.
+- **Neue, kurze Funktion `app.studio.prompts.imageGuardrailsLine()`** (`js/studio/studioPrompts.js`) ersetzt den kompletten Block im Bild-Prompt - nur noch der für ein BILD tatsächlich relevante Teil (keine urheber-/markenrechtlich geschützten Figuren/Welten/Logos zeichnen, auch nicht "im Stil von..."). Der volle `guardrailsBlock()` bleibt für alle Text-Prompts (Manuskript, Bauplan etc.) unverändert.
+
 ## v0.37.0-beta
 
 Pollinations.ai als zweite, kostenlose Bildquelle in der SchreibZauber-Werkstatt (Nutzerwunsch, nach eigener Recherche zu KI-Bildgenerierung mit vorgeschlagener Architektur "Gemini Pro" - Rückmeldung dazu: die App hat bereits eine Adapter-Schicht `app.studio.imageSource` mit genau diesem Erweiterungspunkt, ein eigener Server mit dort hinterlegtem API-Key (zwei der drei vorgeschlagenen Varianten) hätte die bewusst gesetzte Architekturentscheidung "komplett client-seitig, kein eigener Server" aus CLAUDE.md aufgebrochen und wurde deshalb NICHT übernommen):

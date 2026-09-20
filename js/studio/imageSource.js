@@ -42,12 +42,16 @@ function buildPrompt({ formatId, sketch, style, characters = [], textPos }) {
             ? `Halte im Bereich "${zoneLabel}" eine ruhige, kontrastarme Fläche frei, auf der später Text liegt.`
             : '',
         'Kindgerecht, freundlich, keine Gewalt, keine Angstmotive, keine realen Personen, keine Markenzeichen.',
-        // NEU (Stufe 2): die Veröffentlichungs-Leitplanken (Entscheidung 6)
-        // MÜSSEN laut docs/KONZEPT-SchreibZauber.md 1:1 in JEDEN neuen
-        // Prompt einfließen, auch in den Bild-Prompt - deshalb hier
-        // unverändert angehängt, nicht neu formuliert (siehe
-        // app.studio.prompts.guardrailsBlock() in studioPrompts.js).
-        app.studio.prompts.guardrailsBlock()
+        // FIX (Nutzerwunsch "was landet im Prompt"): hier stand bisher der
+        // komplette guardrailsBlock() (Text-Prompt-Leitplanken inkl. Amazon-
+        // KDP-Absatz und "Text bleibt reiner Text, kein Bild wird hier
+        // erzeugt") 1:1 mit im Bild-Prompt - bei Pollinations (reines
+        // Text-zu-Bild-Modell ohne Sprachverständnis) verdünnt/stört so ein
+        // langer, bildfremder Text-Absatz eher die eigentliche
+        // Bildbeschreibung, statt als Regel verstanden zu werden. Jetzt nur
+        // noch der für ein BILD tatsächlich relevante Satz daraus, siehe
+        // app.studio.prompts.imageGuardrailsLine() in studioPrompts.js.
+        app.studio.prompts.imageGuardrailsLine()
     ];
     return parts.filter(Boolean).join(' ');
 }
