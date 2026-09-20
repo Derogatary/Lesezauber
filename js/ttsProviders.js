@@ -381,44 +381,65 @@ function escapeSsmlWithOffsets(text) {
     return { escaped, offsetMap };
 }
 
-// Baut das komplette SSML-Dokument (ein <speak>-Wurzelelement mit
-// speechify:style-Emotion drumherum, siehe SSML-Doku "Supported SSML
-// Tags") plus die volle Versatz-Tabelle (Länge = SSML-String), die jede
-// Position im gesendeten SSML auf die passende Position im ANGEZEIGTEN
-// Text zurückführt. Die Positionen im Vorspann (<speak><speechify:style...)
-// zeigen auf 0 - dort kann laut Speechify ohnehin nie ein Wortanfang
-// liegen, die Tags selbst werden nicht mitgesprochen.
-function buildSpeechifySsml(text, emotion) {
-    const prefix = emotion ? `<speak><speechify:style emotion="${emotion}">` : '<speak>';
-    const suffix = emotion ? '</speechify:style></speak>' : '</speak>';
+// Baut das komplette SSML-Dokument plus die volle Versatz-Tabelle (Länge =
+// SSML-String), die jede Position im gesendeten SSML auf die passende
+// Position im ANGEZEIGTEN Text zurückführt. Die Positionen in den
+// umschließenden Tags zeigen auf 0 - dort kann laut Speechify ohnehin nie
+// ein Wortanfang liegen, die Tags selbst werden nicht mitgesprochen (siehe
+// contentBounds/alignmentFromSpeechMarks).
+//
+// NEU (Nutzerwunsch: "vollen Umfang von Speechify ausnutzen") - zwei
+// UNABHÄNGIGE, verschachtelbare Ebenen statt nur der Emotion:
+// - speechify:style emotion="..." (Persona-Gefühl, siehe emotionHintFor())
+// - prosody rate="...%" (Vorlesegeschwindigkeit, siehe app.settings.speechRate)
+// Beide können einzeln, zusammen oder gar nicht vorkommen - die Prozent-
+// Länge der jeweils geöffneten Tags wird einfach aufsummiert, die restliche
+// Versatz-Logik bleibt unverändert.
+function buildSpeechifySsml(text, { emotion, ratePercent } = {}) {
+    let openTags = '<speak>';
+    let closeTags = '</speak>';
+    if (emotion) {
+        openTags += `<speechify:style emotion="${emotion}">`;
+        closeTags = '</speechify:style>' + closeTags;
+    }
+    if (typeof ratePercent === 'number') {
+        const sign = ratePercent >= 0 ? '+' : '';
+        openTags += `<prosody rate="${sign}${ratePercent}%">`;
+        closeTags = '</prosody>' + closeTags;
+    }
     const { escaped, offsetMap } = escapeSsmlWithOffsets(text);
-    const fullOffsetMap = new Array(prefix.length).fill(0).concat(offsetMap);
-    // NEU (siehe Kommentar an alignmentFromSpeechMarks): Grenzen des
-    // tatsächlich gesprochenen Textabschnitts innerhalb des SSML-Strings -
-    // alles davor/danach sind reine Tags, dort kann kein echtes Wort beginnen.
+    const fullOffsetMap = new Array(openTags.length).fill(0).concat(offsetMap);
     return {
-        ssml: prefix + escaped + suffix,
+        ssml: openTags + escaped + closeTags,
         offsetMap: fullOffsetMap,
-        contentBounds: { start: prefix.length, end: prefix.length + escaped.length }
+        contentBounds: { start: openTags.length, end: openTags.length + escaped.length }
     };
 }
 
-async function speechifySynthesize(text, { voice, signal, emotion }) {
+async function speechifySynthesize(text, { voice, signal, emotion, rate }) {
     const key = app.settings.speechifyKey;
     if (!key) {
         throw new TtsError('Kein Speechify-API-Key hinterlegt.', { fatal: true, code: 'NO_KEY' });
     }
 
-    // NEU (Nutzerwunsch: "vollen Umfang von Speechify ausnutzen"): mit
-    // eingeschaltetem Persona-Stil und einer für die aktuelle Persona
-    // hinterlegten Emotion (js/config.js speechifyEmotion) wird der Text in
-    // SSML verpackt statt roh gesendet - Speechify erkennt SSML automatisch
-    // am <speak>-Wurzelelement, kein separates Feld nötig laut API-Doku.
+    // NEU (Nutzerwunsch: "vollen Umfang von Speechify ausnutzen - bietet
+    // Speechify nicht noch mehr Funktionen durch SSML?"): die bestehende
+    // Vorlesegeschwindigkeit (app.settings.speechRate, Regler in den
+    // Einstellungen) wurde bei Speechify bisher nur NACHTRÄGLICH über
+    // audio.playbackRate im Browser umgesetzt (gröber, kann bei starker
+    // Abweichung leicht "gepresst" klingen) - jetzt zusätzlich nativ über
+    // <prosody rate="...%">, sobald echtes SSML ohnehin gebraucht wird oder
+    // die Geschwindigkeit vom Normaltempo abweicht. 1.0 = 0% (Normaltempo),
+    // z.B. 0.9 (Standard-Einstellung) -> "-10%". SSML-Doku erlaubt -50% bis
+    // +9900% - der Einstellungen-Regler bewegt sich zwischen 0.5 und 1.5,
+    // die untere Grenze liegt also genau auf der erlaubten Kante.
+    const ratePercent = (typeof rate === 'number' && rate !== 1) ? Math.round((rate - 1) * 100) : null;
+
     let input = text;
     let offsetMap = null;
     let contentBounds = null;
-    if (emotion) {
-        const built = buildSpeechifySsml(text, emotion);
+    if (emotion || ratePercent !== null) {
+        const built = buildSpeechifySsml(text, { emotion, ratePercent });
         input = built.ssml;
         offsetMap = built.offsetMap;
         contentBounds = built.contentBounds;
@@ -654,6 +675,17 @@ Object.assign(app.ttsProviders, {
             ],
             defaultVoice: 'beatrice_32',
             supportsStyle: false,
+            // NEU (Nutzerwunsch: "vollen Umfang von Speechify ausnutzen - bietet
+            // Speechify nicht noch mehr Funktionen durch SSML?"): die
+            // Vorlesegeschwindigkeit lief bisher NUR über audio.playbackRate im
+            // Browser (Rückfall-Weg für Anbieter ohne eigene Geschwindigkeits-
+            // Steuerung, siehe app.ttsNeural) - jetzt nativ über SSML
+            // <prosody rate="...%"> (speechifySynthesize()), klingt bei
+            // stärkerer Abweichung vom Normaltempo natürlicher. supportsRate:
+            // true schaltet den Browser-Rückfall ab (sonst würde doppelt
+            // verlangsamt/beschleunigt) UND sorgt dafür, dass der Zwischen-
+            // speicher-Schlüssel nach Geschwindigkeit unterscheidet.
+            supportsRate: true,
             // NEU (Nutzerwunsch: "vollen Umfang von Speechify ausnutzen"):
             // eigene Emotion-Markierung statt Freitext-Stilhinweis (den
             // versteht Speechify nicht) - siehe emotionHintFor() unten und

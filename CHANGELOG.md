@@ -6,6 +6,15 @@ vollständige Historie, neueste Version zuerst. Diese Datei wurde aus
 `CLAUDE.md` ausgelagert, weil der Abschnitt dort mit der Zeit zu groß für
 schnellen Kontext wurde; inhaltlich unverändert übernommen.
 
+## v0.36.7-beta
+
+Rätselfragen-Korrektur + Speechify-Vorlesegeschwindigkeit nativ über SSML (Nutzer-Feedback nach dem ersten Test):
+
+- **Rätselfragen bezogen sich nur noch auf den Text, nie mehr aufs Bild** - Überkorrektur aus v0.36.6-beta rückgängig gemacht: Fragen dürfen jetzt wieder Text ODER Bild ODER Gefühle betreffen. Zusätzlich drei Fragetypen zum Abwechseln in den Prompt aufgenommen (`js/api.js`, beide Varianten): Erinnern (was ist passiert/zu sehen), Verstehen (warum, was fühlt eine Figur), Übertragen (bezieht das Kind selbst mit ein, z.B. "Wann warst du selbst schon einmal traurig?" - Nutzer-Beispiel für die dritte Stufe).
+- **Speechify nutzt jetzt auch `<prosody rate="...%">`:** die bestehende Vorlesegeschwindigkeit (`app.settings.speechRate`) lief bei Speechify bisher nur nachträglich über `audio.playbackRate` im Browser (Rückfall-Mechanismus für Anbieter ohne eigene Geschwindigkeitssteuerung) - klingt bei stärkerer Abweichung vom Normaltempo leicht gepresst/gedehnt. Jetzt zusätzlich nativ über SSML, sobald ohnehin schon SSML gebraucht wird (Emotion) oder die Geschwindigkeit vom Normaltempo abweicht. `buildSpeechifySsml()` verschachtelt Emotion- und Tempo-Tag unabhängig voneinander (beide, nur eins, oder keins), `contentBounds`/Versatz-Tabelle bleiben dabei korrekt. Mit einem Testskript gegen die Kombination aus beiden Tags gegengeprüft.
+- Andere von Speechify angebotene SSML-Bausteine (`<break>` für Pausen, `<emphasis>`, `<sub>` für Aussprache-Korrekturen) bewusst NICHT eingebaut - kein konkreter Anwendungsfall dafür in der App, würden nur ungenutzte Komplexität hinzufügen.
+- Speicherplatz-Frage geklärt: 500 MB bezog sich auf einen **Video-Export**, nicht auf die App insgesamt. Bei ca. 2,6 Mbit/s Video- + 64 kbit/s Tonspur (siehe `js/actions/videoExport.js` `bitrateFor()`) sind das ca. 20 MB/Minute - 500 MB entsprechen also einem ca. 25-minütigen Video, was für ein komplettes, vorgelesenes Buch (inkl. Bildbeschreibungen/Quiz) realistisch ist. Kein Bug - wer eine kleinere Datei möchte, bekommt mit dem quadratischen 1:1-Format (nur 1080×1080 statt 1080×1920/1920×1080) ca. 44% weniger Bildpunkte und damit spürbar weniger Größe bei gleicher Länge.
+
 ## v0.36.6-beta
 
 Erste echte Test-Runde mit dem Nutzer ausgewertet - mehrere Funde behoben:
