@@ -1,5 +1,7 @@
 import { app } from '../core.js';
 import './worksheetCanvas.js';
+// NEU: Suchsel-Generator (Aufgabentyp 🔍), siehe dortiger Modul-Kommentar.
+import './wordSearch.js';
 
 // ================= SchreibZauber: Arbeitsheft-Werktyp (Ausbaustufe 4) =================
 // Siehe docs/KONZEPT-SchreibZauber.md TEIL C.4 + TEIL E ("4 - Arbeitsheft").
@@ -28,7 +30,9 @@ import './worksheetCanvas.js';
 // diese Ausbaustufe wirklich baut (Auftrag: "lieber 2-3 Typen fertig als
 // alle neun halbfertig" - hier sind es fünf geworden, alle rein text-/
 // zeichenbasiert, brauchen also kein einziges Bild, siehe worksheetCanvas.js).
-// Die restigen vier (Nachspuren, Ausmalen, Suchsel, Schneiden&Kleben)
+// NEU: Suchsel ist inzwischen als sechster Typ dazugekommen (eigener
+// Gitter-Generator in js/studio/wordSearch.js, kein Bild nötig).
+// Die restlichen drei (Nachspuren, Ausmalen, Schneiden&Kleben)
 // brauchen entweder eine Kontur-/Rasterschrift oder ein Ausmalbild - beides
 // eine eigene, spätere Ausbaustufe (siehe docs/KONZEPT-Bildquellen.md
 // Abschnitt 1.5/5 Punkt 4 zur Clipart-Frage dafür).
@@ -39,7 +43,7 @@ const TASK_TYPES = [
     { id: 'nachspuren', icon: '〰️', label: 'Nachspuren', implemented: false },
     { id: 'ausmalen', icon: '🎨', label: 'Ausmalen nach Regel', implemented: false },
     { id: 'rechnen', icon: '➕', label: 'Rechnen', implemented: true },
-    { id: 'suchsel', icon: '🔍', label: 'Suchsel / Rätsel', implemented: false },
+    { id: 'suchsel', icon: '🔍', label: 'Suchsel / Rätsel', implemented: true },
     { id: 'schneiden', icon: '✂️', label: 'Schneiden & Kleben', implemented: false },
     { id: 'frei', icon: '📝', label: 'Frei schreiben', implemented: true }
 ];
@@ -72,6 +76,7 @@ function blankTaskData(type) {
         case 'rechnen': return { problems: [''], answers: [0] };
         case 'zuordnen': return { left: [''], right: [''], matches: [0] };
         case 'frei': return { prompt: '', lines: 4 };
+        case 'suchsel': return app.studio.wordSearch.buildTaskData([], 1);
         default: return {};
     }
 }
@@ -112,6 +117,10 @@ function sanitizeTaskData(type, raw) {
                 prompt: d.prompt || '',
                 lines: Number.isInteger(d.lines) ? Math.max(2, Math.min(8, d.lines)) : 4
             };
+        case 'suchsel':
+            // NEU: Gitter IMMER selbst bauen, nie ein von der KI geliefertes
+            // übernehmen - siehe Kommentar in js/studio/wordSearch.js.
+            return app.studio.wordSearch.buildTaskData(d.words, Number.isInteger(d.seed) ? d.seed : 1);
         default:
             return {};
     }
@@ -123,16 +132,25 @@ function normalizeTask(raw) {
     // Vorgabe, siehe TASK_SCHEMA_HINT-Kommentar in studioPrompts.js).
     const type = IMPLEMENTED_TYPES.includes(raw?.type) ? raw.type : 'frei';
     const instruction = raw?.instruction || '';
+    const data = sanitizeTaskData(type, raw?.data);
     return {
         id: app.studio.genId('task'),
         type,
         instruction,
         explanation: raw?.explanation || instruction,
-        data: sanitizeTaskData(type, raw?.data),
-        solution: type === 'frei' ? '' : (raw?.solution || ''),
+        data,
+        solution: taskSolution(type, data, raw?.solution),
         activeLevel: 2,
         altLevels: {}
     };
+}
+
+// NEU (Suchsel): die Lösung eines Suchsels kennt nur die App (Positionen im
+// selbst gebauten Gitter) - die KI-Lösung wird dort deshalb ersetzt.
+function taskSolution(type, data, rawSolution) {
+    if (type === 'frei') return '';
+    if (type === 'suchsel') return app.studio.wordSearch.solutionText(data.placements);
+    return rawSolution || '';
 }
 
 // NEU: löst auf, welcher Inhalt gerade "aktiv" ist (Standard oder eine
@@ -164,7 +182,8 @@ const HELP_STEP = {
     ankreuzen: 'Tipp: Lies erst alle Antworten durch, bevor du ankreuzt.',
     rechnen: 'Tipp: Nutze deine Finger oder kleine Striche zum Zählen, wenn du unsicher bist.',
     zuordnen: 'Tipp: Sprich jedes Wort einmal laut - dann findest du leichter das passende Gegenstück.',
-    frei: 'Tipp: Schreib einfach drauflos - Rechtschreibfehler sind hier nicht schlimm.'
+    frei: 'Tipp: Schreib einfach drauflos - Rechtschreibfehler sind hier nicht schlimm.',
+    suchsel: 'Tipp: Die Wörter verstecken sich nur von links nach rechts oder von oben nach unten. Fahre mit dem Finger Zeile für Zeile entlang.'
 };
 
 Object.assign(app.studio, {
@@ -386,12 +405,38 @@ Object.assign(app.studio, {
             data.problems = rawValue.split('\n').map(s => s.trim()).filter(Boolean);
         } else if (key === 'answers' || key === 'matches') {
             data[key] = rawValue.split(',').map(s => s.trim()).filter(s => s !== '').map(Number);
+        } else if (key === 'words') {
+            // NEU (Suchsel): neue Wörter = neues Gitter + neue Lösung, sonst
+            // stünden im Druck Wörter, die gar nicht im Gitter versteckt sind.
+            const target = editableTarget(task);
+            target.data = app.studio.wordSearch.buildTaskData(rawValue.split(','), data.seed || 1);
+            target.solution = taskSolution('suchsel', target.data);
+            if (target.data.skipped.length) {
+                app.ui.toast(`Kein Platz im Gitter für: ${target.data.skipped.join(', ')} (max. 10 Buchstaben pro Wort).`, 'ℹ️');
+            }
+            app.dbOps.saveProject(project);
+            app.render.studioWorkbookWizard(3);
+            return;
         } else if (key === 'correctIndex' || key === 'lines') {
             data[key] = parseInt(rawValue, 10) || 0;
         } else {
             data[key] = rawValue;
         }
         app.dbOps.saveProject(project);
+    },
+
+    // NEU (Suchsel): dieselben Wörter anders im Gitter verteilen - kostet
+    // keinen KI-Aufruf, nur einen neuen Seed für den Generator.
+    reshuffleWordSearch(chapterIdx, pageIdx, taskIdx) {
+        const project = currentProject();
+        const task = project?.worksheet?.chapters[chapterIdx]?.pages[pageIdx]?.tasks[taskIdx];
+        if (!task || task.type !== 'suchsel') return;
+        const target = editableTarget(task);
+        const seed = ((target.data && target.data.seed) || 1) + 1;
+        target.data = app.studio.wordSearch.buildTaskData(target.data?.words || [], seed);
+        target.solution = taskSolution('suchsel', target.data);
+        app.dbOps.saveProject(project);
+        app.render.studioWorkbookWizard(3);
     },
 
     // Differenzierung (Konzept C.4): Niveau wechseln, bei Bedarf erst von
@@ -414,11 +459,12 @@ Object.assign(app.studio, {
         app.state.apiBusy = true;
         try {
             const alt = await app.studio.api.generateTaskLevel(project.worksheet, chapter, task, level);
+            const altData = sanitizeTaskData(task.type, alt.data);
             task.altLevels[level] = {
                 instruction: alt.instruction || task.instruction,
                 explanation: alt.explanation || alt.instruction || task.explanation,
-                data: sanitizeTaskData(task.type, alt.data),
-                solution: task.type === 'frei' ? '' : (alt.solution || '')
+                data: altData,
+                solution: taskSolution(task.type, altData, alt.solution)
             };
             task.activeLevel = level;
             project.costLog.textCalls += 1;

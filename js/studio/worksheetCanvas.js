@@ -31,9 +31,12 @@ const MAX_WIDTH = PAGE_W - MARGIN_X * 2;
 // werden ohnehin gemeinsam von main.js geladen, aber lose Kopplung ist
 // hier bewusst - reine Anzeige-Konstante, kein Verhalten).
 const TASK_ICON = {
-    luecke: '✏️', ankreuzen: '☑️', rechnen: '➕', zuordnen: '🔗', frei: '📝'
+    luecke: '✏️', ankreuzen: '☑️', rechnen: '➕', zuordnen: '🔗', frei: '📝', suchsel: '🔍'
 };
 const STAR_FOR_LEVEL = { 1: '⭐', 2: '⭐⭐', 3: '⭐⭐⭐' };
+// NEU (Suchsel): Kästchengröße des Buchstabengitters - 10 Kästchen (Maximum,
+// siehe js/studio/wordSearch.js) = 560px, passt bequem in die Seitenbreite.
+const GRID_CELL = 56;
 
 function makeCanvas() {
     const canvas = document.createElement('canvas');
@@ -97,6 +100,19 @@ function taskToLines(task) {
             // sauberes Zwei-Spalten-Bild.
             lines.push(`${l.padEnd(24, ' ')}${r}`);
         }
+    } else if (task.type === 'suchsel') {
+        // NEU (Suchsel): Gitter als Monospace-Zeilen mit Abstand zwischen den
+        // Buchstaben - gleiche Zeilen-Liste für Canvas UND generatedSheet.body,
+        // also druckt auch printBook() ein sauberes Gitter. "Finde:" steht
+        // unter dem Gitter, damit das Kind die Wörter abhaken kann.
+        // Marker wie ___LINE___: auf dem Canvas als Kästchengitter mit großen
+        // Buchstaben gezeichnet (siehe drawArbeitsheftPage), im Text als
+        // Buchstabenreihe.
+        (data.grid || []).forEach(row => lines.push(`___GRIDROW___${row}`));
+        if ((data.grid || []).length) lines.push(''); // Luft zwischen Gitter und Wortliste
+        if (Array.isArray(data.words) && data.words.length) {
+            lines.push(`Finde: ${data.words.map(w => `☐ ${w}`).join('   ')}`);
+        }
     } else if (task.type === 'frei') {
         lines.push(data.prompt || '');
         const lineCount = Math.max(2, Math.min(8, data.lines || 4));
@@ -155,6 +171,26 @@ function drawArbeitsheftPage({ chapterTitle, pageGoal, pageNumber, tasks }) {
         const lines = taskToLines(task);
         lines.forEach((rawLine, lineIdx) => {
             if (rawLine === '') { y += lineHeight * 0.6; bodyLines.push(''); return; }
+            if (rawLine.startsWith('___GRIDROW___')) {
+                // NEU (Suchsel): eine Gitterzeile als Kästchen - große,
+                // fette Druckbuchstaben, damit Kinder sie gut einkreisen können.
+                const letters = rawLine.slice('___GRIDROW___'.length).split('');
+                const cell = GRID_CELL;
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = '#94a3b8';
+                ctx.font = 'bold 36px sans-serif';
+                ctx.textAlign = 'center';
+                letters.forEach((ch, i) => {
+                    const x = MARGIN_X + i * cell;
+                    ctx.strokeRect(x, y, cell, cell);
+                    ctx.fillText(ch, x + cell / 2, y + (cell - 36) / 2 + 2);
+                });
+                ctx.textAlign = 'left';
+                ctx.strokeStyle = '#cbd5e1';
+                y += cell;
+                bodyLines.push(letters.join(' '));
+                return;
+            }
             if (rawLine === '___LINE___') {
                 // Schreiblinie fürs freie Schreiben - ausreichend
                 // Schreibfläche ist die ausdrückliche Druckregel dieser

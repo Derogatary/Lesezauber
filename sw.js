@@ -1,7 +1,13 @@
 // Bei jeder inhaltlichen Änderung an einer dieser Dateien diese Nummer
 // erhöhen - sonst bekommen wiederkehrende Besucher weiter die alte
 // zwischengespeicherte Version ausgeliefert.
-const CACHE_NAME = 'lesezauber-shell-v71';
+const CACHE_NAME = 'lesezauber-shell-v72';
+
+// NEU (v72, v0.38.0-beta): zwei offene Punkte aus docs/TODO-GESAMT.md.
+// 1) KI-Stimme für die Birkenbihl-Zielsprache (app.ttsNeural.speakForeign(),
+// js/ttsNeural.js + foreignLanguages je Anbieter in js/ttsProviders.js).
+// 2) Arbeitsheft-Aufgabentyp "Suchsel" - neue Datei js/studio/wordSearch.js
+// (Buchstabengitter-Generator), eingebunden über js/studio/worksheet.js.
 
 // NEU (v56): Modell-Rotation bei Ratenbegrenzung (Nutzerwunsch: "rotierende
 // Funktion von absteigender Qualität") - js/api.js/js/studio/studioApi.js
@@ -273,6 +279,7 @@ const APP_SHELL = [
     // docs/KONZEPT-SchreibZauber.md TEIL C.4.
     './js/studio/worksheet.js',
     './js/studio/worksheetCanvas.js',
+    './js/studio/wordSearch.js',
     // NEU (Ausbaustufe 5 - Comic): Sprechblasen-Overlay + -Verwaltung,
     // Panel-Layout/Zusammensetzen.
     './js/studio/studioBalloons.js',

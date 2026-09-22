@@ -137,6 +137,14 @@ function taskDataFieldsHtml(chapterIdx, pageIdx, taskIdx, content) {
             + field('Rechte Spalte (Komma-getrennt, gemischt)', (d.right || []).join(', '), 'right')
             + field('Passende Indizes (Komma-getrennt, z.B. 2,0,1)', (d.matches || []).join(', '), 'matches');
     }
+    if (content.type === 'suchsel') {
+        // NEU (Suchsel): Wörter bearbeiten baut das Gitter sofort neu (siehe
+        // app.studio.updateTaskData()), die Vorschau zeigt das Ergebnis.
+        const preview = (d.grid || []).map(row => row.split('').join(' ')).join('\n');
+        return field('Versteckte Wörter (Komma-getrennt, je max. 10 Buchstaben)', (d.words || []).join(', '), 'words', 'HUND, KATZE, MAUS')
+            + (preview ? `<pre class="text-xs font-mono leading-snug text-slate-800 bg-white border border-slate-200 rounded-lg p-2 overflow-x-auto">${app.utils.sanitize(preview)}</pre>` : '')
+            + `<button onclick="app.studio.reshuffleWordSearch(${chapterIdx}, ${pageIdx}, ${taskIdx})" class="text-[10px] font-bold px-2 py-1 rounded-lg border border-indigo-200 text-indigo-700 bg-white hover:bg-indigo-50 transition">🔀 Neu mischen</button>`;
+    }
     if (content.type === 'frei') {
         return field('Schreibimpuls', d.prompt, 'prompt')
             + field('Anzahl Schreiblinien', d.lines, 'lines');

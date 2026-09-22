@@ -93,10 +93,16 @@ Object.assign(app.ttsNeural, {
     // diese Ergänzung hätten zwei Personas mit unterschiedlicher Emotion
     // denselben Cache-Schlüssel bekommen und sich gegenseitig die falsche
     // (Emotion der zuerst gecachten Persona) Aufnahme untergeschoben.
-    _cacheKey(text, provider, voice, rate, personaId) {
-        const styleKey = ((provider.supportsStyle || provider.supportsEmotionTag) && app.settings.ttsPersonaStyle) ? personaId : 'plain';
+    // NEU (Birkenbihl-Zielsprache): optionales "language" - fremdsprachige
+    // Aufnahmen laufen ohne Persona-Färbung (styleKey 'plain') und bekommen
+    // die Sprache als eigenes Schlüssel-Stück, damit sie sich nie mit einer
+    // deutschen Aufnahme desselben Textes vermischen. Ohne "language" bleibt
+    // der Schlüssel exakt wie bisher - vorhandene Cache-Einträge gelten weiter.
+    _cacheKey(text, provider, voice, rate, personaId, language) {
+        const styleKey = (!language && (provider.supportsStyle || provider.supportsEmotionTag) && app.settings.ttsPersonaStyle) ? personaId : 'plain';
         const rateKey = provider.supportsRate ? String(rate) : 'x';
-        return `${provider.id}|${voice}|${styleKey}|${rateKey}|${text.length}|${hashText(text)}`;
+        const langKey = language ? `|lang:${language}` : '';
+        return `${provider.id}|${voice}|${styleKey}|${rateKey}${langKey}|${text.length}|${hashText(text)}`;
     },
 
     // NEU: Länge einer Audiodatei bestimmen, ohne sie abzuspielen. Für den
@@ -126,8 +132,8 @@ Object.assign(app.ttsNeural, {
     // einfach null zurück, statt Kontingent zu verbrauchen. Für die
     // Vorschau darf das bloße Öffnen nichts kosten (siehe
     // docs/KONZEPT-Video.md, "Noch offen").
-    async _getAudio(text, { provider, voice, rate, personaId, needDuration = false, cacheOnly = false }) {
-        const key = this._cacheKey(text, provider, voice, rate, personaId);
+    async _getAudio(text, { provider, voice, rate, personaId, language = null, needDuration = false, cacheOnly = false }) {
+        const key = this._cacheKey(text, provider, voice, rate, personaId, language);
         const useCache = app.settings.ttsCacheEnabled !== false;
 
         if (useCache) {
@@ -151,14 +157,16 @@ Object.assign(app.ttsNeural, {
 
         if (cacheOnly) return null;
 
-        const styleHint = provider.supportsStyle ? app.ttsProviders.styleHintFor(personaId) : null;
+        // NEU (Birkenbihl-Zielsprache): fremdsprachiger Text bekommt keinen
+        // deutschen Persona-Stil und keine Emotion - siehe _cacheKey().
+        const styleHint = (!language && provider.supportsStyle) ? app.ttsProviders.styleHintFor(personaId) : null;
         // NEU (Nutzerwunsch: "vollen Umfang von Speechify ausnutzen"):
         // eigene Emotion-Markierung statt Freitext-Stilhinweis - siehe
         // app.ttsProviders.emotionHintFor() und den Kommentar an
         // supportsEmotionTag in js/ttsProviders.js.
-        const emotion = provider.supportsEmotionTag ? app.ttsProviders.emotionHintFor(personaId) : null;
+        const emotion = (!language && provider.supportsEmotionTag) ? app.ttsProviders.emotionHintFor(personaId) : null;
         const result = await withProviderLock(provider.id, provider.maxConcurrentRequests, () =>
-            provider.synthesize(text, { voice, rate, styleHint, emotion })
+            provider.synthesize(text, language ? { voice, rate, language } : { voice, rate, styleHint, emotion })
         );
         // NEU: Kosten-/Verbrauchsanzeige - zaehlt nur hier, NACH einem
         // Cache-Fehlschlag, weil erst ab hier wirklich synthetisiert (und
@@ -366,6 +374,69 @@ Object.assign(app.ttsNeural, {
             console.error('Wiedergabe nicht möglich:', e);
             app.ui.toast('Wiedergabe braucht einen Fingertipp - Gerätestimme springt ein.', '👆');
             app.tts.speakWithDevice(text, onEnd, containerId);
+        }
+    },
+
+    // NEU (KI-Stimme für die Birkenbihl-Zielsprache, docs/TODO-GESAMT.md
+    // Bereich "Mehrsprachigkeit"): liest einen FREMDSPRACHIGEN Text mit der
+    // eingestellten KI-Stimme vor. Eigene, schlanke Route statt speak(): kein
+    // Persona-Stil, keine Audio-Tags, keine Hervorhebung, keine deutsche
+    // Text-Aufbereitung (prepareTextForSpeech kennt nur deutsche Abkürzungen).
+    // Nie ohne Ton: jeder Fall, den die KI-Stimme nicht abdeckt (Gerätestimme
+    // eingestellt, Anbieter kann die Sprache nicht, Text zu lang, Fehler),
+    // landet bei der Gerätestimme mit passendem Sprachcode - genau dem
+    // Verhalten von vorher.
+    async speakForeign(rawText, speechLang, onEnd) {
+        const text = app.utils.stripEmojiForSpeech(rawText || '').trim();
+        const fallback = () => app.tts.speakWithDevice(text, onEnd, null, speechLang);
+
+        const provider = app.ttsProviders.current();
+        if (!text || !this.isActive() || text.length > MAX_NEURAL_CHARS
+            || !app.ttsProviders.supportsForeignLanguage(provider, speechLang)) {
+            fallback();
+            return;
+        }
+
+        const token = ++this._token;
+        const voice = app.ttsProviders.voiceFor(provider);
+        const rate = app.settings.speechRate || 0.9;
+
+        let audioData;
+        try {
+            audioData = await this._getAudio(text, { provider, voice, rate, language: speechLang });
+        } catch (e) {
+            if (token !== this._token) return;
+            console.error('KI-Stimme (Fremdsprache) fehlgeschlagen:', e);
+            // Endgültige Fehler (Key falsch, Limit) gelten genauso für die
+            // deutsche Stimme - deshalb wie in _handleFailure() abschalten.
+            if (e instanceof TtsError && e.fatal) this._disabledReason = e.message;
+            app.ui.toast('KI-Stimme kann diese Sprache gerade nicht vorlesen - Gerätestimme springt ein.', '🔇');
+            fallback();
+            return;
+        }
+        if (token !== this._token) return;
+
+        const audio = this._getAudioElement();
+        if (this._objectUrl) URL.revokeObjectURL(this._objectUrl);
+        this._objectUrl = URL.createObjectURL(audioData.blob);
+        audio.src = this._objectUrl;
+        audio.playbackRate = provider.supportsRate ? 1 : rate;
+        audio.onloadedmetadata = null;
+        audio.onended = () => {
+            if (token !== this._token) return;
+            if (onEnd) onEnd();
+        };
+        audio.onerror = () => {
+            if (token !== this._token) return;
+            console.error('Fremdsprachige Audiodatei konnte nicht abgespielt werden.');
+            fallback();
+        };
+        try {
+            await audio.play();
+        } catch (e) {
+            if (token !== this._token) return;
+            console.error('Wiedergabe nicht möglich:', e);
+            fallback();
         }
     },
 

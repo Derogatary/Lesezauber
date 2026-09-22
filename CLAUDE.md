@@ -90,7 +90,7 @@ import './actions/meineNeueDatei.js';
 | `js/render/checkWork.js` | Ergebniskarte der Kontrolle (Lob, Rückmeldung, Tipps) |
 | `js/actions/workbookGenerator.js` | Heft-Generator: Formular auslesen, `app.api.generateWorksheets()` aufrufen, Blätter auf Canvas zeichnen, Heft anlegen |
 | `js/render/workbookGenerator.js` | Heft-Generator: Auswahl-Ansicht (Formular bzw. Blätter-Liste zum Abwählen) |
-| `js/actions/birkenbihl.js` | Birkenbihl-Methode (Interlinear-Übersetzung): erzeugt/cacht `page.birkenbihl` per Gemini/Mistral, liest die Zielsprache per Gerätestimme vor |
+| `js/actions/birkenbihl.js` | Birkenbihl-Methode (Interlinear-Übersetzung): erzeugt/cacht `page.birkenbihl` per Gemini/Mistral, liest die Zielsprache vor - seit v0.38.0-beta mit der KI-Stimme (`app.ttsNeural.speakForeign()`, `foreignLanguages` je Anbieter in `js/ttsProviders.js`), sonst Gerätestimme |
 | `js/render/birkenbihl.js` | Reader-Tab "🌍 Birkenbihl": Wort-für-Wort-Ansicht (Zielsprache oben, wörtliche deutsche Übersetzung darunter) |
 | `js/render/progress.js` | Fortschrittsbalken, Erledigt-Knopf, Belohnungs-Banner |
 | `js/render/cinema.js` | Video-Export Teil 1: Canvas-Renderer (`app.cinema`) - zeichnet EINEN Frame zum Zeitpunkt t (Seitenbild + Ken-Burns + Untertitel mit Wort-Hervorhebung), verwaltet bewusst keine Zeit und spielt nichts ab |
@@ -103,6 +103,7 @@ import './actions/meineNeueDatei.js';
 | `js/studio/studioExport.js` | SchreibZauber: Projekt → normales Buch in `app.library` ("Ins Regal stellen") - fügt Titel-/Rück-/Autorenseite aus `studioMetaPages.js` ein |
 | `js/studio/studioMetaPages.js` | SchreibZauber: Titelseite/Klappentext/Autorenseite als Canvas-Textseiten (Platzhaltertext bei leeren Feldern) - `app.studio.buildMetaPages()`, nur von `studioExport.js` aufgerufen |
 | `js/studio/imageFormats.js`, `placeholder.js`, `imageSource.js` | SchreibZauber: Bildformat-Katalog, Platzhalter-Erzeugung, Bildquellen-Adapter (`{full, thumb, meta}`) - Details `docs/KONZEPT-Bildquellen.md`. Seit v0.37.0-beta (Nutzerwunsch "kostenlos Bilderbücher erstellen") zusätzlich Quelle `pollinations` (Pollinations.ai, kein Key/keine Zahlungsmethode, `private: true` fest verdrahtet gegen den öffentlichen Feed) - schwächer als `gemini`: keine Referenzbilder (nur Prompt+Seed für etwas Figuren-Ähnlichkeit), ohne eigenen Account nur ~1 Bild/15s (`imageSource.pollinationsThrottleMs`, genutzt beim Durchpausieren in `js/studio/studioImages.js`). `app.studio.resolveImageSourceId()` (studioCore.js) wählt `gemini` > `pollinations` > `placeholder` je nach Einstellungen |
+| `js/studio/worksheet.js`, `worksheetCanvas.js`, `wordSearch.js` | SchreibZauber Arbeitsheft (Stufe 4): Aufgabentypen/Lernziel/Progression, Canvas-Druckbild der Heftseiten, seit v0.38.0-beta Suchsel-Gitter-Generator (KI liefert nur Wörter, Gitter+Lösung baut die App, per Seed reproduzierbar) |
 | `js/studio/studioLayout.js`, `render/studioLayout.js` | SchreibZauber: Textposition/Schriftgröße/Silbenfarben pro Doppelseite (Stufe 7 "Das Layout") - `buildOverlayHtml()` ist die EINE Stelle, die Manuskripttext in eine positionierte HTML-Ebene über dem Bild umwandelt, genutzt von Vorschau UND Druck |
 | `js/studio/studioBalloons.js` | SchreibZauber Comic: Sprechblasen-CRUD (`addBalloon()`/`updateBalloon()`/`deleteBalloon()`, PRO PANEL) + `buildBalloonsHtml()` als HTML-Vorschau-Ebene (Prozent-Koordinaten relativ zum Panel) |
 | `js/studio/studioComicPanels.js` | SchreibZauber Comic: Panel-Layout-Vorlagen (1-4/Seite), `compositePage()` setzt Panel-Bilder per Canvas zu einer "sauberen" Seite zusammen, `bakePageWithBalloons()` brennt Sprechblasen (immer) + Geräuschwörter (optional, `project.comicShowSoundEffects`) zusätzlich ein - Export liefert BEIDE Fassungen, Reader schaltet um (`app.utils.resolveDisplayImageUrl()`) |
@@ -309,6 +310,6 @@ Feste Regeln:
 
 ## Versionsstand
 
-Aktuell `v0.37.2-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Version bei größeren Änderungen hochzählen (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).
+Aktuell `v0.38.0-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Version bei größeren Änderungen hochzählen (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).
 
 **Die vollständige Versionshistorie (was mit welcher Version kam, inkl. aller Entscheidungen) steht in [`CHANGELOG.md`](CHANGELOG.md), neueste Version zuerst.** Vor dem Einplanen eines Features dort nachsehen, sonst werden bereits gefallene Entscheidungen neu diskutiert. Neuer Eintrag bei jeder Versionserhöhung: oben in `CHANGELOG.md` ergänzen, nicht hier.

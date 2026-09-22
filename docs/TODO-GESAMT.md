@@ -1,6 +1,6 @@
 # ✅ Gesamt-To-Do (alle Zweige zusammengeführt)
 
-**Stand: v0.18.0-beta, September 2026**
+**Stand: v0.38.0-beta, September 2026** (Tabellen laufend nachgezogen, der Einleitungstext unten stammt noch aus v0.18.0-beta)
 
 > **Hinweis zu den Versionsnummern unten:** Heft-Generator und Video-Export sind in
 > getrennten Zweigen parallel entstanden und haben dabei unabhängig voneinander
@@ -134,6 +134,7 @@ Der größte Brocken im Projekt - dafür in Stufen geschnitten, die **einzeln li
 
 | Punkt | Aufwand | Anmerkung |
 |---|---|---|
+| ~~**Arbeitsheft: Aufgabentyp Suchsel**~~ | **S** | ✅ **erledigt (v0.38.0-beta)** - `js/studio/wordSearch.js`, KI liefert nur Wörter, Gitter+Lösung baut die App. Damit 6 von 9 Typen; offen nur noch Nachspuren/Ausmalen/Schneiden (brauchen Kontur-Schrift bzw. Bilder) |
 | **Comic: zweiter Testlauf** | **S** | Ein Testbild hat zwei Prompt-Probleme aufgedeckt; der korrigierte Wortlaut ist noch nicht erprobt. Steht vor allem Weiteren |
 | ~~**SchreibZauber Stufe 1 - Fundament**~~ | **L** | ✅ **erledigt** - Datenmodell, **DB v4**, Werkstatt-Übersicht, Idee/Bauplan/Geschichte, Platzhalter-Bilder, Export „ins Regal". `js/studio/*` ist seither in `js/main.js`/`sw.js` verdrahtet |
 | ~~**SchreibZauber Stufe 2 - Bilder**~~ | **L** | ✅ **erledigt** - Stilkarte, Figuren-Bibel (inkl. KI-Vorschlag), Storyboard/Daumenkino (inkl. KI-Bildideen, verschieben/zusammenfassen/löschen), Bildgenerierung pro Doppelseite, Kostenzähler. Läuft weiterhin komplett über die kostenlose Platzhalter-Quelle - die echte Gemini-Bildgenerierung ist gebaut (`imageSource.js`, Quelle `gemini`), aber bewusst hinter einer expliziten Bestätigung in den Einstellungen (`app.settingsConfig.toggleStudioImageGen`), bis die Zahlungsmethode-Frage aus `KONZEPT-SchreibZauber.md` TEIL G Punkt 1 beantwortet ist. Details: Abschnitt „Stand nach Stufe 2" im Konzept |
@@ -196,9 +197,31 @@ Chirp erkennen/wählen die Sprache bereits automatisch (kein Codeblocker), Speec
 |---|---|---|
 | **Ein bestehendes Buch in eine Zielsprache übersetzen** | **M** | Reine Prompt-Arbeit, keine Architekturänderung: neue Aktion übersetzt pro Seite den vorhandenen Text per Gemini. Offene Design-Frage: als neue Sprach-Variante im bestehenden `page.variants`-System (Persona-Achse um eine Sprach-Achse erweitern) oder einfacher als komplett neues, separates Buch. UI selbst bliebe Deutsch, nur der Buchinhalt wäre in der Zielsprache |
 | ~~**Birkenbihl-Methode (Interlinear-Text, zwei Sprachen übereinander)**~~ | **M** | ✅ **erledigt (v0.31.0-beta)** - neuer Reader-Tab "🌍 Birkenbihl" (`js/actions/birkenbihl.js`, `js/render/birkenbihl.js`), übersetzt die aktuelle Seite per Gemini/Mistral in eine wählbare Zielsprache (`app.settings.birkenbihlLanguage`, Liste in `js/config.js`) und zerlegt sie in Wort-Einheiten mit wörtlicher deutscher Übersetzung in Zielsprachen-Wortstellung darunter, gecacht pro Seite (`page.birkenbihl`). Vorlesen der Zielsprache über die Gerätestimme (neues `langOverride`-Argument in `app.tts.speakWithDevice()`). Nur Phase 1 der echten Methode (Mitlesen mit Audio), nur On-Demand pro Seite (kein Ganzbuch-Übersetzer), nur Gerätestimme (keine KI-Stimme in der Zielsprache) - alles mögliche spätere Ausbauschritte |
-| **Ganzes Buch in eine Zielsprache übersetzen** | **M** | Siehe Ausgangslage oben - eigener Punkt, baut NICHT zwingend auf der Birkenbihl-Umsetzung auf (die übersetzt bewusst nur seitenweise on-demand, keine Speicherung als eigenständiger, flüssiger Zieltext) |
-| **KI-Stimme für die Birkenbihl-Zielsprache** | **S** | Aktuell nur Gerätestimme (`speakBirkenbihlTarget()` in `js/actions/birkenbihl.js`) - ElevenLabs/Google Cloud Chirp erkennen die Sprache bereits automatisch, bräuchte nur eine eigene `app.ttsNeural`-Route ohne die deutsche Persona-Stimme |
+| **Ganzes Buch in eine Zielsprache übersetzen** | **M** | Siehe Ausgangslage oben - eigener Punkt, baut NICHT zwingend auf der Birkenbihl-Umsetzung auf (die übersetzt bewusst nur seitenweise on-demand, keine Speicherung als eigenständiger, flüssiger Zieltext). Konzept-Skizze + offene Entscheidung direkt unter dieser Tabelle |
+| ~~**KI-Stimme für die Birkenbihl-Zielsprache**~~ | **S** | ✅ **erledigt (v0.38.0-beta)** - eigene Route `app.ttsNeural.speakForeign()` ohne deutsche Persona-Stimme, `foreignLanguages` je Anbieter (Speechify ohne Türkisch/Niederländisch → dort weiter Gerätestimme). Mit echten Keys noch ungetestet |
 | **Volle App-Mehrsprachigkeit (UI-Texte selbst)** | **L** | Eigenes, deutlich größeres Projekt - bräuchte eine komplette i18n-Infrastruktur (Übersetzungsschlüssel statt fest eingebauter deutscher Strings), aktuell nicht angefragt, nur der Vollständigkeit halber hier notiert |
+
+**Konzept-Skizze "Ganzes Buch übersetzen" (Sept. 2026, noch NICHT abgestimmt):**
+Die offene Design-Frage aus der Tabelle, mit Empfehlung:
+
+- **Weg 1 - Kopie als eigenes Buch (empfohlen).** Neue Aktion "🌍 Als Buch in ... übersetzen" in der
+  Buchansicht legt ein NEUES Buch an (gleiche Seitenbilder, Titel z.B. "Der Grüffelo (Englisch)",
+  neues Feld `book.language`, `origin` vom Original übernommen). Pro Seite ein Übersetzungsaufruf
+  (oder mehrere Seiten gebündelt - die Tages-Anfragezahl ist der Engpass, siehe v0.35.0-beta),
+  Ergebnis landet in einer ganz normalen `variants[personaId]`. Vorteil: Reader, Vorlesen,
+  Hörbuch, Video, Druck funktionieren sofort unverändert; kein Umbau des Datenmodells. Nachteil:
+  Seitenbilder liegen doppelt in IndexedDB (Speicherplatz), Fortschritt/Lesezeichen getrennt.
+- **Weg 2 - Sprach-Achse in `page.variants`.** Jede Seite bekommt Varianten pro Sprache UND
+  Persona (`variants['en:papa']`). Kein doppelter Speicher, Umschalten im Reader wie bei den
+  Personas - aber jede Stelle, die `resolvePageVariant()`/`resolveAnyVariant()` nutzt (Vorlesen,
+  Video, Hörbuch, Quiz, Birkenbihl, Hintergrund-Vorbereitung), müsste die Sprache kennen. Deutlich
+  mehr Risiko für "unsichtbare Brüche" (siehe CLAUDE.md).
+- **In beiden Fällen gleich:** Vorlesen in der Zielsprache braucht die neue Route
+  `app.ttsNeural.speakForeign()` bzw. die Gerätestimme mit Sprachcode - `app.tts.speak()` ist
+  deutsch verdrahtet (Aufbereitung, Persona-Stimme). Das wäre die eigentliche Hauptarbeit.
+
+**Braucht vor dem Bauen eine Antwort vom Betreiber:** Weg 1 oder Weg 2? Und: welche Personas
+sollen übersetzt werden - nur die gerade gewählte (1 Aufruf je Seite/Seitenbündel) oder alle?
 
 ---
 

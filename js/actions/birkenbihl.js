@@ -55,12 +55,15 @@ Object.assign(app.actions, {
     },
 
     // Liest den erzeugten Zielsprachen-Text laut vor. Bewusst NICHT über
-    // app.tts.speak() - das würde die eingestellte deutsche Gerätestimme
-    // bzw. KI-Stimme benutzen. Für eine echte Fremdsprache reicht hier die
-    // Gerätestimme mit dem passenden Sprachcode (app.tts.speakWithDevice()
-    // wählt dann selbst eine zur Sprache passende Systemstimme, siehe
-    // js/tts.js) - KI-Stimmen-Anbindung für fremde Sprachen ist ein
-    // möglicher späterer Ausbauschritt, kein Teil dieser ersten Fassung.
+    // app.tts.speak() - das würde deutsch aufbereiten und die deutsche
+    // Persona-Stimmfärbung benutzen.
+    // NEU (KI-Stimme für die Birkenbihl-Zielsprache): mit eingestellter
+    // KI-Stimme liest jetzt diese vor (app.ttsNeural.speakForeign() -
+    // eigene Route ohne Persona, Sprache als Teil des Cache-Schlüssels,
+    // also nur beim ersten Antippen pro Seite ein Synthese-Aufruf). Mit
+    // Gerätestimme, oder wenn der Anbieter die Sprache nicht kann (z.B.
+    // Speechify bei Türkisch), bleibt es beim bisherigen Weg: Gerätestimme
+    // mit passendem Sprachcode.
     speakBirkenbihlTarget() {
         const book = app.library[app.state.currentBookId];
         const page = book?.pages[app.state.currentPageIdx];
@@ -68,6 +71,9 @@ Object.assign(app.actions, {
 
         const langInfo = app.birkenbihlLanguages.find(l => l.id === page.birkenbihl.lang) || app.birkenbihlLanguages[0];
         const text = page.birkenbihl.pairs.map(p => p.target).join(' ');
-        app.tts.speakWithDevice(text, null, null, langInfo.speechLang);
+        // Laufendes Vorlesen (deutsch, Gerät oder KI) vorher beenden, sonst
+        // sprechen beide gleichzeitig.
+        app.tts.stop();
+        app.ttsNeural.speakForeign(text, langInfo.speechLang);
     }
 });

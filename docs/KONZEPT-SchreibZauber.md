@@ -823,6 +823,11 @@ Frei schreiben 📝. Alle fünf sind **reine Text-/Schreibaufgaben ohne jeden
 Bildbedarf** - erfüllt die Druckregel (s/w-tauglich, viel Schreibfläche)
 ohne eine einzige Bildgenerierung oder einen Platzhalter-Aufruf.
 
+**Nachtrag v0.38.0-beta: Suchsel 🔍 als sechster Typ gebaut** (`js/studio/wordSearch.js`) -
+die KI liefert nur die Wörter, Gitter und Lösung (Zeile/Spalte/Richtung) erzeugt die App
+selbst, nur waagerecht/senkrecht, 6×6 bis 10×10, reproduzierbar über einen Seed
+("🔀 Neu mischen" ohne KI-Aufruf). Details: CHANGELOG.md v0.38.0-beta.
+
 **Noch nicht umgesetzt** (bewusst zurückgestellt, keine der fünf Typen
 braucht sie): Nachspuren 〰️ (braucht eine Kontur-/Rasterschrift-Technik),
 Ausmalen nach Regel 🎨 und Schneiden & Kleben ✂️ (brauchen ein echtes

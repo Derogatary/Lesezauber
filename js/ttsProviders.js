@@ -34,6 +34,20 @@ const OPENAI_TTS_MODEL = 'gpt-4o-mini-tts';
 // Englisch ausgesprochen worden.
 const SPEECHIFY_MODEL = 'simba-3.0';
 const SPEECHIFY_LANGUAGE = 'de-DE';
+// NEU (KI-Stimme für die Birkenbihl-Zielsprache): laut derselben Modell-
+// Aufteilung spricht simba-3.2 nur Englisch, simba-3.0 die übrigen
+// europäischen Sprachen - Türkisch/Niederländisch kann Speechify gar nicht,
+// siehe foreignLanguages am Anbieter-Eintrag unten.
+const SPEECHIFY_ENGLISH_MODEL = 'simba-3.2';
+
+// NEU (KI-Stimme für die Birkenbihl-Zielsprache): Sprechanweisung für fremd-
+// sprachigen Text. Bewusst auf Englisch und OHNE Persona - der deutsche
+// Persona-Stilhinweis ("Du bist ein lustiger Papa...") würde die Stimme
+// sonst in Richtung deutscher Aussprache ziehen, und für ein lernendes Kind
+// zählt hier nur klare, muttersprachliche Aussprache.
+function foreignSpeechInstruction(language) {
+    return `Read the following text aloud in its own language (${language}) with native pronunciation - clearly, calmly and a little slower than normal, for a child who is learning this language. Only speak the text itself, not this instruction:`;
+}
 
 // NEU: Tarif-Lock (siehe Entscheidung in docs/ROADMAP.md). Reihenfolge der
 // Preisstufen, um beim Anbieter-/Modellwechsel zu erkennen, ob es teurer
@@ -154,7 +168,7 @@ async function geminiRequest(model, text, voice, signal) {
     });
 }
 
-async function geminiSynthesize(text, { voice, styleHint, signal }) {
+async function geminiSynthesize(text, { voice, styleHint, language, signal }) {
     if (!app.settings.apiKey) {
         throw new TtsError('Kein Gemini-API-Key hinterlegt.', { fatal: true, code: 'NO_KEY' });
     }
@@ -162,7 +176,12 @@ async function geminiSynthesize(text, { voice, styleHint, signal }) {
     // Gemini-TTS wird über den Prompt gesteuert: Ein vorangestellter
     // Sprechauftrag färbt die Stimme (z.B. "sanft, wie eine Gute-Nacht-Fee")
     // und wird selbst nicht mitgesprochen.
-    const prompt = styleHint ? `${styleHint}\n\n${text}` : `Lies den folgenden Text vor:\n\n${text}`;
+    // NEU (Birkenbihl-Zielsprache): mit "language" statt des deutschen
+    // Vorlese-Auftrags eine neutrale, fremdsprachige Anweisung - sonst liest
+    // Gemini englischen Text mit deutschem Einschlag vor.
+    const prompt = language
+        ? `${foreignSpeechInstruction(language)}\n\n${text}`
+        : (styleHint ? `${styleHint}\n\n${text}` : `Lies den folgenden Text vor:\n\n${text}`);
 
     let res;
     try {
@@ -196,13 +215,23 @@ async function geminiSynthesize(text, { voice, styleHint, signal }) {
 }
 
 // -------------------------------------------------- Google Cloud (Chirp 3)
-async function googleCloudSynthesize(text, { voice, rate, signal }) {
+async function googleCloudSynthesize(text, { voice, rate, language, signal }) {
     const key = app.settings.googleTtsKey;
     if (!key) {
         throw new TtsError('Kein Google-Cloud-TTS-Key hinterlegt.', { fatal: true, code: 'NO_KEY' });
     }
 
-    const voiceName = voice || 'de-DE-Chirp3-HD-Achernar';
+    let voiceName = voice || 'de-DE-Chirp3-HD-Achernar';
+    // NEU (Birkenbihl-Zielsprache): Google Cloud spricht nur die Sprache, die
+    // im Stimmennamen steckt - eine deutsche Stimme würde englischen Text
+    // "eindeutschen". Die Chirp-3-HD-Stimmen gibt es unter demselben Namen in
+    // jeder Sprache ("en-GB-Chirp3-HD-Achernar"), also einfach den Sprachcode
+    // austauschen; die Neural2-Stimmen heißen je Sprache anders, dort springt
+    // die Standard-Chirp-Stimme der Zielsprache ein.
+    if (language) {
+        const chirpMatch = /Chirp3-HD-([A-Za-z]+)$/.exec(voiceName);
+        voiceName = `${language}-Chirp3-HD-${chirpMatch ? chirpMatch[1] : 'Achernar'}`;
+    }
     // Der Sprachcode steckt immer im Stimmennamen ("de-DE-Chirp3-HD-...").
     const languageCode = voiceName.split('-').slice(0, 2).join('-') || 'de-DE';
 
@@ -276,7 +305,7 @@ async function elevenSynthesize(text, { voice, signal }) {
 }
 
 // --------------------------------------------------------------- OpenAI
-async function openaiSynthesize(text, { voice, rate, styleHint, signal }) {
+async function openaiSynthesize(text, { voice, rate, styleHint, language, signal }) {
     const key = app.settings.openAiKey;
     if (!key) {
         throw new TtsError('Kein OpenAI-API-Key hinterlegt.', { fatal: true, code: 'NO_KEY' });
@@ -293,7 +322,10 @@ async function openaiSynthesize(text, { voice, rate, styleHint, signal }) {
                 voice: voice || 'nova',
                 // Eigenes Feld für die Sprechanweisung - anders als bei
                 // Gemini besteht hier keine Gefahr, dass sie mitgesprochen wird.
-                instructions: styleHint || 'Lies wie in einem Kinderbuch vor: warm, deutlich und nicht gehetzt.',
+                // NEU (Birkenbihl-Zielsprache): eigene, fremdsprachige Anweisung.
+                instructions: language
+                    ? foreignSpeechInstruction(language)
+                    : (styleHint || 'Lies wie in einem Kinderbuch vor: warm, deutlich und nicht gehetzt.'),
                 response_format: 'mp3',
                 speed: rate || 1.0
             }),
@@ -416,7 +448,7 @@ function buildSpeechifySsml(text, { emotion, ratePercent } = {}) {
     };
 }
 
-async function speechifySynthesize(text, { voice, signal, emotion, rate }) {
+async function speechifySynthesize(text, { voice, signal, emotion, rate, language }) {
     const key = app.settings.speechifyKey;
     if (!key) {
         throw new TtsError('Kein Speechify-API-Key hinterlegt.', { fatal: true, code: 'NO_KEY' });
@@ -453,9 +485,11 @@ async function speechifySynthesize(text, { voice, signal, emotion, rate }) {
             body: JSON.stringify({
                 input,
                 voice_id: voice || 'beatrice_32',
-                model: SPEECHIFY_MODEL,
+                // NEU (Birkenbihl-Zielsprache): Modell und Sprachfeld folgen
+                // der Zielsprache, Englisch läuft über das eigene Modell.
+                model: (language && language.startsWith('en')) ? SPEECHIFY_ENGLISH_MODEL : SPEECHIFY_MODEL,
                 audio_format: 'mp3',
-                language: SPEECHIFY_LANGUAGE
+                language: language || SPEECHIFY_LANGUAGE
             }),
             signal
         });
@@ -540,6 +574,13 @@ Object.assign(app.ttsProviders, {
             // Satz ([whispers], [laughs], [excited], ...) - wird genutzt,
             // wenn eine Seite ein speechText hat (siehe js/tts.js).
             supportsTags: true,
+            // NEU (KI-Stimme für die Birkenbihl-Zielsprache): welche
+            // Fremdsprachen (Sprachcode-Anfang, z.B. 'en') der Anbieter
+            // sauber aussprechen kann - '*' = alle. Fehlt das Feld oder
+            // passt die Sprache nicht, liest weiterhin die Gerätestimme
+            // (siehe app.ttsNeural.speakForeign()). Gemini, ElevenLabs und
+            // OpenAI sind mehrsprachig und erkennen die Sprache am Text.
+            foreignLanguages: '*',
             synthesize: geminiSynthesize
         },
         {
@@ -570,6 +611,9 @@ Object.assign(app.ttsProviders, {
             // Text - ein [flüstert] mitten im "text"-Feld würde buchstäblich
             // vorgelesen. speechText wird deshalb hier NICHT genutzt.
             supportsTags: false,
+            // NEU (Birkenbihl-Zielsprache): über den Sprachcode im
+            // Stimmennamen, siehe googleCloudSynthesize().
+            foreignLanguages: '*',
             synthesize: googleCloudSynthesize
         },
         {
@@ -597,6 +641,7 @@ Object.assign(app.ttsProviders, {
             // NEU (Audio-Tags): eleven_v3 (siehe ELEVEN_MODEL oben) versteht
             // Audio-Tags mitten im Satz, seit GA zum selben Preis wie v2.
             supportsTags: true,
+            foreignLanguages: '*',
             synthesize: elevenSynthesize
         },
         {
@@ -634,6 +679,7 @@ Object.assign(app.ttsProviders, {
             // für den GANZEN Text (siehe styleHintFor), keine Inline-Tags
             // mitten im Satz.
             supportsTags: false,
+            foreignLanguages: '*',
             synthesize: openaiSynthesize
         },
         {
@@ -722,9 +768,22 @@ Object.assign(app.ttsProviders, {
             // echte Synthese-Aufrufe pro Anbieter-ID hintereinander, sobald
             // dieses Feld gesetzt ist (siehe withProviderLock() dort).
             maxConcurrentRequests: 1,
+            // NEU (Birkenbihl-Zielsprache): nur die Sprachen, die die
+            // Speechify-Modelle laut Dashboard sprechen - Türkisch und
+            // Niederländisch bleiben bei der Gerätestimme.
+            foreignLanguages: ['en', 'fr', 'es', 'it', 'pt'],
             synthesize: speechifySynthesize
         }
     ],
+
+    // NEU (KI-Stimme für die Birkenbihl-Zielsprache): kann dieser Anbieter
+    // Text in der Sprache "speechLang" (BCP-47, z.B. "en-GB") sprechen?
+    supportsForeignLanguage(provider, speechLang) {
+        const langs = provider && provider.foreignLanguages;
+        if (!langs || !speechLang) return false;
+        if (langs === '*') return true;
+        return langs.includes(speechLang.split('-')[0].toLowerCase());
+    },
 
     get(providerId) {
         return this.list.find(p => p.id === providerId) || this.list[0];

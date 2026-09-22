@@ -83,7 +83,7 @@ const SUBJECT_LABEL = {
     deutsch: 'Deutsch', mathematik: 'Mathematik', sachunterricht: 'Sachunterricht', frei: 'fächerübergreifend/frei'
 };
 
-// NEU: Die fünf in dieser Ausbaustufe umgesetzten Aufgabentypen (siehe
+// NEU: Die in dieser Ausbaustufe umgesetzten Aufgabentypen (inzwischen sechs, Suchsel kam später dazu) (siehe
 // js/studio/worksheet.js, TASK_TYPES - dort auch die restlichen vier als
 // "kommt später" markiert). Nur EIN Ort beschreibt der KI das exakte
 // JSON-Schema pro Typ, damit generateChapterTasks() zuverlässig parsen
@@ -94,6 +94,7 @@ const TASK_SCHEMA_HINT = `Wähle für jede Aufgabe GENAU EINEN dieser Typen und 
 - "rechnen" (Rechenaufgaben): data = {"problems": ["3 + 4 = __","7 - 2 = __"], "answers": [7,5]} (gleich viele Einträge in problems und answers)
 - "zuordnen" (Zuordnen): data = {"left": ["Begriff1","Begriff2","Begriff3"], "right": ["Passt2","Passt3","Passt1"], "matches": [2,0,1]} (matches[i] ist der Index in "right", der zu left[i] passt - right darf NICHT in derselben Reihenfolge wie die Lösung stehen, sonst ist die Aufgabe zu leicht)
 - "frei" (Frei schreiben): data = {"prompt": "Schreibimpuls als Frage/Satzanfang.", "lines": 4} (lines = Anzahl Schreiblinien, 3-6)
+- "suchsel" (Suchsel/Wörterrätsel): data = {"words": ["HUND","KATZE","MAUS"]} (3-6 einzelne Wörter ohne Leerzeichen, je 3-10 Buchstaben, passend zum Seitenziel - das Buchstabengitter baut die App selbst, also KEIN Gitter mitliefern; "solution" darf ein leerer String sein)
 Jede Aufgabe braucht außerdem: "instruction" (kurze Aufgabenstellung, wird oben auf dem Blatt gedruckt), "explanation" (dieselbe Aufgabe nochmal in 1-2 einfachen, freundlichen Sätzen erklärt, für ein Kind vorgelesen), "solution" (die richtige Lösung als kurzer Text - bei "frei" ein leerer String, weil freies Schreiben keine Musterlösung hat).`;
 
 // NEU: "Master-Prompt" fürs Komplett-Setup (Stufe 1) - Bugreport: "Es fehlt
