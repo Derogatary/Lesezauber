@@ -1,7 +1,12 @@
 // Bei jeder inhaltlichen Änderung an einer dieser Dateien diese Nummer
 // erhöhen - sonst bekommen wiederkehrende Besucher weiter die alte
 // zwischengespeicherte Version ausgeliefert.
-const CACHE_NAME = 'lesezauber-shell-v72';
+const CACHE_NAME = 'lesezauber-shell-v73';
+
+// NEU (v73, v0.39.0-beta): KDP-Quadratformat/Seitenaufbau/Panorama
+// (js/studio/*), ganzes Buch übersetzen (neue Datei
+// js/actions/bookTranslate.js), Erzähler-Knöpfe + Persona-Zwischenruf im
+// Reader, neu gebaute css/tailwind.css.
 
 // NEU (v72, v0.38.0-beta): zwei offene Punkte aus docs/TODO-GESAMT.md.
 // 1) KI-Stimme für die Birkenbihl-Zielsprache (app.ttsNeural.speakForeign(),
@@ -244,6 +249,7 @@ const APP_SHELL = [
     './js/actions/checkWork.js',
     './js/actions/workbookGenerator.js',
     './js/actions/prepareAudio.js',
+    './js/actions/bookTranslate.js',
     './js/actions/audiobookExport.js',
     './js/actions/videoTimeline.js',
     './js/actions/videoPreview.js',

@@ -48,6 +48,15 @@ async function findNextMissingTask() {
     for (const bookId of Object.keys(app.library)) {
         const book = app.library[bookId];
         const bookType = app.utils.resolveBookType(book);
+        // NEU (übersetzte Bücher): Analyse/Persona-Nachbau liefe über den
+        // deutschen Analyse-Prompt und schriebe deutschen Text in ein
+        // fremdsprachiges Buch - übersetzte Bücher deshalb hier auslassen.
+        // Nur das Buch-Quiz (jetzt in der Buchsprache) darf nachkommen.
+        if (book.language) {
+            const done = book.pages.filter(p => !p.excluded).every(p => p.status === 'done');
+            if (done && !book.bookQuiz) return { type: 'bookQuiz', bookId };
+            continue;
+        }
 
         for (let i = 0; i < book.pages.length; i++) {
             const page = book.pages[i];
@@ -177,8 +186,11 @@ async function generateAudioForPageInBackground(book, pageIdx) {
     // Gleiche Weiche wie beim tatsächlichen Vorlesen (app.tts.speak()) bzw.
     // beim manuellen "Buch hörfertig machen" - sonst wird die falsche
     // Fassung vorbereitet und beim Lesen trotzdem neu synthetisiert.
-    const { plain, tagged } = app.tts._pickSpeechVariant(variant);
-    await app.ttsNeural.renderAudio(tagged || plain, { personaId });
+    // NEU (übersetzte Bücher): Sprach-Route + keine Audio-Tags, damit die
+    // Aufnahme unter demselben Schlüssel landet, den das Vorlesen abfragt.
+    const language = app.utils.bookSpeechLang(book);
+    const { plain, tagged } = language ? { plain: variant.text, tagged: null } : app.tts._pickSpeechVariant(variant);
+    await app.ttsNeural.renderAudio(tagged || plain, { personaId, language });
 }
 
 async function generateBookQuizInBackground(book) {
@@ -193,7 +205,7 @@ async function generateBookQuizInBackground(book) {
 
     if (!compiledText) return;
 
-    const questions = await app.api.generateBookQuiz(compiledText, personaId);
+    const questions = await app.api.generateBookQuiz(compiledText, personaId, book.language || null);
     book.bookQuiz = { questions };
     app.dbOps.saveBook(book);
 }

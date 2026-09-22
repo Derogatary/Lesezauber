@@ -21,33 +21,50 @@ import { app } from './core.js';
 // terrified, relaxed, fearful, surprised, calm, assertive, energetic,
 // warm, direct, bright. Optional wie ttsStyle - fehlt es, bleibt die
 // Persona bei Speechify klanglich neutral (kein SSML-Umweg nötig).
+// NEU (v0.39.0-beta, Nutzer-Feedback "die Personas kommen nicht stark zur
+// Geltung bzw. man übersieht sie leicht"): icon + tagline für die großen
+// Erzähler-Knöpfe im Reader (js/render/reader.js), commentStyle für den
+// eigenen "Zwischenruf" der Persona pro Seite (personaComment, js/api.js) -
+// bisher unterschied sich der sichtbare Seitentext zwischen den Personas
+// praktisch gar nicht (Originaltext ist für alle gleich, der Erstleser-Text
+// tauscht bewusst nur ein paar Nomen gegen Emojis).
 app.personas = [
     {
-        id: 'standard', label: 'Standard (Neutral & Freundlich)',
+        id: 'standard', icon: '🙂', tagline: 'Freundlich & klar',
+        commentStyle: 'eine kurze, freundliche Bemerkung zur Seite, die das Kind zum Weiterlesen einlädt',
+        label: 'Standard (Neutral & Freundlich)',
         instruction: 'Du bist freundlich und neutral.',
         ttsStyle: 'Sprich freundlich, klar und in ruhigem Tempo, wie beim Vorlesen am Abend.',
         speechifyEmotion: 'warm'
     },
     {
-        id: 'papa', label: 'Lustiger Papa',
+        id: 'papa', icon: '😄', tagline: 'Lustig & gemütlich',
+        commentStyle: 'ein kleiner, kindgerechter Witz oder eine lustige Bemerkung zu dem, was auf der Seite passiert',
+        label: 'Lustiger Papa',
         instruction: 'Du bist ein lustiger, gemütlicher Papa.',
         ttsStyle: 'Sprich gemütlich und warm, mit einem Schmunzeln in der Stimme und kleinen spielerischen Betonungen.',
         speechifyEmotion: 'cheerful'
     },
     {
-        id: 'professor', label: 'Weiser Professor',
+        id: 'professor', icon: '🦉', tagline: 'Weiß spannende Sachen',
+        commentStyle: 'eine kurze, erstaunliche Sachinformation passend zur Seite, beginnend mit „Wusstest du, dass ...“',
+        label: 'Weiser Professor',
         instruction: 'Du bist ein weiser Professor.',
         ttsStyle: 'Sprich bedächtig und deutlich, mit ruhiger, tiefer Stimme und kleinen Pausen vor wichtigen Wörtern.',
         speechifyEmotion: 'calm'
     },
     {
-        id: 'freund', label: 'Beste Freundin',
+        id: 'freund', icon: '💖', tagline: 'Begeistert & mutig',
+        commentStyle: 'ein begeisterter, ermutigender Zwischenruf, der das Kind direkt anspricht',
+        label: 'Beste Freundin',
         instruction: 'Du bist die beste Freundin, sehr motivierend.',
         ttsStyle: 'Sprich lebhaft und begeistert, als würdest du einer Freundin etwas Spannendes erzählen.',
         speechifyEmotion: 'energetic'
     },
     {
-        id: 'fee', label: 'Gute-Nacht-Fee',
+        id: 'fee', icon: '🧚', tagline: 'Sanft zum Einschlafen',
+        commentStyle: 'ein sanfter, beruhigender Gedanke zum Träumen, leise und liebevoll',
+        label: 'Gute-Nacht-Fee',
         instruction: 'Du bist eine sanfte Gute-Nacht-Fee.',
         ttsStyle: 'Sprich sehr sanft, leise und langsam, fast flüsternd, mit langen ruhigen Pausen - zum Einschlafen.',
         speechifyEmotion: 'relaxed'

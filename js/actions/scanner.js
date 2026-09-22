@@ -269,6 +269,12 @@ Object.assign(app.actions, {
             if (!isBatch) app.ui.toast('Diese Seite ist ausgeschlossen und wird nicht analysiert.', '🚫');
             return;
         }
+        // NEU (übersetzte Bücher): der Analyse-Prompt ist deutsch - eine
+        // erneute Analyse würde die Übersetzung durch deutschen Text ersetzen.
+        if (book.language) {
+            if (!isBatch) app.ui.toast('Das ist eine Übersetzung - neu auslesen geht nur im deutschen Original.', 'ℹ️');
+            return;
+        }
 
         page.status = 'processing';
         if (!isBatch) {

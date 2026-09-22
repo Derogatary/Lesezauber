@@ -15,6 +15,13 @@ Object.assign(app.actions, {
         const page = book?.pages[app.state.currentPageIdx];
         if (!book || !page) return;
 
+        // NEU (übersetzte Bücher): ein schon übersetztes Buch nicht noch einmal
+        // aus dem Deutschen zerlegen lassen.
+        if (book.language) {
+            app.ui.toast('Dieses Buch ist schon eine Übersetzung - Birkenbihl gibt es im deutschen Original.', 'ℹ️');
+            return;
+        }
+
         const langId = app.settings.birkenbihlLanguage;
         if (page.birkenbihl && page.birkenbihl.lang === langId && !forceRegenerate) {
             app.render.birkenbihlTab(page);

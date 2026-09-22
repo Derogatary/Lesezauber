@@ -1,6 +1,11 @@
 # ✅ Gesamt-To-Do (alle Zweige zusammengeführt)
 
-**Stand: v0.38.0-beta, September 2026** (Tabellen laufend nachgezogen, der Einleitungstext unten stammt noch aus v0.18.0-beta)
+**Stand: v0.39.0-beta, September 2026** (Tabellen laufend nachgezogen, der Einleitungstext unten stammt noch aus v0.18.0-beta)
+
+> **NEU (v0.39.0-beta): Diese Liste enthält nur noch Punkte, an denen Claude direkt bauen kann.**
+> Alles, was ein Konto, ein echtes Gerät, eine Beobachtung aus dem Alltag oder eine Entscheidung
+> braucht (Comic-Testlauf, Android-App, Diagnose-Screenshots, Server-Themen, Tests mit echten
+> Keys ...), steht jetzt in [`docs/WARTET-AUF-BETREIBER.md`](WARTET-AUF-BETREIBER.md).
 
 > **Hinweis zu den Versionsnummern unten:** Heft-Generator und Video-Export sind in
 > getrennten Zweigen parallel entstanden und haben dabei unabhängig voneinander
@@ -32,7 +37,8 @@ wo dort eine Zahl steht, ist sie übernommen.
 
 | Datei | Inhalt |
 |---|---|
-| `docs/TODO-GESAMT.md` (hier) | Übersicht über **alle** offenen Punkte, nach Bereich & Aufwand |
+| `docs/TODO-GESAMT.md` (hier) | Übersicht über alle offenen Punkte, **an denen direkt gebaut werden kann** |
+| `docs/WARTET-AUF-BETREIBER.md` | Punkte, die erst etwas vom Betreiber brauchen (Konto, Gerät, Beobachtung, Entscheidung) |
 | `docs/AUFTRAEGE-SESSIONS.md` | Dieselben Punkte als fertige Arbeitspakete für einzelne Claude-Code-Sitzungen (zum Kopieren) |
 | `docs/ROADMAP.md` | Vorlesen/Stimmen im Detail, inkl. Kostenübersicht |
 | `docs/KONZEPT-Video.md` | Sprach-API, Video/MP4, Hörbuch, Mehrformat-Ausspielung |
@@ -58,7 +64,7 @@ hat, fängt hier an - nichts davon fasst das Datenmodell an.
 | ~~6~~ | ~~„Buch hörfertig machen" - alle Seiten vorab in den Stimmen-Speicher~~ **erledigt (Sept. 2026)** | Vorlesen | **S** |
 | ~~7~~ | ~~Stimme pro Profil statt global~~ **erledigt (Sept. 2026)** | Vorlesen | **S** |
 | ~~8~~ | ~~Kosten-Anzeige (lokal gezählte Zeichen pro Monat)~~ **erledigt (v0.13.0-beta)** | Vorlesen | **S** |
-| 9 | Zweiter Comic-Testlauf mit korrigiertem Prompt | Eigene Werke | **S** |
+| ~~9~~ | ~~Zweiter Comic-Testlauf mit korrigiertem Prompt~~ → verschoben nach [`WARTET-AUF-BETREIBER.md`](WARTET-AUF-BETREIBER.md) (braucht Bild-API) | Eigene Werke | **S** |
 | ~~10~~ | ~~Tarif-Lock: Warnung vor Wechsel in teurere Preisstufe~~ **erledigt (Sept. 2026)** | Vorlesen | **S** |
 
 **Nummer 1 ist der beste Einstieg:** Sie verbessert *jede* Stimme, Geräte- wie KI-Stimme,
@@ -135,7 +141,6 @@ Der größte Brocken im Projekt - dafür in Stufen geschnitten, die **einzeln li
 | Punkt | Aufwand | Anmerkung |
 |---|---|---|
 | ~~**Arbeitsheft: Aufgabentyp Suchsel**~~ | **S** | ✅ **erledigt (v0.38.0-beta)** - `js/studio/wordSearch.js`, KI liefert nur Wörter, Gitter+Lösung baut die App. Damit 6 von 9 Typen; offen nur noch Nachspuren/Ausmalen/Schneiden (brauchen Kontur-Schrift bzw. Bilder) |
-| **Comic: zweiter Testlauf** | **S** | Ein Testbild hat zwei Prompt-Probleme aufgedeckt; der korrigierte Wortlaut ist noch nicht erprobt. Steht vor allem Weiteren |
 | ~~**SchreibZauber Stufe 1 - Fundament**~~ | **L** | ✅ **erledigt** - Datenmodell, **DB v4**, Werkstatt-Übersicht, Idee/Bauplan/Geschichte, Platzhalter-Bilder, Export „ins Regal". `js/studio/*` ist seither in `js/main.js`/`sw.js` verdrahtet |
 | ~~**SchreibZauber Stufe 2 - Bilder**~~ | **L** | ✅ **erledigt** - Stilkarte, Figuren-Bibel (inkl. KI-Vorschlag), Storyboard/Daumenkino (inkl. KI-Bildideen, verschieben/zusammenfassen/löschen), Bildgenerierung pro Doppelseite, Kostenzähler. Läuft weiterhin komplett über die kostenlose Platzhalter-Quelle - die echte Gemini-Bildgenerierung ist gebaut (`imageSource.js`, Quelle `gemini`), aber bewusst hinter einer expliziten Bestätigung in den Einstellungen (`app.settingsConfig.toggleStudioImageGen`), bis die Zahlungsmethode-Frage aus `KONZEPT-SchreibZauber.md` TEIL G Punkt 1 beantwortet ist. Details: Abschnitt „Stand nach Stufe 2" im Konzept |
 | ~~**SchreibZauber Stufe 3 - Layout & Druck**~~ | **M** | ✅ **erledigt** - Textplatzierung/Schriftgröße/Silbenfarben pro Doppelseite editierbar (Wizard-Stufe 7, `js/studio/studioLayout.js` + `js/render/studioLayout.js`), Erstleser-Regelprofil (Sinnschritte an Satzgrenzen), eigener Doppelseiten-Druck (`js/studio/studioPrint.js`, randabfallend oder mit Rand, Papierformat aus dem Bauplan). KDP-Vorgaben recherchiert und dokumentiert (300dpi/CMYK/3mm-Bleed/0,25"-Sicherheitsabstand/Einzelseiten-Pflicht/ISBN) - der gebaute Export ist bewusst NUR für den eigenen Drucker/PDF, noch NICHT KDP-fertig (echter Bleed-Übermaßzuschlag, Doppelseite→zwei KDP-Einzelseiten, ISBN-Freifläche auf dem Umschlag bleiben offene Folgeschritte). Details: `docs/KONZEPT-SchreibZauber.md`, Abschnitt „Stand nach Stufe 3" |
@@ -143,7 +148,7 @@ Der größte Brocken im Projekt - dafür in Stufen geschnitten, die **einzeln li
 | ~~**SchreibZauber Stufe 5 - Comic**~~ | **L** | ✅ **erledigt** - Panel-Layouts, Sprechblasen-Overlay, seit v0.28.0-beta auch comicfähiger Druck. Details: CHANGELOG.md v0.24.0/v0.26.0/v0.28.0-beta |
 | ~~**SchreibZauber Stufe 6 - Politur**~~ | **M** | ✅ **erledigt** - projektübergreifende Figuren, Vorlagen (CHANGELOG.md v0.25.0-beta). Die zweite Einstiegsseite `schreiben.html` wird laut Nutzerentscheid (Sept. 2026) **nicht gebraucht** - endgültig verworfen, keine Tab-Lösung wird zur zweiten App ausgebaut |
 | **Comic-Generator-Werkzeug** | **L** | Bewusst **kein** App-Feature: eigenes Node-Werkzeug lokal beim Betreiber (`tools/comic-gen/`), weil Browser nur CORS-fähige Bild-Anbieter erreichen |
-| **KDP-Fertigstellung: Trimm-Format 8,5×8,5", Seiten-Layout-Varianten, echte Doppelseiten-Bilder** | **M/L** | Drei Ideen aus Nutzerfrage 22.09.2026 zu KDP-Farbstufen/Seitenaufbau, NUR dokumentiert - noch keine Nutzerentscheidung, ob umgesetzt werden soll. Details: `docs/KONZEPT-SchreibZauber.md`, Nachtrag "KDP-Farbstufen konkretisiert + Seitenlayout-Ideen" |
+| ~~**KDP-Fertigstellung: Trimm-Format 8,5×8,5", Seiten-Layout-Varianten, echte Doppelseiten-Bilder**~~ | **M/L** | ✅ **erledigt (v0.39.0-beta)** auf Nutzerwunsch: Bauplan-Format „Quadratisch 8,5 Zoll“, Seitenaufbau „Bild + Textstreifen“ / „Vollbild ohne Text“ pro Doppelseite, Panorama über zwei Buchseiten (Druck teilt das Bild und schiebt bei Bedarf eine Leerseite ein). Test im echten KDP-Vorschauer steht noch aus, siehe `WARTET-AUF-BETREIBER.md`. Details: `docs/KONZEPT-SchreibZauber.md`, Nachtrag "KDP-Ideen umgesetzt" |
 
 **✅ Bedingung erfüllt: Stufe 1 ist gebaut und in `main`.** Damit war die im Konzept
 genannte Voraussetzung für die parallelen Werktyp-Pfade erfüllt - **Stufe 2 (Bilder), Stufe 3
@@ -169,12 +174,13 @@ bis auf die optionale eigene Druckansicht.
 
 | Punkt | Aufwand | Anmerkung |
 |---|---|---|
-| **Kontroll-Funktion im Alltag beobachten** | **S** | Wie zuverlässig beurteilt Gemini die Fotos bearbeiteter Blätter? Bei zu vielen „unklar" wäre eine Foto-Hilfe (Rahmen, Helligkeitshinweis) der nächste Schritt |
 | ~~**Heft-Generator: API-Aufruf + Prompt**~~ | **erledigt** | `app.api.generateWorksheets()` in `js/api.js` - ein Heft = **ein** Aufruf, nicht einer pro Blatt. Nur Aufgabenarten ohne Bildmaterial (zaehlen, ankreuzen, nachspuren, schreiben) |
 | ~~**Heft-Generator: Auswahl-Ansicht**~~ | **erledigt** | `js/render/workbookGenerator.js` + `js/actions/workbookGenerator.js`, Router-Eintrag `workbookGenerator` in `js/nav.js` |
 | ~~**Heft-Generator: Blätter auf Canvas zeichnen**~~ | **erledigt** | `drawWorksheetCanvas()` in `js/actions/workbookGenerator.js`, nach Vorlage von `renderTextAsImageCanvas()` in `epubImport.js` |
 | ~~**Heft-Generator: Druckqualität**~~ | **erledigt** | `page.generatedSheet` (persona-unabhängig, wie `pdfSourceText`), genutzt von der bestehenden `app.actions.printBook()` - kein zweiter View nötig |
-| **Heft-Generator: KI-Bildgenerierung für Ausmalbilder** | **L** | Eigenes größeres Thema, siehe `KONZEPT-Comic.md` + `KONZEPT-Bildquellen.md`. Braucht Abstimmung mit dem Nutzer |
+
+→ „Kontroll-Funktion im Alltag beobachten“ und „Ausmalbilder per KI“ stehen jetzt in
+[`WARTET-AUF-BETREIBER.md`](WARTET-AUF-BETREIBER.md) (brauchen Alltagsbeobachtung bzw. Bild-API).
 
 **Wichtigste Einschränkung:** Ein auf Canvas gezeichnetes Textblatt ist für „Male die Tiere
 an" nutzlos - da fehlen die Tiere. Zuerst also Aufgabentypen **ohne Bild** (Zählen,
@@ -195,13 +201,13 @@ Chirp erkennen/wählen die Sprache bereits automatisch (kein Codeblocker), Speec
 
 | Punkt | Aufwand | Anmerkung |
 |---|---|---|
-| **Ein bestehendes Buch in eine Zielsprache übersetzen** | **M** | Reine Prompt-Arbeit, keine Architekturänderung: neue Aktion übersetzt pro Seite den vorhandenen Text per Gemini. Offene Design-Frage: als neue Sprach-Variante im bestehenden `page.variants`-System (Persona-Achse um eine Sprach-Achse erweitern) oder einfacher als komplett neues, separates Buch. UI selbst bliebe Deutsch, nur der Buchinhalt wäre in der Zielsprache |
+| ~~**Ein bestehendes Buch in eine Zielsprache übersetzen**~~ | **M** | ✅ **erledigt (v0.39.0-beta)** - siehe Zeile „Ganzes Buch“ unten |
 | ~~**Birkenbihl-Methode (Interlinear-Text, zwei Sprachen übereinander)**~~ | **M** | ✅ **erledigt (v0.31.0-beta)** - neuer Reader-Tab "🌍 Birkenbihl" (`js/actions/birkenbihl.js`, `js/render/birkenbihl.js`), übersetzt die aktuelle Seite per Gemini/Mistral in eine wählbare Zielsprache (`app.settings.birkenbihlLanguage`, Liste in `js/config.js`) und zerlegt sie in Wort-Einheiten mit wörtlicher deutscher Übersetzung in Zielsprachen-Wortstellung darunter, gecacht pro Seite (`page.birkenbihl`). Vorlesen der Zielsprache über die Gerätestimme (neues `langOverride`-Argument in `app.tts.speakWithDevice()`). Nur Phase 1 der echten Methode (Mitlesen mit Audio), nur On-Demand pro Seite (kein Ganzbuch-Übersetzer), nur Gerätestimme (keine KI-Stimme in der Zielsprache) - alles mögliche spätere Ausbauschritte |
-| **Ganzes Buch in eine Zielsprache übersetzen** | **M** | Siehe Ausgangslage oben - eigener Punkt, baut NICHT zwingend auf der Birkenbihl-Umsetzung auf (die übersetzt bewusst nur seitenweise on-demand, keine Speicherung als eigenständiger, flüssiger Zieltext). Konzept-Skizze + offene Entscheidung direkt unter dieser Tabelle |
+| ~~**Ganzes Buch in eine Zielsprache übersetzen**~~ | **M** | ✅ **erledigt (v0.39.0-beta)** - Betreiber-Entscheidung: Weg 1 (eigenes neues Buch) mit ALLEN Erzähler-Varianten. `js/actions/bookTranslate.js`, eine KI-Anfrage pro Seite für alle Personas (`app.api.translatePageVariants()`), fortsetzbar. Vorgelesen wird in der Buchsprache (`book.language` → `app.utils.bookSpeechLang()`). Test mit echtem Key steht aus |
 | ~~**KI-Stimme für die Birkenbihl-Zielsprache**~~ | **S** | ✅ **erledigt (v0.38.0-beta)** - eigene Route `app.ttsNeural.speakForeign()` ohne deutsche Persona-Stimme, `foreignLanguages` je Anbieter (Speechify ohne Türkisch/Niederländisch → dort weiter Gerätestimme). Mit echten Keys noch ungetestet |
 | **Volle App-Mehrsprachigkeit (UI-Texte selbst)** | **L** | Eigenes, deutlich größeres Projekt - bräuchte eine komplette i18n-Infrastruktur (Übersetzungsschlüssel statt fest eingebauter deutscher Strings), aktuell nicht angefragt, nur der Vollständigkeit halber hier notiert |
 
-**Konzept-Skizze "Ganzes Buch übersetzen" (Sept. 2026, noch NICHT abgestimmt):**
+**Konzept-Skizze "Ganzes Buch übersetzen" (Sept. 2026) - ✅ entschieden: Weg 1, alle Personas, umgesetzt in v0.39.0-beta:**
 Die offene Design-Frage aus der Tabelle, mit Empfehlung:
 
 - **Weg 1 - Kopie als eigenes Buch (empfohlen).** Neue Aktion "🌍 Als Buch in ... übersetzen" in der
@@ -220,8 +226,8 @@ Die offene Design-Frage aus der Tabelle, mit Empfehlung:
   `app.ttsNeural.speakForeign()` bzw. die Gerätestimme mit Sprachcode - `app.tts.speak()` ist
   deutsch verdrahtet (Aufbereitung, Persona-Stimme). Das wäre die eigentliche Hauptarbeit.
 
-**Braucht vor dem Bauen eine Antwort vom Betreiber:** Weg 1 oder Weg 2? Und: welche Personas
-sollen übersetzt werden - nur die gerade gewählte (1 Aufruf je Seite/Seitenbündel) oder alle?
+**Antwort des Betreibers:** Weg 1, und „wenn es kein großer Mehraufwand ist“ alle Personas - ist
+es nicht (weiterhin 1 Anfrage pro Seite), also alle.
 
 ---
 
@@ -230,27 +236,17 @@ sollen übersetzt werden - nur die gerade gewählte (1 Aufruf je Seite/Seitenbü
 | Punkt | Aufwand | Anmerkung |
 |---|---|---|
 | ~~**Kinder-/Elternbereich (Profil-Rollen)**~~ | **M** | ✅ **erledigt (Sept. 2026)** - `profile.role: 'child' \| 'adult'` (Default `'child'`), gelesen über `app.utils.resolveProfileRole()`. `app.utils.isSettingsLockedForActiveProfile()` sperrt teure Einstellungen (TTS-Anbieter, API-Keys) für Kinderprofile in `js/profiles.js` |
-| **Native Android-App via Capacitor** | **M** | Verpackt den bestehenden Code weitgehend unverändert. Nebeneffekt laut Roadmap: Ein natives Paket könnte **Audio im Hintergrund** abspielen - im Browser hört das Vorlesen beim Sperren des Bildschirms auf |
-| **API-Keys über ein Backend absichern** | **XL** | Braucht einen Server |
-| **Automatische Cloud-Synchronisierung** | **XL** | Braucht einen Server |
-| **Echte Multi-Geräte-Accounts mit Login** | **XL** | Braucht einen Server |
+| ~~Native Android-App~~ | **M** | → verschoben nach [`WARTET-AUF-BETREIBER.md`](WARTET-AUF-BETREIBER.md) (TWA gewählt, braucht `bubblewrap` auf deinem Rechner + Play-Console-Konto) |
+| ~~API-Keys über Backend, Cloud-Sync, Multi-Geräte-Accounts~~ | **XL** | → verschoben nach [`WARTET-AUF-BETREIBER.md`](WARTET-AUF-BETREIBER.md), Abschnitt „Bewusst zurückgestellt“ |
 
-Die drei **XL**-Punkte sind **bewusst zurückgestellt**, nicht vergessen. Seit den KI-Stimmen
-liegen mehr Keys im Browser als vorher - die Abwägung bleibt aber dieselbe: Ein Server würde
-die gesamte Architektur des Projekts umdrehen.
 
 ---
 
 ## 🔍 Bereich: Diagnose (nicht reproduziert)
 
-| Punkt | Aufwand | Anmerkung |
-|---|---|---|
-| Scroll-Verhalten am Bildschirmrand (Desktop) | **?** | Bisher nicht nachstellbar |
-| Zoom/Unschärfe im Fenstermodus | **?** | Bisher nicht nachstellbar |
-
-Beides braucht vermutlich einen Screenshot vom Nutzer - vorher lässt sich der Aufwand nicht
-einschätzen.
-
+→ Beide Punkte (Scroll-Verhalten am Bildschirmrand, Zoom/Unschärfe im Fenstermodus) sind nach
+[`WARTET-AUF-BETREIBER.md`](WARTET-AUF-BETREIBER.md) verschoben - ohne Screenshot vom Nutzer lässt
+sich dort nichts bauen.
 ---
 
 ## ⚖️ Offene Entscheidungen (blockieren jeweils den nächsten Schritt)

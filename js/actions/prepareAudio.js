@@ -72,7 +72,8 @@ Object.assign(app.actions, {
                 // "hörfertig" nicht fertig und jede Seite kostete doppelt.
                 // Dieselbe Weiche wie in app.tts.speak() benutzen.
                 const { plain, tagged } = app.tts._pickSpeechVariant(variant);
-                await app.ttsNeural.renderAudio(tagged || plain, { personaId });
+                // NEU (übersetzte Bücher): Buchsprache mitgeben (Sprach-Route).
+                await app.ttsNeural.renderAudio(tagged || plain, { personaId, language: app.utils.bookSpeechLang(book) });
                 prepared++;
             } catch (e) {
                 console.error(`Vorbereiten von Seite ${i + 1} fehlgeschlagen:`, e);

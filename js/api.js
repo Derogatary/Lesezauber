@@ -88,6 +88,7 @@ Nutze exakt dieses Schema:
   "imageDescription": "Falls hasIllustration=true: die Illustration in 2 Sätzen passend zur Rolle beschreiben - beginne mit einer Formulierung, die klarmacht, dass hier ein BILD beschrieben wird (z.B. 'Auf dem Bild siehst du...', 'Hier sehen wir...'), NICHT wie ein normaler Erzählsatz ohne diesen Bezug. Falls hasIllustration=false: null",
   "quizQuestion": "Eine leichte Frage - wahlweise zum Textinhalt, zum Bild (falls vorhanden) oder zu Gefühlen. Wechsle zwischen drei Anforderungsstufen ab (angelehnt an die Anforderungsbereiche AFB I-III der Schule, aber kindgerecht übersetzt - keine Schulsprache verwenden): AFB I/Reproduktion - einfach wiedergeben, was im Text/Bild zu sehen war (z.B. 'Was hat der Fuchs gemacht?'); AFB II/Anwendung - erklären oder vergleichen, WARUM etwas passiert ist oder was eine Figur dabei fühlt; AFB III/Transfer - das Kind SELBST einbeziehen, ausgehend vom Thema/Gefühl dieser Seite, altersgerecht statt mit Schulverben wie 'beurteile' (z.B. 'Was würdest du tun?', 'Kennst du das Gefühl auch von dir?'). Passend zur Rolle.",
   "quizAnswer": "Die kurze Antwort darauf.",
+  "personaComment": "Dein eigener Zwischenruf in deiner Rolle zu genau dieser Seite: ${(app.personas.find(p => p.id === personaId) || {}).commentStyle || 'eine kurze Bemerkung passend zur Rolle'}. 1-2 kurze Sätze, direkt ans Kind gerichtet, altersgerecht (5 Jahre), keine Wiederholung des Seitentexts.",
   "chapterTitle": "Falls diese Seite sichtbar ein NEUES Kapitel beginnt: die Überschrift GENAU wie gedruckt. Erkennungsmerkmale: sie steht meist ALLEIN am oberen Seitenrand, deutlich GRÖSSER/FETTER als der übrige Text, mit eigenem Abstand zum Fließtext danach - zählt AUCH OHNE das Wort 'Kapitel' oder eine Nummer davor (z.B. nur 'Der geheime Wald' allein oben auf der Seite). Ein normaler erster Satz der Geschichte, auch wenn er kurz/prägnant klingt, zählt NICHT als Überschrift. Sonst null - die meisten Seiten sind KEIN Kapitelanfang.",
   "difficultWords": "Array von 0-4 Wörtern aus dem Originaltext, die ein Kind mit 5 Jahren oder jünger wahrscheinlich noch nicht kennt (Fremdwörter, abstrakte Begriffe, seltene Fachwörter - z.B. 'Bibliothek', 'Verwaltung'), jeweils mit einer kurzen, einfachen Erklärung in EINEM Satz ohne Fachbegriffe: [{\"word\": \"Bibliothek\", \"explanation\": \"Ein großes Haus, in dem man sich Bücher ausleihen kann.\"}]. Leeres Array, wenn der Text keine schwierigen Wörter enthält - die meisten einfachen Kinderbuchsätze brauchen keine Erklärung.",
   "tocEntries": "${tocInstruction}",
@@ -153,6 +154,7 @@ function buildMultiPersonaAnalyzePrompt(isCover, knownText, forceToc, birkenbihl
   "imageDescription": "Falls die Seite laut \\"core\\"-Block eine Illustration zeigt: sie in 2 Sätzen passend zur Rolle (${p.instruction}) beschreiben - beginne mit einer Formulierung, die klarmacht, dass hier ein BILD beschrieben wird (z.B. 'Auf dem Bild siehst du...', 'Hier sehen wir...'), NICHT wie ein normaler Erzählsatz ohne diesen Bezug. Sonst null.",
   "quizQuestion": "Eine leichte Frage - wahlweise zum Textinhalt, zum Bild (falls vorhanden) oder zu Gefühlen. Wechsle zwischen drei Anforderungsstufen ab (angelehnt an die Anforderungsbereiche AFB I-III der Schule, aber kindgerecht übersetzt - keine Schulsprache verwenden): AFB I/Reproduktion - einfach wiedergeben, was im Text/Bild zu sehen war; AFB II/Anwendung - erklären oder vergleichen, WARUM etwas passiert ist oder was eine Figur dabei fühlt; AFB III/Transfer - das Kind SELBST einbeziehen, ausgehend vom Thema/Gefühl dieser Seite, altersgerecht statt mit Schulverben wie 'beurteile' (z.B. 'Was würdest du tun?', 'Kennst du das Gefühl auch von dir?'). Passend zur Rolle (${p.instruction}).",
   "quizAnswer": "Die kurze Antwort darauf.",
+  "personaComment": "Der eigene Zwischenruf dieser Rolle zu genau dieser Seite: ${p.commentStyle || 'eine kurze Bemerkung passend zur Rolle'}. 1-2 kurze Sätze, direkt ans Kind gerichtet, altersgerecht (5 Jahre), keine Wiederholung des Seitentexts. Wird nach dem Text vorgelesen.",
   "speechText": "NUR fürs Vorlesen, NICHT für die Anzeige: GENAU der Originaltext, WORTGLEICH und mit gleicher Satzstellung, aber an ein paar wenigen, wirklich passenden Stellen mit Sprech-Anweisungen mitten im Satz in eckigen Klammern angereichert (z.B. [flüstert], [lacht], [aufgeregt], [seufzt], [gähnt]), passend zur Rolle (${p.instruction}). KEIN Wort am eigentlichen Text ändern, hinzufügen oder weglassen - nur Tags EINFÜGEN. Sparsam einsetzen, nicht bei jedem Satz. Gibt der Text keinen erkennbaren Anlass für Emotionen her: identisch zum Originaltext."
 }
 \`\`\``).join('\n');
@@ -506,6 +508,39 @@ async function callMistralAnalyzeRaw(prompt, base64Image) {
     return data.choices?.[0]?.message?.content || '';
 }
 
+// NEU (Buch übersetzen): reine Text-Aufrufe OHNE JSON-Parsen - die Antwort
+// besteht aus mehreren Codeblöcken, die parseMultiPersonaResponse() einzeln
+// liest (gleiche Begründung wie bei callGeminiAnalyzeRaw() oben).
+async function callGeminiTextRaw(prompt) {
+    if (!app.settings.apiKey) throw new Error('API_KEY_MISSING');
+    const text = await withGeminiModelRotation(async (model) => {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${app.settings.apiKey}`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.3 } })
+        });
+        if (!res.ok) {
+            if (res.status === 429) throw new Error('RATE_LIMITED');
+            throw new Error(`Gemini-Fehler ${res.status}`);
+        }
+        const data = await res.json();
+        return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    });
+    app.costMeter.trackGeminiText(prompt.length);
+    return text;
+}
+
+async function callMistralTextRaw(prompt) {
+    if (!app.settings.mistralApiKey) throw new Error('MISTRAL_KEY_MISSING');
+    const res = await fetch('https://api.mistral.ai/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${app.settings.mistralApiKey}` },
+        body: JSON.stringify({ model: MISTRAL_MODEL, messages: [{ role: 'user', content: prompt }] })
+    });
+    if (!res.ok) throw new Error(`Mistral-Fehler ${res.status}`);
+    const data = await res.json();
+    return data.choices?.[0]?.message?.content || '';
+}
+
 // NEU: reiner Text-Aufruf (kein Bild) fürs Buch-Quiz und den Heft-Generator,
 // genutzt vom Gemini/Mistral-Fallback-Paar unten.
 async function callMistralText(prompt) {
@@ -818,13 +853,16 @@ Object.assign(app.api, {
     // NEU: Verständnisfragen zum GESAMTEN Buch (reiner Text-Aufruf, kein
     // Bild) - fasst den Text aller Seiten zusammen und lässt die KI daraus
     // ein paar Fragen zur Geschichte als Ganzes erstellen.
-    async generateBookQuiz(compiledText, personaId) {
+    // NEU (übersetzte Bücher): optionales langId (book.language) - Fragen und
+    // Antworten dann in der Sprache des Buchs statt auf Deutsch.
+    async generateBookQuiz(compiledText, personaId, langId = null) {
+        const langInfo = langId ? app.birkenbihlLanguages.find(l => l.id === langId) : null;
         const prompt = `Rolle: ${personaInstruction(personaId)}
 Hier ist der komplette Text eines Kinderbuchs, Seite für Seite:
 
 ${compiledText}
 
-Erstelle GENAU 4 Verständnisfragen zum GESAMTEN Buch (nicht zu einzelnen Bildern) - z.B. zur Reihenfolge der Ereignisse, zu Hauptfiguren, oder wie die Geschichte endet. Halte die Fragen einfach genug für ein Kind im Vorlesealter.
+Erstelle GENAU 4 Verständnisfragen zum GESAMTEN Buch (nicht zu einzelnen Bildern) - z.B. zur Reihenfolge der Ereignisse, zu Hauptfiguren, oder wie die Geschichte endet. Halte die Fragen einfach genug für ein Kind im Vorlesealter.${langInfo ? `\nDas Buch ist auf ${langInfo.promptLabel} - formuliere Fragen UND Antworten auf ${langInfo.promptLabel}.` : ''}
 Antworte AUSSCHLIESSLICH als valides JSON-Array ohne Markdown-Blöcke, exakt in diesem Format:
 [
   {"question": "...", "answer": "..."},
@@ -876,6 +914,53 @@ Antworte AUSSCHLIESSLICH in validem JSON, ohne Markdown-Blöcke, exakt in diesem
                 .map(p => ({ target: p.target.trim(), gloss: typeof p.gloss === 'string' ? p.gloss.trim() : '' }))
             : [];
         return { pairs };
+    },
+
+    // NEU (Buch übersetzen, v0.39.0-beta, js/actions/bookTranslate.js):
+    // übersetzt ALLE vorhandenen Persona-Varianten EINER Seite in EINEM
+    // Aufruf - gleiche Überlegung wie analyzeAllPersonas(): die Tages-
+    // Anfragezahl ist der Engpass, nicht die Textmenge, mehrere Personas
+    // kosten also weiterhin nur 1 Anfrage pro Seite. Gleiches Block-Format
+    // (ein Codeblock je Persona, einzeln geparst), damit eine kaputte Persona
+    // nicht die anderen mitreißt.
+    //   variantsByPersona: { [personaId]: { text, erstleserText, desc, quizQ,
+    //                        quizA, speechText, difficultWords } }
+    //   -> { [personaId]: übersetzte Felder } (nur lesbar zurückgekommene)
+    async translatePageVariants(variantsByPersona, langId) {
+        const langInfo = app.birkenbihlLanguages.find(l => l.id === langId) || app.birkenbihlLanguages[0];
+        const ids = Object.keys(variantsByPersona);
+        if (ids.length === 0) return {};
+        const blocks = ids.map(id => '```persona:' + id + '\n' + JSON.stringify(variantsByPersona[id]) + '\n```').join('\n\n');
+        const prompt = `Du übersetzt ein deutsches Kinderbuch. Zielsprache: ${langInfo.promptLabel}. Unten steht EINE Buchseite in mehreren Erzähl-Varianten (je ein Codeblock pro Variante, JSON).
+
+Regeln:
+- Übersetze JEDES Textfeld natürlich, kindgerecht und flüssig auf ${langInfo.promptLabel} (keine Wort-für-Wort-Übersetzung). Ton und Stil der jeweiligen Variante beibehalten - die Varianten unterscheiden sich absichtlich.
+- Emojis bleiben genau dort stehen, wo sie sind (im Feld "erstleserText" ersetzen sie Wörter - diese Stellen nicht wieder ausschreiben).
+- Sprech-Anweisungen in eckigen Klammern im Feld "speechText" (z.B. [flüstert]) bleiben in eckigen Klammern, dürfen aber übersetzt werden.
+- "difficultWords": Wort UND Erklärung übersetzen; ist das Wort in der Zielsprache gar nicht schwierig, darf der Eintrag wegfallen.
+- Felder mit null bleiben null. Keine Felder hinzufügen oder weglassen.
+
+${blocks}
+
+Antworte AUSSCHLIESSLICH mit denselben Codeblöcken in derselben Form (\`\`\`persona:<id> ... \`\`\`), jeweils mit dem übersetzten JSON-Objekt darin, ohne weiteren Text.`;
+
+        let rawText;
+        try {
+            rawText = await callGeminiTextRaw(prompt);
+        } catch (geminiError) {
+            if (!app.settings.mistralApiKey) throw geminiError;
+            console.warn('Gemini fehlgeschlagen, versuche Mistral-Fallback:', geminiError.message);
+            try {
+                rawText = await callMistralTextRaw(prompt);
+                app.ui.toast('Gemini nicht erreichbar - Mistral eingesprungen (Übersetzung)', '🔄');
+            } catch (mistralError) {
+                console.error('Auch Mistral-Fallback fehlgeschlagen:', mistralError);
+                throw geminiError;
+            }
+        }
+
+        const { personas } = parseMultiPersonaResponse(rawText);
+        return personas;
     },
 
     // NEU (Heft-Generator): erzeugt ein komplettes Übungsheft in EINEM

@@ -386,9 +386,12 @@ Object.assign(app.ttsNeural, {
     // eingestellt, Anbieter kann die Sprache nicht, Text zu lang, Fehler),
     // landet bei der Gerätestimme mit passendem Sprachcode - genau dem
     // Verhalten von vorher.
-    async speakForeign(rawText, speechLang, onEnd) {
+    // NEU (übersetzte Bücher, v0.39.0-beta): optionaler containerId - dann
+    // läuft die Wort-Hervorhebung mit wie beim deutschen Vorlesen (der
+    // Container wurde von app.tts._prepare() schon mit Wort-Spans gefüllt).
+    async speakForeign(rawText, speechLang, onEnd, containerId = null) {
         const text = app.utils.stripEmojiForSpeech(rawText || '').trim();
-        const fallback = () => app.tts.speakWithDevice(text, onEnd, null, speechLang);
+        const fallback = () => app.tts.speakWithDevice(text, onEnd, containerId, speechLang);
 
         const provider = app.ttsProviders.current();
         if (!text || !this.isActive() || text.length > MAX_NEURAL_CHARS
@@ -421,9 +424,12 @@ Object.assign(app.ttsNeural, {
         this._objectUrl = URL.createObjectURL(audioData.blob);
         audio.src = this._objectUrl;
         audio.playbackRate = provider.supportsRate ? 1 : rate;
-        audio.onloadedmetadata = null;
+        audio.onloadedmetadata = containerId
+            ? () => { if (token === this._token) this._startHighlighting(containerId, audioData.alignment, text, token); }
+            : null;
         audio.onended = () => {
             if (token !== this._token) return;
+            if (this._rafId) { cancelAnimationFrame(this._rafId); this._rafId = null; }
             if (onEnd) onEnd();
         };
         audio.onerror = () => {
@@ -569,7 +575,9 @@ Object.assign(app.ttsNeural, {
     // zurück, keine Mehrkosten durch Zerlegung.
     async speakMitmach(erstleserText, onEnd, containerId) {
         const provider = app.ttsProviders.current();
-        if (!this.isActive() || !provider.supportsTags || !erstleserText) {
+        // NEU (übersetzte Bücher): app.tts.speakMitmach() leitet ein
+        // fremdsprachiges Buch selbst auf normales Vorlesen um.
+        if (!this.isActive() || !provider.supportsTags || !erstleserText || app.utils.bookSpeechLang(app.library[app.state.currentBookId])) {
             app.tts.speakMitmach(erstleserText, onEnd, containerId);
             return;
         }
@@ -673,7 +681,12 @@ Object.assign(app.ttsNeural, {
     // _getAudio() oben. Alle Prüfungen unten (keine KI-Stimme, leerer/zu
     // langer Text) geben in diesem Fall ebenfalls einfach null zurück, statt
     // eine Ausnahme zu werfen, die der Aufrufer sonst abfangen müsste.
-    async renderAudio(rawText, { personaId, cacheOnly = false } = {}) {
+    // NEU (übersetzte Bücher, v0.39.0-beta): optionales "language" (BCP-47,
+    // app.utils.bookSpeechLang(book)) - fremdsprachiger Text läuft dann ohne
+    // deutsche Text-Aufbereitung und ohne Persona-Stil über dieselbe
+    // Sprach-Route wie app.ttsNeural.speakForeign(), mit demselben Cache-
+    // Schlüssel (Vorlesen im Reader und Hörbuch/Video teilen sich die Aufnahme).
+    async renderAudio(rawText, { personaId, cacheOnly = false, language = null } = {}) {
         const provider = app.ttsProviders.current();
         if (!provider.neural || !provider.synthesize) {
             if (cacheOnly) return null;
@@ -685,7 +698,9 @@ Object.assign(app.ttsNeural, {
         // Vorlesen), dann Emojis raus - gleiche Reihenfolge wie in
         // app.tts._prepare(), damit Wort-Zeitpunkte unten zum tatsächlich
         // synthetisierten Text passen.
-        const text = app.utils.stripEmojiForSpeech(app.utils.prepareTextForSpeech(rawText));
+        const text = language
+            ? app.utils.stripEmojiForSpeech(app.utils.stripSpeechTags(rawText || '')).trim()
+            : app.utils.stripEmojiForSpeech(app.utils.prepareTextForSpeech(rawText));
         if (!text) {
             if (cacheOnly) return null;
             throw new TtsError('Kein Text zum Vorlesen vorhanden.', { code: 'EMPTY' });
@@ -694,6 +709,10 @@ Object.assign(app.ttsNeural, {
             if (cacheOnly) return null;
             throw new TtsError(`Text ist mit ${text.length} Zeichen zu lang (Grenze: ${MAX_NEURAL_CHARS}).`, { code: 'TOO_LONG' });
         }
+        if (language && !app.ttsProviders.supportsForeignLanguage(provider, language)) {
+            if (cacheOnly) return null;
+            throw new TtsError(`${provider.label} kann diese Sprache (${language}) nicht vorlesen.`, { code: 'LANGUAGE' });
+        }
 
         const usedPersona = personaId || app.state.readingPersonaId || app.settings.persona;
         const audioData = await this._getAudio(text, {
@@ -701,6 +720,7 @@ Object.assign(app.ttsNeural, {
             voice: app.ttsProviders.voiceFor(provider),
             rate: app.settings.speechRate || 0.9,
             personaId: usedPersona,
+            language,
             needDuration: true,
             cacheOnly
         });
@@ -757,7 +777,7 @@ Object.assign(app.ttsNeural, {
         for (let i = 0; i < planned.length; i++) {
             const part = planned[i];
             if (onProgress) onProgress(i + 1, planned.length, part.kind);
-            const rendered = await this.renderAudio(part.text, { personaId: usedPersona, cacheOnly });
+            const rendered = await this.renderAudio(part.text, { personaId: usedPersona, cacheOnly, language: app.utils.bookSpeechLang(book) });
             if (rendered) segments.push({ kind: part.kind, ...rendered });
         }
 
@@ -773,6 +793,21 @@ Object.assign(app.ttsNeural, {
     // Fehler werden hier absichtlich verschluckt - es ist nur Vorarbeit.
     async warmUp(text) {
         if (!this.isActive() || !text) return;
+        // NEU (übersetzte Bücher): fremdsprachige Seite über die Sprach-Route
+        // vorbereiten - sonst entstünde eine deutsch gestylte Aufnahme unter
+        // einem Schlüssel, den das Vorlesen nie wieder abfragt (verschenkte
+        // Synthese).
+        const foreignLang = app.utils.bookSpeechLang(app.library[app.state.currentBookId]);
+        if (foreignLang) {
+            const provider = app.ttsProviders.current();
+            if (!app.ttsProviders.supportsForeignLanguage(provider, foreignLang) || app.settings.ttsCacheEnabled === false) return;
+            try {
+                await this.renderAudio(text, { language: foreignLang });
+            } catch (e) {
+                console.warn('Vorbereiten der nächsten Seite übersprungen:', e.message);
+            }
+            return;
+        }
         // NEU: dieselbe Glättung wie beim eigentlichen Vorlesen (siehe
         // app.tts._prepare()) - sonst würde der Zwischenspeicher unter dem
         // rohen Text abgelegt, aber beim tatsächlichen Vorlesen unter dem

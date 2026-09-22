@@ -146,6 +146,25 @@ Object.assign(app.utils, {
         return (book && book.origin === 'authored') ? 'authored' : 'scan';
     },
 
+    // NEU (übersetzte Bücher, v0.39.0-beta): book.language ist die Sprach-ID
+    // einer Übersetzung (gleiche Liste wie Birkenbihl, app.birkenbihlLanguages
+    // in js/config.js) - fehlt bei allen normalen (deutschen) Büchern.
+    // Liefert den Sprachcode fürs Vorlesen (z.B. "en-GB") oder null = Deutsch.
+    // IMMER hierüber lesen: an diesem einen Wert hängt, ob js/tts.js,
+    // js/ttsNeural.js und die Hintergrund-Vorbereitung deutsch oder
+    // fremdsprachig arbeiten.
+    // NEU (v0.39.0-beta): Kurzname einer Persona für Knöpfe/Sprechblasen -
+    // "Standard (Neutral & Freundlich)" -> "Standard".
+    personaShortName(persona) {
+        return (persona?.label || '').replace(/\s*\(.*\)\s*$/, '');
+    },
+
+    bookSpeechLang(book) {
+        if (!book || !book.language) return null;
+        const info = app.birkenbihlLanguages.find(l => l.id === book.language);
+        return info ? info.speechLang : null;
+    },
+
     // NEU: baut aus einer KI-Antwort den Varianten-Datensatz einer Seite.
     // Liegt bewusst hier und nicht im Scanner: die Hintergrund-Vorbereitung
     // (backgroundPregen.js) braucht exakt dieselbe Umrechnung, und zwei
@@ -194,6 +213,10 @@ Object.assign(app.utils, {
             // weil dort auch "text" schon feststeht statt von der KI erzeugt
             // zu werden - dann bleibt es beim normalen Text.
             speechText: page.pdfSourceText ? null : (result.speechText || null),
+            // NEU (v0.39.0-beta, "Personas kommen nicht zur Geltung"): der
+            // eigene Zwischenruf der Persona - im Reader als Sprechblase unter
+            // dem Text, beim automatischen Vorlesen nach dem Text.
+            personaComment: typeof result.personaComment === 'string' && result.personaComment.trim() ? result.personaComment.trim() : null,
             // NEU (Nutzerwunsch: "schwierige Wörter sollten nach dem
             // Textteil leicht erklärt werden") - persona-unabhängig (kommt
             // bei Geschichten aus dem "core"-Block, siehe js/api.js), daher
@@ -240,6 +263,9 @@ Object.assign(app.utils, {
             book.pages.forEach(page => {
                 if (page.excluded) return; // FIX: ausgeschlossene Seiten nie mitzählen (werden nie analysiert)
                 if (page.status !== 'done') return;
+                // NEU (übersetzte Bücher): dort werden fehlende Personas nicht
+                // nachgebaut (siehe findNextMissingTask() in backgroundPregen.js).
+                if (book.language) return;
                 app.personas.forEach(persona => {
                     if (!(page.variants && page.variants[persona.id])) missing++;
                 });
@@ -281,6 +307,9 @@ Object.assign(app.utils, {
         const found = [];
         Object.values(app.library).forEach(book => {
             if (app.utils.resolveBookType(book) === 'workbook') return;
+            // NEU (übersetzte Bücher): ein bereits übersetztes Buch braucht
+            // keine Birkenbihl-Zerlegung aus dem Deutschen.
+            if (book.language) return;
             book.pages.forEach((page, pageIdx) => {
                 if (page.excluded) return; // FIX: ausgeschlossene Seiten nie mitzählen (werden nie analysiert)
                 if (page.status !== 'done') return;
@@ -314,6 +343,11 @@ Object.assign(app.utils, {
         const found = [];
         const personaId = app.settings.persona;
         for (const book of Object.values(app.library)) {
+            // NEU (übersetzte Bücher): nur, wenn die eingestellte KI-Stimme
+            // die Buchsprache kann - sonst gäbe es hier eine Dauerschleife
+            // aus Fehlversuchen.
+            const language = app.utils.bookSpeechLang(book);
+            if (language && !app.ttsProviders.supportsForeignLanguage(app.ttsProviders.current(), language)) continue;
             for (let pageIdx = 0; pageIdx < book.pages.length; pageIdx++) {
                 const page = book.pages[pageIdx];
                 if (page.excluded) continue;
@@ -321,8 +355,8 @@ Object.assign(app.utils, {
                 const variant = app.utils.resolvePageVariant(page, personaId);
                 if (!variant || !variant.text) continue;
 
-                const { plain, tagged } = app.tts._pickSpeechVariant(variant);
-                const cached = await app.ttsNeural.renderAudio(tagged || plain, { personaId, cacheOnly: true });
+                const { plain, tagged } = language ? { plain: variant.text, tagged: null } : app.tts._pickSpeechVariant(variant);
+                const cached = await app.ttsNeural.renderAudio(tagged || plain, { personaId, cacheOnly: true, language });
                 if (!cached) found.push({ bookId: book.id, pageIdx });
             }
         }

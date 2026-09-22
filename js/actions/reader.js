@@ -75,8 +75,21 @@ Object.assign(app.actions, {
     },
 
     switchReadingPersona(personaId) {
+        const changed = app.state.readingPersonaId !== personaId;
         app.state.readingPersonaId = personaId;
         app.render.reader(app.state.currentPageIdx);
+        // NEU (v0.39.0-beta, "Personas kommen nicht zur Geltung"): kurze,
+        // sichtbare Rückmeldung, wer jetzt erzählt.
+        const persona = app.personas.find(p => p.id === personaId);
+        if (changed && persona) app.ui.toast(`${app.utils.personaShortName(persona)} erzählt jetzt`, persona.icon || '🎭');
+    },
+
+    // NEU (v0.39.0-beta): 🔊 in der Zwischenruf-Sprechblase.
+    speakPersonaComment() {
+        const book = app.library[app.state.currentBookId];
+        const page = book?.pages[app.state.currentPageIdx];
+        const variant = page && app.utils.resolvePageVariant(page, app.state.readingPersonaId);
+        if (variant?.personaComment) app.tts.speak(variant.personaComment);
     },
 
     // NEU (Ausbaustufe 5, Panels): Sprechblasen-Sichtbarkeit beim Comic

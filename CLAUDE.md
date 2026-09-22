@@ -90,6 +90,7 @@ import './actions/meineNeueDatei.js';
 | `js/render/checkWork.js` | Ergebniskarte der Kontrolle (Lob, Rückmeldung, Tipps) |
 | `js/actions/workbookGenerator.js` | Heft-Generator: Formular auslesen, `app.api.generateWorksheets()` aufrufen, Blätter auf Canvas zeichnen, Heft anlegen |
 | `js/render/workbookGenerator.js` | Heft-Generator: Auswahl-Ansicht (Formular bzw. Blätter-Liste zum Abwählen) |
+| `js/actions/bookTranslate.js` | NEU v0.39.0-beta: ganzes Buch übersetzen = NEUES Buch (Kopie) mit `book.language`, alle Persona-Varianten je Seite in EINER Anfrage (`app.api.translatePageVariants()`, Block-Format wie `analyzeAllPersonas()`), fortsetzbar über `page.translation`. Knopf/Karte `#bookTranslateCard` in der Buchansicht (`js/render/book.js`) |
 | `js/actions/birkenbihl.js` | Birkenbihl-Methode (Interlinear-Übersetzung): erzeugt/cacht `page.birkenbihl` per Gemini/Mistral, liest die Zielsprache vor - seit v0.38.0-beta mit der KI-Stimme (`app.ttsNeural.speakForeign()`, `foreignLanguages` je Anbieter in `js/ttsProviders.js`), sonst Gerätestimme |
 | `js/render/birkenbihl.js` | Reader-Tab "🌍 Birkenbihl": Wort-für-Wort-Ansicht (Zielsprache oben, wörtliche deutsche Übersetzung darunter) |
 | `js/render/progress.js` | Fortschrittsbalken, Erledigt-Knopf, Belohnungs-Banner |
@@ -104,7 +105,7 @@ import './actions/meineNeueDatei.js';
 | `js/studio/studioMetaPages.js` | SchreibZauber: Titelseite/Klappentext/Autorenseite als Canvas-Textseiten (Platzhaltertext bei leeren Feldern) - `app.studio.buildMetaPages()`, nur von `studioExport.js` aufgerufen |
 | `js/studio/imageFormats.js`, `placeholder.js`, `imageSource.js` | SchreibZauber: Bildformat-Katalog, Platzhalter-Erzeugung, Bildquellen-Adapter (`{full, thumb, meta}`) - Details `docs/KONZEPT-Bildquellen.md`. Seit v0.37.0-beta (Nutzerwunsch "kostenlos Bilderbücher erstellen") zusätzlich Quelle `pollinations` (Pollinations.ai, kein Key/keine Zahlungsmethode, `private: true` fest verdrahtet gegen den öffentlichen Feed) - schwächer als `gemini`: keine Referenzbilder (nur Prompt+Seed für etwas Figuren-Ähnlichkeit), ohne eigenen Account nur ~1 Bild/15s (`imageSource.pollinationsThrottleMs`, genutzt beim Durchpausieren in `js/studio/studioImages.js`). `app.studio.resolveImageSourceId()` (studioCore.js) wählt `gemini` > `pollinations` > `placeholder` je nach Einstellungen |
 | `js/studio/worksheet.js`, `worksheetCanvas.js`, `wordSearch.js` | SchreibZauber Arbeitsheft (Stufe 4): Aufgabentypen/Lernziel/Progression, Canvas-Druckbild der Heftseiten, seit v0.38.0-beta Suchsel-Gitter-Generator (KI liefert nur Wörter, Gitter+Lösung baut die App, per Seed reproduzierbar) |
-| `js/studio/studioLayout.js`, `render/studioLayout.js` | SchreibZauber: Textposition/Schriftgröße/Silbenfarben pro Doppelseite (Stufe 7 "Das Layout") - `buildOverlayHtml()` ist die EINE Stelle, die Manuskripttext in eine positionierte HTML-Ebene über dem Bild umwandelt, genutzt von Vorschau UND Druck |
+| `js/studio/studioLayout.js`, `render/studioLayout.js` | SchreibZauber: Textposition/Schriftgröße/Silbenfarben pro Doppelseite (Stufe 7 "Das Layout") - `buildOverlayHtml()` ist die EINE Stelle, die Manuskripttext in eine positionierte HTML-Ebene über dem Bild umwandelt, genutzt von Vorschau UND Druck. Seit v0.39.0-beta zusätzlich KDP-Seitenaufbau (`textPos` `band-oben`/`band-unten`/`ohne`, `imageRegion()`), Panorama über zwei Buchseiten (`layout.panorama`, `app.studio.spreadFormatId()` in studioCore.js wählt dann `panoramaPortrait`/`panoramaSquare`) und `planPhysicalPages()` (echte Druck-Seitenfolge inkl. eingeschobener Leerseite vor einem Panorama) |
 | `js/studio/studioBalloons.js` | SchreibZauber Comic: Sprechblasen-CRUD (`addBalloon()`/`updateBalloon()`/`deleteBalloon()`, PRO PANEL) + `buildBalloonsHtml()` als HTML-Vorschau-Ebene (Prozent-Koordinaten relativ zum Panel) |
 | `js/studio/studioComicPanels.js` | SchreibZauber Comic: Panel-Layout-Vorlagen (1-4/Seite), `compositePage()` setzt Panel-Bilder per Canvas zu einer "sauberen" Seite zusammen, `bakePageWithBalloons()` brennt Sprechblasen (immer) + Geräuschwörter (optional, `project.comicShowSoundEffects`) zusätzlich ein - Export liefert BEIDE Fassungen, Reader schaltet um (`app.utils.resolveDisplayImageUrl()`) |
 | `js/studio/studioPrint.js` | SchreibZauber: Doppelseiten-Druck/PDF-Export (eigene Funktion, getrennt von `app.actions.printBook()`) - seit v0.28.0-beta comicfähig, seit v0.29.0-beta zusätzlich `printSpreadsKdp()` (echter KDP-Innenteil-Export: Bleed+Sicherheitsabstand, nur A5/A4 hoch, KEIN Umschlag) - Details CHANGELOG.md, TEIL F in `docs/KONZEPT-SchreibZauber.md`. FIX v0.37.2-beta: Bauplan-Auswahl (`index.html`) bot fälschlich 16 Seiten als kleinste Option an - unterhalb der absoluten KDP-Mindestseitenzahl (24, jede Farbstufe), Option entfernt |
@@ -136,6 +137,12 @@ import './actions/meineNeueDatei.js';
   readAuthorBioAloud, // optional bool (Default: true = vorlesen) - ob die "Über den Autor"-
                      // Seite beim automatischen Vorlesen angesagt wird (toggleReadAuthorBioAloud)
   bookQuiz: { questions: [{question, answer}] },  // optional, gecacht, nur bei 'story'
+  language,          // NEU v0.39.0-beta, optional: Sprach-ID (app.birkenbihlLanguages) einer
+                     // ÜBERSETZUNG (js/actions/bookTranslate.js) - fehlt bei normalen deutschen
+                     // Büchern. IMMER über app.utils.bookSpeechLang(book) lesen. Daran hängt:
+                     // Vorlesen in der Fremdsprache (js/tts.js/ttsNeural.js), KEINE Neu-Analyse/
+                     // Persona-Nachbau/Birkenbihl (würde deutsch), Buch-Quiz in der Buchsprache
+  translatedFromBookId, // NEU v0.39.0-beta, optional: ID des deutschen Originals
   pages: [ ... ]
 }
 ```
@@ -159,7 +166,11 @@ import './actions/meineNeueDatei.js';
     // {word, explanation}, wird beim automatischen Vorlesen NACH dem
     // Textteil vorgelesen (js/tts.js explainDifficultWords()), Wort und
     // Erklärung als zwei getrennte Sprechvorgänge mit Pause dazwischen.
-    [personaId]: { text, erstleserText, desc, quizQ, quizA, difficultWords: [{word, explanation}] }
+    // personaComment NEU seit v0.39.0-beta: eigener "Zwischenruf" der Persona zur Seite
+    // (Witz/Sachinfo/Ermutigung/Traum-Gedanke je nach commentStyle in js/config.js) -
+    // Sprechblase im Reader, beim Auto-Vorlesen nach Text+schwierigen Wörtern. Fehlt bei
+    // älteren Seiten (kein Nachbau im Hintergrund, erst beim Neu-Auslesen).
+    [personaId]: { text, erstleserText, desc, quizQ, quizA, speechText, personaComment, difficultWords: [{word, explanation}] }
     // bei bookType 'workbook' zusätzlich (quizQ/quizA dort null):
     //   { text: Aufgabenstellung, erstleserText: kindgerechte Erklärung,
     //     desc: Blatt-Beschreibung, taskType, materials, helpSteps: [], solution }
@@ -177,6 +188,9 @@ import './actions/meineNeueDatei.js';
   // gegen app.settings.birkenbihlLanguage geprüft werden, bevor pairs
   // angezeigt werden - keine automatische Neu-Erzeugung bei Sprachwechsel.
   birkenbihl: { lang, pairs: [{ target, gloss }], generatedAt },
+  // NEU v0.39.0-beta, nur in übersetzten Büchern: false = diese Seite ist noch deutsch
+  // ("Übersetzung fortsetzen" in der Buchansicht holt sie nach).
+  translation: { lang, done },
   // Alte Bücher (vor der Variants-Architektur) haben stattdessen flache Felder
   // text/erstleserText/desc/quizQ/quizA direkt auf der Seite - IMMER über
   // app.utils.resolvePageVariant()/resolveAnyVariant() lesen, nie page.variants direkt.
@@ -195,7 +209,7 @@ import './actions/meineNeueDatei.js';
 
 ## Persona-System
 
-`js/config.js` definiert `app.personas` (`{id, label, instruction, ttsStyle}`). `instruction` steuert, wie die KI **schreibt**, das optionale `ttsStyle`, wie die KI-Stimme **spricht** (fehlt es, dient `instruction` als Rückfall). Neue Persona = neuer Eintrag, taucht automatisch überall auf (Settings/Reader-Dropdown).
+`js/config.js` definiert `app.personas` (`{id, icon, tagline, commentStyle, label, instruction, ttsStyle}`). Seit v0.39.0-beta (Nutzer-Feedback „Personas kommen nicht zur Geltung“): `icon`/`tagline` für die großen Erzähler-Knöpfe im Reader (`#readerPersonaChips`, ersetzt das frühere Auswahlfeld), `commentStyle` steuert den eigenen Zwischenruf pro Seite (`personaComment`). `instruction` steuert, wie die KI **schreibt**, das optionale `ttsStyle`, wie die KI-Stimme **spricht** (fehlt es, dient `instruction` als Rückfall). Neue Persona = neuer Eintrag, taucht automatisch überall auf (Settings/Reader-Dropdown).
 
 Die Persona färbt bei Anbietern mit `supportsStyle` (Gemini, OpenAI) auch die Stimmlage - `app.ttsProviders.styleHintFor()`, abschaltbar in den Einstellungen. Speechify versteht keinen Freitext-Stilhinweis, sondern nur eine von 13 festen SSML-Emotionen (`supportsEmotionTag`/`emotionHintFor()`/`speechifyEmotion` pro Persona, derselbe Einstellungen-Schalter schaltet beides ab).
 
@@ -263,7 +277,7 @@ Mehrere gleichzeitige Claude-Code-Sessions/Branches vergleichen sich nur mit dem
 
 ## Offene Punkte (Stand zuletzt besprochen)
 
-**Die vollständige, zusammengeführte Liste steht in [`docs/TODO-GESAMT.md`](docs/TODO-GESAMT.md)** (inkl. was mit v0.12.0 schon erledigt ist) - vor dem Einplanen eines Features dort nachsehen.
+**Die vollständige, zusammengeführte Liste steht in [`docs/TODO-GESAMT.md`](docs/TODO-GESAMT.md)** (inkl. was mit v0.12.0 schon erledigt ist) - vor dem Einplanen eines Features dort nachsehen. **Seit v0.39.0-beta getrennt:** was erst etwas vom Betreiber braucht (Konto, Gerät, Alltagsbeobachtung, Entscheidung, Test mit echten Keys), steht in [`docs/WARTET-AUF-BETREIBER.md`](docs/WARTET-AUF-BETREIBER.md) - dort nichts „einfach bauen“, sondern erst beim Betreiber nachfragen.
 
 Größere, noch nicht begonnene Features (brauchen erst Abstimmung mit dem Nutzer):
 
@@ -273,11 +287,11 @@ Größere, noch nicht begonnene Features (brauchen erst Abstimmung mit dem Nutze
 | 🪄 "SchreibZauber" - Stufe 1-6 fertig. Die zweite Einstiegsseite/eigenes Manifest wird laut Nutzerentscheid (Sept. 2026) **nicht gebraucht** - endgültig verworfen, kein offener Punkt mehr (siehe CHANGELOG.md v0.25.0-beta für die ursprüngliche Abwägung) | [`docs/KONZEPT-SchreibZauber.md`](docs/KONZEPT-SchreibZauber.md), [`docs/KONZEPT-Bildquellen.md`](docs/KONZEPT-Bildquellen.md), [`docs/KONZEPT-Comic.md`](docs/KONZEPT-Comic.md) |
 | 🎨 KI-Illustrationen (Comic-Stil) für Text-only-EPUB-Kapitel (TEIL A - separates lokales Werkzeug, nicht Teil der PWA). Der SchreibZauber-Comic-Werktyp (TEIL B) ist seit Ausbaustufe 5 fertig | [`docs/KONZEPT-Comic.md`](docs/KONZEPT-Comic.md) |
 | 📱 Native Android-App - TWA-Weg gewählt (Paket-ID `app.lesezauber.pro`, Signierschlüssel erzeugt+übergeben, `.well-known/assetlinks.json`/`.nojekyll` im Repo). Noch offen: `bubblewrap init`/`build` tatsächlich ausführen (braucht volle Internetverbindung), Play-Console-Konto einrichten - siehe CHANGELOG.md v0.30.3-beta | [`docs/TODO-GESAMT.md`](docs/TODO-GESAMT.md), Bereich "App & Plattform" |
-| 🌍 Mehrsprachigkeit - Birkenbihl-Methode (Interlinear-Text) seit v0.31.0-beta als erster Reader-Tab gebaut (nur Gerätestimme, seitenweise on-demand, kein Konzeptpapier dazu). Noch offen: ganzes Buch übersetzen (separate Funktion), KI-Stimme für die Zielsprache | [`docs/TODO-GESAMT.md`](docs/TODO-GESAMT.md), Bereich "Mehrsprachigkeit / Übersetzung" |
+| 🌍 Mehrsprachigkeit - Birkenbihl-Tab (v0.31.0-beta), KI-Stimme für die Zielsprache (v0.38.0-beta) und ganzes Buch übersetzen (v0.39.0-beta) gebaut. Offen nur noch die volle App-Oberfläche in anderen Sprachen (i18n, nicht angefragt) | [`docs/TODO-GESAMT.md`](docs/TODO-GESAMT.md), Bereich "Mehrsprachigkeit / Übersetzung" |
 
 **Vor jeder Arbeit an einem dieser Themen erst das verlinkte Dokument lesen** - sonst werden bereits gefallene Entscheidungen neu diskutiert und verworfene Wege erneut probiert.
 
-Diagnose, noch nicht reproduziert: Scroll-Verhalten am Bildschirmrand (Desktop), Zoom/Unschärfe im Fenstermodus - braucht ggf. einen Screenshot vom Nutzer.
+Diagnose, noch nicht reproduziert (Scroll-Verhalten am Bildschirmrand, Zoom/Unschärfe im Fenstermodus): siehe `docs/WARTET-AUF-BETREIBER.md` - braucht einen Screenshot vom Nutzer.
 
 Bewusst zurückgestellt (bräuchten einen eigenen Server): API-Key-Absicherung über Backend, automatische Cloud-Synchronisierung, echte Multi-Geräte-Accounts.
 
@@ -310,6 +324,6 @@ Feste Regeln:
 
 ## Versionsstand
 
-Aktuell `v0.38.0-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Version bei größeren Änderungen hochzählen (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).
+Aktuell `v0.39.0-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Version bei größeren Änderungen hochzählen (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).
 
 **Die vollständige Versionshistorie (was mit welcher Version kam, inkl. aller Entscheidungen) steht in [`CHANGELOG.md`](CHANGELOG.md), neueste Version zuerst.** Vor dem Einplanen eines Features dort nachsehen, sonst werden bereits gefallene Entscheidungen neu diskutiert. Neuer Eintrag bei jeder Versionserhöhung: oben in `CHANGELOG.md` ergänzen, nicht hier.

@@ -680,6 +680,32 @@ nicht neu geführt werden muss):
    dafür vorhanden. Deutlich größerer Schritt als Punkt 2, erst angehen, wenn Punkt 2 sich
    bewährt hat und eine echte Veröffentlichung wirklich ansteht.
 
+**✅ Nachtrag v0.39.0-beta: alle drei KDP-Ideen umgesetzt** (Nutzerwunsch „KDP-Ideen umsetzen,
+überlege wie es geht“):
+
+1. **Quadrat 8,5×8,5 Zoll** - Bauplan-Option `quadrat` (215,9 mm, `TRIM_PAPER_MM`/
+   `KDP_ALLOWED_TRIMS` in `js/studio/studioPrint.js`), eigenes Bildformat `pageSquare`
+   (`js/studio/imageFormats.js`, 1344×1344).
+2. **Seitenaufbau pro Doppelseite** (Stufe 7, Auswahl „Seitenaufbau“): zusätzlich zu „Text über
+   dem Bild“ (oben/unten/links/rechts) jetzt `band-unten`/`band-oben` (Text in eigenem weißen
+   Streifen, 28 % der Seite, Bild ungeschnitten per `contain` im Rest) und `ohne` (Vollbild ohne
+   Text - der Text bleibt im Reader vorlesbar, fehlt nur im Druck; Hinweis in der Vorschau).
+   Bild-Prompt hält dann keine Textfläche mehr frei. Bausteine: `imageRegion()`/
+   `effectiveTextPos()` in `js/studio/studioLayout.js`, benutzt von Vorschau UND Druck.
+3. **Panorama über zwei Buchseiten** (`spread.layout.panorama`, nur bei Hochformat/Quadrat - bei
+   „A5 quer“ ist eine Doppelseite bereits ein Querbild): eigenes Breitformat
+   (`panoramaPortrait` ≈1,41:1 bzw. `panoramaSquare` 2:1), der Prompt verlangt eine ruhige
+   Bildmitte ohne Gesichter/Details (Falz). Im Druck wird das Bild auf linke und rechte Seite
+   geteilt; `planPhysicalPages()` rechnet die echte Seitenfolge (Seite 1 = Titelseite = rechts)
+   und schiebt vor ein Panorama, das sonst auf einer rechten Seite begänne, eine Leerseite ein -
+   sonst lägen beide Hälften auf Vorder- und Rückseite desselben Blatts. Die Layout-Vorschau
+   zeigt Buchseitenzahlen und warnt vor eingeschobenen Leerseiten.
+
+**Umstellung von Layout/Panorama bei vorhandenem Bild:** ein Platzhalter wird kostenlos sofort
+neu gezeichnet, ein echtes KI-Bild nur als veraltet markiert (`imageStale`) - kein automatischer,
+kostenpflichtiger Bildaufruf. **Noch offen:** Test im echten KDP-Vorschauer
+(`docs/WARTET-AUF-BETREIBER.md`).
+
 ---
 
 # TEIL G – Offene Fragen an den Nutzer

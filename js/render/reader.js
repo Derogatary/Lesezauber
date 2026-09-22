@@ -123,16 +123,56 @@ Object.assign(app.render, {
         // Persona-Auswahl fürs Lesen befüllen - Haken zeigt, welche
         // Personas für DIESE Seite schon vorbereitet sind (kein erneutes
         // Warten nötig), statt erst beim Auswählen zu merken.
-        const personaSelect = document.getElementById('readerPersonaSelect');
-        if (personaSelect) {
-            personaSelect.innerHTML = app.personas.map(p => {
+        // NEU (v0.39.0-beta, "man übersieht die Personas leicht"): große
+        // Erzähler-Knöpfe statt Auswahlfeld. Unter dem Namen steht entweder
+        // die Kurzbeschreibung (Variante für diese Seite schon da) oder
+        // "wird erzeugt" (Antippen kostet eine KI-Anfrage). In einem
+        // übersetzten Buch nur die mitübersetzten Personas - andere lassen
+        // sich dort nicht nachträglich erzeugen (siehe js/actions/scanner.js).
+        // NEU (übersetzte Bücher): ist die gewählte Persona hier nicht
+        // mitübersetzt, auf eine vorhandene ausweichen - nachträglich erzeugen
+        // lässt sie sich in einer Übersetzung nicht (würde deutsch).
+        if (book.language && !app.utils.resolvePageVariant(page, app.state.readingPersonaId)) {
+            const available = app.personas.find(p => app.utils.resolvePageVariant(page, p.id));
+            if (available) app.state.readingPersonaId = available.id;
+        }
+
+        const personaChips = document.getElementById('readerPersonaChips');
+        if (personaChips) {
+            const shown = book.language
+                ? app.personas.filter(p => app.utils.resolvePageVariant(page, p.id) !== null)
+                : app.personas;
+            personaChips.innerHTML = shown.map(p => {
+                const active = p.id === app.state.readingPersonaId;
                 const ready = app.utils.resolvePageVariant(page, p.id) !== null;
-                const marker = ready ? '✓ ' : '';
-                return `<option value="${p.id}" ${p.id === app.state.readingPersonaId ? 'selected' : ''}>${marker}${app.utils.sanitize(p.label)}</option>`;
+                const sub = ready ? (p.tagline || '') : '✨ wird erzeugt';
+                return `<button role="radio" aria-checked="${active}" onclick="app.actions.switchReadingPersona('${p.id}')"
+                    class="flex-shrink-0 flex items-center gap-2 rounded-2xl border-2 px-3 py-2 text-left transition ${active ? 'border-indigo-600 bg-indigo-600 text-white shadow-md' : 'border-slate-200 bg-white text-slate-700 hover:border-indigo-300'}">
+                    <span class="text-2xl leading-none">${p.icon || '🎭'}</span>
+                    <span class="flex flex-col leading-tight">
+                        <span class="text-xs font-bold whitespace-nowrap">${app.utils.sanitize(app.utils.personaShortName(p))}</span>
+                        <span class="text-[10px] whitespace-nowrap ${active ? 'text-indigo-100' : 'text-slate-400'}">${app.utils.sanitize(sub)}</span>
+                    </span>
+                </button>`;
             }).join('');
         }
 
         const variant = app.utils.resolvePageVariant(page, app.state.readingPersonaId);
+
+        // NEU (v0.39.0-beta): Zwischenruf der Persona als Sprechblase unter
+        // dem Text (Original- UND Erstleser-Tab). Ältere Seiten ohne
+        // personaComment zeigen einfach keine Blase.
+        const activePersona = app.personas.find(p => p.id === app.state.readingPersonaId);
+        ['readerPersonaComment', 'readerPersonaCommentErst'].forEach(id => {
+            const box = document.getElementById(id);
+            if (!box) return;
+            const comment = variant && variant.personaComment;
+            box.classList.toggle('hidden', !comment);
+            if (!comment) return;
+            box.querySelector('[data-persona-icon]').innerText = activePersona?.icon || '🎭';
+            box.querySelector('[data-persona-name]').innerText = `${activePersona ? app.utils.personaShortName(activePersona) : 'Erzähler'} sagt:`;
+            box.querySelector('[data-persona-text]').innerText = comment;
+        });
 
         if (variant) {
             document.getElementById('readerOriginalText').innerText = variant.text || 'Kein Text extrahiert.';

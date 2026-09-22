@@ -31,7 +31,7 @@ Object.assign(app.actions, {
         app.ui.showLoader('Erstelle Buch-Quiz...', 'Einen Moment bitte');
         app.state.apiBusy = true;
         try {
-            const questions = await app.api.generateBookQuiz(compiledText, personaId);
+            const questions = await app.api.generateBookQuiz(compiledText, personaId, book.language || null);
             book.bookQuiz = { questions };
             app.dbOps.saveBook(book);
             app.render.bookQuiz();

@@ -80,6 +80,31 @@ Object.assign(app.render, {
             prepareAudioBar.classList.toggle('hidden', app.settings.ttsProvider === 'device' || book.pages.length === 0);
         }
 
+        // NEU (v0.39.0-beta): "Buch übersetzen" - nur bei Geschichten. Ein
+        // Original zeigt die Sprachauswahl, eine Übersetzung stattdessen, von
+        // wo sie stammt und ggf. "fortsetzen" (js/actions/bookTranslate.js).
+        const translateCard = document.getElementById('bookTranslateCard');
+        if (translateCard) {
+            const isStory = app.utils.resolveBookType(book) === 'story';
+            translateCard.classList.toggle('hidden', !isStory || book.pages.length === 0);
+            const isTranslation = !!book.language;
+            document.getElementById('bookTranslateStart').classList.toggle('hidden', isTranslation);
+            const info = document.getElementById('bookTranslateInfo');
+            const open = app.actions.countUntranslatedPages(book);
+            document.getElementById('bookTranslateContinue').classList.toggle('hidden', !(isTranslation && open > 0));
+            if (isTranslation) {
+                const lang = app.birkenbihlLanguages.find(l => l.id === book.language);
+                const source = app.library[book.translatedFromBookId];
+                info.innerText = `${lang ? lang.label : book.language} - Übersetzung${source ? ` von „${source.title}“` : ''}. Vorgelesen wird in dieser Sprache.${open > 0 ? ` ${open} Seite(n) noch nicht übersetzt.` : ''}`;
+            } else {
+                const select = document.getElementById('bookTranslateLang');
+                if (select && !select.options.length) {
+                    select.innerHTML = app.birkenbihlLanguages.map(l => `<option value="${l.id}">${app.utils.sanitize(l.label)}</option>`).join('');
+                }
+                info.innerText = 'Legt ein neues Buch in der Zielsprache an - mit allen Erzähler-Varianten, eine KI-Anfrage pro Seite. Das Original bleibt unverändert.';
+            }
+        }
+
         const grid = document.getElementById('pagesGrid');
         grid.innerHTML = book.pages.map((p, i) => {
             let statusBadge = `<span class="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full">Bereit</span>`;

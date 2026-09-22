@@ -6,6 +6,16 @@ vollständige Historie, neueste Version zuerst. Diese Datei wurde aus
 `CLAUDE.md` ausgelagert, weil der Abschnitt dort mit der Zeit zu groß für
 schnellen Kontext wurde; inhaltlich unverändert übernommen.
 
+## v0.39.0-beta
+
+Drei Nutzerwünsche aus einer Runde („KDP-Ideen umsetzen, überlege wie es geht“ / „wenn's kein großer Mehraufwand ist mehrere Personas übersetzen“ / „die Personas kommen noch nicht so stark zur Geltung bzw. man übersieht sie leicht“) plus Aufräumen der TODO-Liste:
+
+- **KDP-Ideen umgesetzt** (vorher nur dokumentiert, siehe v0.37.2-beta): Bauplan-Format **„Quadratisch 8,5 Zoll“** (auch im KDP-Innenteil-Export); **Seitenaufbau pro Doppelseite** in Stufe 7 - neben „Text über dem Bild“ jetzt „Bild oben/Text darunter“ bzw. umgekehrt (eigener weißer Streifen, Bild wird nicht beschnitten) und „Vollbild ohne Text“; **Panorama über zwei Buchseiten** (ein Breitbild mit ruhiger Falzmitte, im Druck auf linke/rechte Seite geteilt, bei Bedarf mit eingeschobener Leerseite, damit beide Hälften nebeneinander liegen - die Layout-Vorschau zeigt die echten Buchseitenzahlen). Platzhalter werden bei Layoutwechsel kostenlos neu gezeichnet, echte Bilder nur als veraltet markiert. Details: `docs/KONZEPT-SchreibZauber.md`, Nachtrag v0.39.0-beta.
+- **Ganzes Buch übersetzen** (`js/actions/bookTranslate.js`, neue Karte „🌍 Buch übersetzen“ in der Buchansicht): legt ein NEUES Buch in der Zielsprache an (Original bleibt unverändert), mit **allen** Erzähler-Varianten - kostet trotzdem nur eine KI-Anfrage pro Seite (`app.api.translatePageVariants()`, gleiches Block-Format wie `analyzeAllPersonas()`). Abbrechen und später „Übersetzung fortsetzen“ geht. Neues Buchfeld `language`: das Buch wird in dieser Sprache vorgelesen (KI-Stimme ohne deutsche Persona-Färbung mit Wort-Hervorhebung, sonst Gerätestimme mit Sprachcode), deutsche Ansagen/Abkürzungs-Glättung/Mitmach-Pausen entfallen dort, das Buch-Quiz entsteht in der Buchsprache. Gesperrt, weil sie deutschen Text erzeugen würden: Neu-Auslesen, Persona-Nachbau im Hintergrund, Birkenbihl.
+- **Personas sichtbarer:** im Reader große **Erzähler-Knöpfe** mit Symbol und Kurzbeschreibung (🙂 Standard, 😄 Lustiger Papa, 🦉 Weiser Professor, 💖 Beste Freundin, 🧚 Gute-Nacht-Fee) statt des kleinen Auswahlfelds, Toast beim Wechsel. Grund für das Übersehen war auch inhaltlich: der zuerst sichtbare Seitentext ist für alle Personas gleich. Neu deshalb ein eigener **Zwischenruf** jeder Persona pro Seite (`personaComment` - Witz, „Wusstest du...?“, Ermutigung, Traum-Gedanke), als Sprechblase unter dem Text und beim automatischen Vorlesen nach dem Text. Entsteht im selben Analyse-Aufruf (keine Mehrkosten); ältere Seiten bekommen ihn erst beim Neu-Auslesen.
+- **TODO-Liste aufgeteilt:** alles, was Claude nicht allein erledigen kann (Comic-Testlauf, Ausmalbilder, Kontroll-Funktion beobachten, Diagnose-Screenshots, Android-App, Server-Themen, Tests mit echten Keys), steht jetzt in `docs/WARTET-AUF-BETREIBER.md`.
+- Tailwind-Build läuft wieder (die Pakete fehlten lokal); `css/tailwind.css` neu gebaut.
+
 ## v0.38.0-beta
 
 Zwei offene Punkte aus `docs/TODO-GESAMT.md` abgearbeitet (Auftrag "alle Todos durchgehen und bearbeiten, was geht") - beide ohne offene Nutzerentscheidung umsetzbar:

@@ -187,7 +187,8 @@ Object.assign(app.render, {
         // stammen zwar aus config.js und sind damit ungefährlich, aber die
         // Regel "vor innerHTML immer sanitize" soll ausnahmslos gelten,
         // damit sie beim nächsten Mal nicht versehentlich reißt.
-        personaSelect.innerHTML = app.personas.map(p => `<option value="${p.id}">${app.utils.sanitize(p.label)}</option>`).join('');
+        // NEU (v0.39.0-beta): Symbol + Kurzbeschreibung wie im Reader.
+        personaSelect.innerHTML = app.personas.map(p => `<option value="${p.id}">${p.icon || '🎭'} ${app.utils.sanitize(p.label)}${p.tagline ? ` – ${app.utils.sanitize(p.tagline)}` : ''}</option>`).join('');
 
         document.getElementById('inputApiKey').value = app.settings.apiKey;
         document.getElementById('inputMistralKey').value = app.settings.mistralApiKey;

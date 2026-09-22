@@ -67,7 +67,12 @@ Object.assign(app.tts, {
         // "Kinder-\nwagen" schon weg und prepareTextForSpeech() könnte den
         // Trennstrich nicht mehr auflösen ("Kinder- wagen" statt
         // "Kinderwagen"). Nachgeprüft beim Zusammenführen der beiden Zweige.
-        const prepared = app.utils.stripSpeechTags(app.utils.prepareTextForSpeech(text));
+        // NEU (übersetzte Bücher): prepareTextForSpeech() kennt nur deutsche
+        // Abkürzungen ("z.B." -> "zum Beispiel") - bei einem fremdsprachigen
+        // Buch würde es fremde Wörter verfälschen, also dort weglassen.
+        const prepared = this._foreignLang()
+            ? app.utils.stripSpeechTags(text)
+            : app.utils.stripSpeechTags(app.utils.prepareTextForSpeech(text));
         if (!highlightElementId) return app.utils.stripEmojiForSpeech(prepared);
 
         const { clean, html } = app.utils.buildSpeechHighlightHtml(prepared);
@@ -86,6 +91,9 @@ Object.assign(app.tts, {
     _pickSpeechVariant(variant) {
         const plain = variant.text;
         if (!variant.speechText || variant.speechText === plain) return { plain, tagged: null };
+        // NEU (übersetzte Bücher): die Fremdsprachen-Route nutzt keine
+        // Audio-Tags (siehe app.ttsNeural.speakForeign()).
+        if (this._foreignLang()) return { plain, tagged: null };
 
         const provider = app.ttsProviders.current();
         if (app.ttsNeural.isActive() && provider.supportsTags) {
@@ -102,6 +110,13 @@ Object.assign(app.tts, {
     // eine KI-Stimme mit supportsTags geht. Die Hervorhebung baut IMMER auf
     // dem normalen "text" auf, damit Klammer-Tags nicht als eigene Wörter
     // mitgezählt werden.
+    // NEU (übersetzte Bücher, v0.39.0-beta): Sprachcode (z.B. "en-GB"), wenn
+    // das gerade geöffnete Buch eine Übersetzung ist (book.language, siehe
+    // js/actions/bookTranslate.js), sonst null = Deutsch wie bisher.
+    _foreignLang() {
+        return app.utils.bookSpeechLang(app.library[app.state.currentBookId]);
+    },
+
     speak(text, onEnd, highlightElementId, taggedText) {
         // FIX: hier wurde einfach abgebrochen. Beim automatischen Vorlesen
         // hängen aber mehrere speak()-Aufrufe als Kette aneinander (Text ->
@@ -115,6 +130,15 @@ Object.assign(app.tts, {
         const clean = this._prepare(text, highlightElementId);
         // Gleicher Fall: Text bestand nur aus Emojis -> trotzdem weiterreichen.
         if (!clean) { if (onEnd) onEnd(); return; }
+
+        // NEU (übersetzte Bücher): fremdsprachiges Buch -> eigene Sprach-Route
+        // (KI-Stimme ohne deutsche Persona-Färbung, sonst Gerätestimme mit
+        // passendem Sprachcode - speakForeign() entscheidet das selbst).
+        const foreignLang = this._foreignLang();
+        if (foreignLang) {
+            app.ttsNeural.speakForeign(clean, foreignLang, onEnd, highlightElementId);
+            return;
+        }
 
         if (app.ttsNeural.isActive()) {
             // Läuft asynchron (Netzwerk) und schaltet bei Problemen selbst
@@ -227,6 +251,10 @@ Object.assign(app.tts, {
     // .mitmach-emoji.mitmach-active in style.css).
     speakMitmach(erstleserText, onEnd, highlightElementId) {
         if (!this.synth || !erstleserText) { if (onEnd) onEnd(); return; }
+        // NEU (übersetzte Bücher): die Mitmach-Pausen hängen an der deutschen
+        // Gerätestimme und der Emoji-Zerlegung - bei einem fremdsprachigen Buch
+        // stattdessen normal (ohne Pausen) vorlesen statt mit deutscher Stimme.
+        if (this._foreignLang()) { this.speak(erstleserText, onEnd, highlightElementId); return; }
         // FIX: über die gemeinsame stop()-Weiche abbrechen, damit auch eine
         // laufende KI-Stimme verstummt. stop() zählt die Generation selbst
         // hoch - die eigene wird deshalb DANACH gemerkt.
@@ -556,6 +584,16 @@ Object.assign(app.tts, {
             }
         };
 
+        // NEU (v0.39.0-beta, "Personas kommen nicht zur Geltung"): der eigene
+        // Zwischenruf der gewählten Persona (variant.personaComment) nach Text
+        // und Wort-Erklärungen, vor der Bildbeschreibung. Fehlt er (ältere
+        // Seiten), läuft es ohne Pause direkt weiter.
+        const sayPersonaComment = () => {
+            if (!app.state.autoReadActive) return;
+            if (variant.personaComment) this.speak(variant.personaComment, describeImage);
+            else describeImage();
+        };
+
         // NEU (Nutzerwunsch: "schwierige Wörter sollten nach dem Textteil
         // leicht erklärt werden", konkretes Beispiel "Bibliothek könnte
         // langsamer bzw. mit Pausen vorgelesen werden"): Wort und Erklärung
@@ -568,10 +606,10 @@ Object.assign(app.tts, {
         const explainDifficultWords = () => {
             if (!app.state.autoReadActive) return;
             const words = Array.isArray(variant.difficultWords) ? variant.difficultWords : [];
-            if (words.length === 0) { describeImage(); return; }
+            if (words.length === 0) { sayPersonaComment(); return; }
             const speakNext = (i) => {
                 if (!app.state.autoReadActive) return;
-                if (i >= words.length) { describeImage(); return; }
+                if (i >= words.length) { sayPersonaComment(); return; }
                 const w = words[i];
                 this.speak(w.word, () => {
                     if (!app.state.autoReadActive) return;
@@ -652,6 +690,10 @@ Object.assign(app.tts, {
     // 🔊-Button wäre die Wiederholung bei jedem erneuten Antippen nervig.
     _buildMetadataAnnouncements(book, page, pageIdx) {
         const announcements = [];
+        // NEU (übersetzte Bücher): die Ansage-Sätze sind deutsch formuliert -
+        // in einem fremdsprachigen Buch mit fremder Stimme vorgelesen klänge
+        // das falsch. Titel/Kapitel stehen ohnehin sichtbar auf der Seite.
+        if (app.utils.bookSpeechLang(book)) return announcements;
 
         // Buchvorstellung nur auf der allerersten Seite, und nur, wenn
         // überhaupt ein erkannter Titel vorliegt (kein "Neues Buch" mehr).

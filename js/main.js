@@ -32,6 +32,8 @@ import './actions/progress.js';
 import './actions/checkWork.js';
 import './actions/workbookGenerator.js';
 import './actions/prepareAudio.js';
+// NEU (v0.39.0-beta): ganzes Buch übersetzen (Kopie in Zielsprache).
+import './actions/bookTranslate.js';
 import './actions/audiobookExport.js';
 
 // NEU: Video-Export Weg B, Teil 1 - Renderer-Kern (Canvas) plus Zeitplan
