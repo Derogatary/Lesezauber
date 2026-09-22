@@ -106,7 +106,7 @@ import './actions/meineNeueDatei.js';
 | `js/studio/studioLayout.js`, `render/studioLayout.js` | SchreibZauber: Textposition/Schriftgröße/Silbenfarben pro Doppelseite (Stufe 7 "Das Layout") - `buildOverlayHtml()` ist die EINE Stelle, die Manuskripttext in eine positionierte HTML-Ebene über dem Bild umwandelt, genutzt von Vorschau UND Druck |
 | `js/studio/studioBalloons.js` | SchreibZauber Comic: Sprechblasen-CRUD (`addBalloon()`/`updateBalloon()`/`deleteBalloon()`, PRO PANEL) + `buildBalloonsHtml()` als HTML-Vorschau-Ebene (Prozent-Koordinaten relativ zum Panel) |
 | `js/studio/studioComicPanels.js` | SchreibZauber Comic: Panel-Layout-Vorlagen (1-4/Seite), `compositePage()` setzt Panel-Bilder per Canvas zu einer "sauberen" Seite zusammen, `bakePageWithBalloons()` brennt Sprechblasen (immer) + Geräuschwörter (optional, `project.comicShowSoundEffects`) zusätzlich ein - Export liefert BEIDE Fassungen, Reader schaltet um (`app.utils.resolveDisplayImageUrl()`) |
-| `js/studio/studioPrint.js` | SchreibZauber: Doppelseiten-Druck/PDF-Export (eigene Funktion, getrennt von `app.actions.printBook()`) - seit v0.28.0-beta comicfähig, seit v0.29.0-beta zusätzlich `printSpreadsKdp()` (echter KDP-Innenteil-Export: Bleed+Sicherheitsabstand, nur A5/A4 hoch, KEIN Umschlag) - Details CHANGELOG.md, TEIL F in `docs/KONZEPT-SchreibZauber.md` |
+| `js/studio/studioPrint.js` | SchreibZauber: Doppelseiten-Druck/PDF-Export (eigene Funktion, getrennt von `app.actions.printBook()`) - seit v0.28.0-beta comicfähig, seit v0.29.0-beta zusätzlich `printSpreadsKdp()` (echter KDP-Innenteil-Export: Bleed+Sicherheitsabstand, nur A5/A4 hoch, KEIN Umschlag) - Details CHANGELOG.md, TEIL F in `docs/KONZEPT-SchreibZauber.md`. FIX v0.37.2-beta: Bauplan-Auswahl (`index.html`) bot fälschlich 16 Seiten als kleinste Option an - unterhalb der absoluten KDP-Mindestseitenzahl (24, jede Farbstufe), Option entfernt |
 | `js/render/studioLibrary.js`, `render/studioWizard.js` | SchreibZauber: Werkstatt-Übersicht bzw. Stufen-Ansicht |
 | `js/vendor/` | PDF.js, JSZip, mp4-muxer (MIT) - NIE direkt bearbeiten, nur austauschen/aktualisieren. Lazy geladen, deshalb NICHT in der `APP_SHELL` von `sw.js` |
 | `sw.js` | Service Worker - **`CACHE_NAME` bei jeder Datei-Änderung hochzählen**, neue Dateien zur `APP_SHELL`-Liste hinzufügen |
@@ -309,6 +309,6 @@ Feste Regeln:
 
 ## Versionsstand
 
-Aktuell `v0.37.1-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Version bei größeren Änderungen hochzählen (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).
+Aktuell `v0.37.2-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Version bei größeren Änderungen hochzählen (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).
 
 **Die vollständige Versionshistorie (was mit welcher Version kam, inkl. aller Entscheidungen) steht in [`CHANGELOG.md`](CHANGELOG.md), neueste Version zuerst.** Vor dem Einplanen eines Features dort nachsehen, sonst werden bereits gefallene Entscheidungen neu diskutiert. Neuer Eintrag bei jeder Versionserhöhung: oben in `CHANGELOG.md` ergänzen, nicht hier.

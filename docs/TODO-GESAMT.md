@@ -142,6 +142,7 @@ Der größte Brocken im Projekt - dafür in Stufen geschnitten, die **einzeln li
 | ~~**SchreibZauber Stufe 5 - Comic**~~ | **L** | ✅ **erledigt** - Panel-Layouts, Sprechblasen-Overlay, seit v0.28.0-beta auch comicfähiger Druck. Details: CHANGELOG.md v0.24.0/v0.26.0/v0.28.0-beta |
 | ~~**SchreibZauber Stufe 6 - Politur**~~ | **M** | ✅ **erledigt** - projektübergreifende Figuren, Vorlagen (CHANGELOG.md v0.25.0-beta). Die zweite Einstiegsseite `schreiben.html` wird laut Nutzerentscheid (Sept. 2026) **nicht gebraucht** - endgültig verworfen, keine Tab-Lösung wird zur zweiten App ausgebaut |
 | **Comic-Generator-Werkzeug** | **L** | Bewusst **kein** App-Feature: eigenes Node-Werkzeug lokal beim Betreiber (`tools/comic-gen/`), weil Browser nur CORS-fähige Bild-Anbieter erreichen |
+| **KDP-Fertigstellung: Trimm-Format 8,5×8,5", Seiten-Layout-Varianten, echte Doppelseiten-Bilder** | **M/L** | Drei Ideen aus Nutzerfrage 22.09.2026 zu KDP-Farbstufen/Seitenaufbau, NUR dokumentiert - noch keine Nutzerentscheidung, ob umgesetzt werden soll. Details: `docs/KONZEPT-SchreibZauber.md`, Nachtrag "KDP-Farbstufen konkretisiert + Seitenlayout-Ideen" |
 
 **✅ Bedingung erfüllt: Stufe 1 ist gebaut und in `main`.** Damit war die im Konzept
 genannte Voraussetzung für die parallelen Werktyp-Pfade erfüllt - **Stufe 2 (Bilder), Stufe 3

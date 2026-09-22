@@ -636,6 +636,52 @@ weiterhin dringend empfohlen.
 
 ---
 
+## Nachtrag: KDP-Farbstufen konkretisiert + Seitenlayout-Ideen (22.09.2026, Nutzerfrage "Standard-/Premiumfarbe, welcher Aufbau?")
+
+Websuche (Stand 22.09.2026) hat die Farbstufen-Eckdaten aus dem Nachtrag oben ("mindestens
+72 bzw. 24 Seiten") um Papier/Druckverfahren ergänzt:
+
+| | Standardfarbe | Premiumfarbe |
+|---|---|---|
+| Mindest-Seitenzahl | 72 | 24 |
+| Papier | 50-61 lb (74-90 g/m²), weiß | 60-71 lb (88-105 g/m²), weiß, etwas kräftiger |
+| Druck | Tintenstrahl | Tintenstrahl, kräftigere/sattere Farbwiedergabe |
+| Für uns relevant | praktisch nie (Bilderbücher haben selten 72+ Seiten) | die einzig sinnvolle Wahl für ein KI-Bilderbuch |
+
+**Absolute KDP-Untergrenze, unabhängig von der Farbstufe: 24 Seiten** (ein dünnerer
+Buchblock lässt sich nicht klebebinden). **FIX (22.09.2026):** Die Bauplan-Auswahl
+(`index.html` `#studioTotalPages`) bot bisher fälschlich **16 Seiten** als kleinste Option
+an - damit wäre KEINE KDP-Einreichung durchgekommen, auch nicht mit Premiumfarbe (deren
+Minimum liegt zufällig ebenfalls bei 24). Option entfernt, verbleibende Wahl jetzt 24/32/40.
+
+**Drei weitere Ideen aus derselben Unterhaltung, bewusst NUR dokumentiert, NICHT
+umgesetzt** (brauchen erst eine Nutzerentscheidung, ob überhaupt Richtung einer echten
+Veröffentlichung weitergebaut werden soll - vor Beginn hier nachlesen, damit die Abwägung
+nicht neu geführt werden muss):
+
+1. **Quadratisches Trimm-Format 8,5×8,5 Zoll (≈21,6×21,6 cm) ergänzen.** Laut Recherche das
+   bei Amazon-KDP-Bilderbüchern gängigste Format (randabfallende Illustrationen wirken darauf
+   am besten) - `KDP_ALLOWED_TRIMS`/`TRIM_PAPER_MM` (`js/studio/studioPrint.js`) kennen
+   bisher nur "A5 hoch"/"A4 hoch".
+2. **Seiten-Layout-Varianten statt fester "ein Bild + eine Textzone pro Doppelseite"-Regel.**
+   Echte Bilderbücher wechseln ständig: mal Vollbild ganz ohne Text, mal kleines Bild oben +
+   Text darunter (oder umgekehrt). Kleinerer, risikoarmer erster Schritt, falls gewünscht: ein
+   Auswahlfeld pro Doppelseite in Stufe 7 ("Das Layout") - "Vollbild ohne Text" / "Bild + Text
+   oben" / "Bild + Text unten" - nutzt die bestehenden `textZones` (`imageFormats.js`), macht
+   "kein Text auf dieser Seite" aber zu einer bewussten Wahl statt einer festen Regel.
+3. **Echte, über zwei gegenüberliegende Buchseiten reichende Bilder** (ein Motiv über den
+   Bundsteg hinweg, wie in vielen klassischen Bilderbüchern). Wichtige Klarstellung dazu (siehe
+   Nachtrag oben, v0.29.0-beta): eine "Doppelseite" ist in unserer Architektur bereits JETZT
+   eine einzelne physische Druckseite, kein zwei Seiten überspannendes Bild - das wäre ein
+   grundlegend NEUES Konzept (ein Breitformat-Bild pro Aufruf statt eines Seitenformats, exaktes
+   Zerschneiden genau an der Bundsteg-Mitte, wichtige Bildinhalte dürfen dabei nicht in den
+   ca. 1cm verschwinden, der im Falz verloren geht). Mit KI-Einzelbild-Erzeugung pro Seite (ein
+   Aufruf weiß nichts von der Nachbarseite) zusätzlich erschwert - kein Referenzmechanismus
+   dafür vorhanden. Deutlich größerer Schritt als Punkt 2, erst angehen, wenn Punkt 2 sich
+   bewährt hat und eine echte Veröffentlichung wirklich ansteht.
+
+---
+
 # TEIL G – Offene Fragen an den Nutzer
 
 Diese Punkte sollten vor Umsetzungsbeginn geklärt werden:

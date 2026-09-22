@@ -1,7 +1,7 @@
 // Bei jeder inhaltlichen Änderung an einer dieser Dateien diese Nummer
 // erhöhen - sonst bekommen wiederkehrende Besucher weiter die alte
 // zwischengespeicherte Version ausgeliefert.
-const CACHE_NAME = 'lesezauber-shell-v70';
+const CACHE_NAME = 'lesezauber-shell-v71';
 
 // NEU (v56): Modell-Rotation bei Ratenbegrenzung (Nutzerwunsch: "rotierende
 // Funktion von absteigender Qualität") - js/api.js/js/studio/studioApi.js

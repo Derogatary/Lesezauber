@@ -6,6 +6,14 @@ vollständige Historie, neueste Version zuerst. Diese Datei wurde aus
 `CLAUDE.md` ausgelagert, weil der Abschnitt dort mit der Zeit zu groß für
 schnellen Kontext wurde; inhaltlich unverändert übernommen.
 
+## v0.37.2-beta
+
+KDP-Farbstufen (Standard-/Premiumfarbe) und Bauplan-Seitenaufbau geklärt (Nutzerfrage), dabei einen echten Bug gefunden und behoben, Rest als Ideen dokumentiert statt blind umgesetzt:
+
+- **FIX: Bauplan bot 16 Seiten als kleinste Gesamtseitenzahl an** (`index.html` `#studioTotalPages`) - das ist unterhalb der absoluten KDP-Mindestseitenzahl von 24 (gilt für JEDE Farbstufe, ein dünnerer Buchblock lässt sich nicht klebebinden) und wäre bei keiner KDP-Einreichung durchgekommen. Option entfernt, verbleibende Wahl 24/32/40.
+- **Standard-/Premiumfarbe-Vergleich recherchiert und dokumentiert** (`docs/KONZEPT-SchreibZauber.md`, neuer Nachtrag): Standardfarbe verlangt mindestens 72 Seiten (für ein KI-Bilderbuch praktisch irrelevant), Premiumfarbe mindestens 24 (die einzig sinnvolle Wahl bei uns) - unterschiedliches Papiergewicht (50-61 lb vs. 60-71 lb).
+- **Drei weitere Ideen NUR dokumentiert, NICHT umgesetzt** (brauchen erst eine Nutzerentscheidung): quadratisches 8,5×8,5"-Trimm-Format (das bei KDP-Bilderbüchern gängigste, fehlt uns bisher), Seiten-Layout-Varianten pro Doppelseite (Vollbild ohne Text / Bild+Text oben/unten, statt der bisherigen festen Regel), und die deutlich größere Idee echter, über den Bundsteg reichender Doppelseiten-Bilder (mit KI-Einzelbild-Erzeugung pro Seite zusätzlich erschwert, da ein Aufruf nichts von der Nachbarseite weiß). Details: `docs/KONZEPT-SchreibZauber.md`, Nachtrag "KDP-Farbstufen konkretisiert + Seitenlayout-Ideen".
+
 ## v0.37.1-beta
 
 Bild-Prompts bekamen bisher den kompletten Text-Prompt-Leitplanken-Block mit (Nutzerfrage "was landet im Prompt?" anhand eines echten Pollinations-Beispiel-Screenshots):
