@@ -59,7 +59,8 @@ Object.assign(app.studio, {
         app.state.apiBusy = true;
         try {
             const result = await app.studio.imageSource.request(sourceId, {
-                formatId: app.studio.trimToFormat(project.spec.trim, project.type),
+                // NEU (KDP-Panorama): Format pro Doppelseite statt pro Buch.
+                formatId: app.studio.spreadFormatId(project, spread),
                 sketch: app.studio.spreadSceneHint(spread),
                 style: app.studio.buildStyleText(project.style),
                 characters: app.studio.characterRefsFor(project, spread),
@@ -216,7 +217,8 @@ Object.assign(app.studio, {
                 }
                 try {
                     const result = await app.studio.imageSource.request(sourceId, {
-                        formatId: app.studio.trimToFormat(project.spec.trim, project.type),
+                        // NEU (KDP-Panorama): Format pro Doppelseite.
+                        formatId: app.studio.spreadFormatId(project, s),
                         rawPrompt: s.imagePrompt,
                         characterImages: characterImagesFor(project, s),
                         index: i,

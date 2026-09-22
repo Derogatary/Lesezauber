@@ -14,30 +14,82 @@ import { app } from '../core.js';
 // reicht eine feste Referenzbreite.
 const PREVIEW_BASE_FONT_PX = 15;
 
-function layoutCardHtml(spread, project) {
+// NEU (KDP-Quadratformat): Seitenverhältnis der Vorschau aus den echten
+// Papiermaßen (app.studio.TRIM_PAPER_MM, studioPrint.js) statt fest
+// "hoch = 3/4, sonst 3/2" - sonst sähe ein quadratisches Buch hier falsch aus.
+function pageAspect(project) {
+    const paper = app.studio.TRIM_PAPER_MM?.[project.spec.trim];
+    return paper ? `${paper.w}/${paper.h}` : '3/2';
+}
+
+// NEU (KDP-Seitenlayout-Varianten + Panorama): Vorschau-Bild einer Seite -
+// dieselbe Logik wie pageImageHtml() im Druck (studioPrint.js): Bildbereich
+// bei Textstreifen, linke/rechte Hälfte beim Panorama.
+function previewImageHtml(spread, half) {
+    if (!spread.imgUrl) {
+        return `<div class="absolute inset-0 w-full h-full bg-slate-100 flex items-center justify-center text-slate-300 text-2xl">🖼️</div>`;
+    }
+    if (half) {
+        return `<div class="absolute inset-0 overflow-hidden"><img src="${spread.imgUrl}" class="absolute top-0 h-full object-cover" style="width:200%; max-width:none; left:${half === 'left' ? '0' : '-100%'};" alt="Doppelseite ${spread.index + 1}"></div>`;
+    }
+    const region = app.studio.layout.imageRegion(spread.layout);
+    const fit = region.fit === 'contain' ? 'object-contain p-[4%]' : 'object-cover';
+    return `<div class="absolute left-0 right-0" style="top:${region.top}%; bottom:${region.bottom}%;"><img src="${spread.imgUrl}" class="absolute inset-0 w-full h-full ${fit}" alt="Doppelseite ${spread.index + 1}"></div>`;
+}
+
+function layoutCardHtml(spread, project, planEntry) {
     const layout = spread.layout || { textPos: 'unten', fontScale: 1, syllableColors: false };
     const pct = Math.round((layout.fontScale || 1) * 100);
-    const aspect = project.spec.trim === 'a5-hoch' || project.spec.trim === 'a4-hoch' ? '3/4' : '3/2';
-    const img = spread.imgUrl
-        ? `<img src="${spread.imgUrl}" class="absolute inset-0 w-full h-full object-cover" alt="Doppelseite ${spread.index + 1}">`
-        : `<div class="absolute inset-0 w-full h-full bg-slate-100 flex items-center justify-center text-slate-300 text-2xl">🖼️</div>`;
     const overlay = app.studio.layout.buildOverlayHtml(spread.text || '', layout, project.brief.readingLevel, PREVIEW_BASE_FONT_PX, 'px');
+    const panoramaOk = app.studio.layout.panoramaAllowed(project);
+    const isPanorama = !!(layout.panorama && panoramaOk);
+
+    // Vorschau: eine Seite - oder beim Panorama zwei nebeneinander mit
+    // gestrichelter Falz-Linie, Text auf der Seite, auf der er auch gedruckt wird.
+    let preview;
+    if (isPanorama) {
+        const textSide = app.studio.layout.panoramaTextSide(layout);
+        const half = (side) => `<div class="relative overflow-hidden bg-white" style="aspect-ratio:${pageAspect(project)};">${previewImageHtml(spread, side)}${side === textSide ? overlay : ''}</div>`;
+        preview = `
+        <div class="relative w-full mx-auto rounded-lg overflow-hidden border border-slate-200 grid grid-cols-2" style="max-width:520px;">
+            ${half('left')}${half('right')}
+            <div class="absolute top-0 bottom-0 left-1/2 border-l-2 border-dashed border-white/80 pointer-events-none"></div>
+        </div>`;
+    } else {
+        preview = `
+        <div class="relative w-full mx-auto rounded-lg overflow-hidden border border-slate-200 bg-white" style="max-width:420px; aspect-ratio:${pageAspect(project)};">
+            ${previewImageHtml(spread, null)}
+            ${overlay}
+        </div>`;
+    }
+
+    const options = app.studio.layout.TEXT_POS_OPTIONS
+        .filter(o => !(isPanorama && (o.id === 'band-oben' || o.id === 'band-unten')))
+        .map(o => `<option value="${o.id}" ${(layout.textPos || 'unten') === o.id ? 'selected' : ''}>${o.label}</option>`).join('');
+
+    // Seitenzahl im gedruckten Buch (Seite 1 = Titelseite) - macht sichtbar,
+    // wo ein Panorama liegt und ob davor eine Leerseite nötig wird.
+    const pageInfo = planEntry
+        ? (planEntry.panorama ? `Buchseiten ${planEntry.startPage}-${planEntry.startPage + 1}` : `Buchseite ${planEntry.startPage}`)
+        : '';
+    const hints = [];
+    if (planEntry?.blankBefore) hints.push('⚠️ Davor wird im Druck eine Leerseite eingefügt, damit das Panorama auf zwei gegenüberliegenden Seiten liegt.');
+    if (layout.textPos === 'ohne' && (spread.text || '').trim()) hints.push('ℹ️ Der Text dieser Doppelseite erscheint nicht im Druck (im Reader wird er weiter vorgelesen).');
+    if (spread.imageStale) hints.push('🖼️ Das Bild passt nicht mehr zum Layout - in Stufe 6 "Bilder" neu erzeugen.');
 
     return `
     <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden p-3 space-y-3">
-        <span class="text-[10px] font-bold text-slate-400 uppercase">Doppelseite ${spread.index + 1}</span>
-        <div class="relative w-full mx-auto rounded-lg overflow-hidden border border-slate-200 bg-slate-50" style="max-width:420px; aspect-ratio:${aspect};">
-            ${img}
-            ${overlay}
+        <div class="flex items-center justify-between">
+            <span class="text-[10px] font-bold text-slate-400 uppercase">Doppelseite ${spread.index + 1}</span>
+            <span class="text-[10px] text-slate-400">${pageInfo}</span>
         </div>
+        ${preview}
+        ${hints.map(h => `<p class="text-[11px] text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1">${h}</p>`).join('')}
         <div class="grid grid-cols-2 gap-2">
             <div>
-                <label class="text-[10px] font-bold text-slate-500 block mb-0.5">Textposition</label>
+                <label class="text-[10px] font-bold text-slate-500 block mb-0.5">Seitenaufbau</label>
                 <select onchange="app.studio.updateSpreadLayout(${spread.index}, {textPos: this.value})" class="w-full text-xs text-slate-900 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:border-indigo-500">
-                    <option value="oben" ${layout.textPos === 'oben' ? 'selected' : ''}>oben</option>
-                    <option value="unten" ${layout.textPos === 'unten' || !layout.textPos ? 'selected' : ''}>unten</option>
-                    <option value="links" ${layout.textPos === 'links' ? 'selected' : ''}>links</option>
-                    <option value="rechts" ${layout.textPos === 'rechts' ? 'selected' : ''}>rechts</option>
+                    ${options}
                 </select>
             </div>
             <div>
@@ -46,6 +98,11 @@ function layoutCardHtml(spread, project) {
                     onchange="app.studio.updateSpreadLayout(${spread.index}, {fontScale: parseFloat(this.value)})" class="w-full mt-1.5">
             </div>
         </div>
+        ${panoramaOk ? `
+        <label class="flex items-start gap-2 text-xs font-semibold text-slate-700">
+            <input type="checkbox" ${isPanorama ? 'checked' : ''} onchange="app.studio.toggleSpreadPanorama(${spread.index}, this.checked)" class="mt-0.5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+            <span>🌄 Panorama über zwei Buchseiten<br><span class="font-normal text-slate-400">Ein breites Bild läuft über den Falz hinweg auf beide Seiten. Braucht ein neues Bild im Breitformat.</span></span>
+        </label>` : ''}
     </div>`;
 }
 
@@ -124,8 +181,10 @@ Object.assign(app.render, {
         const list = document.getElementById('studioLayoutList');
         if (!list) return;
         const isComic = project.type === 'comic';
+        // NEU (KDP-Panorama): physische Seitenfolge einmal für alle Karten.
+        const plan = isComic ? [] : app.studio.layout.planPhysicalPages(project);
         list.innerHTML = project.spreads.length
-            ? project.spreads.map((s) => isComic ? comicLayoutCardHtml(s, s.index) : layoutCardHtml(s, project)).join('')
+            ? project.spreads.map((s, i) => isComic ? comicLayoutCardHtml(s, s.index) : layoutCardHtml(s, project, plan[i])).join('')
             : `<div class="col-span-full text-center py-10 text-slate-500 bg-white rounded-2xl border border-dashed border-slate-200"><span class="text-3xl block mb-2">📐</span><p class="text-xs font-semibold px-4">Noch keine Doppelseiten - erst in der Stufe "Geschichte" welche anlegen.</p></div>`;
         // NEU (comicfähiger Druck): der Sprechblasen-Einbrenn-Umschalter im
         // Druckblock ist nur beim Comic relevant (siehe js/studio/studioPrint.js).

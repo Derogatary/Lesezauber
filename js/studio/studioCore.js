@@ -52,7 +52,21 @@ const REFERENCE_STORY_SPREADS = 12; // = (32 - 8) / 2
 // Papierentscheidung, für Panelseiten ohne Bedeutung.
 function trimToFormat(trim, type) {
     if (type === 'comic') return 'comicPage';
+    // NEU (KDP 8,5x8,5 Zoll): quadratisches Buch -> quadratische Seite.
+    if (trim === 'quadrat') return 'pageSquare';
     return trim === 'a5-quer' ? 'spreadLandscape' : 'pagePortrait';
+}
+
+// NEU (KDP-Panorama): Bildformat für EINE bestimmte Doppelseite - wie
+// trimToFormat(), nur dass eine als Panorama markierte Doppelseite (Stufe 7,
+// spread.layout.panorama) ein Breitbild über zwei Buchseiten bekommt. EIN Ort
+// für diese Entscheidung, damit Platzhalter, echte Bilder und Stapel-Erzeugung
+// dasselbe Format anfragen.
+function spreadFormatId(project, spread) {
+    if (spread?.layout?.panorama && app.studio.layout?.panoramaAllowed(project)) {
+        return project.spec.trim === 'quadrat' ? 'panoramaSquare' : 'panoramaPortrait';
+    }
+    return trimToFormat(project.spec.trim, project.type);
 }
 
 // NEU: feste, aber pro Doppelseite unterschiedliche Textzone (Bugreport:
@@ -286,6 +300,7 @@ Object.assign(app.studio, {
     genId,
     computeSpec,
     trimToFormat,
+    spreadFormatId,
     buildStyleText,
     characterRefsFor,
     characterRefsForPanel,
@@ -509,7 +524,7 @@ Object.assign(app.studio, {
         if (!spread) return;
 
         const result = await app.studio.imageSource.request('placeholder', {
-            formatId: trimToFormat(project.spec.trim, project.type),
+            formatId: spreadFormatId(project, spread),
             // NEU (Stufe 2): sobald das Storyboard eine eigene Bildidee
             // (sketchPrompt) hat, ist DIE das eigentlich gewollte Bildmotiv -
             // vorher (Stufe 1, ohne Storyboard) war der Manuskripttext der

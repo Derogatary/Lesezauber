@@ -49,6 +49,49 @@ const FORMATS = {
         },
         note: 'Für Bücher, bei denen jede Seite ein eigenes Bild hat.'
     },
+    // NEU (KDP-Trimm-Format 8,5x8,5 Zoll, v0.39.0-beta): das bei KDP-
+    // Bilderbüchern gängigste Format - quadratische Einzelseite.
+    pageSquare: {
+        label: 'Bilderbuch-Einzelseite (quadratisch)',
+        aspect: '1:1',
+        genW: 1344, genH: 1344,
+        textZone: 'unteres Drittel',
+        textZones: {
+            unten: 'unteres Drittel', oben: 'oberes Drittel',
+            links: 'linkes Drittel', rechts: 'rechtes Drittel'
+        },
+        note: 'Quadratisches Bilderbuch (KDP 8,5×8,5 Zoll).'
+    },
+    // NEU (KDP-Panorama, v0.39.0-beta): EIN Bild über zwei gegenüberliegende
+    // Buchseiten. "fold: true" lässt buildPrompt() (imageSource.js) die
+    // Bildmitte freihalten - dort liegt im gedruckten Buch der Falz, ca. 1cm
+    // davon verschwindet in der Bindung. Die Textzonen beziehen sich auf das
+    // ganze Breitbild; der Text landet im Druck auf der linken Hälfte (bzw.
+    // bei "rechts" auf der rechten), siehe app.studio.layout.panoramaTextSide().
+    panoramaPortrait: {
+        label: 'Panorama über zwei Hochformat-Seiten',
+        aspect: '1,41:1 (zwei Hochformat-Seiten nebeneinander)',
+        genW: 1824, genH: 1296,
+        textZone: 'unteres Viertel der linken Bildhälfte',
+        textZones: {
+            unten: 'unteres Viertel der linken Bildhälfte', oben: 'oberes Viertel der linken Bildhälfte',
+            links: 'linkes Fünftel', rechts: 'rechtes Fünftel'
+        },
+        fold: true,
+        note: 'Wird im Druck in der Mitte geteilt - linke Hälfte links, rechte Hälfte rechts.'
+    },
+    panoramaSquare: {
+        label: 'Panorama über zwei quadratische Seiten',
+        aspect: '2:1 (zwei quadratische Seiten nebeneinander)',
+        genW: 1792, genH: 896,
+        textZone: 'unteres Viertel der linken Bildhälfte',
+        textZones: {
+            unten: 'unteres Viertel der linken Bildhälfte', oben: 'oberes Viertel der linken Bildhälfte',
+            links: 'linkes Fünftel', rechts: 'rechtes Fünftel'
+        },
+        fold: true,
+        note: 'Wird im Druck in der Mitte geteilt - linke Hälfte links, rechte Hälfte rechts.'
+    },
     characterSheet: {
         label: 'Figurenblatt',
         aspect: '1:1',

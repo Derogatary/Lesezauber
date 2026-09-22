@@ -934,6 +934,9 @@
                             <option value="a5-quer">A5 quer (Doppelseiten-Bild)</option>
                             <option value="a5-hoch">A5 hoch (Einzelseiten-Bild)</option>
                             <option value="a4-hoch">A4 hoch (groß, Einzelseiten-Bild)</option>
+                            <!-- NEU (v0.39.0-beta): KDP-Standardformat für Bilderbücher,
+                                 siehe TRIM_PAPER_MM in js/studio/studioPrint.js. -->
+                            <option value="quadrat">Quadratisch 21,6 cm (8,5 Zoll, beliebt bei KDP-Bilderbüchern)</option>
                         </select>
                     </div>
                 </div>
@@ -1087,7 +1090,7 @@
                  Silbenfarben, Doppelseiten-Druck; Konzept C.2/TEIL E) -->
             <section id="studioStageLayout" class="space-y-3 hidden">
                 <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-3 text-xs text-indigo-900">
-                    Textposition, Schriftgröße und Silbenfarben pro Doppelseite - der Text bleibt dabei immer eine HTML-Ebene über dem Bild, nie ins Bild hineingezeichnet.
+                    Seitenaufbau (Text über dem Bild, eigener Textstreifen, Vollbild ohne Text, Panorama über zwei Seiten), Schriftgröße und Silbenfarben pro Doppelseite - der Text bleibt dabei immer eine HTML-Ebene über dem Bild, nie ins Bild hineingezeichnet.
                 </div>
                 <!-- NEU: Silbenfarben jetzt EIN Umschalter fürs ganze Buch statt
                      vorher pro Doppelseite (Nutzer-Feedback: "man ändert die
@@ -1120,7 +1123,7 @@
                      zusätzlich mit Bundsteg-Innenrand nach Gesamtseitenzahl. -->
                 <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 space-y-2">
                     <p class="text-xs font-bold text-amber-900">📕 Für Amazon KDP (Taschenbuch-Innenteil)</p>
-                    <p class="text-[11px] text-amber-800">Echte 3&nbsp;mm-Beschnittzugabe (Bleed), Sicherheitsabstand für Text vom Papierrand (0,375" mit Bleed, 0,25" ohne) UND ein zusätzlicher Bundsteg-Innenrand je nach Gesamtseitenzahl - alle drei nach KDPs eigenen Vorgaben. Nur für die Papierformate „A5 hoch"/„A4 hoch" (Bauplan, Stufe 1), das sind zwei bei KDP tatsächlich hinterlegte Formate. <strong>Liefert nur das Innenteil, keinen Umschlag</strong> - Vorder-/Rückseite samt Buchrücken bitte im kostenlosen Cover-Ersteller direkt bei KDP erstellen, der berechnet die Rückenbreite passend zur Seitenzahl und lässt die Fläche für die (bei KDP kostenlose) ISBN frei. <strong>Wichtig zur Seitenzahl:</strong> KDP verlangt bei Standardfarbe mindestens 72 Seiten, bei Premiumfarbe mindestens 24 - der Bauplan bietet aktuell maximal 40, bei der Einreichung also "Premiumfarbe" wählen (oder die Seitenzahl erhöhen). Für scharfen Druck den Umschalter "📐 Hochauflösend für den Druck" (Bauplan, Stufe 2) aktivieren, bevor die Bilder erzeugt werden - eine belastbare dpi-Zahl gibt es erst nach einer echten Testgenerierung damit. Vor der echten Veröffentlichung zusätzlich eine KDP-Testbestellung einplanen.</p>
+                    <p class="text-[11px] text-amber-800">Echte 3&nbsp;mm-Beschnittzugabe (Bleed), Sicherheitsabstand für Text vom Papierrand (0,375" mit Bleed, 0,25" ohne) UND ein zusätzlicher Bundsteg-Innenrand je nach Gesamtseitenzahl - alle drei nach KDPs eigenen Vorgaben. Nur für die Papierformate „A5 hoch", „A4 hoch" und „Quadratisch 8,5 Zoll" (Bauplan, Stufe 2) - alle drei bei KDP hinterlegte Formate. Panorama-Doppelseiten werden auf zwei gegenüberliegende Seiten verteilt (nötigenfalls mit einer eingeschobenen Leerseite). <strong>Liefert nur das Innenteil, keinen Umschlag</strong> - Vorder-/Rückseite samt Buchrücken bitte im kostenlosen Cover-Ersteller direkt bei KDP erstellen, der berechnet die Rückenbreite passend zur Seitenzahl und lässt die Fläche für die (bei KDP kostenlose) ISBN frei. <strong>Wichtig zur Seitenzahl:</strong> KDP verlangt bei Standardfarbe mindestens 72 Seiten, bei Premiumfarbe mindestens 24 - der Bauplan bietet aktuell maximal 40, bei der Einreichung also "Premiumfarbe" wählen (oder die Seitenzahl erhöhen). Für scharfen Druck den Umschalter "📐 Hochauflösend für den Druck" (Bauplan, Stufe 2) aktivieren, bevor die Bilder erzeugt werden - eine belastbare dpi-Zahl gibt es erst nach einer echten Testgenerierung damit. Vor der echten Veröffentlichung zusätzlich eine KDP-Testbestellung einplanen.</p>
                     <button onclick="app.studio.printSpreadsKdp()" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-2.5 rounded-xl shadow-md transition text-sm">📕 KDP-Innenteil erzeugen</button>
                 </div>
                 <div class="flex gap-2">

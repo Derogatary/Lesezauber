@@ -25,7 +25,11 @@ import { app } from '../core.js';
 const TRIM_PAPER_MM = {
     'a5-quer': { w: 210, h: 148 },
     'a5-hoch': { w: 148, h: 210 },
-    'a4-hoch': { w: 210, h: 297 }
+    'a4-hoch': { w: 210, h: 297 },
+    // NEU (v0.39.0-beta): 8,5x8,5 Zoll - das bei KDP-Bilderbüchern
+    // gängigste Trimm-Format (docs/KONZEPT-SchreibZauber.md, Nachtrag
+    // "KDP-Farbstufen konkretisiert + Seitenlayout-Ideen" Punkt 1).
+    'quadrat': { w: 215.9, h: 215.9 }
 };
 
 // NEU: Basis-Schriftgröße für den Druck in mm (vor Multiplikation mit
@@ -73,7 +77,7 @@ function kdpGutterMm(totalPages) {
 // (Querformat) ist NICHT geprüft, ob/wie KDP ein Querformat-Bilderbuch
 // überhaupt trimmt - deshalb hier bewusst ausgeschlossen statt geraten, statt
 // stillschweigend ein evtl. falsches Format anzubieten.
-const KDP_ALLOWED_TRIMS = ['a5-hoch', 'a4-hoch'];
+const KDP_ALLOWED_TRIMS = ['a5-hoch', 'a4-hoch', 'quadrat'];
 
 // NEU (KDP-Hochauflösend-Umschalter): reine Rechenfunktion Papierbreite ->
 // Pixelbreite bei 300dpi, EIN Ort statt doppelt gerechnet - genutzt sowohl
@@ -100,13 +104,60 @@ function imgStyleFor(bleed) {
         : 'position:absolute; inset:8mm; width:calc(100% - 16mm); height:calc(100% - 16mm); object-fit:contain;';
 }
 
-function pageHtml(spread, index, project, bleed) {
+// NEU (KDP-Seitenlayout-Varianten + Panorama): EIN Baustein für das Bild
+// einer Druckseite - berücksichtigt den Bildbereich bei "Bild + Textstreifen"
+// (app.studio.layout.imageRegion()) und bei einem Panorama die linke bzw.
+// rechte Hälfte des Breitbilds (Bild doppelt so breit wie die Seite,
+// verschoben). Ein Panorama läuft IMMER randabfallend (cover) - ein weißer
+// Rand am Falz würde das durchgehende Bild zerschneiden.
+function pageImageHtml(spread, index, fitStyle, half) {
+    if (!spread.imgUrl) return '';
+    const alt = `Doppelseite ${index + 1}`;
+    if (half) {
+        return `<div style="position:absolute; inset:0; overflow:hidden;"><img src="${spread.imgUrl}" style="position:absolute; top:0; height:100%; width:200%; max-width:none; left:${half === 'left' ? '0' : '-100%'}; object-fit:cover;" alt="${alt}"></div>`;
+    }
+    const region = app.studio.layout.imageRegion(spread.layout);
+    const style = region.fit === 'contain'
+        ? 'position:absolute; inset:4%; width:92%; height:92%; object-fit:contain;'
+        : fitStyle;
+    return `<div style="position:absolute; left:0; right:0; top:${region.top}%; bottom:${region.bottom}%;"><img src="${spread.imgUrl}" style="${style}" alt="${alt}"></div>`;
+}
+
+// NEU (KDP-Panorama): eine Doppelseite ergibt eine ODER - als Panorama -
+// zwei Druckseiten. wrapText(overlayHtml) erlaubt dem KDP-Druck, die
+// Textebene zusätzlich in seinen Sicherheitsabstand zu packen.
+function spreadPagesHtml(spread, index, project, fitStyle, wrapText = (html) => html) {
     const layout = spread.layout || { textPos: 'unten', fontScale: 1, syllableColors: false };
-    const img = spread.imgUrl
-        ? `<img src="${spread.imgUrl}" style="${imgStyleFor(bleed)}" alt="Doppelseite ${index + 1}">`
-        : '';
-    const overlay = app.studio.layout.buildOverlayHtml(spread.text || '', layout, project.brief.readingLevel, PRINT_BASE_FONT_MM, 'mm');
-    return `<div class="sz-print-page">${img}${overlay}</div>`;
+    const overlay = wrapText(app.studio.layout.buildOverlayHtml(spread.text || '', layout, project.brief.readingLevel, PRINT_BASE_FONT_MM, 'mm'));
+    const isPanorama = !!(layout.panorama && app.studio.layout.panoramaAllowed(project));
+    if (!isPanorama) {
+        return `<div class="sz-print-page">${pageImageHtml(spread, index, fitStyle, null)}${overlay}</div>`;
+    }
+    const textSide = app.studio.layout.panoramaTextSide(layout);
+    return ['left', 'right'].map(half =>
+        `<div class="sz-print-page">${pageImageHtml(spread, index, fitStyle, half)}${half === textSide ? overlay : ''}</div>`
+    ).join('');
+}
+
+// NEU (KDP-Panorama): Doppelseiten in physischer Reihenfolge inkl.
+// eingeschobener Leerseiten (siehe app.studio.layout.planPhysicalPages() -
+// ein Panorama muss auf einer linken Buchseite beginnen). Liefert das HTML
+// und die Zahl der eingeschobenen Leerseiten für den Hinweis-Toast.
+function bookPagesHtml(project, renderSpread) {
+    const plan = app.studio.layout.planPhysicalPages(project);
+    let blanks = 0;
+    const html = project.spreads.map((s, i) => {
+        const blank = plan[i]?.blankBefore ? '<div class="sz-print-page"></div>' : '';
+        if (blank) blanks++;
+        return blank + renderSpread(s, i);
+    }).join('');
+    return { html, blanks };
+}
+
+function blankPagesToast(blanks) {
+    if (blanks > 0) {
+        app.ui.toast(`${blanks} Leerseite(n) eingefügt, damit jedes Panorama-Bild auf zwei gegenüberliegenden Seiten liegt.`, 'ℹ️');
+    }
 }
 
 // NEU (comicfähiger Druck): eine Comic-Druckseite zeigt NUR das fertige,
@@ -133,12 +184,12 @@ function comicPageHtml(imgUrl, index, bleed) {
 // groß (siehe kdpGutterMm() oben - Bundsteg auf beiden Seiten, da unbekannt,
 // welche davon die Buchmitte ist).
 function kdpPageHtml(spread, index, project, safe) {
-    const layout = spread.layout || { textPos: 'unten', fontScale: 1, syllableColors: false };
-    const img = spread.imgUrl
-        ? `<img src="${spread.imgUrl}" style="position:absolute; inset:0; width:100%; height:100%; object-fit:cover;" alt="Doppelseite ${index + 1}">`
-        : '';
-    const overlay = app.studio.layout.buildOverlayHtml(spread.text || '', layout, project.brief.readingLevel, PRINT_BASE_FONT_MM, 'mm');
-    return `<div class="sz-print-page">${img}<div style="position:absolute; inset:${safe.topBottom}mm ${safe.side}mm;">${overlay}</div></div>`;
+    // NEU (KDP-Seitenlayout-Varianten + Panorama): gemeinsamer Baustein mit
+    // dem normalen Druck, nur die Textebene kommt zusätzlich in den
+    // Sicherheitsabstand.
+    return spreadPagesHtml(spread, index, project,
+        'position:absolute; inset:0; width:100%; height:100%; object-fit:cover;',
+        (overlay) => overlay ? `<div style="position:absolute; inset:${safe.topBottom}mm ${safe.side}mm;">${overlay}</div>` : '');
 }
 
 // NEU (KDP-Innenteil, Comic): bewusst KEIN Bleed/Überstand hier - die
@@ -213,7 +264,9 @@ Object.assign(app.studio, {
                 app.ui.hideLoader();
             }
         } else {
-            pagesHtml = project.spreads.map((s, i) => pageHtml(s, i, project, bleed)).join('');
+            const built = bookPagesHtml(project, (s, i) => spreadPagesHtml(s, i, project, imgStyleFor(bleed)));
+            pagesHtml = built.html;
+            blankPagesToast(built.blanks);
         }
 
         if (printWindow.closed) {
@@ -282,7 +335,7 @@ Object.assign(app.studio, {
             return;
         }
         if (!KDP_ALLOWED_TRIMS.includes(project.spec.trim)) {
-            app.ui.toast('KDP-Export gibt es nur für die Papierformate "A5 hoch"/"A4 hoch" - im Bauplan (Stufe 1) änderbar.', '⚠️');
+            app.ui.toast('KDP-Export gibt es nur für die Papierformate "A5 hoch", "A4 hoch" und "Quadratisch 8,5 Zoll" - im Bauplan (Stufe 2) änderbar.', '⚠️');
             return;
         }
         // NEU: KDP verlangt für Taschenbücher mit Standardfarbe mindestens
@@ -343,7 +396,9 @@ Object.assign(app.studio, {
                 app.ui.hideLoader();
             }
         } else {
-            pagesHtml = project.spreads.map((s, i) => kdpPageHtml(s, i, project, safeBleed)).join('');
+            const built = bookPagesHtml(project, (s, i) => kdpPageHtml(s, i, project, safeBleed));
+            pagesHtml = built.html;
+            blankPagesToast(built.blanks);
         }
 
         if (printWindow.closed) {

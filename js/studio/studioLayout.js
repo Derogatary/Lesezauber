@@ -140,6 +140,14 @@ function buildTextLines(text, readingLevel) {
 // passt - siehe docs/KONZEPT-SchreibZauber.md "Stand nach Stufe 3" für
 // diese bekannte Lücke.
 function textPosStyle(textPos) {
+    // NEU (KDP-Seitenlayout-Varianten): "Bild + Text oben/unten" - der Text
+    // liegt NICHT über dem Bild, sondern in einem eigenen weißen Streifen
+    // (BAND_PCT der Seitenhöhe), das Bild rückt in den Rest (siehe
+    // imageRegion() unten). Deshalb hier kein halbtransparenter Kasten,
+    // sondern schlichter Text auf dem weißen Seitenhintergrund.
+    const bandBase = 'position:absolute; left:6%; right:6%; display:flex; flex-direction:column; justify-content:center; text-align:center; line-height:1.35;';
+    if (textPos === 'band-unten') return `${bandBase} top:${100 - BAND_PCT + 3}%; bottom:3%;`;
+    if (textPos === 'band-oben') return `${bandBase} top:3%; bottom:${100 - BAND_PCT + 3}%;`;
     const base = 'position:absolute; background:rgba(255,255,255,0.82); border-radius:0.6em; padding:0.5em 0.8em; line-height:1.35; box-shadow:0 1px 3px rgba(0,0,0,0.15);';
     switch (textPos) {
         case 'oben':
@@ -161,6 +169,10 @@ function textPosStyle(textPos) {
 // Wizard-Kärtchen braucht eine andere Einheit als der mm-genaue Druck),
 // fontScale (0.8-1.5) skaliert nur relativ dazu.
 function buildOverlayHtml(text, layout, readingLevel, baseSize, unit) {
+    // NEU (KDP-Seitenlayout-Varianten): "Vollbild ohne Text" - bewusst
+    // gewählte Bildseite ohne Textebene (Text bleibt trotzdem im Reader
+    // vorlesbar, siehe studioExport.js - nur im Druck/in der Vorschau fehlt er).
+    if (layout?.textPos === 'ohne') return '';
     const lines = buildTextLines(text, readingLevel);
     if (lines.length === 0) return '';
 
@@ -175,15 +187,102 @@ function buildOverlayHtml(text, layout, readingLevel, baseSize, unit) {
         return `<div>${app.utils.sanitize(line)}</div>`;
     }).join('');
 
-    const style = `${textPosStyle(layout?.textPos)} font-size:${(baseSize * scale).toFixed(2)}${unit}; color:#1e293b;`;
+    const style = `${textPosStyle(effectiveTextPos(layout))} font-size:${(baseSize * scale).toFixed(2)}${unit}; color:#1e293b;`;
     return `<div style="${style}">${bodyHtml}</div>`;
+}
+
+// ================= NEU: KDP-Seitenlayout-Varianten + Panorama =================
+// docs/KONZEPT-SchreibZauber.md, Nachtrag "KDP-Farbstufen konkretisiert +
+// Seitenlayout-Ideen" Punkt 2 und 3 - seit v0.39.0-beta umgesetzt.
+//
+// textPos kennt jetzt zusätzlich zu oben/unten/links/rechts (Text als Kasten
+// ÜBER dem Bild):
+//   'band-oben'/'band-unten' - Text in eigenem weißen Streifen, Bild darüber
+//                              bzw. darunter (klassisches "Bild + Text"-Layout)
+//   'ohne'                   - Vollbild ohne Text (bewusst stille Bildseite)
+// layout.panorama (bool): EIN Breitbild über ZWEI gegenüberliegende Buchseiten
+// (über den Bundsteg hinweg). Nur bei Hochformat-/Quadrat-Büchern, weil dort
+// eine Doppelseite im Druck genau EINE Buchseite ist (siehe CHANGELOG
+// v0.29.0-beta) - das Panorama belegt dann zwei davon.
+
+// Höhe des Textstreifens in Prozent der Seitenhöhe.
+const BAND_PCT = 28;
+const TEXT_POS_OPTIONS = [
+    { id: 'unten', label: 'Text über dem Bild: unten' },
+    { id: 'oben', label: 'Text über dem Bild: oben' },
+    { id: 'links', label: 'Text über dem Bild: links' },
+    { id: 'rechts', label: 'Text über dem Bild: rechts' },
+    { id: 'band-unten', label: 'Bild oben, Text darunter (eigener Streifen)' },
+    { id: 'band-oben', label: 'Text oben, Bild darunter (eigener Streifen)' },
+    { id: 'ohne', label: 'Vollbild ohne Text' }
+];
+const BAND_POSITIONS = ['band-oben', 'band-unten'];
+const PANORAMA_TRIMS = ['a5-hoch', 'a4-hoch', 'quadrat'];
+
+function isBand(layout) {
+    return BAND_POSITIONS.includes(layout?.textPos);
+}
+
+// Panorama + Streifen passt nicht zusammen (der Streifen würde das Breitbild
+// zerteilen) - beim Panorama gilt ein Streifen deshalb als Kasten oben/unten.
+function effectiveTextPos(layout) {
+    const pos = layout?.textPos || 'unten';
+    if (layout?.panorama && isBand(layout)) return pos === 'band-oben' ? 'oben' : 'unten';
+    return pos;
+}
+
+// Welcher Teil der Seite gehört dem Bild? Prozent vom oberen/unteren Rand;
+// fit 'contain' bei Streifen-Layouts, damit das Bild in der kleineren Fläche
+// nicht beschnitten wird (es bekommt stattdessen etwas weißen Rand - wirkt
+// wie ein bewusst gerahmtes Bild).
+function imageRegion(layout) {
+    if (layout?.panorama || !isBand(layout)) return { top: 0, bottom: 0, fit: null };
+    return layout.textPos === 'band-unten'
+        ? { top: 0, bottom: BAND_PCT, fit: 'contain' }
+        : { top: BAND_PCT, bottom: 0, fit: 'contain' };
+}
+
+// Auf welcher der beiden Panorama-Hälften liegt der Text? 'rechts' -> rechte
+// Seite, alles andere links (Lesefluss beginnt links).
+function panoramaTextSide(layout) {
+    return effectiveTextPos(layout) === 'rechts' ? 'right' : 'left';
+}
+
+function panoramaAllowed(project) {
+    return project && project.type !== 'comic' && PANORAMA_TRIMS.includes(project.spec?.trim);
+}
+
+// Physische Seitenfolge im Druck: Seite 1 = Titelseite (rechte Buchseite,
+// wie in jedem gedruckten Buch). Ein Panorama muss auf einer GERADEN Seite
+// (links) beginnen, sonst landen seine zwei Hälften auf Vorder- und
+// Rückseite desselben Blatts statt nebeneinander - dann wird davor eine
+// Leerseite eingeschoben. Liefert pro Doppelseite {startPage, pages,
+// blankBefore} - von Druck UND Layout-Vorschau benutzt, damit beide
+// dieselbe Rechnung zeigen.
+function planPhysicalPages(project) {
+    let next = 2; // Seite 1 ist die Titelseite
+    return (project.spreads || []).map(spread => {
+        const panorama = !!(spread.layout?.panorama && panoramaAllowed(project));
+        let blankBefore = false;
+        if (panorama && next % 2 === 1) { blankBefore = true; next += 1; }
+        const entry = { startPage: next, pages: panorama ? 2 : 1, blankBefore, panorama };
+        next += entry.pages;
+        return entry;
+    });
 }
 
 app.studio.layout = {
     FONT_SCALE_MIN,
     FONT_SCALE_MAX,
+    TEXT_POS_OPTIONS,
     splitSyllables,
-    buildOverlayHtml
+    buildOverlayHtml,
+    isBand,
+    effectiveTextPos,
+    imageRegion,
+    panoramaTextSide,
+    panoramaAllowed,
+    planPhysicalPages
 };
 
 Object.assign(app.studio, {
@@ -195,7 +294,50 @@ Object.assign(app.studio, {
         const project = app.studio.projects[app.state.currentStudioProjectId];
         const spread = project && project.spreads[spreadIndex];
         if (!spread) return;
-        spread.layout = { ...spread.layout, ...patch };
+        const before = spread.layout || {};
+        spread.layout = { ...before, ...patch };
+        // NEU (KDP-Seitenlayout-Varianten): Wechsel zwischen "Text über dem
+        // Bild", "eigener Streifen" und "ohne Text" ändert, welche Fläche das
+        // Bild freihalten sollte - das vorhandene Bild passt dann evtl. nicht
+        // mehr optimal. Nur markieren (imageStale, wie bei Textänderungen),
+        // NICHT automatisch neu erzeugen - das würde Bild-Kontingent kosten.
+        const zoneChanged = patch.textPos && patch.textPos !== before.textPos;
+        if (zoneChanged && spread.imageMeta?.source === 'placeholder') {
+            // Ein Platzhalter kostet nichts - sofort passend neu zeichnen
+            // (inkl. neuem gespeichertem Prompt für "alle Platzhalter ersetzen").
+            app.dbOps.saveProject(project);
+            app.studio.regenerateSpreadPlaceholder(spreadIndex);
+            return;
+        }
+        if (zoneChanged && spread.imgUrl) spread.imageStale = true;
+        app.dbOps.saveProject(project);
+        app.render.studioWizard(7);
+    },
+
+    // NEU (KDP-Panorama): Doppelseite als EIN Breitbild über zwei Buchseiten.
+    // Das Seitenverhältnis des Bildes ändert sich dadurch komplett - das
+    // bisherige Bild wird deshalb als veraltet markiert und muss in Stufe 6
+    // neu erzeugt werden (Hinweis per Toast, kein automatischer Bildaufruf).
+    toggleSpreadPanorama(spreadIndex, value) {
+        const project = app.studio.projects[app.state.currentStudioProjectId];
+        const spread = project && project.spreads[spreadIndex];
+        if (!spread) return;
+        if (value && !panoramaAllowed(project)) {
+            app.ui.toast('Panorama-Bilder gibt es nur bei Hochformat- oder Quadrat-Büchern (Bauplan, Stufe 2).', 'ℹ️');
+            app.render.studioWizard(7);
+            return;
+        }
+        spread.layout = { ...spread.layout, panorama: !!value };
+        if (spread.imageMeta?.source === 'placeholder') {
+            // Platzhalter: kostenlos im neuen Format neu zeichnen.
+            app.dbOps.saveProject(project);
+            app.studio.regenerateSpreadPlaceholder(spreadIndex);
+            return;
+        }
+        if (spread.imgUrl) {
+            spread.imageStale = true;
+            app.ui.toast('Das Bild hat jetzt ein anderes Format - bitte in Stufe 6 "Bilder" neu erzeugen.', '🖼️');
+        }
         app.dbOps.saveProject(project);
         app.render.studioWizard(7);
     },

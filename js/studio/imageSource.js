@@ -28,6 +28,10 @@ function buildPrompt({ formatId, sketch, style, characters = [], textPos }) {
     // bei Formaten ohne textZones (Figurenblatt, Arbeitsheft-Bild) bleibt
     // fmt.textZone der Rückfall.
     const zoneLabel = fmt.textZones?.[textPos] || fmt.textZone;
+    // NEU (KDP-Seitenlayout-Varianten): bei "eigener Textstreifen" oder
+    // "Vollbild ohne Text" liegt KEIN Text über dem Bild - dann auch keine
+    // Fläche freihalten lassen (das Bild darf die ganze Fläche nutzen).
+    const noTextOnImage = ['band-oben', 'band-unten', 'ohne'].includes(textPos) && !fmt.fold;
 
     const parts = [
         `Illustration für ein Kinderbuch. Bildinhalt: ${sketch || 'noch offen'}.`,
@@ -38,8 +42,12 @@ function buildPrompt({ formatId, sketch, style, characters = [], textPos }) {
         `Seitenverhältnis ${fmt.aspect}.`,
         // Harte Regeln - stehen bewusst in JEDEM Prompt, nicht optional:
         'KEIN Text, KEINE Buchstaben, KEINE Zahlen und KEINE Sprechblasen im Bild.',
-        fmt.textZone !== 'keine'
+        fmt.textZone !== 'keine' && !noTextOnImage && textPos !== 'ohne'
             ? `Halte im Bereich "${zoneLabel}" eine ruhige, kontrastarme Fläche frei, auf der später Text liegt.`
+            : '',
+        // NEU (KDP-Panorama): das Breitbild wird in der Mitte gefalzt.
+        fmt.fold
+            ? 'Das Bild wird in der Mitte senkrecht gefalzt (Buchbindung): im mittleren Zehntel keine Gesichter, Figuren oder wichtigen Details - dort nur ruhiger Hintergrund, der über beide Hälften durchläuft.'
             : '',
         'Kindgerecht, freundlich, keine Gewalt, keine Angstmotive, keine realen Personen, keine Markenzeichen.',
         // FIX (Nutzerwunsch "was landet im Prompt"): hier stand bisher der
