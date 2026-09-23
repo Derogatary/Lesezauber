@@ -6,6 +6,14 @@ vollständige Historie, neueste Version zuerst. Diese Datei wurde aus
 `CLAUDE.md` ausgelagert, weil der Abschnitt dort mit der Zeit zu groß für
 schnellen Kontext wurde; inhaltlich unverändert übernommen.
 
+## v0.45.1-beta
+
+**FIX (Nutzer-Screenshot, Handy):** Die Knopfreihe oben in der Bibliothek (Kindermodus, ❓, Vokabeln, SchreibZauber, ⚙️) war seit dem Kindermodus-Knopf zu breit.
+- Sie brach wegen `flex-shrink-0` nicht um, dadurch ließ sich die ganze Seite seitlich verschieben und das ⚙️ war abgeschnitten.
+- Jetzt hat sie eine eigene, volle Zeile unter dem Titel und bricht bei Bedarf in zwei Reihen um.
+- Nachgeprüft bei 360, 412 und 768 Pixel Breite: keine Ansicht (Bibliothek, Buch, Reader, Einstellungen, Vokabeln, Hilfe, Werkstatt) ist mehr seitlich verschiebbar.
+- `CACHE_NAME` v80.
+
 ## v0.45.0-beta
 
 Nutzerwunsch: „Wo ist der Knopf, um den gesamten Prompt des Bildes, auch die Hintergrund-Einstellungen, rauszukopieren? Für jedes einzelne Bild, um es manuell einzufügen … eine Seite mit allen Seiten, wo man sie direkt austauschen kann.“

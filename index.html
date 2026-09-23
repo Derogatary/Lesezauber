@@ -61,9 +61,14 @@
                     <button id="pregenBadge" data-parent-only onclick="app.nav.go('settings')" class="hidden text-xs font-bold text-indigo-600 mt-0.5 hover:underline"></button>
                     <!-- NEU (v0.44.0-beta): direkt in den Nachtmodus -->
                     <button id="nightPrepLibBtn" data-parent-only onclick="app.actions.startNightPrep()" class="hidden text-xs font-bold text-slate-600 mt-0.5 ml-2 hover:underline">🌙 über Nacht</button>
-                    <p data-app-version class="text-[10px] text-slate-400 font-semibold mt-0.5">v0.45.0-beta</p>
+                    <p data-app-version class="text-[10px] text-slate-400 font-semibold mt-0.5">v0.45.1-beta</p>
                 </div>
-                <div class="flex items-center gap-2 flex-shrink-0">
+                <!-- FIX (v0.45.1-beta, Nutzer-Screenshot): seit dem Kindermodus-Knopf
+                     passte die Knopfreihe nicht mehr aufs Handy und die ganze Seite
+                     ließ sich seitlich verschieben (flex-shrink-0 verhinderte das
+                     Umbrechen). Jetzt eigene, volle Zeile unter dem Titel, die bei
+                     Bedarf in eine zweite Reihe umbricht. -->
+                <div class="w-full flex flex-wrap items-center gap-2">
                     <!-- NEU (v0.42.0-beta): Kinder-Lesemodus ein (Eltern) bzw. aus (Eltern-Frage) - js/actions/kidMode.js -->
                     <button data-parent-only onclick="app.actions.enterKidMode()" aria-label="Kinder-Lesemodus einschalten" title="Kinder-Lesemodus einschalten" class="h-10 px-3 bg-white border border-slate-200 rounded-full flex items-center gap-1.5 text-slate-600 hover:bg-slate-100 shadow-sm transition active:scale-95 text-xs font-bold">
                         <span>🧒</span><span>Kindermodus</span>

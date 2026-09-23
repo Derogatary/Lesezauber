@@ -1,7 +1,10 @@
 // Bei jeder inhaltlichen Änderung an einer dieser Dateien diese Nummer
 // erhöhen - sonst bekommen wiederkehrende Besucher weiter die alte
 // zwischengespeicherte Version ausgeliefert.
-const CACHE_NAME = 'lesezauber-shell-v79';
+const CACHE_NAME = 'lesezauber-shell-v80';
+
+// FIX (v80, v0.45.1-beta): Knopfreihe der Bibliothek bricht auf dem Handy um
+// (vorher seitlich verschiebbare Seite).
 
 // NEU (v79, v0.45.0-beta): SchreibZauber - Bilder manuell austauschen (neue
 // Dateien js/studio/studioManualImages.js, js/render/studioManualImages.js).

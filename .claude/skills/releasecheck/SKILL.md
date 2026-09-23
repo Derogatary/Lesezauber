@@ -5,7 +5,7 @@ description: Release-Check für LeseZauber Pro - geht die komplette Release-Chec
 
 # Release-Check - LeseZauber Pro
 
-**Datenstand dieses Skills: 23.09.2026 (App-Version v0.45.0-beta).**
+**Datenstand dieses Skills: 23.09.2026 (App-Version v0.45.1-beta).**
 Entstanden aus der Release-Prüfung vom 22./23.09.2026 (`docs/RELEASE-CHECKLISTE.md`).
 
 > **Keine Rechtsberatung.** Die rechtlichen Punkte sagen, *was* ein Anwalt bzw. eine
