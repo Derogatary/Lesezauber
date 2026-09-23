@@ -190,6 +190,43 @@ Seitenverhältnis, gleiche Textzone.
 
 ---
 
+## 4a. Kostenlose Anbieter und kommerzielle Nutzung (Recherche 23.09.2026)
+
+Nutzerfrage: „Welche Programme erlauben es im Free Tier, die Bilder kommerziell zu benutzen – mit
+Figuren-Konsistenz?“ **Keine Rechtsberatung, Bedingungen ändern sich oft – vor einer
+Veröffentlichung (KDP) nochmal nachsehen.** Unabhängig vom Anbieter gilt: rein KI-erzeugte Bilder
+sind meist nicht urheberrechtlich geschützt (andere dürfen sie kopieren), und Amazon KDP verlangt
+die Angabe „KI-generiert“.
+
+| Anbieter (gratis) | Kommerziell? | Konsistenz (Figuren gleich halten) | Haken |
+|---|---|---|---|
+| **Nano Banana** – Gemini-App / Google AI Studio | ✅ Google beansprucht nichts | ✅ sehr gut: Figurenblatt als Referenzbild anhängen | Gemini-App gratis: sichtbares Logo; AI Studio ohne. Gratis-Daten dürfen fürs Training genutzt werden. Unsichtbares SynthID |
+| **ChatGPT** (GPT Image, auch gratis) | ✅ Nutzer besitzt das Ergebnis | ✅ gut: Referenzbild hochladen | Wenige Bilder pro Tag gratis; nur 1:1, 3:2, 2:3 |
+| **Canva** (Magic Media, auch gratis) | ✅ laut Canva auch im Gratis-Tarif | ⚠️ mäßig, keine echte Figuren-Referenz | Keine Exklusivrechte |
+| **Ideogram** | ✅ laut Anbieter auch gratis | ⚠️ Charakter-Referenz mit eigenem Bild erst im Abo | Gratis-Bilder sind öffentlich |
+| **Copilot / Image Creator (Microsoft)** | ⚠️ Bedingungen widersprüchlich (Designer-Web „nur privat“) | ⚠️ | Vorher Bedingungen prüfen |
+| **Adobe Firefly** | ⚠️ gratis mit Wasserzeichen | ⚠️ | Für Druck praktisch nur mit Abo |
+| **Leonardo** | ⚠️ Nutzung ja, Eigentum bei Leonardo | ✅ Character Reference | Gratis-Bilder öffentlich, andere dürfen sie auch nutzen |
+| **Magnific, Kling, PixVerse, Suno** | ❌ nur privat | – | Magnific = Hochskalierer, Kling/PixVerse = Video, Suno = Musik |
+| **Eigener PC: FLUX.1 schnell** (Apache 2.0) z.B. in ComfyUI | ✅ Lizenz erlaubt kommerziell | ⚠️ nur mit Zusatzwerkzeugen (IP-Adapter/LoRA) | Braucht starke Grafikkarte + Einarbeitung. Achtung: Qwen-Image 2.1 ist NICHT mehr kommerziell (Research-Lizenz), ältere Qwen-Image-Versionen schon |
+| **Pollinations** (in der App eingebaut) | ❓ hängt vom dort genutzten Modell ab | ⚠️ keine Referenzbilder | Nicht eindeutig geklärt |
+
+**Empfehlung für LeseZauber:** Nano Banana (AI Studio) oder ChatGPT mit angehängtem Figurenblatt –
+beide gratis, kommerziell erlaubt, gute Konsistenz. Die App bietet dafür seit v0.46.0-beta eine
+passende Prompt-Fassung pro Zielprogramm (`js/studio/imageTargets.js`).
+
+Quellen (abgerufen 23.09.2026): [Google Nano-Banana-Prompt-Leitfaden](https://cloud.google.com/blog/products/ai-machine-learning/ultimate-prompting-guide-for-nano-banana),
+[Gemini-Bilder kommerziell (Google-Community)](https://support.google.com/gemini/thread/370190690/clarification-on-commercial-use-of-ai-generated-images-from-gemini-nano-banana?hl=en),
+[Nano-Banana-Wasserzeichen](https://www.aifreeapi.com/en/posts/nano-banana-pro-watermark-commercial-use),
+[OpenAI Service Terms](https://openai.com/policies/service-terms/), [ChatGPT-Bilder kommerziell](https://blog.kaboompics.com/can-you-use-ai-generated-images-for-commercial-use/),
+[Canva AI Product Terms](https://www.canva.com/policies/ai-product-terms/), [Ideogram Pläne](https://docs.ideogram.ai/plans-and-pricing/available-plans),
+[Microsoft Image Creator Q&A](https://learn.microsoft.com/en-us/answers/questions/2344700/image-creator-from-designer-terms-of-use-and-comme),
+[Adobe Firefly kommerziell](https://terms.law/forum/thread/adobe-firefly-commercial-rights-2026.html), [Leonardo Rechte](https://terms.law/ai-output-rights/leonardo/),
+[Magnific Nutzungsrechte](https://www.magnific.com/ai/docs/usage-rights-commercial-and-products), [Kling Free Plan](https://www.aitoolcurator.com/learn/kling-guide/free-plan-limits/),
+[PixVerse Preise](https://www.tooljunction.io/ai-tools/pixverse), [Suno Rechte](https://help.suno.com/en/articles/2416769),
+[FLUX-Lizenzen](https://artificialguy.com/blog/flux-licensing-commercial-use/), [Qwen-Image 2.1 Lizenz](https://cellcog.ai/blog/qwen-image-2-1/),
+[Pollinations Terms](https://enter.pollinations.ai/terms).
+
 ## 5. Offene Punkte
 
 1. **Gemini-Bild-API abrechnungsfähig?** Der einzige echte Blocker für den Vollautomatik-Weg.

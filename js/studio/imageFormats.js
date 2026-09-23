@@ -136,6 +136,9 @@ const FORMATS = {
     }
 };
 
+// NEU (v0.46.0-beta): Seitenverhältnisse, die Nano Banana (Gemini-Bildmodell) kennt.
+const NANO_BANANA_RATIOS = ['1:1', '2:3', '3:2', '3:4', '4:3', '4:5', '5:4', '9:16', '16:9', '21:9'];
+
 app.studio = app.studio || {};
 app.studio.formats = {
     // Alle Formate als Liste - für Auswahl-Dropdowns und die Vorschau-Seite.
@@ -153,6 +156,34 @@ app.studio.formats = {
             return null;
         }
         return { id: formatId, ...found };
+    },
+
+    // NEU (v0.46.0-beta): das nächstgelegene Seitenverhältnis aus einer Liste,
+    // die ein Bildprogramm wirklich kennt. Standard = Nano Banana (Gemini-
+    // Bildmodell; laut Google 1:1, 2:3, 3:2, 3:4, 4:3, 4:5, 5:4, 9:16, 16:9,
+    // 21:9). Andere Programme geben ihre eigene Liste mit (js/studio/
+    // imageTargets.js). Verglichen wird logarithmisch, damit Hoch- und
+    // Querformat gleich behandelt werden. Beispiel: Panorama 1824x1296
+    // (1,41:1) -> 4:3, Panorama quadratisch 2:1 -> 16:9 - der Rest wird beim
+    // Druck über object-fit:cover beschnitten (js/studio/studioPrint.js).
+    supportedAspect(formatId, supported = NANO_BANANA_RATIOS) {
+        const f = FORMATS[formatId];
+        if (!f) return '1:1';
+        const target = Math.log(f.genW / f.genH);
+        let best = supported[0];
+        let bestDiff = Infinity;
+        supported.forEach(r => {
+            const [w, h] = r.split(':').map(Number);
+            const diff = Math.abs(Math.log(w / h) - target);
+            if (diff < bestDiff) { bestDiff = diff; best = r; }
+        });
+        return best;
+    },
+
+    orientationLabel(ratio) {
+        const [w, h] = String(ratio).split(':').map(Number);
+        if (!w || !h || w === h) return 'quadratisch';
+        return w > h ? 'Querformat' : 'Hochformat';
     },
 
     // Empfohlenes Format für einen Werktyp - damit der Assistent nicht an

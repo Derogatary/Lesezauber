@@ -5,7 +5,7 @@ description: Release-Check für LeseZauber Pro - geht die komplette Release-Chec
 
 # Release-Check - LeseZauber Pro
 
-**Datenstand dieses Skills: 23.09.2026 (App-Version v0.45.1-beta).**
+**Datenstand dieses Skills: 23.09.2026 (App-Version v0.46.0-beta).**
 Entstanden aus der Release-Prüfung vom 22./23.09.2026 (`docs/RELEASE-CHECKLISTE.md`).
 
 > **Keine Rechtsberatung.** Die rechtlichen Punkte sagen, *was* ein Anwalt bzw. eine
@@ -29,7 +29,7 @@ Entstanden aus der Release-Prüfung vom 22./23.09.2026 (`docs/RELEASE-CHECKLISTE
 ```bash
 npm install                         # bzw. npm ci
 npm run check                       # 7 Sanity-Checks (Syntax, IDs, onclick, sw.js-Liste, jede JS-Datei in sw.js, Version/CACHE_NAME, CSP deckt alle fetch-Adressen ab)
-npm test                            # Unit-Tests tests/*.test.mjs (Stand 23.09.2026: 32 Tests)
+npm test                            # Unit-Tests tests/*.test.mjs (Stand 23.09.2026: 34 Tests)
 npm run build && git diff --exit-code css/tailwind.css   # Tailwind-Build aktuell?
 ```
 

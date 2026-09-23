@@ -49,7 +49,9 @@ function guardrailsBlock() {
 // nachzeichnen), der Rest (gemeinfreie Stoffe, Namen beibehalten, Text
 // bleibt Text) betrifft nur die Geschichte, nicht die Illustration.
 function imageGuardrailsLine() {
-    return 'Keine urheber- oder markenrechtlich geschützten Figuren, Welten oder Logos zeichnen - auch nicht "im Stil von ..." einer bekannten Marke/eines bekannten Werks.';
+    // FIX (v0.46.0-beta): positiv formuliert (Nano-Banana-Empfehlung, siehe
+    // buildPrompt() in imageSource.js) - gleiche Aussage wie vorher.
+    return 'Alle Figuren, Orte und Motive sind frei erfunden und eigenständig gestaltet, ohne Anlehnung an bekannte Marken, Serien, Logos oder Werke.';
 }
 
 // NEU: Alters-/Lesestufenregeln. "Erstlesebuch" ist laut Konzept A.2 kein

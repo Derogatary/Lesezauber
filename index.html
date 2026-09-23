@@ -61,7 +61,7 @@
                     <button id="pregenBadge" data-parent-only onclick="app.nav.go('settings')" class="hidden text-xs font-bold text-indigo-600 mt-0.5 hover:underline"></button>
                     <!-- NEU (v0.44.0-beta): direkt in den Nachtmodus -->
                     <button id="nightPrepLibBtn" data-parent-only onclick="app.actions.startNightPrep()" class="hidden text-xs font-bold text-slate-600 mt-0.5 ml-2 hover:underline">🌙 über Nacht</button>
-                    <p data-app-version class="text-[10px] text-slate-400 font-semibold mt-0.5">v0.45.1-beta</p>
+                    <p data-app-version class="text-[10px] text-slate-400 font-semibold mt-0.5">v0.46.0-beta</p>
                 </div>
                 <!-- FIX (v0.45.1-beta, Nutzer-Screenshot): seit dem Kindermodus-Knopf
                      passte die Knopfreihe nicht mehr aufs Handy und die ganze Seite
@@ -678,11 +678,18 @@
                     <summary class="font-bold cursor-pointer">So geht's (kostenlos, z.B. mit der Gemini-App oder AI Studio)</summary>
                     <ol class="list-decimal ml-4 mt-2 space-y-1">
                         <li><b>Erst die Figurenblätter</b> (oben in der Liste) - sie sind die Vorlage, damit die Figuren auf allen Seiten gleich aussehen.</li>
-                        <li>„📋 Prompt kopieren“ - der komplette Prompt mit Stil, Farbpalette, Figuren, Format und freier Textfläche.</li>
+                        <li>Oben das Programm wählen, dann „📋 Prompt kopieren“ - der komplette Prompt mit Stil, Farbpalette, Figuren, Format und freier Textfläche, passend für dieses Programm (bei Leonardo & Co. auf Englisch mit eigenem Negativ-Prompt).</li>
                         <li>Im KI-Chat einfügen. Steht „Mit anhängen“ dabei: die Figurenblätter mit ⬇️ herunterladen und im Chat als Bild dazulegen.</li>
                         <li>Das fertige Bild im Chat kopieren (lange drücken → „Bild kopieren“) und hier „📥 Bild einfügen“ tippen - am Computer geht auch Strg+V oder Bild auf die Karte ziehen. Oder das Bild speichern und „📁 Datei“ wählen.</li>
                     </ol>
                 </details>
+                <!-- NEU (v0.46.0-beta): Zielprogramm - jedes bekommt seine passende
+                     Prompt-Fassung (js/studio/imageTargets.js) -->
+                <div class="bg-white border border-slate-200 rounded-xl p-3 space-y-1">
+                    <label for="studioManualTarget" class="block text-xs font-bold text-slate-700">Prompt für welches Programm?</label>
+                    <select id="studioManualTarget" onchange="app.actions.setManualTarget(this.value)" class="w-full text-sm text-slate-900 bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 focus:outline-none focus:border-purple-500"></select>
+                    <p id="studioManualTargetHint" class="text-[10px] text-slate-500"></p>
+                </div>
                 <div class="flex items-center justify-between gap-2 flex-wrap">
                     <label class="flex items-center gap-2 text-xs font-semibold text-slate-600">
                         <input id="studioManualOnlyOpen" type="checkbox" onchange="app.actions.toggleManualOnlyOpen(this.checked)" class="accent-purple-600">

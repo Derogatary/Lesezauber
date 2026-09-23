@@ -17,54 +17,70 @@ import './studioPrompts.js';
 // die Quelle gewechselt werden muss und nicht der halbe Prompt neu entsteht.
 // (Und: derselbe Text lässt sich kopieren und kostenlos von Hand in einem
 // KI-Chat erzeugen - siehe docs/KONZEPT-Bildquellen.md, Weg "Prompt-Export".)
-function buildPrompt({ formatId, sketch, style, characters = [], textPos }) {
+// FIX (v0.46.0-beta, Nutzerfrage "sind die Prompts für Nano Banana angepasst?"):
+// umgestellt auf Googles offizielle Empfehlungen für Nano Banana (das Gemini-
+// Bildmodell, das auch GEMINI_IMAGE_MODEL unten ist):
+//   - erzählende Sätze statt Stichworte, das Wichtigste (Szene) zuerst;
+//   - POSITIV formulieren ("semantic negative prompting"): statt "KEIN Text,
+//     keine Gewalt, keine Angstmotive" beschreiben, wie es aussehen SOLL - eine
+//     Liste mit "kein ..." lenkt die Aufmerksamkeit eher auf genau diese Dinge;
+//   - ein Seitenverhältnis, das das Modell wirklich kennt (supportedAspect()
+//     in imageFormats.js), statt "1,41:1" oder Pixelangaben.
+// Die einzelnen Bausteine liefert promptParts() - daraus bauen auch die
+// anderen Zielprogramme (js/studio/imageTargets.js) ihre eigene Fassung.
+function promptParts({ formatId, sketch, style, characters = [], textPos }) {
     const fmt = app.studio.formats.get(formatId);
-    if (!fmt) return '';
-
-    // NEU: welche Zone frei bleiben soll, richtet sich jetzt nach dem
-    // (pro Doppelseite unterschiedlichen) textPos statt einer für das ganze
-    // Format immer gleichen Zone - siehe js/studio/imageFormats.js textZones
-    // und die Auswahl in studioCore.js (pickAutoTextPos). Ohne textPos oder
-    // bei Formaten ohne textZones (Figurenblatt, Arbeitsheft-Bild) bleibt
-    // fmt.textZone der Rückfall.
-    const zoneLabel = fmt.textZones?.[textPos] || fmt.textZone;
+    if (!fmt) return null;
+    const noEndDot = (t) => String(t || '').trim().replace(/[.\s]+$/, '');
     // NEU (KDP-Seitenlayout-Varianten): bei "eigener Textstreifen" oder
-    // "Vollbild ohne Text" liegt KEIN Text über dem Bild - dann auch keine
-    // Fläche freihalten lassen (das Bild darf die ganze Fläche nutzen).
+    // "Vollbild ohne Text" liegt KEIN Text über dem Bild - dann darf das Bild
+    // die ganze Fläche nutzen. Welche Zone sonst frei bleibt, richtet sich nach
+    // dem (pro Doppelseite unterschiedlichen) textPos, siehe textZones.
     const noTextOnImage = ['band-oben', 'band-unten', 'ohne'].includes(textPos) && !fmt.fold;
+    const zone = (fmt.textZone !== 'keine' && !noTextOnImage) ? (fmt.textZones?.[textPos] || fmt.textZone) : '';
+    return {
+        fmt,
+        scene: noEndDot(sketch) || 'eine freundliche Szene passend zur Geschichte',
+        style: noEndDot(style),
+        characters: characters.filter(c => c && c.name).map(c => ({ name: c.name, desc: noEndDot(c.sheetText) })),
+        zone,
+        fold: !!fmt.fold,
+        aspect: app.studio.formats.supportedAspect(formatId),
+        isSheet: formatId === 'characterSheet'
+    };
+}
 
-    // FIX (v0.45.0-beta): Bildidee/Stilkarte enden oft schon mit einem Punkt -
-    // ohne das Abschneiden stand im Prompt "Blau.." (beim Kopieren sichtbar).
-    const noEndDot = (t) => String(t).trim().replace(/[.\s]+$/, '');
+// Deutscher Prompt aus den Bausteinen - genutzt von der automatischen
+// Erzeugung (Gemini/Pollinations) UND von den deutschsprachigen Zielprogrammen
+// beim manuellen Kopieren (js/studio/imageTargets.js), dann mit deren eigenem
+// Seitenverhältnis.
+function germanPromptFromParts(p, aspect = p.aspect) {
+    const orient = app.studio.formats.orientationLabel(aspect);
     const parts = [
-        `Illustration für ein Kinderbuch. Bildinhalt: ${sketch ? noEndDot(sketch) : 'noch offen'}.`,
-        style ? `Stil: ${noEndDot(style)}.` : '',
-        characters.length
-            ? `Figuren (Aussehen exakt wie beschrieben beibehalten): ${characters.map(c => `${c.name} – ${c.sheetText}`).join(' | ')}.`
+        `Kinderbuch-Illustration im Format ${aspect} (${orient}).`,
+        `Szene: ${p.scene}.`,
+        p.style ? `Stil: ${p.style}.` : '',
+        p.characters.length
+            ? `Figuren - Aussehen, Kleidung und Farben genau so beibehalten: ${p.characters.map(c => `${c.name}: ${c.desc || 'wie im Figurenblatt'}`).join('; ')}.`
             : '',
-        `Seitenverhältnis ${fmt.aspect}.`,
-        // Harte Regeln - stehen bewusst in JEDEM Prompt, nicht optional:
-        'KEIN Text, KEINE Buchstaben, KEINE Zahlen und KEINE Sprechblasen im Bild.',
-        fmt.textZone !== 'keine' && !noTextOnImage && textPos !== 'ohne'
-            ? `Halte im Bereich "${zoneLabel}" eine ruhige, kontrastarme Fläche frei, auf der später Text liegt.`
+        p.zone
+            ? `Bildaufbau: Im Bereich "${p.zone}" bleibt ruhiger, schlichter Hintergrund (etwa Himmel, Wiese oder Wand) als Platz für den Buchtext.`
             : '',
-        // NEU (KDP-Panorama): das Breitbild wird in der Mitte gefalzt.
-        fmt.fold
-            ? 'Das Bild wird in der Mitte senkrecht gefalzt (Buchbindung): im mittleren Zehntel keine Gesichter, Figuren oder wichtigen Details - dort nur ruhiger Hintergrund, der über beide Hälften durchläuft.'
+        p.fold
+            ? 'Das Bild wird in der Mitte senkrecht gefalzt (Buchbindung): dort läuft nur ruhiger Hintergrund durch, Gesichter und Figuren stehen links und rechts davon.'
             : '',
-        'Kindgerecht, freundlich, keine Gewalt, keine Angstmotive, keine realen Personen, keine Markenzeichen.',
-        // FIX (Nutzerwunsch "was landet im Prompt"): hier stand bisher der
-        // komplette guardrailsBlock() (Text-Prompt-Leitplanken inkl. Amazon-
-        // KDP-Absatz und "Text bleibt reiner Text, kein Bild wird hier
-        // erzeugt") 1:1 mit im Bild-Prompt - bei Pollinations (reines
-        // Text-zu-Bild-Modell ohne Sprachverständnis) verdünnt/stört so ein
-        // langer, bildfremder Text-Absatz eher die eigentliche
-        // Bildbeschreibung, statt als Regel verstanden zu werden. Jetzt nur
-        // noch der für ein BILD tatsächlich relevante Satz daraus, siehe
-        // app.studio.prompts.imageGuardrailsLine() in studioPrompts.js.
+        // Schrift: positiv formuliert - Schilder/Bücher im Bild bleiben leer.
+        'Reine Illustration ohne Schrift: Schilder, Bücher und Flächen im Bild bleiben unbeschriftet, Sprechblasen gibt es nicht.',
+        'Warme, freundliche, kindgerechte Stimmung.',
+        // Positiv gewendete Fassung, siehe imageGuardrailsLine() in studioPrompts.js.
         app.studio.prompts.imageGuardrailsLine()
     ];
     return parts.filter(Boolean).join(' ');
+}
+
+function buildPrompt(spec) {
+    const p = promptParts(spec);
+    return p ? germanPromptFromParts(p) : '';
 }
 
 // NEU (Stufe 2): Modell-Konstante für die ECHTE Bildgenerierung, analog zu
@@ -184,7 +200,9 @@ const providers = {
                 // NEU (Release-Prüfung A4): strenge Filterstufe, siehe js/api.js.
                 safetySettings: app.api.safetySettingsKids,
                 contents: [{ parts }],
-                generationConfig: { responseModalities: ['IMAGE'] }
+                // NEU (v0.46.0-beta): Seitenverhältnis als echter Parameter statt nur
+                // im Text - das Modell hält es so zuverlässig ein.
+                generationConfig: { responseModalities: ['IMAGE'], imageConfig: { aspectRatio: app.studio.formats.supportedAspect(spec.formatId) } }
             })
         });
 
@@ -346,7 +364,7 @@ async function copyPrompt(prompt) {
             textarea.remove();
             if (!ok) throw new Error('execCommand copy fehlgeschlagen');
         }
-        app.ui?.toast?.('Prompt kopiert - jetzt im AI Studio oder der Gemini-App einfügen.', '📋');
+        app.ui?.toast?.('Kopiert - jetzt im Bildprogramm einfügen.', '📋');
         return true;
     } catch (e) {
         console.error('Prompt konnte nicht kopiert werden:', e);
@@ -358,6 +376,8 @@ async function copyPrompt(prompt) {
 app.studio = app.studio || {};
 app.studio.imageSource = {
     buildPrompt,
+    promptParts,
+    germanPromptFromParts,
     copyPrompt,
     // NEU (Pollinations-Quelle): siehe providers.pollinations oben - EIN Ort
     // für die Wartezeit zwischen zwei Aufrufen, genutzt von studioImages.js.

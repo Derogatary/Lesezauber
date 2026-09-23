@@ -1,7 +1,10 @@
 // Bei jeder inhaltlichen Änderung an einer dieser Dateien diese Nummer
 // erhöhen - sonst bekommen wiederkehrende Besucher weiter die alte
 // zwischengespeicherte Version ausgeliefert.
-const CACHE_NAME = 'lesezauber-shell-v80';
+const CACHE_NAME = 'lesezauber-shell-v81';
+
+// NEU (v81, v0.46.0-beta): Bild-Prompts nach Nano-Banana-Empfehlungen, Zielprogramme
+// beim manuellen Austausch (neue Datei js/studio/imageTargets.js).
 
 // FIX (v80, v0.45.1-beta): Knopfreihe der Bibliothek bricht auf dem Handy um
 // (vorher seitlich verschiebbare Seite).
@@ -312,6 +315,7 @@ const APP_SHELL = [
     './js/studio/studioStoryboard.js',
     './js/studio/studioImages.js',
     './js/studio/studioManualImages.js',
+    './js/studio/imageTargets.js',
     // NEU (Ausbaustufe 3 - Layout & Druck): siehe
     // docs/KONZEPT-SchreibZauber.md, Abschnitt "Stand nach Stufe 3".
     './js/studio/studioLayout.js',

@@ -6,6 +6,35 @@ vollständige Historie, neueste Version zuerst. Diese Datei wurde aus
 `CLAUDE.md` ausgelagert, weil der Abschnitt dort mit der Zeit zu groß für
 schnellen Kontext wurde; inhaltlich unverändert übernommen.
 
+## v0.46.0-beta
+
+Nutzerfrage: „Sind die Bilderzeugungsprompts für Nano Banana angepasst, muss man sie für unterschiedliche Programme anpassen? … Schaue nach anderen Möglichkeiten, frei kommerziell Bilder mit KI und Konsistenz zu erzeugen, und ja, passe das so an. Bei weiteren Anbietern kann man es erweitern.“
+
+**Bild-Prompts nach Googles Nano-Banana-Leitfaden** (`js/studio/imageSource.js`)
+- Die Szene steht zuerst, der Prompt ist erzählend formuliert.
+- **Positiv statt Verbotslisten:** „KEIN Text, KEINE Buchstaben, keine Gewalt, keine Angstmotive …“ ist ersetzt durch „Reine Illustration ohne Schrift: Schilder und Bücher bleiben unbeschriftet“, „Warme, freundliche, kindgerechte Stimmung“ und „frei erfundene Figuren ohne Anlehnung an bekannte Marken“. Google rät ausdrücklich davon ab, aufzuzählen, was nicht ins Bild soll.
+- **Seitenverhältnis, das das Modell kennt** (`app.studio.formats.supportedAspect()`): Panorama 1,41:1 wird 4:3, Panorama 2:1 wird 16:9. Der Überstand wird beim Druck per `object-fit: cover` beschnitten.
+  - Die Pixelangabe fällt weg.
+  - Beim automatischen Gemini-Bildaufruf geht das Format zusätzlich als `imageConfig.aspectRatio` mit.
+- Bereits gespeicherte Platzhalter-Prompts nutzt „Alle Platzhalter ersetzen“ unverändert weiter. Neu erzeugte Prompts haben die neue Form.
+
+**Neu: Zielprogramm beim manuellen Austausch** (`js/studio/imageTargets.js`)
+- Die Auswahl „Prompt für welches Programm?“ steht oben auf der Austausch-Seite, pro Gerät gemerkt. Die Liste lässt sich erweitern, ein neues Programm ist ein neuer Eintrag in `TARGETS`.
+  - **Nano Banana (Gemini-App / AI Studio):** deutsch, Formate 1:1 bis 21:9.
+  - **ChatGPT / Copilot:** deutsch, nur 1:1, 3:2 und 2:3.
+  - **Leonardo, Ideogram, Canva, Firefly & Co.:** **englisch** plus eigener **Negativ-Prompt** mit eigenem Kopier-Knopf. Die frei geschriebenen Teile (Szene, Stil, Figuren, Textfläche) übersetzt die KI beim ersten Kopieren, das kostet eine Anfrage und wird gemerkt. Ohne Key bleiben sie mit Hinweis deutsch.
+- Jede Karte zeigt das Seitenverhältnis, das man im Programm einstellen soll, dazu einen Bedienhinweis pro Programm.
+- „Alle offenen Prompts kopieren“ übersetzt bei Bedarf vorher alles und hängt den Negativ-Prompt einmal an.
+
+**Recherche** „gratis + kommerziell + Figuren-Konsistenz“ mit Quellen: `docs/KONZEPT-Bildquellen.md`, Abschnitt 4a.
+- Empfehlung: Nano Banana (AI Studio) oder ChatGPT, jeweils mit angehängtem Figurenblatt.
+- Canva und Ideogram erlauben gratis ebenfalls kommerzielle Nutzung, aber ohne gute Figuren-Referenz.
+- Leonardo gratis: Die Bilder gehören Leonardo und sind öffentlich.
+- Magnific, Kling, PixVerse und Suno sind gratis nur privat nutzbar.
+- Lokal auf dem eigenen PC: FLUX.1 schnell (Apache 2.0).
+
+2 neue Unit-Tests, 34 insgesamt. `CACHE_NAME` v81.
+
 ## v0.45.1-beta
 
 **FIX (Nutzer-Screenshot, Handy):** Die Knopfreihe oben in der Bibliothek (Kindermodus, ❓, Vokabeln, SchreibZauber, ⚙️) war seit dem Kindermodus-Knopf zu breit.

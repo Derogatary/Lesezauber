@@ -39,7 +39,10 @@ function cardHtml(p, item) {
     const s = app.utils.sanitize;
     const key = safeKey(item.key);
     const badge = SOURCE_BADGE[item.source] || ['– noch kein Bild', 'bg-slate-100 text-slate-500'];
-    const prompt = app.studio.manualPromptFor(p, item);
+    // NEU (v0.46.0-beta): Fassung fürs gewählte Zielprogramm (imageTargets.js)
+    const data = app.studio.manualPromptData(p, item);
+    const prompt = data.prompt;
+    const needsTr = data.parts && app.studio.imageTargets.needsTranslation(app.studio.imageTargets.currentId(), data.parts);
     const refs = app.studio.manualRefsFor(p, item);
     const active = key === activeKey;
     return `
@@ -53,14 +56,20 @@ function cardHtml(p, item) {
             ${item.imgUrl
                 ? `<img src="${item.imgUrl}" alt="" class="w-24 h-24 object-cover rounded-lg border border-slate-200 flex-shrink-0">`
                 : '<div class="w-24 h-24 rounded-lg bg-slate-100 flex items-center justify-center text-2xl text-slate-300 flex-shrink-0">🖼️</div>'}
-            <textarea readonly rows="5" aria-label="Prompt ${s(item.label)}" class="flex-grow min-w-0 text-[11px] leading-snug text-slate-700 bg-slate-50 border border-slate-200 rounded-lg p-2 resize-y">${s(prompt)}</textarea>
+            <div class="flex-grow min-w-0 space-y-1">
+                <textarea readonly rows="5" aria-label="Prompt ${s(item.label)}" class="w-full text-[11px] leading-snug text-slate-700 bg-slate-50 border border-slate-200 rounded-lg p-2 resize-y">${s(prompt)}</textarea>
+                ${needsTr ? '<p class="text-[10px] text-amber-700 font-semibold">🌐 Szene/Stil/Figuren sind noch deutsch - „Prompt kopieren“ übersetzt sie vorher (1 KI-Anfrage).</p>' : ''}
+                ${data.negative ? `<textarea readonly rows="2" aria-label="Negativ-Prompt ${s(item.label)}" class="w-full text-[11px] leading-snug text-rose-800 bg-rose-50 border border-rose-200 rounded-lg p-2 resize-y">${s(data.negative)}</textarea>` : ''}
+            </div>
         </div>
+        <p class="text-[10px] text-slate-500">Seitenverhältnis im Programm: <b>${s(data.aspect)}</b></p>
         ${refs.length ? `
         <div class="flex items-center gap-2 flex-wrap">
             <span class="text-[10px] font-bold text-slate-500">Mit anhängen:</span>
             ${refs.map(c => `<a href="${c.sheetImgUrl}" download="Figurenblatt-${s((c.name || 'Figur').replace(/[^A-Za-z0-9äöüÄÖÜß_-]+/g, '-'))}.webp" class="flex items-center gap-1 text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-lg px-2 py-1">
                 <img src="${c.sheetThumbUrl || c.sheetImgUrl}" alt="" class="w-5 h-5 rounded object-cover">⬇️ ${s(c.name)}</a>`).join('')}
         </div>` : ''}
+        ${data.negative ? `<button onclick="app.actions.manualCopyNegative('${key}')" class="w-full text-[11px] font-bold text-rose-700 bg-rose-50 border border-rose-200 hover:bg-rose-100 rounded-lg py-1.5 transition">📋 Negativ-Prompt kopieren</button>` : ''}
         <div class="grid grid-cols-3 gap-2">
             <button onclick="app.actions.manualCopyPrompt('${key}')" class="text-xs font-bold text-white bg-purple-600 hover:bg-purple-700 rounded-lg py-2 transition">📋 Prompt kopieren</button>
             <button onclick="app.actions.manualPasteImage('${key}')" class="text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 rounded-lg py-2 transition">📥 Bild einfügen</button>
@@ -88,6 +97,11 @@ Object.assign(app.render, {
         document.getElementById('studioManualProgress').innerText =
             `${items.length - open.length} von ${items.length} Bildern echt · ${open.length} offen`;
         document.getElementById('studioManualOnlyOpen').checked = onlyOpen;
+        // NEU (v0.46.0-beta): Auswahl des Zielprogramms, aus der Liste in imageTargets.js
+        const targetSel = document.getElementById('studioManualTarget');
+        const currentTarget = app.studio.imageTargets.currentId();
+        targetSel.innerHTML = app.studio.imageTargets.list().map(t => `<option value="${t.id}" ${t.id === currentTarget ? 'selected' : ''}>${app.utils.sanitize(t.label)}</option>`).join('');
+        document.getElementById('studioManualTargetHint').innerText = app.studio.imageTargets.get(currentTarget).hint;
         list.innerHTML = shown.length
             ? shown.map(i => cardHtml(p, i)).join('')
             : `<div class="text-center py-10 text-slate-500 bg-white rounded-2xl border border-dashed border-slate-200"><span class="text-3xl block mb-2">🎉</span><p class="text-xs font-semibold">${items.length ? 'Alle Bilder sind ausgetauscht.' : 'Noch keine Bilder - erst Figuren und Seiten anlegen.'}</p></div>`;
@@ -117,12 +131,25 @@ Object.assign(app.actions, {
         app.render.studioManualImages();
     },
 
+    setManualTarget(id) {
+        app.studio.imageTargets.setCurrent(id);
+        app.render.studioManualImages();
+    },
+
     async manualCopyPrompt(key) {
         const p = project();
         const item = app.studio.parseManualItemKey(key);
         if (!p || !item) return;
         activeKey = safeKey(key);
-        await app.studio.imageSource.copyPrompt(app.studio.manualPromptFor(p, item));
+        // NEU (v0.46.0-beta): englische Zielprogramme - erst übersetzen (einmal, gemerkt).
+        let data = app.studio.manualPromptData(p, item);
+        if (data.parts && app.studio.imageTargets.needsTranslation(app.studio.imageTargets.currentId(), data.parts)) {
+            app.ui.showLoader('Prompt wird übersetzt...', 'Einen Moment');
+            try { await app.studio.imageTargets.translate(data.parts); } finally { app.ui.hideLoader(); }
+            data = app.studio.manualPromptData(p, item);
+            app.render.studioManualImages();
+        }
+        await app.studio.imageSource.copyPrompt(data.prompt);
         // Nur den Rahmen umfärben statt alles neu zu zeichnen (Scrollposition bleibt).
         document.querySelectorAll('#studioManualList [data-key]').forEach(el => {
             const on = el.dataset.key === activeKey;
@@ -133,13 +160,30 @@ Object.assign(app.actions, {
         });
     },
 
+    async manualCopyNegative(key) {
+        const p = project();
+        const item = app.studio.parseManualItemKey(key);
+        if (!p || !item) return;
+        await app.studio.imageSource.copyPrompt(app.studio.manualPromptData(p, item).negative);
+    },
+
     // Alle offenen Prompts auf einmal (nummeriert) - für längere Sitzungen im KI-Chat.
     async manualCopyAllPrompts() {
         const p = project();
         if (!p) return;
         const items = app.studio.manualImageItems(p).filter(isOpen);
         if (!items.length) { app.ui.toast('Keine offenen Bilder.', 'ℹ️'); return; }
-        const text = items.map((i, n) => `### ${n + 1}. ${i.label}\n\n${app.studio.manualPromptFor(p, i)}`).join('\n\n---\n\n');
+        // NEU (v0.46.0-beta): bei englischen Zielprogrammen erst alles übersetzen
+        const targetId = app.studio.imageTargets.currentId();
+        const pending = items.map(i => app.studio.manualPromptData(p, i).parts).filter(pt => pt && app.studio.imageTargets.needsTranslation(targetId, pt));
+        if (pending.length) {
+            app.ui.showLoader('Prompts werden übersetzt...', `${pending.length} Stück`);
+            try { for (const pt of pending) await app.studio.imageTargets.translate(pt); } finally { app.ui.hideLoader(); }
+            app.render.studioManualImages();
+        }
+        const neg = app.studio.imageTargets.get(targetId).negative;
+        const text = items.map((i, n) => `### ${n + 1}. ${i.label}\n\n${app.studio.manualPromptFor(p, i)}`).join('\n\n---\n\n')
+            + (neg ? `\n\n---\n\nNEGATIVE PROMPT (für alle):\n${neg}` : '');
         await app.studio.imageSource.copyPrompt(text);
     },
 

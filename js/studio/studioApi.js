@@ -144,6 +144,14 @@ Object.assign(app.studio, {
             return callTextWithFallback(prompt, 'Gemini nicht erreichbar - Mistral eingesprungen (Bildideen)');
         },
 
+        // NEU (v0.46.0-beta): frei geschriebene Teile eines Bild-Prompts ins
+        // Englische übersetzen (für Leonardo & Co., js/studio/imageTargets.js).
+        // Rückgabe: { scene, style, zone, characters: [..] } - gleiche Form wie rein.
+        async translateImagePromptParts(parts) {
+            const prompt = `Übersetze die Werte dieses JSON-Objekts ins Englische, für einen Bild-Prompt einer Kinderbuch-Illustration. Namen von Figuren NICHT übersetzen. Leere Werte leer lassen. Antworte NUR mit dem JSON-Objekt in exakt derselben Struktur (gleiche Schlüssel, characters als Array gleicher Länge).\n\n${JSON.stringify(parts)}`;
+            return callTextWithFallback(prompt, 'Gemini nicht erreichbar - Mistral eingesprungen (Übersetzung)');
+        },
+
         // NEU: Stufe 1 – restliche Felder (Titel/Ton/Botschaft/Autor/Verlag/
         // Klappentext) direkt per API aus dem Thema ableiten, statt nur über
         // den kostenlosen Master-Prompt-Copy-Paste-Weg. Rückgabe:

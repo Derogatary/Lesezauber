@@ -77,6 +77,8 @@ import './studio/studioStoryboard.js';
 import './studio/studioImages.js';
 // NEU (v0.45.0-beta): Bilder manuell austauschen (Prompt kopieren / Bild einfügen)
 import './studio/studioManualImages.js';
+// NEU (v0.46.0-beta): Zielprogramme für kopierte Bild-Prompts
+import './studio/imageTargets.js';
 // NEU (Ausbaustufe 3 - Layout & Druck): Textplatzierung/Silbenfarben
 // (studioLayout.js) und der davon unabhängige Doppelseiten-Druck
 // (studioPrint.js) - siehe docs/KONZEPT-SchreibZauber.md TEIL E.

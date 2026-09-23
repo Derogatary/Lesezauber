@@ -7,8 +7,9 @@ import { app } from '../core.js';
 // austauschen kann"). Der kostenlose "Prompt-Export"-Weg aus
 // docs/KONZEPT-Bildquellen.md, jetzt als durchgehender Arbeitsablauf:
 //   1. Prompt kopieren (vollständig: Bildinhalt, Stilkarte mit Farbpalette und
-//      Zusatz-Stil, Figuren-Beschreibungen, Seitenverhältnis + Pixelgröße,
-//      freie Textfläche, Kinder-Leitplanken, Hinweis auf Referenzbilder).
+//      Zusatz-Stil, Figuren-Beschreibungen, Seitenverhältnis, freie Textfläche,
+//      Kinder-Leitplanken, Hinweis auf Referenzbilder) - seit v0.46.0-beta in
+//      der Fassung fürs gewählte Zielprogramm (js/studio/imageTargets.js).
 //   2. Im Gemini-Chat/AI Studio/ChatGPT einfügen, dazu die Figurenblätter als
 //      Referenzbilder anhängen (Download-Knöpfe in der Liste).
 //   3. Das fertige Bild zurück: aus der Zwischenablage einfügen (Knopf oder
@@ -21,11 +22,6 @@ import { app } from '../core.js';
 
 function currentProject() {
     return app.studio.projects[app.state.currentStudioProjectId] || null;
-}
-
-function formatSizeLine(formatId) {
-    const fmt = app.studio.formats.get(formatId);
-    return fmt ? `Bildgröße: ${fmt.genW} × ${fmt.genH} Pixel (Seitenverhältnis ${fmt.aspect}).` : '';
 }
 
 // Welche Bild-Anfrage gehört zu diesem Eintrag? Gleiche Angaben wie bei der
@@ -112,18 +108,20 @@ Object.assign(app.studio, {
         return null;
     },
 
-    // Der vollständige, frisch gebaute Prompt zum Kopieren.
-    manualPromptFor(project, item) {
+    // Der vollständige, frisch gebaute Prompt für ein Zielprogramm
+    // (js/studio/imageTargets.js): { prompt, negative, aspect, parts }.
+    // NEU (v0.46.0-beta): statt fester Pixelangabe das Seitenverhältnis, das
+    // das gewählte Programm kennt; englische Fassung + Negativ-Prompt für
+    // Leonardo & Co.
+    manualPromptData(project, item, targetId = app.studio.imageTargets.currentId()) {
         const spec = specFor(project, item);
-        if (!spec) return '';
-        const refNames = spec.refs.map(c => c.name);
-        return [
-            app.studio.imageSource.buildPrompt(spec),
-            formatSizeLine(spec.formatId),
-            refNames.length
-                ? `Angehängte Referenzbilder: die Figurenblätter von ${refNames.join(', ')} - Aussehen, Kleidung und Farben dieser Figuren exakt übernehmen.`
-                : ''
-        ].filter(Boolean).join('\n\n');
+        const parts = spec && app.studio.imageSource.promptParts(spec);
+        if (!parts) return { prompt: '', negative: '', aspect: '', parts: null };
+        return { ...app.studio.imageTargets.build(targetId, parts, spec.refs.map(c => c.name)), parts };
+    },
+
+    manualPromptFor(project, item, targetId) {
+        return app.studio.manualPromptData(project, item, targetId).prompt;
     },
 
     manualRefsFor(project, item) {
