@@ -47,6 +47,9 @@ import './actions/familyTools.js';
 // NEU (v0.43.0-beta): eigene Stimme - Seiten selbst einsprechen
 import './actions/voiceRecord.js';
 import './render/voiceRecord.js';
+// NEU (v0.44.0-beta): Nachtmodus "Über Nacht vorbereiten"
+import './actions/nightPrep.js';
+import './render/nightPrep.js';
 import './actions/audiobookExport.js';
 
 // NEU: Video-Export Weg B, Teil 1 - Renderer-Kern (Canvas) plus Zeitplan

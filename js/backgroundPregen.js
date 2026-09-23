@@ -232,6 +232,15 @@ async function runOneBackgroundTask() {
     const task = await findNextMissingTask();
     if (!task) return;
 
+    // NEU (v0.44.0-beta, Nachtmodus js/actions/nightPrep.js): was gerade
+    // bearbeitet wird und ob der letzte Versuch geklappt hat - nur Anzeige.
+    const taskBook = app.library[task.bookId];
+    const taskLabel = { scan: 'liest Seite aus', persona: 'Erzähler-Variante', bookQuiz: 'Buch-Quiz', birkenbihl: 'Birkenbihl' }[task.type] || task.type;
+    app.state.pregenActivity = {
+        ...(app.state.pregenActivity || {}),
+        current: `${taskLabel}${typeof task.pageIdx === 'number' ? ` · Seite ${task.pageIdx + 1}` : ''} · „${taskBook?.title || '?'}“`
+    };
+
     app.state.apiBusy = true;
     try {
         if (task.type === 'scan' || task.type === 'persona') {
@@ -265,7 +274,10 @@ async function runOneBackgroundTask() {
         // NEU: hält den kleinen "⏳ X im Hintergrund offen"-Hinweis in der
         // Bibliothek aktuell, falls die App gerade dort offen daliegt.
         if (app.state.currentView === 'lib') app.render.library();
+        app.state.pregenActivity.lastSuccessAt = Date.now();
     } catch (e) {
+        app.state.pregenActivity.lastErrorAt = Date.now();
+        app.state.pregenActivity.lastError = e?.message || String(e);
         // Einzelner Fehler im Hintergrund soll nicht störend auffallen -
         // beim nächsten Zyklus wird es automatisch erneut versucht.
         console.warn('Hintergrund-Vorbereitung: ein Versuch fehlgeschlagen, wird später erneut versucht.', e);

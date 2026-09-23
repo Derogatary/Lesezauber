@@ -1,7 +1,10 @@
 // Bei jeder inhaltlichen Änderung an einer dieser Dateien diese Nummer
 // erhöhen - sonst bekommen wiederkehrende Besucher weiter die alte
 // zwischengespeicherte Version ausgeliefert.
-const CACHE_NAME = 'lesezauber-shell-v77';
+const CACHE_NAME = 'lesezauber-shell-v78';
+
+// NEU (v78, v0.44.0-beta): Nachtmodus "Über Nacht vorbereiten" (neue Dateien
+// js/actions/nightPrep.js, js/render/nightPrep.js).
 
 // NEU (v77, v0.43.0-beta): eigene Stimme - Seiten selbst einsprechen (neue
 // Dateien js/actions/voiceRecord.js, js/render/voiceRecord.js, IndexedDB v5).
@@ -273,6 +276,8 @@ const APP_SHELL = [
     './js/actions/familyTools.js',
     './js/actions/voiceRecord.js',
     './js/render/voiceRecord.js',
+    './js/actions/nightPrep.js',
+    './js/render/nightPrep.js',
     './js/actions/audiobookExport.js',
     './js/actions/videoTimeline.js',
     './js/actions/videoPreview.js',

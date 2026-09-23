@@ -9,6 +9,12 @@ document.addEventListener('keydown', (e) => {
     const tag = document.activeElement?.tagName;
     if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
 
+    // NEU (v0.44.0-beta): Nachtmodus läuft -> nur Escape (beenden-Nachfrage)
+    if (app.actions.isNightPrepActive?.()) {
+        if (e.key === 'Escape') app.actions.nightPrepTap();
+        return;
+    }
+
     // NEU (v0.43.0-beta): Aufnahme-Fenster offen -> nur Escape (schließen),
     // sonst würden Pfeiltasten/Leertaste mitten in der Aufnahme blättern/vorlesen.
     if (!document.getElementById('voiceRecordPanel')?.classList.contains('hidden')) {

@@ -6,6 +6,33 @@ vollständige Historie, neueste Version zuerst. Diese Datei wurde aus
 `CLAUDE.md` ausgelagert, weil der Abschnitt dort mit der Zeit zu groß für
 schnellen Kontext wurde; inhaltlich unverändert übernommen.
 
+## v0.44.0-beta
+
+Nutzerfrage: „Kann man es als PWA einrichten, dass der Hintergrunddownload auch bei minimierter App geht? … über eine Benachrichtigung wie 15 Aufträge offen“
+
+**Antwort und Entscheidung: nicht zuverlässig möglich, deshalb ein Nachtmodus mit geöffneter App.**
+- Android friert eine minimierte Web-App nach wenigen Minuten ein, iOS sofort.
+- Einen Vordergrund-Dienst mit fester Benachrichtigung wie bei nativen Apps gibt es im Browser nicht. Eine Benachrichtigung hält die Seite nicht wach.
+- Der Service Worker darf nur kurz aufwachen.
+- Background Fetch gibt es nur in Chrome, und es ist für feste Downloads gedacht, nicht für eine Kette von KI-Anfragen mit Modell-Rotation.
+- Die geplante TWA-Android-App hat dieselben Grenzen. Nur eine richtige native App könnte das, das wäre ein großer Umbau.
+
+**Neu: 🌙 „Über Nacht vorbereiten“** (`js/actions/nightPrep.js`, `js/render/nightPrep.js`)
+- Knopf in Einstellungen → „Im Hintergrund vorbereiten“ und als „🌙 über Nacht“ neben dem Hinweis „⏳ X im Hintergrund offen“ in der Bibliothek.
+- Ist die Hintergrund-Vorbereitung aus, fragt die App, ob sie eingeschaltet werden soll.
+- Die App bleibt geöffnet und hält den Bildschirm wach (Screen Wake Lock: Chrome/Android, Safari ab iOS 16.4). Ohne Unterstützung kommt ein Hinweis, die Bildschirmsperre länger zu stellen.
+- Anzeige: schwarze Vollbild-Anzeige mit gedimmtem Text „Noch X Aufträge offen · gerade: …“.
+  - Der Text wandert jede Minute etwas, gegen Einbrennen.
+  - Ein Tipp fragt, ob beendet werden soll.
+  - Nach kurzem Wechsel in eine andere App wird der Bildschirm beim Zurückkommen wieder wach gehalten.
+- **Ende:**
+  - Nichts mehr offen → „✅ Fertig“.
+  - 20 Minuten ohne Fortschritt → „💤 Pause bis morgen“ (meist ist das Tageskontingent aufgebraucht).
+  - Dann gibt die App den Bildschirm frei und das Gerät schaltet ihn nach der normalen Zeit selbst aus. Nach einer Minute wird auch der Text schwarz.
+  - In einer installierten App wird versucht, das Fenster zu schließen. Viele Browser erlauben das nicht, dann bleibt es einfach schwarz.
+- Die Arbeit selbst machen unverändert die Schleifen in `js/backgroundPregen.js`. Die melden jetzt nur zusätzlich `app.state.pregenActivity` (was gerade läuft, letzter Erfolg/Fehler) für die Anzeige.
+- 1 neuer Unit-Test (`tests/nightPrep.test.mjs`), 30 insgesamt. `CACHE_NAME` v78.
+
 ## v0.43.0-beta
 
 Nutzerwunsch zur eigenen Stimme: „Eine für alle, die Auswahl zwischen Mama und Papa wäre okay … Gerne coden.“

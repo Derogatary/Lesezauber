@@ -9,4 +9,5 @@ await import('../js/actions/aiReports.js');
 await import('../js/actions/kidMode.js');
 await import('../js/actions/familyTools.js');
 await import('../js/actions/voiceRecord.js');
+await import('../js/actions/nightPrep.js');
 export { app };

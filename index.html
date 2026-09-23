@@ -59,7 +59,9 @@
                          Nur sichtbar, wenn die Hintergrund-Vorbereitung
                          überhaupt eingeschaltet ist UND etwas offen ist. -->
                     <button id="pregenBadge" data-parent-only onclick="app.nav.go('settings')" class="hidden text-xs font-bold text-indigo-600 mt-0.5 hover:underline"></button>
-                    <p data-app-version class="text-[10px] text-slate-400 font-semibold mt-0.5">v0.43.0-beta</p>
+                    <!-- NEU (v0.44.0-beta): direkt in den Nachtmodus -->
+                    <button id="nightPrepLibBtn" data-parent-only onclick="app.actions.startNightPrep()" class="hidden text-xs font-bold text-slate-600 mt-0.5 ml-2 hover:underline">🌙 über Nacht</button>
+                    <p data-app-version class="text-[10px] text-slate-400 font-semibold mt-0.5">v0.44.0-beta</p>
                 </div>
                 <div class="flex items-center gap-2 flex-shrink-0">
                     <!-- NEU (v0.42.0-beta): Kinder-Lesemodus ein (Eltern) bzw. aus (Eltern-Frage) - js/actions/kidMode.js -->
@@ -653,6 +655,18 @@
             <!-- NEU: Belohnung, wenn jede Seite/Aufgabe abgehakt ist -->
             <div id="rewardBanner" class="hidden mt-4"></div>
         </main>
+
+        <!-- ================= NACHTMODUS (v0.44.0-beta) ================= -->
+        <!-- NEU: schwarze Vollbild-Anzeige, solange über Nacht vorbereitet wird.
+             Bewusst reines Schwarz mit sehr gedimmtem Text (OLED: praktisch aus). -->
+        <div id="nightPrepOverlay" onclick="app.actions.nightPrepTap()" class="hidden fixed inset-0 z-[60] bg-black flex items-center justify-center p-6 cursor-pointer select-none">
+            <div id="nightPrepBox" class="text-center space-y-2 transition-all duration-1000" style="color:#5b6477">
+                <p id="nightPrepTitle" class="text-xl font-bold"></p>
+                <p id="nightPrepCount" class="text-sm"></p>
+                <p id="nightPrepCurrent" class="text-xs"></p>
+                <p id="nightPrepHint" class="text-[11px] max-w-xs mx-auto" style="color:#3b4252"></p>
+            </div>
+        </div>
 
         <!-- ================= EIGENE STIMME: AUFNAHME-FENSTER (v0.43.0-beta) ================= -->
         <!-- NEU: Eltern lesen die aktuelle Seite selbst ein. Der Text steht groß
@@ -1480,6 +1494,10 @@
                          countMissingBookQuiz()/countMissingBirkenbihl()/
                          countMissingAudio() in js/utils.js. -->
                     <div id="pregenOverview" class="text-[11px] text-slate-500 font-semibold space-y-0.5"></div>
+                    <!-- NEU (v0.44.0-beta): Nachtmodus - App bleibt offen, Bildschirm
+                         dunkel, arbeitet alles ab (js/actions/nightPrep.js). -->
+                    <button onclick="app.actions.startNightPrep()" class="w-full mt-1 bg-slate-900 hover:bg-slate-800 text-white font-bold py-2.5 rounded-xl text-sm transition">🌙 Über Nacht vorbereiten</button>
+                    <p class="text-[10px] text-slate-400">Eine Web-App wird beim Minimieren vom Gerät angehalten - deshalb bleibt sie dafür geöffnet: Gerät ans Ladekabel, Bildschirm wird schwarz, alles Offene wird abgearbeitet. Danach geht der Bildschirm von selbst aus.</p>
                 </div>
 
                 <!-- NEU (SchreibZauber Stufe 2): echte Bildgenerierung ist bewusst
