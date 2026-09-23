@@ -75,6 +75,8 @@ import './studio/studioMetaPages.js';
 import './studio/studioCharacters.js';
 import './studio/studioStoryboard.js';
 import './studio/studioImages.js';
+// NEU (v0.45.0-beta): Bilder manuell austauschen (Prompt kopieren / Bild einfügen)
+import './studio/studioManualImages.js';
 // NEU (Ausbaustufe 3 - Layout & Druck): Textplatzierung/Silbenfarben
 // (studioLayout.js) und der davon unabhängige Doppelseiten-Druck
 // (studioPrint.js) - siehe docs/KONZEPT-SchreibZauber.md TEIL E.
@@ -104,6 +106,7 @@ import './render/studioWizard.js';
 import './render/studioCharacters.js';
 import './render/studioStoryboard.js';
 import './render/studioImages.js';
+import './render/studioManualImages.js';
 import './render/studioLayout.js';
 import './render/studioWorkbookWizard.js';
 

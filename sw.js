@@ -1,7 +1,10 @@
 // Bei jeder inhaltlichen Änderung an einer dieser Dateien diese Nummer
 // erhöhen - sonst bekommen wiederkehrende Besucher weiter die alte
 // zwischengespeicherte Version ausgeliefert.
-const CACHE_NAME = 'lesezauber-shell-v78';
+const CACHE_NAME = 'lesezauber-shell-v79';
+
+// NEU (v79, v0.45.0-beta): SchreibZauber - Bilder manuell austauschen (neue
+// Dateien js/studio/studioManualImages.js, js/render/studioManualImages.js).
 
 // NEU (v78, v0.44.0-beta): Nachtmodus "Über Nacht vorbereiten" (neue Dateien
 // js/actions/nightPrep.js, js/render/nightPrep.js).
@@ -305,6 +308,7 @@ const APP_SHELL = [
     './js/studio/studioCharacters.js',
     './js/studio/studioStoryboard.js',
     './js/studio/studioImages.js',
+    './js/studio/studioManualImages.js',
     // NEU (Ausbaustufe 3 - Layout & Druck): siehe
     // docs/KONZEPT-SchreibZauber.md, Abschnitt "Stand nach Stufe 3".
     './js/studio/studioLayout.js',
@@ -323,6 +327,7 @@ const APP_SHELL = [
     './js/render/studioCharacters.js',
     './js/render/studioStoryboard.js',
     './js/render/studioImages.js',
+    './js/render/studioManualImages.js',
     './js/render/studioLayout.js',
     './js/render/studioWorkbookWizard.js',
     './js/backgroundPregen.js',

@@ -6,6 +6,37 @@ vollständige Historie, neueste Version zuerst. Diese Datei wurde aus
 `CLAUDE.md` ausgelagert, weil der Abschnitt dort mit der Zeit zu groß für
 schnellen Kontext wurde; inhaltlich unverändert übernommen.
 
+## v0.45.0-beta
+
+Nutzerwunsch: „Wo ist der Knopf, um den gesamten Prompt des Bildes, auch die Hintergrund-Einstellungen, rauszukopieren? Für jedes einzelne Bild, um es manuell einzufügen … eine Seite mit allen Seiten, wo man sie direkt austauschen kann.“
+
+**Vorher:** Der kostenlose „Prompt-Export“-Weg (`docs/KONZEPT-Bildquellen.md`) war nur halb gebaut. `copyPrompt()` und die Upload-Quelle gab es im Code, in der App aber weder einen Kopier-Knopf pro Bild noch einen Weg, ein eigenes Bild in eine Doppelseite einzusetzen.
+
+**Neu: ✍️ Bilder manuell austauschen** (`js/studio/studioManualImages.js`, `js/render/studioManualImages.js`)
+- Erreichbar in SchreibZauber Stufe 6 über den großen Knopf und pro Bildkarte über „📋 Prompt kopieren“ und „✍️ Austauschen“, in Stufe 4 für die Figurenblätter.
+- Eine Vollbild-Seite mit **allen** Bildern des Werks: erst die Figurenblätter, weil sie die Vorlage sind, dann die Doppelseiten bzw. beim Comic jedes Panel. Standardmäßig nur die offenen (Platzhalter), mit Fortschritt „2 von 12 echt“.
+- **Der Prompt pro Bild ist sichtbar und vollständig**, er wird bei jedem Kopieren frisch gebaut, damit spätere Änderungen an der Stilkarte drin sind. Er enthält:
+  - Bildinhalt
+  - Stilkarte mit Linien, Farbpalette und Zusatz-Stil
+  - Figuren-Beschreibungen
+  - Seitenverhältnis und Pixelgröße
+  - freie Textfläche passend zur Textposition
+  - Falz-Hinweis beim Panorama
+  - Kinder- und Rechte-Leitplanken
+  - den Hinweis, welche Figurenblätter als Referenzbild anzuhängen sind
+- **„Mit anhängen“:** Die Figurenblätter der Seite lassen sich mit ⬇️ direkt herunterladen, um sie im KI-Chat dazuzulegen.
+- **Zurück in die App:**
+  - „📥 Bild einfügen“ holt das Bild aus der Zwischenablage (im KI-Chat „Bild kopieren“).
+  - Strg+V fügt in die zuletzt kopierte Karte ein.
+  - Außerdem „📁 Datei“ und Drag & Drop.
+  - Das Bild wird wie ein eigenes Foto eingesetzt, in Druckauflösung, falls „Hochauflösend“ gewählt ist. Comic-Seiten werden neu zusammengesetzt.
+  - Ein neues Figurenblatt markiert echte Bilder dieser Figur als „veraltet“.
+- „📋 Alle offenen Prompts kopieren“ kopiert alle offenen Prompts nummeriert als ein Text.
+- **Fixes:**
+  - Comic-Panels merken ihre Herkunft (`panel.imageSource`). „Alle Platzhalter ersetzen“ überschreibt selbst eingesetzte Panels nicht mehr.
+  - Doppelter Punkt im Bild-Prompt entfernt („Blau.. Figuren“).
+- 2 neue Unit-Tests (`tests/manualImages.test.mjs`), 32 insgesamt. `CACHE_NAME` v79.
+
 ## v0.44.0-beta
 
 Nutzerfrage: „Kann man es als PWA einrichten, dass der Hintergrunddownload auch bei minimierter App geht? … über eine Benachrichtigung wie 15 Aufträge offen“

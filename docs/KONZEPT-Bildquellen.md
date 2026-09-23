@@ -206,6 +206,13 @@ Seitenverhältnis, gleiche Textzone.
    in der App per `console.error()` + Toast gemeldet, nie stumm verschluckt. Live zu sehen
    in [`docs/platzhalter-vorschau.html`](platzhalter-vorschau.html) – dort hat jede Karte
    jetzt einen „📋 Prompt kopieren"-Knopf.
+   **Nachtrag v0.45.0-beta:** In der App selbst gab es bis dahin keinen Kopier-Knopf und keinen
+   Weg, ein eigenes Bild in eine Doppelseite einzusetzen (`providers.upload` war nirgends
+   angeschlossen). Jetzt: SchreibZauber Stufe 6 → „✍️ Bilder manuell austauschen“ (und Stufe 4 für
+   Figurenblätter) - eine Seite mit ALLEN Bildern, pro Bild der vollständige, frisch gebaute
+   Prompt (+ Pixelgröße + Hinweis auf anzuhängende Figurenblätter mit Download-Knopf),
+   Einfügen aus der Zwischenablage, per Datei oder Drag & Drop. Code:
+   `js/studio/studioManualImages.js`, `js/render/studioManualImages.js`.
 4. **Clipart-Quelle fürs Arbeitsheft** – kleine Recherche nachgeholt (Sept. 2026, im Zuge
    der Ausbaustufe 4). Ergebnis: **noch kein Blocker, weil noch kein Bild gebraucht wird.**
    Die fünf in Stufe 4 umgesetzten Aufgabentypen (Lückentext, Ankreuzen, Rechnen, Zuordnen,

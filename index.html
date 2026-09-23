@@ -61,7 +61,7 @@
                     <button id="pregenBadge" data-parent-only onclick="app.nav.go('settings')" class="hidden text-xs font-bold text-indigo-600 mt-0.5 hover:underline"></button>
                     <!-- NEU (v0.44.0-beta): direkt in den Nachtmodus -->
                     <button id="nightPrepLibBtn" data-parent-only onclick="app.actions.startNightPrep()" class="hidden text-xs font-bold text-slate-600 mt-0.5 ml-2 hover:underline">🌙 über Nacht</button>
-                    <p data-app-version class="text-[10px] text-slate-400 font-semibold mt-0.5">v0.44.0-beta</p>
+                    <p data-app-version class="text-[10px] text-slate-400 font-semibold mt-0.5">v0.45.0-beta</p>
                 </div>
                 <div class="flex items-center gap-2 flex-shrink-0">
                     <!-- NEU (v0.42.0-beta): Kinder-Lesemodus ein (Eltern) bzw. aus (Eltern-Frage) - js/actions/kidMode.js -->
@@ -656,6 +656,40 @@
             <div id="rewardBanner" class="hidden mt-4"></div>
         </main>
 
+        <!-- ================= SCHREIBZAUBER: BILDER MANUELL AUSTAUSCHEN (v0.45.0-beta) ================= -->
+        <!-- NEU: alle Bilder eines Werks auf einer Seite - Prompt kopieren, im KI-Chat
+             erzeugen, Bild einfügen (js/studio/studioManualImages.js,
+             js/render/studioManualImages.js). -->
+        <div id="studioManualPanel" class="hidden fixed inset-0 z-50 bg-slate-50 flex flex-col">
+            <div class="flex items-center justify-between gap-2 px-4 py-3 bg-white border-b border-slate-200">
+                <div class="min-w-0">
+                    <h2 class="text-base font-bold text-slate-900">✍️ Bilder manuell austauschen</h2>
+                    <p id="studioManualProgress" class="text-[11px] text-slate-500"></p>
+                </div>
+                <button onclick="app.actions.closeStudioManualImages()" aria-label="Schließen" class="w-9 h-9 flex-shrink-0 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold">✕</button>
+            </div>
+            <div class="flex-grow overflow-y-auto p-4 space-y-3 w-full max-w-3xl mx-auto">
+                <details class="bg-purple-50 border border-purple-200 rounded-xl p-3 text-[11px] text-purple-900 leading-relaxed">
+                    <summary class="font-bold cursor-pointer">So geht's (kostenlos, z.B. mit der Gemini-App oder AI Studio)</summary>
+                    <ol class="list-decimal ml-4 mt-2 space-y-1">
+                        <li><b>Erst die Figurenblätter</b> (oben in der Liste) - sie sind die Vorlage, damit die Figuren auf allen Seiten gleich aussehen.</li>
+                        <li>„📋 Prompt kopieren“ - der komplette Prompt mit Stil, Farbpalette, Figuren, Format und freier Textfläche.</li>
+                        <li>Im KI-Chat einfügen. Steht „Mit anhängen“ dabei: die Figurenblätter mit ⬇️ herunterladen und im Chat als Bild dazulegen.</li>
+                        <li>Das fertige Bild im Chat kopieren (lange drücken → „Bild kopieren“) und hier „📥 Bild einfügen“ tippen - am Computer geht auch Strg+V oder Bild auf die Karte ziehen. Oder das Bild speichern und „📁 Datei“ wählen.</li>
+                    </ol>
+                </details>
+                <div class="flex items-center justify-between gap-2 flex-wrap">
+                    <label class="flex items-center gap-2 text-xs font-semibold text-slate-600">
+                        <input id="studioManualOnlyOpen" type="checkbox" onchange="app.actions.toggleManualOnlyOpen(this.checked)" class="accent-purple-600">
+                        Nur noch offene (Platzhalter) zeigen
+                    </label>
+                    <button onclick="app.actions.manualCopyAllPrompts()" class="text-xs font-bold text-purple-700 hover:underline">📋 Alle offenen Prompts kopieren</button>
+                </div>
+                <div id="studioManualList" class="space-y-3"></div>
+            </div>
+            <input id="studioManualFileInput" type="file" accept="image/*" class="hidden">
+        </div>
+
         <!-- ================= NACHTMODUS (v0.44.0-beta) ================= -->
         <!-- NEU: schwarze Vollbild-Anzeige, solange über Nacht vorbereitet wird.
              Bewusst reines Schwarz mit sehr gedimmtem Text (OLED: praktisch aus). -->
@@ -1177,6 +1211,8 @@
                     </div>
                     <div id="studioCharacterList" class="space-y-2"></div>
                     <button onclick="app.studio.addCharacter()" class="w-full mt-2 text-xs font-bold text-indigo-600 border border-dashed border-indigo-200 rounded-xl py-2.5 hover:bg-indigo-50 transition">+ Figur von Hand hinzufügen</button>
+                    <!-- NEU (v0.45.0-beta): Figurenblätter von Hand im KI-Chat erzeugen -->
+                    <button onclick="app.actions.openStudioManualImages()" class="w-full mt-1.5 text-xs font-bold text-purple-700 hover:underline">✍️ Figurenblätter manuell erzeugen (Prompt kopieren / Bild einfügen)</button>
                     <!-- NEU (Ausbaustufe 6 - Politur): "projektübergreifende
                          Figuren" - eine Lieblingsfigur aus einem ANDEREN Werk
                          übernehmen, unabhängig von der Reihen-Zuordnung
@@ -1216,6 +1252,9 @@
                     <span id="studioCostDisplay" class="text-xs font-bold text-slate-700"></span>
                     <button id="studioReplacePlaceholdersBtn" onclick="app.studio.replaceAllPlaceholders()" class="hidden text-xs font-bold text-white bg-purple-600 hover:bg-purple-700 rounded-lg px-3 py-1.5 transition">✨ Alle Platzhalter ersetzen</button>
                 </div>
+                <!-- NEU (v0.45.0-beta): kostenloser Handweg - Prompt kopieren, im KI-Chat
+                     erzeugen, Bild zurück einfügen (js/studio/studioManualImages.js). -->
+                <button onclick="app.actions.openStudioManualImages()" class="w-full bg-white border-2 border-purple-200 hover:border-purple-400 text-purple-800 font-bold py-2.5 rounded-xl text-sm transition">✍️ Bilder manuell austauschen (Prompt kopieren → im KI-Chat erzeugen → einfügen)</button>
                 <div id="studioImageList" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
                 <div class="flex gap-2">
                     <button onclick="app.render.studioWizard(5)" class="flex-1 bg-white border border-slate-200 text-slate-600 font-bold py-3 rounded-xl hover:bg-slate-50 transition">◀ Zum Daumenkino</button>

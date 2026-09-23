@@ -23,6 +23,11 @@ function imageCardHtml(spread) {
         <button onclick="app.studio.generateSpreadImage(${spread.index})" class="w-full text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg py-2 transition">
             ${spread.imageStale ? '🔄 Neu zeichnen' : (spread.imgUrl ? '🔄 Neu erzeugen' : '🎨 Bild generieren')}
         </button>
+        <!-- NEU (v0.45.0-beta): Handweg für genau dieses Bild -->
+        <div class="grid grid-cols-2 gap-2">
+            <button onclick="app.actions.manualCopyPrompt('${spread.panels?.length ? `p:${spread.index}:0` : `s:${spread.index}`}')" class="text-[11px] font-bold text-purple-700 bg-purple-50 border border-purple-200 hover:bg-purple-100 rounded-lg py-1.5 transition">📋 Prompt kopieren</button>
+            <button onclick="app.actions.openStudioManualImages('${spread.panels?.length ? `p:${spread.index}:0` : `s:${spread.index}`}')" class="text-[11px] font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg py-1.5 transition">✍️ Austauschen</button>
+        </div>
     </div>`;
 }
 

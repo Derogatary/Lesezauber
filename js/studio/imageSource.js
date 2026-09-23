@@ -33,9 +33,12 @@ function buildPrompt({ formatId, sketch, style, characters = [], textPos }) {
     // Fläche freihalten lassen (das Bild darf die ganze Fläche nutzen).
     const noTextOnImage = ['band-oben', 'band-unten', 'ohne'].includes(textPos) && !fmt.fold;
 
+    // FIX (v0.45.0-beta): Bildidee/Stilkarte enden oft schon mit einem Punkt -
+    // ohne das Abschneiden stand im Prompt "Blau.." (beim Kopieren sichtbar).
+    const noEndDot = (t) => String(t).trim().replace(/[.\s]+$/, '');
     const parts = [
-        `Illustration für ein Kinderbuch. Bildinhalt: ${sketch || 'noch offen'}.`,
-        style ? `Stil: ${style}.` : '',
+        `Illustration für ein Kinderbuch. Bildinhalt: ${sketch ? noEndDot(sketch) : 'noch offen'}.`,
+        style ? `Stil: ${noEndDot(style)}.` : '',
         characters.length
             ? `Figuren (Aussehen exakt wie beschrieben beibehalten): ${characters.map(c => `${c.name} – ${c.sheetText}`).join(' | ')}.`
             : '',

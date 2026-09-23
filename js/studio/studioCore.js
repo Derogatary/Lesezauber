@@ -591,6 +591,7 @@ Object.assign(app.studio, {
             // später wiederverwenden kann, ohne ihn neu zu erfinden.
             panel.imagePrompt = result.meta.prompt || '';
             panel.imageStatus = 'done';
+            panel.imageSource = 'placeholder'; // NEU (v0.45.0-beta)
         }
 
         const composited = await app.studio.comicPanels.compositePage(spread);

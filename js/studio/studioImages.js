@@ -142,6 +142,8 @@ Object.assign(app.studio, {
                 panel.thumbUrl = result.thumb;
                 panel.imagePrompt = result.meta.prompt || '';
                 panel.imageStatus = 'done';
+                // NEU (v0.45.0-beta): Herkunft merken (Anzeige beim manuellen Austausch)
+                panel.imageSource = result.meta.source;
                 app.studio.trackImageCost(project, result.meta);
             }
 
@@ -260,7 +262,8 @@ async function replaceAllComicPanelPlaceholders(project, sourceId) {
     const targets = [];
     project.spreads.forEach((spread, spreadIndex) => {
         spread.panels.forEach((panel, panelIndex) => {
-            if (panel.imgUrl && panel.imagePrompt) targets.push({ spread, panel, spreadIndex, panelIndex });
+            // FIX (v0.45.0-beta): selbst eingesetzte Panels (manueller Austausch) nicht überschreiben
+            if (panel.imgUrl && panel.imagePrompt && panel.imageSource !== 'upload') targets.push({ spread, panel, spreadIndex, panelIndex });
         });
     });
     if (targets.length === 0) {
@@ -294,6 +297,7 @@ async function replaceAllComicPanelPlaceholders(project, sourceId) {
                 if (result) {
                     panel.imgUrl = result.full;
                     panel.thumbUrl = result.thumb;
+                    panel.imageSource = result.meta.source; // NEU (v0.45.0-beta)
                     app.studio.trackImageCost(project, result.meta);
                     touchedSpreads.add(spread);
                     done += 1;
