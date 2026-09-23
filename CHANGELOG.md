@@ -6,6 +6,47 @@ vollständige Historie, neueste Version zuerst. Diese Datei wurde aus
 `CLAUDE.md` ausgelagert, weil der Abschnitt dort mit der Zeit zu groß für
 schnellen Kontext wurde; inhaltlich unverändert übernommen.
 
+## v0.42.0-beta
+
+Nutzerwunsch: die Ideenliste aus v0.41.0-beta umsetzen („Alles andere kannst du erledigen“), außer der eigenen Stimme. Die ist nur entworfen (siehe unten).
+
+**Neu:**
+- **🧒 Kinder-Lesemodus mit Eltern-Frage** (`js/actions/kidMode.js`):
+  - Einschalten über den Knopf „🧒 Kindermodus“ in der Bibliothek oder in Einstellungen → Familie.
+  - Das Kind sieht dann nur freigegebene Bücher. Ein Tipp aufs Buch öffnet direkt den Reader.
+  - Einstellungen, SchreibZauber, Scannen/Import, Heft-Generator, Profil-Verwaltung, Film-Vorschau und die Buchansicht sind ausgeblendet und gesperrt: `app.nav.go()` fragt `kidModeGuard()`.
+  - Verlassen über „🔒 Eltern“ und eine Einmaleins-Aufgabe (6-9 × 6-9). Das ist eine Absichts-Bremse für kleine Kinder, kein Passwortschutz, also dieselbe Haltung wie die Profil-Rollen.
+  - Der Modus gilt pro Gerät, nicht pro Profil.
+- **✅ Bücher freigeben**: `book.approvedForKids` über die Karte „🧒 Für Kinder“ in der Buchansicht. Die Bestätigung erinnert daran, die KI-Texte vorher durchzublättern, und nennt die Zahl noch nicht ausgelesener Seiten. In der normalen Bibliothek tragen freigegebene Bücher das Abzeichen „🧒 frei“.
+- **💬 „Frag den Zauberer“ pro Profil**: Einstellungen → Familie, drei Stufen:
+  - „Nur mit Eltern“ (Standard): der Chat ist im Kinder-Lesemodus aus.
+  - „Immer“
+  - „Nie“
+  
+  Gespeichert als `profile.chatMode`. Der freie Chat ist die riskanteste KI-Funktion, deshalb ist er allein standardmäßig aus.
+- **💰 Monatsbudget**: Feld im Kostenzähler, in USD wie die Schätzung selbst. Hinweis bei 80 % und beim Überschreiten, jeweils einmal pro Monat. Es gibt bewusst keine Sperre, denn die Schätzung ist ungenau und ein Abbruch mitten im Vorlesen wäre schlimmer. Gezählt werden nur die KI-Stimmen, weil Gemini-Textaufrufe dort schon bisher keinen Preis haben.
+- **📅 Wochenrückblick** (Einstellungen → Familie) für das aktive Profil, rein aus lokalen Daten:
+  - erledigte Seiten und Sticker
+  - kontrollierte Blätter
+  - gelesene Bücher
+  - neue Wörter: geräteweit, dafür speichern Vokabeln jetzt `firstSeen`, alte Einträge zählen nicht als neu
+- **🃏 Wortkarten drucken** zum Ausschneiden, zwei Karten pro Zeile:
+  - aus den schwierigen Wörtern eines Buches, mit Erklärung (Buchansicht)
+  - aus dem Vokabeltrainer, mit Emoji und Wort (Knopf „🖨️ Karten“)
+- 7 neue Unit-Tests (`tests/family.test.mjs`), 27 insgesamt. `CACHE_NAME` v76.
+
+**Entwurf: eigene Stimme aufnehmen (noch nicht gebaut):**
+- **Aufnehmen:** Ein Erwachsener nimmt im Reader eine Seite auf (🎙️ Aufnahme / Stopp / Anhören / Löschen, per `MediaRecorder`). Der Seitentext steht dabei groß als Ablesehilfe da.
+- **Speichern:** Die Aufnahme liegt in IndexedDB pro Buchseite, als eigener Speicher neben dem `ttsCache`. Sie gilt für den gedruckten Text, ist also persona-unabhängig.
+- **Vorlesen:**
+  - Der Seitentext kommt aus der Aufnahme, sobald es eine gibt.
+  - Zwischenruf, schwierige Wörter, Bildbeschreibung und Rätsel spricht weiter die Geräte- bzw. KI-Stimme. Es klingt also wie „Mama liest, der Erzähler kommentiert“.
+  - Die Weiche sitzt, wie bei den KI-Stimmen, nur in `js/tts.js`.
+  - Die Wort-Hervorhebung wird über die Textlänge geschätzt, wie heute schon bei Anbietern ohne Zeitstempel.
+- **Hörbuch und Video** nutzen die Aufnahme ebenfalls: `renderPageSegments()` bekommt sie als ersten Baustein.
+- **Eigenschaften:** kostenlos, offline, ohne Anbieter-Bedingungen, etwa 1 MB pro Minute (Opus/WebM). Die Aufnahmen sollen in die Sicherung.
+- **Offen** (siehe `docs/WARTET-AUF-BETREIBER.md`): mehrere Sprecher pro Seite? Eine Aufnahme für alle Profile?
+
 ## v0.41.0-beta
 
 Nutzerwunsch: Meldeknopf, klare Ausrichtung als **App für Eltern** („den SchreibZauber bedienen Eltern, der Reader ist zum Testen oder in Begleitung“) und Hinweise auf die Risiken von API-Keys.

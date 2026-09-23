@@ -1,7 +1,11 @@
 // Bei jeder inhaltlichen Änderung an einer dieser Dateien diese Nummer
 // erhöhen - sonst bekommen wiederkehrende Besucher weiter die alte
 // zwischengespeicherte Version ausgeliefert.
-const CACHE_NAME = 'lesezauber-shell-v75';
+const CACHE_NAME = 'lesezauber-shell-v76';
+
+// NEU (v76, v0.42.0-beta): Kinder-Lesemodus mit Eltern-Frage, Buch-Freigabe,
+// "Frag den Zauberer" pro Profil, Monatsbudget, Wochenrückblick, Wortkarten
+// (neue Dateien js/actions/kidMode.js, js/actions/familyTools.js).
 
 // NEU (v75, v0.41.0-beta): Meldeknopf für KI-Inhalte (neue Datei
 // js/actions/aiReports.js), Hinweis "App für Eltern", API-Key-Warnungen,
@@ -262,6 +266,8 @@ const APP_SHELL = [
     './js/actions/bookTranslate.js',
     './js/actions/appHealth.js',
     './js/actions/aiReports.js',
+    './js/actions/kidMode.js',
+    './js/actions/familyTools.js',
     './js/actions/audiobookExport.js',
     './js/actions/videoTimeline.js',
     './js/actions/videoPreview.js',

@@ -102,9 +102,12 @@ Object.assign(app.render, {
         // NEU: "Weiterlesen"-Karte für das zuletzt gelesene Buch (im
         // aktuellen Profil), ganz oben in der Bibliothek.
         const continueBar = document.getElementById('continueReadingBar');
+        const kidMode = app.utils.isKidMode();
         if (continueBar) {
             const profileBooks = Object.values(app.library).filter(b =>
-                app.state.currentProfileId === '__all__' || (b.profileId || 'default') === app.state.currentProfileId
+                (app.state.currentProfileId === '__all__' || (b.profileId || 'default') === app.state.currentProfileId)
+                // NEU (v0.42.0-beta): im Kinder-Lesemodus nur freigegebene Bücher
+                && app.utils.isBookVisibleForKid(b, kidMode)
             );
             const mostRecent = profileBooks
                 .filter(b => typeof b.lastReadIdx === 'number' && b.lastReadAt && b.lastReadIdx < b.pages.length - 1)
@@ -158,6 +161,8 @@ Object.assign(app.render, {
             const b = app.library[id];
             return (b.profileId || 'default') === app.state.currentProfileId;
         });
+        // NEU (v0.42.0-beta): Kinder-Lesemodus zeigt nur freigegebene Bücher
+        keys = keys.filter(id => app.utils.isBookVisibleForKid(app.library[id], kidMode));
 
         // NEU: Suche prüft jetzt auch Verlag/Reihe, falls die KI sie auf
         // der Titelseite erkannt hat - nicht nur Titel/Autor.
@@ -188,6 +193,11 @@ Object.assign(app.render, {
                         <span class="text-4xl block mb-2">🔍</span>
                         <p class="text-xs font-semibold">Keine Treffer für "${app.utils.sanitize(query)}"</p>
                    </div>`
+                : kidMode
+                ? `<div class="col-span-full text-center py-12 text-slate-500 bg-white rounded-2xl border border-dashed border-slate-200">
+                        <span class="text-4xl block mb-2">🔒</span>
+                        <p class="text-xs font-semibold">Hier ist noch kein Buch für dich freigegeben.<br>Frag Mama oder Papa!</p>
+                   </div>`
                 : `<div class="col-span-full text-center py-12 text-slate-500 bg-white rounded-2xl border border-dashed border-slate-200">
                         <span class="text-4xl block mb-2">📖</span>
                         <p class="text-xs font-semibold">Noch keine Bücher vorhanden.<br>Fotografiere deine erste Seite!</p>
@@ -199,12 +209,13 @@ Object.assign(app.render, {
             const book = app.library[id];
             const coverImg = app.utils.resolveCoverUrl(book);
             return `
-                <div onclick="app.state.currentBookId='${book.id}'; app.nav.go('book');" class="bg-white rounded-2xl overflow-hidden border border-slate-200 shadow-sm hover:shadow-md transition cursor-pointer active:scale-95 flex flex-col">
+                <div onclick="${kidMode ? `app.actions.openBookForKid('${book.id}')` : `app.state.currentBookId='${book.id}'; app.nav.go('book');`}" class="bg-white rounded-2xl overflow-hidden border border-slate-200 shadow-sm hover:shadow-md transition cursor-pointer active:scale-95 flex flex-col">
                     <div class="h-36 bg-slate-100 relative">
                         ${coverImg ? `<img src="${coverImg}" loading="lazy" class="w-full h-full object-cover">` : `<div class="flex items-center justify-center h-full text-2xl">📚</div>`}
                         <span class="absolute bottom-2 right-2 bg-black/60 backdrop-blur-md text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
                             ${book.pages.length} ${app.utils.resolveBookType(book) === 'workbook' ? 'Blätter' : 'Seiten'}
                         </span>
+                        ${book.approvedForKids && !kidMode ? '<span class="absolute top-2 right-2 bg-white/90 text-[10px] font-bold px-2 py-0.5 rounded-full text-emerald-700" title="Für den Kinder-Lesemodus freigegeben">🧒 frei</span>' : ''}
                         ${app.utils.resolveBookType(book) === 'workbook' ? '<span class="absolute top-2 left-2 bg-white/90 text-[10px] font-bold px-2 py-0.5 rounded-full text-indigo-700">📝 Übungsheft</span>' : ''}
                     </div>
                     <div class="p-3 flex-grow flex flex-col justify-between">

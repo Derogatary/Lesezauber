@@ -40,6 +40,10 @@ import './actions/bookTranslate.js';
 // NEU (v0.41.0-beta): KI-Inhalte melden (🚩) - MUSS vor dem ersten Rendern
 // geladen sein, weil app.utils.resolvePageVariant() stripHiddenAiFields() nutzt.
 import './actions/aiReports.js';
+// NEU (v0.42.0-beta): Kinder-Lesemodus/Buch-Freigabe/Chat pro Profil und
+// Familien-Werkzeuge (Monatsbudget, Wochenrückblick, Wortkarten).
+import './actions/kidMode.js';
+import './actions/familyTools.js';
 import './actions/audiobookExport.js';
 
 // NEU: Video-Export Weg B, Teil 1 - Renderer-Kern (Canvas) plus Zeitplan

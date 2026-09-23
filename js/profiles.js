@@ -204,6 +204,16 @@ Object.assign(app.actions, {
         app.ui.toast(currentlyAdult ? 'Als Kinderprofil eingestuft' : 'Als Erwachsenen-Profil eingestuft', currentlyAdult ? '🧒' : '🧑');
     },
 
+    // NEU (v0.42.0-beta): "Frag den Zauberer" pro Profil - 'always' | 'parents' | 'never',
+    // gelesen über app.utils.resolveChatMode() (js/actions/kidMode.js).
+    setProfileChatMode(profileId, mode) {
+        const profile = app.profiles.find(p => p.id === profileId);
+        if (!profile || !['always', 'parents', 'never'].includes(mode)) return;
+        profile.chatMode = mode;
+        saveProfiles();
+        app.ui.toast(`„Frag den Zauberer“ für ${profile.name}: ${mode === 'always' ? 'immer' : mode === 'never' ? 'aus' : 'nur mit Eltern'}`, '💬');
+    },
+
     // NEU: Profil umbenennen
     renameProfile(profileId) {
         // FIX (künstliches Nutzer-Feedback): "__all__" ist kein echtes Profil

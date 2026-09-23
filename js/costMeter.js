@@ -75,6 +75,8 @@ Object.assign(app.costMeter, {
     trackTts(providerId, charCount) {
         if (!charCount) return;
         addEntry('tts', providerId, charCount);
+        // NEU (v0.42.0-beta): Monatsbudget-Warnung (js/actions/familyTools.js)
+        app.actions.checkMonthlyBudget?.();
     },
 
     // Gemini-Textaufrufe aus api.js (Seitenanalyse, Buch-Quiz, Bildfragen,

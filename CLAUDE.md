@@ -113,6 +113,8 @@ import './actions/meineNeueDatei.js';
 | `js/vendor/` | PDF.js, JSZip, mp4-muxer (MIT) - NIE direkt bearbeiten, nur austauschen/aktualisieren. Lazy geladen, deshalb NICHT in der `APP_SHELL` von `sw.js` |
 | `js/actions/appHealth.js` | NEU v0.40.0-beta: Fehlerprotokoll (nur lokal, `copyErrorLog()`), Update-Hinweis statt stillem Service-Worker-Wechsel (`watchForAppUpdate()`) - wird in `main.js` als ERSTES Modul geladen. (Sicherungs-Erinnerung gibt es als Banner `#backupReminder` in `js/render/library.js`) |
 | `js/actions/aiReports.js` | NEU v0.41.0-beta: 🚩 KI-Inhalte melden - `page.aiHidden`, `app.utils.stripHiddenAiFields()`/`isAiHidden()`, Meldeliste in localStorage `lz_ai_reports`, Einstellungen-Liste `#aiReportsList`, Hinweis „App für Eltern“ (`#parentNotice`) |
+| `js/actions/kidMode.js` | NEU v0.42.0-beta: Kinder-Lesemodus (localStorage `lz_kid_mode`, `body.kid-mode` blendet alles mit `data-parent-only` aus, `app.actions.kidModeGuard()` wird von `app.nav.go()` gefragt - nur `lib`/`reader`/`vocab`/`help`, `book` → `lib`), Verlassen per Eltern-Frage (Einmaleins), Buch-Freigabe `book.approvedForKids` (Karte `#bookFamilyCard`), Chat pro Profil (`profile.chatMode`, `app.utils.isChatAllowedNow()`, `#chatCard`). **Neue Eltern-Bedienelemente in Bibliothek/Reader brauchen `data-parent-only`** |
+| `js/actions/familyTools.js` | NEU v0.42.0-beta: Monatsbudget (localStorage `lz_cost_budget`, Hinweis bei 80 %/Überschreiten einmal pro Monat, aufgerufen aus `app.costMeter.trackTts()`), Wochenrückblick (`app.utils.weeklyReview()`), Wortkarten drucken (`app.actions.printWordCards('book'|'vocab')`) |
 | `scripts/sanity-checks.mjs`, `tests/*.test.mjs`, `.github/workflows/checks.yml` | NEU v0.40.0-beta: Sanity-Checks als Skript, Unit-Tests (nur Module ohne Browser-Abhängigkeit beim Import, siehe `tests/helpers.mjs`), GitHub-Action |
 | `.claude/skills/releasecheck/SKILL.md` | NEU v0.40.0-beta: Projekt-Skill „Release-Check“ - Prüfpunkte, Befehle, Quellen mit Datum. `.gitignore` ignoriert `.claude/*` außer `.claude/skills/` |
 | `lizenzen.html`, `js/vendor/*/LICENSE*` | NEU v0.40.0-beta: Lizenzen der mitgelieferten Bibliotheken (Apache-2.0 verlangt die Weitergabe) |
@@ -148,6 +150,8 @@ import './actions/meineNeueDatei.js';
                      // Vorlesen in der Fremdsprache (js/tts.js/ttsNeural.js), KEINE Neu-Analyse/
                      // Persona-Nachbau/Birkenbihl (würde deutsch), Buch-Quiz in der Buchsprache
   translatedFromBookId, // NEU v0.39.0-beta, optional: ID des deutschen Originals
+  approvedForKids, approvedAt, // NEU v0.42.0-beta, optional: von Eltern für den
+                     // Kinder-Lesemodus freigegeben (js/actions/kidMode.js) - fehlt = nicht freigegeben
   pages: [ ... ]
 }
 ```
@@ -347,6 +351,6 @@ Feste Regeln:
 
 ## Versionsstand
 
-Aktuell `v0.41.0-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Version bei größeren Änderungen hochzählen (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).
+Aktuell `v0.42.0-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Version bei größeren Änderungen hochzählen (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).
 
 **Die vollständige Versionshistorie (was mit welcher Version kam, inkl. aller Entscheidungen) steht in [`CHANGELOG.md`](CHANGELOG.md), neueste Version zuerst.** Vor dem Einplanen eines Features dort nachsehen, sonst werden bereits gefallene Entscheidungen neu diskutiert. Neuer Eintrag bei jeder Versionserhöhung: oben in `CHANGELOG.md` ergänzen, nicht hier.

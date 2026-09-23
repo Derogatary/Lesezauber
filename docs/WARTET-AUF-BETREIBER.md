@@ -1,6 +1,6 @@
 # ⏳ Wartet auf den Betreiber
 
-**Stand: v0.39.0-beta, September 2026**
+**Stand: v0.42.0-beta, September 2026**
 
 Diese Punkte wurden aus [`docs/TODO-GESAMT.md`](TODO-GESAMT.md) hierher verschoben, weil
 Claude sie **nicht allein erledigen kann**. Es fehlt jeweils etwas, das nur du hast: ein Konto,
@@ -32,6 +32,15 @@ nicht. Die Wohnadresse muss es aber nicht sein. **Deine Entscheidung:** Büro-/C
 Kanzlei, Anschriften-Service mit Zustellvollmacht, oder die App nicht mehr öffentlich erreichbar
 machen. Sobald du eine Adresse hast, trägt Claude sie in `impressum.html` und `datenschutz.html` ein.
 Details: `RELEASE-CHECKLISTE.md`, Absatz „Impressum bei privater Nutzung“.
+
+## 🎙️ Eigene Stimme aufnehmen - zwei Entscheidungen (v0.42.0-beta)
+
+Entwurf steht (siehe CHANGELOG.md v0.42.0-beta, Abschnitt „Entwurf: eigene Stimme“), gebaut wird
+erst nach deiner Antwort:
+
+1. **Mehrere Sprecher?** Soll es pro Seite nur *eine* Aufnahme geben, oder z.B. Mama UND Papa
+   getrennt, und das Kind wählt (wie bei den Erzählern)?
+2. **Gilt eine Aufnahme für alle Kinder-Profile** (einmal einlesen, alle hören sie), oder pro Profil?
 
 ## 🧪 Mit echten Keys/Geräten ausprobieren
 

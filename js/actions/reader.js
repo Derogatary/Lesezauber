@@ -2,6 +2,8 @@ import { app } from '../core.js';
 
 Object.assign(app.actions, {
     async askWizard() {
+        // NEU (v0.42.0-beta): Chat kann pro Profil bzw. im Kinder-Lesemodus aus sein
+        if (!app.utils.isChatAllowedNow()) return;
         const input = document.getElementById('chatInput');
         const q = input.value.trim();
         if (!q) return;

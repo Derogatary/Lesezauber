@@ -105,6 +105,9 @@ Object.assign(app.render, {
             }
         }
 
+        // NEU (v0.42.0-beta): Freigabe für den Kinder-Lesemodus + Wortkarten (js/actions/kidMode.js)
+        app.render.bookFamilyCard(book);
+
         const grid = document.getElementById('pagesGrid');
         grid.innerHTML = book.pages.map((p, i) => {
             let statusBadge = `<span class="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full">Bereit</span>`;

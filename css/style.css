@@ -200,3 +200,12 @@
        Übergangs-Dauer per Inline-Style gesetzt würde. */
     .focus-kenburns-img { transition: none !important; animation: none !important; transform: none !important; }
 }
+
+/* ================= Kinder-Lesemodus (v0.42.0-beta) ================= */
+/* NEU: body.kid-mode wird von js/actions/kidMode.js gesetzt. Alles, was nur
+   Eltern bedienen sollen, trägt im HTML data-parent-only und verschwindet
+   hier - auch dann, wenn JS die "hidden"-Klasse gerade entfernt hat
+   (z.B. Backup-Erinnerung). data-kid-only ist das Gegenstück (🔒 Eltern-Knopf). */
+body.kid-mode [data-parent-only] { display: none !important; }
+body:not(.kid-mode) [data-kid-only] { display: none !important; }
+body.kid-mode [data-kid-only] { display: flex; }

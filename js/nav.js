@@ -26,6 +26,14 @@ Object.assign(app.nav, {
     // sonst würde jedes "Zurück" sofort wieder einen "Vorwärts"-Eintrag
     // erzeugen (Ping-Pong statt echtem Zurückgehen).
     go(viewId, opts = {}) {
+        // NEU (v0.42.0-beta): im Kinder-Lesemodus nur Bibliothek/Reader/
+        // Vokabeln/Hilfe - Buchansicht wird zur Bibliothek umgeleitet, alles
+        // andere gesperrt (js/actions/kidMode.js).
+        if (app.actions.kidModeGuard) {
+            const target = app.actions.kidModeGuard(viewId);
+            if (target === null) return;
+            viewId = target;
+        }
         // NEU: Verlässt man die Werkstatt-Stufenansicht, ohne je etwas
         // eingegeben zu haben, den beim Klick auf "Bilderbuch/Arbeitsheft
         // erstellen" nur im Speicher angelegten Entwurf wieder verwerfen

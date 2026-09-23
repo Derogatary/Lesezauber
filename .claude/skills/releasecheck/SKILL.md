@@ -5,7 +5,7 @@ description: Release-Check für LeseZauber Pro - geht die komplette Release-Chec
 
 # Release-Check - LeseZauber Pro
 
-**Datenstand dieses Skills: 23.09.2026 (App-Version v0.41.0-beta).**
+**Datenstand dieses Skills: 23.09.2026 (App-Version v0.42.0-beta).**
 Entstanden aus der Release-Prüfung vom 22./23.09.2026 (`docs/RELEASE-CHECKLISTE.md`).
 
 > **Keine Rechtsberatung.** Die rechtlichen Punkte sagen, *was* ein Anwalt bzw. eine
@@ -29,7 +29,7 @@ Entstanden aus der Release-Prüfung vom 22./23.09.2026 (`docs/RELEASE-CHECKLISTE
 ```bash
 npm install                         # bzw. npm ci
 npm run check                       # 7 Sanity-Checks (Syntax, IDs, onclick, sw.js-Liste, jede JS-Datei in sw.js, Version/CACHE_NAME, CSP deckt alle fetch-Adressen ab)
-npm test                            # Unit-Tests tests/*.test.mjs (Stand 23.09.2026: 20 Tests)
+npm test                            # Unit-Tests tests/*.test.mjs (Stand 23.09.2026: 27 Tests)
 npm run build && git diff --exit-code css/tailwind.css   # Tailwind-Build aktuell?
 ```
 
@@ -43,6 +43,7 @@ Dieselben Schritte laufen in `.github/workflows/checks.yml` bei jedem Push. Rot 
 | A4b | Kinder-Chat abgesichert | `answerQuestion()` in `js/api.js` lesen | feste Regeln, Frage zwischen `<<<` `>>>`, max. 300 Zeichen, `SAFETY_KIDS`, `BLOCKED_ANSWER` bei `blockReason`/`SAFETY` |
 | A4c | Schutz gegen Anweisungen auf Seiten | `grep -n "INJECTION_GUARD" js/api.js` | in Einzel-, Mehrfach-Persona- und Kontroll-Analyse angehängt |
 | A4d | Meldeknopf für KI-Antworten | `grep -c "reportAiContent" index.html` + `grep -n "reportChatAnswer" js/actions/reader.js` + `tests/aiReports.test.mjs` | ≥5 Knöpfe (Zwischenruf ×2, Erstleser, Bildbeschreibung, Rätsel) + Chat; gemeldete Felder über `resolvePageVariant()` überall ausgeblendet |
+| A4e | Kinder-Lesemodus + Chat pro Profil | `grep -c "data-parent-only" index.html` + `tests/family.test.mjs` + Browser: Kindermodus an, ⚙️/SchreibZauber/Import unsichtbar, `app.nav.go('settings')` bleibt in der Bibliothek, Chat im Reader aus | nur freigegebene Bücher (`book.approvedForKids`), Verlassen nur über Eltern-Frage, Chat-Standard „Nur mit Eltern“ |
 | C2 | Key nicht in der URL | `grep -rn "?key=" js --include=*.js \| grep -v vendor` | nur noch Google Cloud TTS (`js/ttsProviders.js`, ungetestet mit Header) |
 | C3 | Backup-Import geprüft | `grep -n "cleanImportedBook" js/actions/backup.js` + `tests/import.test.mjs` | Import läuft über `cleanImportedBook()`, Tests grün |
 | C3b | `sanitize()` escaped alle 5 Zeichen | `grep -n "sanitize(str)" -A8 js/utils.js` | `& < > " '` werden ersetzt |

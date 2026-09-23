@@ -295,6 +295,9 @@ Object.assign(app.render, {
         app.tts.loadVoices();
         await this.ttsProviderCard(locked);
         this.costMeterCard(locked);
+        // NEU (v0.42.0-beta): Monatsbudget + Familien-Karte (js/actions/familyTools.js)
+        this.budgetStatus(locked);
+        this.familyCard();
 
         // NEU: Speicherplatz-Nutzung anzeigen (grobe Schätzung des Browsers)
         const infoEl = document.getElementById('storageInfo');

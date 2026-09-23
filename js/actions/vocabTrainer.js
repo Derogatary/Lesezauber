@@ -20,7 +20,11 @@ Object.assign(app.actions, {
                 // FIX: bei einem Alt-Eintrag ohne count wurde hier
                 // "undefined + 1" = NaN gespeichert - der Zähler war danach
                 // dauerhaft kaputt und ließ sich auch nicht mehr erholen.
-                count: (existing?.count || 0) + 1
+                count: (existing?.count || 0) + 1,
+                // NEU (v0.42.0-beta): wann das Wort zum ersten Mal auftauchte -
+                // für den Eltern-Wochenrückblick. Alte Einträge haben es nicht
+                // (zählen dort dann einfach nicht als "neu").
+                firstSeen: existing ? existing.firstSeen : Date.now()
             };
             app.dbOps.saveVocabEntry(entry);
         });
