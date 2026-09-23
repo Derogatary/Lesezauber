@@ -8,4 +8,5 @@ await import('../js/studio/studioLayout.js');
 await import('../js/actions/aiReports.js');
 await import('../js/actions/kidMode.js');
 await import('../js/actions/familyTools.js');
+await import('../js/actions/voiceRecord.js');
 export { app };

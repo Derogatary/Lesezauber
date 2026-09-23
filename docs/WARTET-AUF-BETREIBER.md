@@ -1,6 +1,6 @@
 # ⏳ Wartet auf den Betreiber
 
-**Stand: v0.42.0-beta, September 2026**
+**Stand: v0.43.0-beta, September 2026**
 
 Diese Punkte wurden aus [`docs/TODO-GESAMT.md`](TODO-GESAMT.md) hierher verschoben, weil
 Claude sie **nicht allein erledigen kann**. Es fehlt jeweils etwas, das nur du hast: ein Konto,
@@ -33,15 +33,6 @@ Kanzlei, Anschriften-Service mit Zustellvollmacht, oder die App nicht mehr öffe
 machen. Sobald du eine Adresse hast, trägt Claude sie in `impressum.html` und `datenschutz.html` ein.
 Details: `RELEASE-CHECKLISTE.md`, Absatz „Impressum bei privater Nutzung“.
 
-## 🎙️ Eigene Stimme aufnehmen - zwei Entscheidungen (v0.42.0-beta)
-
-Entwurf steht (siehe CHANGELOG.md v0.42.0-beta, Abschnitt „Entwurf: eigene Stimme“), gebaut wird
-erst nach deiner Antwort:
-
-1. **Mehrere Sprecher?** Soll es pro Seite nur *eine* Aufnahme geben, oder z.B. Mama UND Papa
-   getrennt, und das Kind wählt (wie bei den Erzählern)?
-2. **Gilt eine Aufnahme für alle Kinder-Profile** (einmal einlesen, alle hören sie), oder pro Profil?
-
 ## 🧪 Mit echten Keys/Geräten ausprobieren
 
 Das ist gebaut, aber ohne echte Anbieter-Keys getestet (in der Entwicklungsumgebung gibt es
@@ -53,6 +44,7 @@ keine Keys, Anfragen wurden dort nur simuliert).
 | **Ganzes Buch übersetzen** (v0.39.0-beta) | Ein kurzes Buch (5-10 Seiten) übersetzen lassen | Klingt die Übersetzung natürlich? Bleiben die Erzähler-Varianten unterschiedlich? Liest die Stimme in der richtigen Sprache vor? |
 | **Zwischenruf der Erzähler** (v0.39.0-beta) | Eine neue Seite scannen und die Erzähler durchtippen | Sind die Zwischenrufe kindgerecht und abwechslungsreich, oder nerven sie beim automatischen Vorlesen? (Ältere Seiten haben noch keinen - die bekommen ihn erst beim Neu-Auslesen) |
 | **Kinderschutz im Chat** (v0.40.0-beta) | Im Tab „Frag KI“ ein paar unpassende Fragen stellen (z.B. nach Waffen, nach Adresse) | Kommt „Das ist eine gute Frage für Mama, Papa ...“? Werden echte Buchseiten (Märchen mit Wolf/Hexe) trotz Filter normal ausgelesen? |
+| **Eigene Stimme** (v0.43.0-beta) | Auf dem Handy/Tablet eine Seite einsprechen und vorlesen lassen | Fragt der Browser nach dem Mikrofon? Klingt die Aufnahme sauber? Läuft die Hervorhebung ungefähr mit? Auf dem iPhone besonders: spielt das automatische Vorlesen die Aufnahme ab? |
 | **Google Cloud TTS mit Key im Header** | Nur falls du Google Cloud TTS nutzt: Bescheid geben | Dann stellt Claude auch diesen Aufruf auf den Header um und du testest einmal |
 | **KDP: Quadratformat, Seitenaufbau, Panorama** (v0.39.0-beta) | Einen KDP-Innenteil als PDF speichern und im KDP-Vorschauer hochladen | Meldet der Vorschauer Fehler bei Beschnitt/Rand? Liegt das Panorama wirklich auf gegenüberliegenden Seiten? Vor einer echten Veröffentlichung zusätzlich eine Testbestellung |
 

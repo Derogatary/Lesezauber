@@ -6,6 +6,37 @@ vollständige Historie, neueste Version zuerst. Diese Datei wurde aus
 `CLAUDE.md` ausgelagert, weil der Abschnitt dort mit der Zeit zu groß für
 schnellen Kontext wurde; inhaltlich unverändert übernommen.
 
+## v0.43.0-beta
+
+Nutzerwunsch zur eigenen Stimme: „Eine für alle, die Auswahl zwischen Mama und Papa wäre okay … Gerne coden.“
+
+**Neu: 🎙️ Seiten selbst einsprechen** (`js/actions/voiceRecord.js`, `js/render/voiceRecord.js`)
+- Im Reader öffnet „🎙️ Einsprechen“ (nur für Eltern, im Kinder-Lesemodus ausgeblendet) ein Aufnahme-Fenster:
+  - Sprecher wählen: Mama, Papa oder „Andere Person…“.
+  - Der Seitentext steht groß als Ablesehilfe da.
+  - Aufnehmen / Stopp, Anhören, Speichern.
+  - „Speichern & nächste Seite“, damit ein ganzes Buch am Stück eingelesen werden kann.
+  - Die Aufnahme einer Seite lässt sich wieder löschen.
+- Es gibt **eine Aufnahme pro Seite und Sprecher, sie gilt für alle Profile**.
+- Beim Lesen wählt das Kind in der Leiste „Wer liest vor?“ zwischen Mama, Papa und 🤖 Vorlesestimme. Die Wahl gilt pro Gerät.
+  - Hat eine Seite den gewählten Sprecher nicht, liest ein anderer vorhandener Sprecher. Eine vertraute Stimme ist besser als die Computerstimme.
+  - Seiten ohne Aufnahme lesen wie bisher mit der eingestellten Stimme.
+- **Wie es zusammenspielt:** Die Aufnahme ersetzt nur den **Seitentext**. Schwierige Wörter, Zwischenruf, Bildbeschreibung und Rätsel spricht weiter die Geräte- bzw. KI-Stimme.
+  - Die Weiche ist `app.tts._speakPageText()` und gilt für 🔊 und das automatische Vorlesen. Der Mitmachmodus bleibt unverändert.
+  - Bei jeder Panne mit der Aufnahme liest die normale Stimme, es bleibt also nie still.
+  - Seiten mit Aufnahme werden nicht mehr per KI-Stimme vorbereitet, das spart Kontingent.
+- **Wort-Hervorhebung:** geschätzt über die Textlänge. Die Dauer wird beim Aufnehmen gemessen, weil WebM-Dateien vom `MediaRecorder` oft keine Länge melden. `_startHighlighting()` hat dafür den neuen Parameter `durationOverride`.
+- **Hörbuch und Film:** `renderPageSegments()` nimmt für den Seitentext die Aufnahme. Ein Hörbuch geht jetzt auch **ohne KI-Stimme**, dann enthält es nur die eingesprochenen Seiten.
+- **Speicher:** IndexedDB Version 5 mit dem neuen Store `voiceRecordings`. Er ist bewusst getrennt vom `ttsCache`, der automatisch aufräumt.
+  - Opus mit 48 kbit/s braucht etwa 0,35 MB pro Minute.
+  - Beim Löschen eines Buches werden seine Aufnahmen mit gelöscht.
+- **Sicherung:** eigene Datei über Einstellungen → „🎙️ Eigene Aufnahmen“. Die normale Bibliotheks-Sicherung (JSON) würde sonst riesig.
+  - Beim Wiederherstellen werden nur harmlose IDs und `data:audio/...`-Inhalte übernommen.
+- **Weiteres:**
+  - Datenschutzerklärung: neuer Absatz zum Mikrofon (die Aufnahme bleibt nur auf dem Gerät).
+  - Die Tastatur-Steuerung im Reader ruht, solange das Aufnahme-Fenster offen ist; Escape schließt es.
+  - 2 neue Unit-Tests (`tests/voice.test.mjs`), 29 insgesamt. `CACHE_NAME` v77.
+
 ## v0.42.0-beta
 
 Nutzerwunsch: die Ideenliste aus v0.41.0-beta umsetzen („Alles andere kannst du erledigen“), außer der eigenen Stimme. Die ist nur entworfen (siehe unten).

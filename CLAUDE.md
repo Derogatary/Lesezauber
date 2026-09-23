@@ -72,7 +72,7 @@ import './actions/meineNeueDatei.js';
 |---|---|
 | `js/core.js` | Das `app`-Objekt selbst - Namespace-Definitionen |
 | `js/state.js` | `app.state` (Laufzeit) + `app.settings` (persistiert, localStorage) - **Reihenfolge: settings vor state**, da state teils von settings liest |
-| `js/db.js` | IndexedDB-Speicher-Engine (`app.library`, `app.vocabulary`, `ttsCache`, `projects`). **Version 4** - neuer Object Store: `DB_VERSION` erhöhen und `onupgradeneeded` erweitern |
+| `js/db.js` | IndexedDB-Speicher-Engine (`app.library`, `app.vocabulary`, `ttsCache`, `projects`, seit v0.43.0-beta `voiceRecordings`). **Version 5** - neuer Object Store: `DB_VERSION` erhöhen und `onupgradeneeded` erweitern |
 | `js/nav.js` | Router zwischen den `<main id="view...">`-Ansichten |
 | `js/api.js` | Gemini/Mistral-Aufrufe, der komplette Analyse-Prompt lebt hier. `GEMINI_MODELS`+`withGeminiModelRotation()`: Modell-Rotation bei 429 (jedes Modell eigenes Tageskontingent), Mistral erst wenn ALLE Modelle 429 melden. Seit v0.35.0-beta zusätzlich `app.api.analyzeAllPersonas()`: EIN Aufruf liefert alle Personas + Birkenbihl-Übersetzung als Fenced-Code-Blöcke, `parseMultiPersonaResponse()` parst jeden Block einzeln (Ausfallsicherheit) |
 | `js/tts.js` | Sprachausgabe: Weiche Gerätestimme/KI-Stimme, Auto-Vorlesen, Wort-Hervorhebung (SpeechSynthesis `boundary`-Event), Rätsel-Modus. Seit v0.36.8-beta `explainDifficultWords()` im Auto-Vorlese-Ablauf, direkt NACH dem Textteil, VOR der Bildbeschreibung - liest `variant.difficultWords` vor, Wort und Erklärung als zwei getrennte Sprechvorgänge mit kurzer Pause dazwischen (kein SSML nötig, funktioniert auch mit Gerätestimme) |
@@ -115,6 +115,7 @@ import './actions/meineNeueDatei.js';
 | `js/actions/aiReports.js` | NEU v0.41.0-beta: 🚩 KI-Inhalte melden - `page.aiHidden`, `app.utils.stripHiddenAiFields()`/`isAiHidden()`, Meldeliste in localStorage `lz_ai_reports`, Einstellungen-Liste `#aiReportsList`, Hinweis „App für Eltern“ (`#parentNotice`) |
 | `js/actions/kidMode.js` | NEU v0.42.0-beta: Kinder-Lesemodus (localStorage `lz_kid_mode`, `body.kid-mode` blendet alles mit `data-parent-only` aus, `app.actions.kidModeGuard()` wird von `app.nav.go()` gefragt - nur `lib`/`reader`/`vocab`/`help`, `book` → `lib`), Verlassen per Eltern-Frage (Einmaleins), Buch-Freigabe `book.approvedForKids` (Karte `#bookFamilyCard`), Chat pro Profil (`profile.chatMode`, `app.utils.isChatAllowedNow()`, `#chatCard`). **Neue Eltern-Bedienelemente in Bibliothek/Reader brauchen `data-parent-only`** |
 | `js/actions/familyTools.js` | NEU v0.42.0-beta: Monatsbudget (localStorage `lz_cost_budget`, Hinweis bei 80 %/Überschreiten einmal pro Monat, aufgerufen aus `app.costMeter.trackTts()`), Wochenrückblick (`app.utils.weeklyReview()`), Wortkarten drucken (`app.actions.printWordCards('book'|'vocab')`) |
+| `js/actions/voiceRecord.js`, `js/render/voiceRecord.js` | NEU v0.43.0-beta: eigene Stimme - Eltern sprechen Seiten selbst ein (`MediaRecorder`, Fenster `#voiceRecordPanel`). EINE Aufnahme pro Seite+Sprecher für ALLE Profile, Sprecher frei (Standard Mama/Papa), Wahl im Reader `#readerVoiceBar` (localStorage `lz_voice_speaker`, `'off'` = Vorlesestimme). `app.voice.*`: Index der Schlüssel `<bookId>|<pageId>|<Sprecher>` im Speicher, `speakerForPage()`, `play()` (nutzt das eine `<audio>`-Element + `_token` von `ttsNeural`), `renderSegment()` für Hörbuch/Video. Eigene Sicherungsdatei (nicht in der Bibliotheks-Sicherung) |
 | `scripts/sanity-checks.mjs`, `tests/*.test.mjs`, `.github/workflows/checks.yml` | NEU v0.40.0-beta: Sanity-Checks als Skript, Unit-Tests (nur Module ohne Browser-Abhängigkeit beim Import, siehe `tests/helpers.mjs`), GitHub-Action |
 | `.claude/skills/releasecheck/SKILL.md` | NEU v0.40.0-beta: Projekt-Skill „Release-Check“ - Prüfpunkte, Befehle, Quellen mit Datum. `.gitignore` ignoriert `.claude/*` außer `.claude/skills/` |
 | `lizenzen.html`, `js/vendor/*/LICENSE*` | NEU v0.40.0-beta: Lizenzen der mitgelieferten Bibliotheken (Apache-2.0 verlangt die Weitergabe) |
@@ -339,6 +340,7 @@ Bewusst zurückgestellt (bräuchten einen eigenen Server): API-Key-Absicherung �
 Feste Regeln:
 - **Nie ohne Ton enden:** jeder Fehler (Key falsch, Limit, CORS, offline) fällt auf `app.tts.speakWithDevice()` zurück. Endgültige Fehler setzen `app.ttsNeural._disabledReason`, damit nicht jede Seite erneut in dieselbe Wartezeit läuft.
 - **Jede Aufnahme kostet Geld/Kontingent:** keine zusätzlichen Synthese-Aufrufe ohne triftigen Grund - der IndexedDB-Zwischenspeicher (`ttsCache`) ist Absicht, nicht Optimierung.
+- **Eigene Aufnahmen (v0.43.0-beta) haben beim SEITENTEXT Vorrang:** `app.tts._speakPageText()` (Reader-🔊 und Auto-Vorlesen, nicht Mitmachmodus) und `renderPageSegments()` nehmen die Aufnahme, alles andere (Wort-Erklärungen, Zwischenruf, Bildbeschreibung, Rätsel) läuft weiter über `speak()`. Seiten mit Aufnahme werden nicht per `warmUp()` vorsynthetisiert.
 - **`_token`-Zähler beachten:** `stop()` erhöht ihn; jede asynchrone Fortsetzung muss vorher prüfen, ob sie noch aktuell ist - sonst spricht eine abgebrochene Seite verspätet doch noch los.
 - Ein einziges `<audio>`-Element für die ganze App (iOS erlaubt Wiedergabe nur bei einem per Fingertipp gestarteten Element).
 
@@ -351,6 +353,6 @@ Feste Regeln:
 
 ## Versionsstand
 
-Aktuell `v0.42.0-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Version bei größeren Änderungen hochzählen (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).
+Aktuell `v0.43.0-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Version bei größeren Änderungen hochzählen (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).
 
 **Die vollständige Versionshistorie (was mit welcher Version kam, inkl. aller Entscheidungen) steht in [`CHANGELOG.md`](CHANGELOG.md), neueste Version zuerst.** Vor dem Einplanen eines Features dort nachsehen, sonst werden bereits gefallene Entscheidungen neu diskutiert. Neuer Eintrag bei jeder Versionserhöhung: oben in `CHANGELOG.md` ergänzen, nicht hier.

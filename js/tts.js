@@ -372,8 +372,35 @@ Object.assign(app.tts, {
             app.ttsNeural.speakMitmach(variant.erstleserText, null, this._currentTextElementId());
         } else {
             const { plain, tagged } = this._pickSpeechVariant(variant);
-            this.speak(plain, null, this._currentTextElementId(), tagged);
+            this._speakPageText(page, plain, tagged, null, this._currentTextElementId());
         }
+    },
+
+    // NEU (v0.43.0-beta): Seitentext vorlesen - mit der eigenen Aufnahme
+    // (Mama/Papa, js/actions/voiceRecord.js), falls es eine gibt, sonst wie
+    // bisher über speak(). Nur der SEITENTEXT läuft hierüber; Zwischenruf,
+    // Wort-Erklärungen, Bildbeschreibung und Rätsel bleiben bei speak().
+    // Nie ohne Ton: jede Panne (Datei fehlt/kaputt) fällt auf speak() zurück.
+    _speakPageText(page, plain, tagged, onEnd, containerId) {
+        const bookId = app.state.currentBookId;
+        const speaker = page && app.voice.speakerForPage?.(bookId, page.id);
+        if (!speaker) { this.speak(plain, onEnd, containerId, tagged); return; }
+
+        this.stop();
+        const generation = this.speakGeneration;
+        const clean = this._prepare(plain, containerId);
+        const fallback = () => {
+            if (generation !== this.speakGeneration) return;
+            this.speak(plain, onEnd, containerId, tagged);
+        };
+        app.voice.getRecording(bookId, page.id, speaker).then(entry => {
+            if (generation !== this.speakGeneration) return;
+            if (!entry || !entry.blob) { fallback(); return; }
+            app.voice.play(entry, clean, onEnd, containerId, fallback);
+        }).catch(e => {
+            console.error('Eigene Aufnahme nicht lesbar:', e);
+            fallback();
+        });
     },
 
     // NEU: Beschriftung des großen Vorlese-Knopfes. Bei einem Übungsheft
@@ -537,7 +564,9 @@ Object.assign(app.tts, {
         // nächste schon im Hintergrund - so bleibt beim Umblättern keine
         // Stille. Ohne KI-Stimme passiert hier nichts.
         const nextPage = book.pages[app.state.currentPageIdx + 1];
-        if (nextPage && !nextPage.excluded) {
+        // NEU (v0.43.0-beta): Seite mit eigener Aufnahme braucht keine KI-Aufnahme
+        // (sonst würde Kontingent für etwas verbraucht, das nie abgespielt wird).
+        if (nextPage && !nextPage.excluded && !app.voice.speakerForPage?.(book.id, nextPage.id)) {
             const nextVariant = app.utils.resolvePageVariant(nextPage, app.state.readingPersonaId);
             if (nextVariant && nextVariant.text) {
                 // NEU (Audio-Tags): dieselbe Fassung vorbereiten, die beim
@@ -644,7 +673,8 @@ Object.assign(app.tts, {
                 app.ttsNeural.speakMitmach(variant.erstleserText, explainDifficultWords, this._currentTextElementId());
             } else {
                 const { plain, tagged } = this._pickSpeechVariant(variant);
-                this.speak(plain, explainDifficultWords, this._currentTextElementId(), tagged);
+                // NEU (v0.43.0-beta): eigene Aufnahme hat Vorrang (siehe _speakPageText)
+                this._speakPageText(page, plain, tagged, explainDifficultWords, this._currentTextElementId());
             }
         };
 

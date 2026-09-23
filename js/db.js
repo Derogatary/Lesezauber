@@ -11,11 +11,14 @@ const DB_NAME = 'LeseZauberDB';
 // js/studio/studioCore.js). Bereits vorhandene Bücher/Vokabeln/Stimmen
 // bleiben beim Upgrade unangetastet erhalten - die Migration fügt nur
 // den neuen Store hinzu, löscht nichts.
-const DB_VERSION = 4;
+// NEU: Version 5 (v0.43.0-beta) - Speicher für selbst eingesprochene Seiten
+// (js/actions/voiceRecord.js). Auch hier: nur ein neuer Store, nichts wird gelöscht.
+const DB_VERSION = 5;
 const STORE_NAME = 'books';
 const VOCAB_STORE_NAME = 'vocabulary';
 const TTS_STORE_NAME = 'ttsCache';
 const PROJECTS_STORE_NAME = 'projects';
+const VOICE_STORE_NAME = 'voiceRecordings';
 
 // Obergrenze für zwischengespeicherte Sprachaufnahmen. Beim Überschreiten
 // werden die ältesten gelöscht - sonst wächst der Speicher bei einer
@@ -64,6 +67,13 @@ function openDatabase() {
             // fertiges Buch (das entsteht erst beim "Ins Regal stellen").
             if (!db.objectStoreNames.contains(PROJECTS_STORE_NAME)) {
                 db.createObjectStore(PROJECTS_STORE_NAME, { keyPath: 'id' });
+            }
+            // NEU (v0.43.0-beta): eigene Aufnahmen ("Mama liest vor"). Bewusst
+            // getrennt vom ttsCache: der räumt die ältesten Einträge automatisch
+            // weg - eine eigene Aufnahme darf nie einfach verschwinden.
+            // Schlüssel "<bookId>|<pageId>|<Sprecher>" (app.voice.key()).
+            if (!db.objectStoreNames.contains(VOICE_STORE_NAME)) {
+                db.createObjectStore(VOICE_STORE_NAME, { keyPath: 'key' });
             }
         };
 
@@ -137,6 +147,19 @@ async function putVocabInDB(entry) {
 // NEU: Zwischenspeicher für KI-Stimmen. Jede erzeugte Sprachaufnahme
 // kostet Geld bzw. Kontingent - dieselbe Seite ein zweites Mal vorlesen
 // soll deshalb nichts mehr kosten und sofort starten.
+// NEU (v0.43.0-beta): kleine, allgemeine Helfer für den Aufnahme-Speicher.
+async function voiceStoreRequest(mode, fn) {
+    const db = await openDatabase();
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction(VOICE_STORE_NAME, mode);
+        const request = fn(tx.objectStore(VOICE_STORE_NAME));
+        let result;
+        if (request) request.onsuccess = () => { result = request.result; };
+        tx.oncomplete = () => resolve(result);
+        tx.onerror = () => reject(tx.error);
+    });
+}
+
 async function getTtsFromDB(key) {
     const db = await openDatabase();
     return new Promise((resolve, reject) => {
@@ -286,6 +309,8 @@ Object.assign(app.dbOps, {
         deleteBookFromDB(bookId).catch(e => {
             console.error('Löschen konnte nicht gespeichert werden:', e);
         });
+        // NEU (v0.43.0-beta): eigene Aufnahmen des Buches mit wegräumen
+        app.voice?.deleteForBook?.(bookId);
         app.nav.go('lib');
         app.ui.toast('Buch gelöscht', '🗑️');
     },
@@ -315,6 +340,26 @@ Object.assign(app.dbOps, {
         putVocabInDB(entry).catch(e => {
             console.error('Vokabel konnte nicht gespeichert werden:', e);
         });
+    },
+
+    // NEU (v0.43.0-beta): eigene Aufnahmen (js/actions/voiceRecord.js).
+    // Anders als beim ttsCache werden Fehler hier an den Aufrufer
+    // weitergereicht - eine nicht gespeicherte Aufnahme muss man merken.
+    getVoiceRecording(key) {
+        return voiceStoreRequest('readonly', store => store.get(key));
+    },
+    getAllVoiceRecordingKeys() {
+        return voiceStoreRequest('readonly', store => store.getAllKeys());
+    },
+    getAllVoiceRecordings() {
+        return voiceStoreRequest('readonly', store => store.getAll());
+    },
+    putVoiceRecording(entry) {
+        return voiceStoreRequest('readwrite', store => { store.put(entry); return null; })
+            .catch(e => { throw new Error(storageErrorMessage(e, e.message || 'Aufnahme konnte nicht gespeichert werden.')); });
+    },
+    deleteVoiceRecording(key) {
+        return voiceStoreRequest('readwrite', store => { store.delete(key); return null; });
     },
 
     // NEU: gespeicherte KI-Sprachaufnahme holen. Fehler sind hier bewusst

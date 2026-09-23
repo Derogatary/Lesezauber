@@ -44,6 +44,9 @@ import './actions/aiReports.js';
 // Familien-Werkzeuge (Monatsbudget, Wochenrückblick, Wortkarten).
 import './actions/kidMode.js';
 import './actions/familyTools.js';
+// NEU (v0.43.0-beta): eigene Stimme - Seiten selbst einsprechen
+import './actions/voiceRecord.js';
+import './render/voiceRecord.js';
 import './actions/audiobookExport.js';
 
 // NEU: Video-Export Weg B, Teil 1 - Renderer-Kern (Canvas) plus Zeitplan
@@ -118,6 +121,8 @@ app.init = async function () {
     // kurze Ladeanzeige, bis app.library gefüllt ist.
     app.ui.showLoader('Lade Bibliothek...', 'Einen Moment bitte');
     await app.dbOps.init();
+    // NEU (v0.43.0-beta): welche Seiten selbst eingesprochen sind (nur die Schlüssel)
+    await app.voice.loadIndex();
     app.ui.hideLoader();
 
     // NEU: Online/Offline-Punkt gleich beim Start korrekt setzen (nicht

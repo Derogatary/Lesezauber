@@ -34,6 +34,8 @@ export const app = {
     // ausschließlich auf einen Canvas gezeichnet, und dieselben Funktionen
     // müssen später auch ohne sichtbare Ansicht (beim Kodieren) laufen.
     cinema: {},
+    // NEU (v0.43.0-beta): selbst eingesprochene Seiten (js/actions/voiceRecord.js)
+    voice: {},
     // NEU: reserviert für den Schreib-/Generierungs-Bereich "SchreibZauber"
     // (js/studio/*). Steht hier, damit die Studio-Module denselben
     // Namespace-Regeln folgen wie alles andere - siehe

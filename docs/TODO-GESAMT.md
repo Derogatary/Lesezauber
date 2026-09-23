@@ -245,15 +245,14 @@ es nicht (weiterhin 1 Anfrage pro Seite), also alle.
 
 ## 💡 Ideen (v0.41.0-beta, von Claude vorgeschlagen)
 
-Passend zur Ausrichtung „App für Eltern, Reader in Begleitung“. **Stand v0.42.0-beta:** alle außer
-„Eigene Stimme aufnehmen“ auf Nutzerwunsch gebaut. Die eigene Stimme ist entworfen, aber noch
-nicht gebaut - sie wartet auf zwei Entscheidungen, siehe `WARTET-AUF-BETREIBER.md`.
+Passend zur Ausrichtung „App für Eltern, Reader in Begleitung“. **Stand v0.43.0-beta:** alle gebaut
+(v0.42.0-beta, die eigene Stimme in v0.43.0-beta).
 
 | Idee | Aufwand | Warum |
 |---|---|---|
 | ~~**Kinder-Lesemodus mit Eltern-Sperre**~~ | **S-M** | ✅ **erledigt (v0.42.0-beta)**: Knopf „🧒 Kindermodus“ in der Bibliothek, Verlassen über eine Einmaleins-Frage (`js/actions/kidMode.js`). Ursprüngliche Idee: Ein Tipp startet einen reinen Lese-Bildschirm (nur Seiten, Vorlesen, Vor/Zurück) ohne Einstellungen, SchreibZauber, Scannen und ohne freien Chat. Beenden nur über eine „Eltern-Frage“ (z.B. Rechenaufgabe) - die übliche Eltern-Schranke in Kinder-Apps. Macht „in Begleitung“ technisch sicherer, ohne dass Eltern daneben sitzen müssen |
 | ~~**Bücher erst von Eltern freigeben**~~ | **S** | ✅ **erledigt (v0.42.0-beta)**: `book.approvedForKids`, Karte „🧒 Für Kinder“ in der Buchansicht. Ursprüngliche Idee: Nach dem Auslesen ist ein Buch „ungeprüft“; Eltern blättern die KI-Texte einmal durch (mit 🚩) und tippen „Für Kinder freigeben“. Im Kinder-Lesemodus erscheinen nur freigegebene Bücher |
-| **Eigene Stimme aufnehmen** | **M** | ⏳ entworfen, wartet auf Entscheidungen (`WARTET-AUF-BETREIBER.md`). Mama/Papa liest eine Seite selbst ein (Mikrofon), das Kind hört die vertraute Stimme - ohne KI-Anbieter, ohne Kosten, ohne Nutzungsbedingungen-Frage, offline. Passt in den bestehenden `ttsCache` und die Wort-Hervorhebung (geschätzt) |
+| ~~**Eigene Stimme aufnehmen**~~ | **M** | ✅ **erledigt (v0.43.0-beta)**: „🎙️ Einsprechen“ im Reader, eine Aufnahme pro Seite und Sprecher für alle Profile, Auswahl Mama/Papa/Vorlesestimme (`js/actions/voiceRecord.js`) |
 | ~~**„Frag den Zauberer“ abschaltbar**~~ | **S** | ✅ **erledigt (v0.42.0-beta)**: pro Profil „Nur mit Eltern“ (Standard) / „Immer“ / „Nie“, Einstellungen → Familie. Ursprüngliche Idee: Einstellungs-Schalter pro Profil - der freie Chat ist die riskanteste KI-Funktion für Kinder |
 | ~~**Monatsbudget-Warnung**~~ | **S** | ✅ **erledigt (v0.42.0-beta)**: Feld im Kostenzähler, Hinweis bei 80 % und beim Überschreiten, einmal pro Monat (`js/actions/familyTools.js`). Ursprüngliche Idee: Der Kostenzähler (`js/costMeter.js`) zählt schon mit - eine selbst gesetzte Grenze („warn mich ab 2 €/Monat“) mit Hinweis beim Überschreiten |
 | ~~**Eltern-Wochenrückblick**~~ | **S-M** | ✅ **erledigt (v0.42.0-beta)**: Einstellungen → Familie. Ursprüngliche Idee: Rein lokal: welche Bücher/Seiten gelesen, neue Wörter, geschaffte Hefte - als Karte in den Einstellungen |

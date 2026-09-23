@@ -9,6 +9,13 @@ document.addEventListener('keydown', (e) => {
     const tag = document.activeElement?.tagName;
     if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
 
+    // NEU (v0.43.0-beta): Aufnahme-Fenster offen -> nur Escape (schließen),
+    // sonst würden Pfeiltasten/Leertaste mitten in der Aufnahme blättern/vorlesen.
+    if (!document.getElementById('voiceRecordPanel')?.classList.contains('hidden')) {
+        if (e.key === 'Escape') app.actions.closeVoiceRecorder();
+        return;
+    }
+
     // NEU: Escape schließt auch die Film-Vorschau (gleiches Muster wie
     // beim Vollbild-Vorlese-Modus, sie liegt ebenfalls als Overlay oben).
     // FIX: nicht währenddessen, wenn gerade ein Film kodiert wird

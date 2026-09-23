@@ -208,7 +208,11 @@ Object.assign(app.ttsNeural, {
         return charStarts.map(charIndex => duration * (charIndex / total));
     },
 
-    _startHighlighting(containerId, alignment, cleanText, token) {
+    // NEU (v0.43.0-beta): optionales durationOverride - eigene Aufnahmen
+    // (js/actions/voiceRecord.js) sind WebM-Dateien vom MediaRecorder, die oft
+    // keine Länge melden (audio.duration = Infinity). Dann zählt die beim
+    // Aufnehmen gemessene Dauer.
+    _startHighlighting(containerId, alignment, cleanText, token, durationOverride) {
         const container = containerId ? document.getElementById(containerId) : null;
         if (!container) return;
 
@@ -216,7 +220,7 @@ Object.assign(app.ttsNeural, {
         if (!spans.length) return;
 
         const audio = this._getAudioElement();
-        const duration = isFinite(audio.duration) && audio.duration > 0 ? audio.duration : 0;
+        const duration = isFinite(audio.duration) && audio.duration > 0 ? audio.duration : (durationOverride || 0);
         if (!duration) return;
 
         const charStarts = Array.from(spans).map(span => parseInt(span.dataset.start, 10) || 0);
@@ -764,6 +768,20 @@ Object.assign(app.ttsNeural, {
             throw new TtsError('Diese Seite ist noch nicht analysiert.', { code: 'NO_VARIANT' });
         }
 
+        // NEU (v0.43.0-beta): selbst eingesprochener Seitentext hat Vorrang
+        // (js/actions/voiceRecord.js) - kostet nichts und klingt vertraut.
+        // Ohne KI-Stimme bleibt es dann bei diesem einen Baustein (die
+        // Gerätestimme liefert keine Datei für Bildbeschreibung/Rätsel).
+        const ownText = await app.voice.renderSegment(bookId, page, variant.text).catch(e => {
+            console.error('Eigene Aufnahme nicht lesbar:', e);
+            return null;
+        });
+        const neuralOk = !!(app.ttsProviders.current().neural);
+        if (ownText && !neuralOk) {
+            if (onProgress) onProgress(1, 1, 'text');
+            return { imgUrl: page.imgUrl, totalDurationSec: ownText.durationSec, segments: [{ kind: 'text', ...ownText }] };
+        }
+
         const planned = [{ kind: 'text', text: variant.text }];
         if (includeDescription && variant.desc) planned.push({ kind: 'desc', text: variant.desc });
         if (includeQuiz && variant.quizQ) {
@@ -777,6 +795,7 @@ Object.assign(app.ttsNeural, {
         for (let i = 0; i < planned.length; i++) {
             const part = planned[i];
             if (onProgress) onProgress(i + 1, planned.length, part.kind);
+            if (part.kind === 'text' && ownText) { segments.push({ kind: 'text', ...ownText }); continue; }
             const rendered = await this.renderAudio(part.text, { personaId: usedPersona, cacheOnly, language: app.utils.bookSpeechLang(book) });
             if (rendered) segments.push({ kind: part.kind, ...rendered });
         }

@@ -59,7 +59,7 @@
                          Nur sichtbar, wenn die Hintergrund-Vorbereitung
                          überhaupt eingeschaltet ist UND etwas offen ist. -->
                     <button id="pregenBadge" data-parent-only onclick="app.nav.go('settings')" class="hidden text-xs font-bold text-indigo-600 mt-0.5 hover:underline"></button>
-                    <p data-app-version class="text-[10px] text-slate-400 font-semibold mt-0.5">v0.42.0-beta</p>
+                    <p data-app-version class="text-[10px] text-slate-400 font-semibold mt-0.5">v0.43.0-beta</p>
                 </div>
                 <div class="flex items-center gap-2 flex-shrink-0">
                     <!-- NEU (v0.42.0-beta): Kinder-Lesemodus ein (Eltern) bzw. aus (Eltern-Frage) - js/actions/kidMode.js -->
@@ -377,6 +377,16 @@
                 <p class="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">🎭 Wer erzählt?</p>
                 <div id="readerPersonaChips" role="radiogroup" aria-label="Erzähler wählen" class="flex gap-2 overflow-x-auto pb-1"></div>
             </div>
+            <!-- NEU (v0.43.0-beta): eigene Stimme - wer liest den Seitentext vor
+                 (Mama/Papa/Vorlesestimme), plus Einsprechen für Eltern
+                 (js/actions/voiceRecord.js, js/render/voiceRecord.js). -->
+            <div id="readerVoiceBar" class="hidden mb-3">
+                <div class="flex items-center gap-2">
+                    <p id="readerVoiceLabel" class="hidden text-[11px] font-bold uppercase tracking-wider text-slate-500 flex-shrink-0">Wer liest vor?</p>
+                    <div id="readerVoiceChips" class="flex gap-2 overflow-x-auto pb-1 flex-grow"></div>
+                    <button data-parent-only onclick="app.actions.openVoiceRecorder()" class="flex-shrink-0 text-xs font-bold px-3 py-1.5 rounded-full border-2 border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 transition">🎙️ Einsprechen</button>
+                </div>
+            </div>
             <!-- NEU (v0.41.0-beta, Nutzerwunsch): LeseZauber ist eine App für Eltern -
                  der Reader ist zum Ausprobieren oder zum gemeinsamen Lesen gedacht. -->
             <p class="mb-3 text-[11px] text-slate-500 bg-slate-100 rounded-xl px-3 py-2">👨‍👩‍👧 Am besten gemeinsam mit einem Erwachsenen lesen - KI-Texte können Fehler enthalten. Unpassendes mit 🚩 melden, dann wird es ausgeblendet.</p>
@@ -643,6 +653,38 @@
             <!-- NEU: Belohnung, wenn jede Seite/Aufgabe abgehakt ist -->
             <div id="rewardBanner" class="hidden mt-4"></div>
         </main>
+
+        <!-- ================= EIGENE STIMME: AUFNAHME-FENSTER (v0.43.0-beta) ================= -->
+        <!-- NEU: Eltern lesen die aktuelle Seite selbst ein. Der Text steht groß
+             als Ablesehilfe da; "Speichern & weiter" blättert direkt zur
+             nächsten Seite, damit ein ganzes Buch am Stück geht. -->
+        <div id="voiceRecordPanel" class="hidden fixed inset-0 z-50 bg-slate-900/70 flex items-end sm:items-center justify-center p-3">
+            <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[92vh] flex flex-col">
+                <div class="flex items-center justify-between gap-2 p-4 border-b border-slate-200">
+                    <div class="min-w-0">
+                        <h2 class="text-base font-bold text-slate-900">🎙️ Seite einsprechen</h2>
+                        <p id="voicePageInfo" class="text-[11px] text-slate-500 truncate"></p>
+                    </div>
+                    <button onclick="app.actions.closeVoiceRecorder()" aria-label="Aufnahme-Fenster schließen" class="w-9 h-9 flex-shrink-0 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold">✕</button>
+                </div>
+                <div class="p-4 space-y-3 overflow-y-auto">
+                    <div class="flex items-center gap-2">
+                        <label for="voiceSpeakerSelect" class="text-xs font-bold text-slate-600 flex-shrink-0">Wer liest?</label>
+                        <select id="voiceSpeakerSelect" onchange="app.actions.chooseVoiceRecordSpeaker(this.value)" class="flex-grow text-sm text-slate-900 bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 focus:outline-none focus:border-rose-500 disabled:opacity-40"></select>
+                    </div>
+                    <p id="voicePrompter" class="text-lg leading-relaxed text-slate-900 bg-amber-50 border border-amber-200 rounded-xl p-4 whitespace-pre-line"></p>
+                    <p id="voiceRecStatus" class="text-xs font-semibold text-slate-600" aria-live="polite"></p>
+                    <button id="voiceRecBtn" onclick="app.actions.toggleVoiceRecording()" class="w-full bg-red-600 text-white font-bold py-3 rounded-xl shadow-md hover:opacity-95 transition">⏺ Aufnehmen</button>
+                    <div class="flex gap-2">
+                        <button id="voicePlayBtn" onclick="app.actions.previewVoiceRecording()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 rounded-xl text-sm transition disabled:opacity-40">▶️ Anhören</button>
+                        <button id="voiceSaveBtn" onclick="app.actions.saveVoiceRecording(false)" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-sm transition disabled:opacity-40">💾 Speichern</button>
+                    </div>
+                    <button id="voiceSaveNextBtn" onclick="app.actions.saveVoiceRecording(true)" class="w-full bg-emerald-50 border border-emerald-200 text-emerald-800 font-bold py-2.5 rounded-xl text-sm transition disabled:opacity-40">💾 Speichern &amp; nächste Seite ▶</button>
+                    <button id="voiceDeleteBtn" onclick="app.actions.deleteVoiceRecordingForPage()" class="hidden w-full text-xs font-bold text-red-600 hover:underline">🗑️ Gespeicherte Aufnahme dieser Seite löschen</button>
+                    <p class="text-[10px] text-slate-400">Die Aufnahme bleibt nur auf diesem Gerät und gilt für alle Profile. Beim Vorlesen ersetzt sie den Seitentext - Zwischenruf, schwierige Wörter, Bildbeschreibung und Rätsel spricht weiter die eingestellte Stimme.</p>
+                </div>
+            </div>
+        </div>
 
         <!-- ================= VOLLBILD-VORLESE-MODUS ================= -->
         <div id="viewFocus" class="hidden absolute inset-0 z-40 bg-black flex flex-col">
@@ -1677,6 +1719,19 @@
                         </button>
                     </div>
                     <input id="importFileInput" type="file" accept="application/json" onchange="app.actions.importLibrary(event)" class="hidden">
+                </div>
+
+                <!-- NEU (v0.43.0-beta): eigene Aufnahmen - Übersicht + eigene Sicherungsdatei
+                     (die normale Bibliotheks-Sicherung enthält sie NICHT). -->
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-2">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-500">🎙️ Eigene Aufnahmen</label>
+                    <p id="voiceSettingsInfo" class="text-[11px] text-slate-600"></p>
+                    <p class="text-[10px] text-slate-400">Nicht in der normalen Sicherung enthalten - bitte zusätzlich hier sichern.</p>
+                    <div class="flex gap-2">
+                        <button onclick="app.actions.exportVoiceRecordings()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 rounded-xl text-sm transition">📤 Aufnahmen sichern</button>
+                        <button onclick="app.actions.triggerVoiceImport()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 rounded-xl text-sm transition">📥 Wiederherstellen</button>
+                    </div>
+                    <input id="voiceImportInput" type="file" accept="application/json" onchange="app.actions.importVoiceRecordings(event)" class="hidden">
                 </div>
 
                 <!-- NEU (v0.42.0-beta): Familie - Wochenrückblick, "Frag den Zauberer" pro

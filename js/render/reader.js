@@ -223,6 +223,8 @@ Object.assign(app.render, {
         app.state.chatAnswers = []; // NEU (Meldeknopf): Antworten gehören zur Seite
         // NEU (v0.42.0-beta): "Frag den Zauberer" pro Profil / Kinder-Lesemodus
         app.render.chatVisibility();
+        // NEU (v0.43.0-beta): wer liest vor (eigene Aufnahmen)
+        app.render.readerVoiceBar();
 
         // NEU (Birkenbihl-Methode): unabhängig von der Persona-Variante oben -
         // zeigt einen bereits vorhandenen Zwischenspeicher (page.birkenbihl)

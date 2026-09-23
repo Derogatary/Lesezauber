@@ -298,6 +298,7 @@ Object.assign(app.render, {
         // NEU (v0.42.0-beta): Monatsbudget + Familien-Karte (js/actions/familyTools.js)
         this.budgetStatus(locked);
         this.familyCard();
+        this.voiceSettings(); // NEU (v0.43.0-beta)
 
         // NEU: Speicherplatz-Nutzung anzeigen (grobe Schätzung des Browsers)
         const infoEl = document.getElementById('storageInfo');

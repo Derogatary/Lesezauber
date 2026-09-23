@@ -16,7 +16,11 @@ Object.assign(app.actions, {
         const book = app.library[bookId];
         if (!book) return;
 
-        if (!app.ttsNeural.isActive()) {
+        // NEU (v0.43.0-beta): mit eigenen Aufnahmen geht es auch ohne KI-Stimme -
+        // dann nur mit den eingesprochenen Seiten (die anderen werden übersprungen).
+        const ownOnly = !app.ttsNeural.isActive() && app.voice.bookHasRecordings(bookId);
+        if (ownOnly && !confirm('Ohne KI-Stimme enthält das Hörbuch nur die selbst eingesprochenen Seiten (ohne Bildbeschreibung/Rätsel). Seiten ohne Aufnahme werden übersprungen. Weiter?')) return;
+        if (!app.ttsNeural.isActive() && !ownOnly) {
             app.ui.toast('Hörbuch-Export braucht eine KI-Stimme (Einstellungen) - die Gerätestimme kann keine Datei herausgeben.', '🔇');
             return;
         }
@@ -32,8 +36,8 @@ Object.assign(app.actions, {
             return;
         }
 
-        const includeDescription = confirm('Bildbeschreibungen mit ins Hörbuch aufnehmen?');
-        const includeQuiz = confirm('Rätselfragen (mit Antwort) mit ins Hörbuch aufnehmen?');
+        const includeDescription = !ownOnly && confirm('Bildbeschreibungen mit ins Hörbuch aufnehmen?');
+        const includeQuiz = !ownOnly && confirm('Rätselfragen (mit Antwort) mit ins Hörbuch aufnehmen?');
 
         const personaId = app.state.readingPersonaId || app.settings.persona;
         const segmentBlobs = [];

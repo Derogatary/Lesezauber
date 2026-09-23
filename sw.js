@@ -1,7 +1,10 @@
 // Bei jeder inhaltlichen Änderung an einer dieser Dateien diese Nummer
 // erhöhen - sonst bekommen wiederkehrende Besucher weiter die alte
 // zwischengespeicherte Version ausgeliefert.
-const CACHE_NAME = 'lesezauber-shell-v76';
+const CACHE_NAME = 'lesezauber-shell-v77';
+
+// NEU (v77, v0.43.0-beta): eigene Stimme - Seiten selbst einsprechen (neue
+// Dateien js/actions/voiceRecord.js, js/render/voiceRecord.js, IndexedDB v5).
 
 // NEU (v76, v0.42.0-beta): Kinder-Lesemodus mit Eltern-Frage, Buch-Freigabe,
 // "Frag den Zauberer" pro Profil, Monatsbudget, Wochenrückblick, Wortkarten
@@ -268,6 +271,8 @@ const APP_SHELL = [
     './js/actions/aiReports.js',
     './js/actions/kidMode.js',
     './js/actions/familyTools.js',
+    './js/actions/voiceRecord.js',
+    './js/render/voiceRecord.js',
     './js/actions/audiobookExport.js',
     './js/actions/videoTimeline.js',
     './js/actions/videoPreview.js',
