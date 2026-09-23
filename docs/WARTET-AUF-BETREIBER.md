@@ -12,6 +12,14 @@ Claude Bescheid. Der Punkt wandert dann zurück in die TODO-Liste oder wird dire
 
 ---
 
+## 🚦 Grundsatzentscheidung: privat bleiben oder öffentlich veröffentlichen?
+
+Aus der Release-Prüfung ([`RELEASE-CHECKLISTE.md`](RELEASE-CHECKLISTE.md)): Die Gemini-Nutzungsbedingungen
+verbieten Apps, die sich an unter 18-Jährige richten, und verlangen für EU-Nutzer bezahlte Zugänge.
+Vor jedem Schritt Richtung öffentlicher Veröffentlichung musst du entscheiden, ob die App privat
+bleibt und, falls nicht, welcher KI-Anbieter Kinder-Apps erlaubt und wer die KI-Kosten trägt.
+Dafür braucht es rechtliche bzw. Datenschutz-Beratung, das kann Claude nicht ersetzen.
+
 ## 🧪 Mit echten Keys/Geräten ausprobieren
 
 Das ist gebaut, aber ohne echte Anbieter-Keys getestet (in der Entwicklungsumgebung gibt es

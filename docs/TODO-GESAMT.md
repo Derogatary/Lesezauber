@@ -39,6 +39,7 @@ wo dort eine Zahl steht, ist sie übernommen.
 |---|---|
 | `docs/TODO-GESAMT.md` (hier) | Übersicht über alle offenen Punkte, **an denen direkt gebaut werden kann** |
 | `docs/WARTET-AUF-BETREIBER.md` | Punkte, die erst etwas vom Betreiber brauchen (Konto, Gerät, Beobachtung, Entscheidung) |
+| `docs/RELEASE-CHECKLISTE.md` | Was bis zu einer professionellen/öffentlichen Veröffentlichung fehlt (Recht, Sicherheit, Tests, Betrieb) + wie ein Release in einer Organisation abläuft |
 | `docs/AUFTRAEGE-SESSIONS.md` | Dieselben Punkte als fertige Arbeitspakete für einzelne Claude-Code-Sitzungen (zum Kopieren) |
 | `docs/ROADMAP.md` | Vorlesen/Stimmen im Detail, inkl. Kostenübersicht |
 | `docs/KONZEPT-Video.md` | Sprach-API, Video/MP4, Hörbuch, Mehrformat-Ausspielung |
