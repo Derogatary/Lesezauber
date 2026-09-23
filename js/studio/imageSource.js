@@ -175,9 +175,11 @@ const providers = {
             if (inline) parts.push({ inlineData: inline });
         });
 
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_IMAGE_MODEL}:generateContent?key=${app.settings.apiKey}`, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_IMAGE_MODEL}:generateContent`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': app.settings.apiKey },
             body: JSON.stringify({
+                // NEU (Release-Prüfung A4): strenge Filterstufe, siehe js/api.js.
+                safetySettings: app.api.safetySettingsKids,
                 contents: [{ parts }],
                 generationConfig: { responseModalities: ['IMAGE'] }
             })

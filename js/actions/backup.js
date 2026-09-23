@@ -1,5 +1,35 @@
 import { app } from '../core.js';
 
+// NEU (v0.40.0-beta, Release-Prüfung C3): prüft ein Buch aus einer
+// Backup-Datei, bevor es gespeichert wird. IDs nur aus Buchstaben/Ziffern/
+// "_"/"-" (Seiten-IDs sind meist Zahlen), Bilder nur als eingebettete
+// data:image-URL (so speichert die App sie selbst) - alles andere wird
+// verworfen bzw. geleert statt ungeprüft in HTML-Attribute zu gelangen.
+const SAFE_ID = /^[A-Za-z0-9_-]{1,80}$/;
+const SAFE_IMG = /^data:image\/(webp|png|jpeg|gif);base64,[A-Za-z0-9+/=]+$/;
+function isSafeId(v) {
+    return (typeof v === 'number' && Number.isFinite(v)) || (typeof v === 'string' && SAFE_ID.test(v));
+}
+// Benannter Export nur für die Tests (tests/import.test.mjs).
+export function cleanImportedBook(b) {
+    if (!b || typeof b !== 'object' || !isSafeId(b.id) || typeof b.id !== 'string' || !Array.isArray(b.pages)) return null;
+    const pages = b.pages.filter(p => p && typeof p === 'object' && isSafeId(p.id));
+    pages.forEach(p => {
+        ['imgUrl', 'thumbUrl', 'comicCleanImgUrl'].forEach(f => {
+            if (p[f] !== undefined && !(typeof p[f] === 'string' && SAFE_IMG.test(p[f]))) delete p[f];
+        });
+    });
+    ['coverPageId', 'titlePageId', 'backCoverPageId', 'tocPageId', 'authorBioPageId'].forEach(f => {
+        if (b[f] != null && !isSafeId(b[f])) delete b[f];
+    });
+    ['title', 'author', 'publisher', 'series'].forEach(f => {
+        if (b[f] != null && typeof b[f] !== 'string') delete b[f];
+    });
+    if (b.translatedFromBookId != null && !isSafeId(b.translatedFromBookId)) delete b.translatedFromBookId;
+    b.pages = pages;
+    return b;
+}
+
 Object.assign(app.actions, {
     // NEU: einzelnes Buch herunterladen - die Datei enthält nur dieses eine
     // Buch-Objekt (der Bibliotheks-Export dagegen eine Sammlung). "Importieren"
@@ -116,6 +146,8 @@ Object.assign(app.actions, {
         // NEU: Zeitstempel für die Backup-Erinnerung in der Bibliothek
         localStorage.setItem('lz_last_export', String(Date.now()));
 
+        // NEU (v0.40.0-beta): Zeitpunkt für die Sicherungs-Erinnerung merken.
+        app.actions.markBackupDone();
         app.ui.toast(`${bookCount} Buch/Bücher exportiert.`, '📤');
     },
 
@@ -148,9 +180,12 @@ Object.assign(app.actions, {
 
             // Zusätzlich jeden Eintrag prüfen, damit eine fremde/kaputte
             // JSON-Datei nicht trotzdem halbe Datensätze hereinschleust.
-            const validBooks = importedBooks.filter(b =>
-                b && typeof b === 'object' && typeof b.id === 'string' && Array.isArray(b.pages)
-            );
+            // FIX (v0.40.0-beta, Release-Prüfung C3): bisher wurde nur
+            // id + pages geprüft. Buch- und Seiten-IDs landen aber in
+            // onclick="..."-Attributen, Bild-URLs in src="..." - eine
+            // manipulierte Datei hätte darüber Code einschleusen können.
+            // cleanImportedBook() lässt nur harmlose Werte durch.
+            const validBooks = importedBooks.map(cleanImportedBook).filter(Boolean);
             if (validBooks.length === 0) throw new Error('Keine Bücher in der Datei gefunden');
 
             const skipped = importedBooks.length - validBooks.length;

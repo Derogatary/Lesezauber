@@ -83,6 +83,16 @@ async function getAllBooksFromDB() {
     });
 }
 
+// NEU (v0.40.0-beta, Release-Prüfung D8): "Speicher voll" verständlich
+// erklären statt nur "Speichern fehlgeschlagen" - sonst weiß niemand, was
+// zu tun ist, und neue Seiten gehen beim nächsten Neuladen verloren.
+function storageErrorMessage(e, fallback) {
+    if (e && (e.name === 'QuotaExceededError' || /quota/i.test(e.message || ''))) {
+        return 'Gerätespeicher voll! Bitte in den Einstellungen den Stimmen-Speicher leeren oder alte Bücher sichern und löschen.';
+    }
+    return fallback;
+}
+
 async function putBookInDB(book) {
     const db = await openDatabase();
     return new Promise((resolve, reject) => {
@@ -267,7 +277,7 @@ Object.assign(app.dbOps, {
         app.library[book.id] = book;
         putBookInDB(book).catch(e => {
             console.error('Speichern fehlgeschlagen:', e);
-            app.ui.toast('Speichern fehlgeschlagen.', '⚠️');
+            app.ui.toast(storageErrorMessage(e, 'Speichern fehlgeschlagen.'), '⚠️');
         });
     },
 
@@ -288,7 +298,7 @@ Object.assign(app.dbOps, {
         app.studio.projects[project.id] = project;
         putProjectInDB(project).catch(e => {
             console.error('Werk konnte nicht gespeichert werden:', e);
-            app.ui.toast('Werk konnte nicht gespeichert werden.', '⚠️');
+            app.ui.toast(storageErrorMessage(e, 'Werk konnte nicht gespeichert werden.'), '⚠️');
         });
     },
 

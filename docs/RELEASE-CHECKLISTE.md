@@ -4,6 +4,48 @@
 Build/Auslieferung). **Keine Rechtsberatung** - die rechtlichen Punkte sind Hinweise, was ein
 Anwalt/Datenschutzberater prüfen sollte, keine abschließende Bewertung.
 
+## ✅ Stand nach v0.40.0-beta (23.09.2026): Entscheidung „bleibt erstmal privat“
+
+Der Betreiber hat entschieden: **LeseZauber bleibt vorerst ein privates Familienwerkzeug.** Damit
+sind A1-A3 und die meisten B-Punkte **keine akuten Blocker**, sondern Voraussetzungen für einen
+späteren öffentlichen Schritt. Alles, was ohne diese Entscheidung machbar war, ist erledigt:
+
+| Punkt | Erledigt in v0.40.0-beta |
+|---|---|
+| A4 Inhaltssicherheit | ✅ Sicherheitsfilter für ALLE Gemini-Aufrufe (Buchanalyse mittel, Kinder-Chat/SchreibZauber/Bilder streng), kindgerechte Regeln + abgegrenzte, längenbegrenzte Frage im „Frag den Zauberer“, freundliche Antwort statt Fehlermeldung bei blockierten Fragen, Schutzsatz gegen Anweisungen auf fotografierten Seiten. **Offen:** Meldeknopf (erst für Play Store nötig), Test-Set „rote Liste“ mit echtem Key |
+| B1 Datenschutzerklärung | ✅ Pollinations, Kontroll-Fotos, Rechtsgrundlage, USA-Übermittlung, Speicherdauer, Beschwerderecht (HmbBfDI), TDDDG statt TTDSG, Hinweis auf Trainingsnutzung im kostenlosen Gemini-Kontingent |
+| B3 Haftung | ✅ **Korrektur:** der Befund war falsch - die Nutzungsbedingungen enthalten die Ausnahmen (Vorsatz, grobe Fahrlässigkeit, Leben/Körper/Gesundheit) bereits; das Zitat in der ersten Prüfung war abgeschnitten |
+| B6 Lizenzen | ✅ Lizenztexte PDF.js (Apache-2.0) + JSZip neben die Bibliotheken, neue Seite `lizenzen.html` (verlinkt in den Einstellungen) |
+| C2 Key in der URL | ✅ alle Gemini-Aufrufe per Header `x-goog-api-key`. **Offen:** Google Cloud TTS (ohne echten Key nicht prüfbar, ob der Header per CORS durchgeht) |
+| C3 Backup-Import | ✅ `cleanImportedBook()` lässt nur sichere IDs und `data:image`-Bilder durch, mit Tests |
+| C3b **neu gefunden:** `sanitize()` escapte keine Anführungszeichen | ✅ reines String-Escaping aller fünf HTML-Sonderzeichen - vorher konnte ein `"` in KI-/Nutzertext aus `value="..."`-Attributen ausbrechen |
+| C4 CSP | ✅ Content-Security-Policy in `index.html`, im Browser gegen PDF.js/JSZip/Service Worker geprüft |
+| C5 Update-Verhalten | ✅ Hinweis „Neue Version - Neu laden“ statt stillem Umschalten |
+| D1 Tests | ✅ 17 Unit-Tests (`npm test`): Suchsel, Seitenplanung/Panorama, Import-Prüfung, Block-Parser, Buchsprache, Personas, `sanitize()`. **Offen:** Browser-Tests der Hauptabläufe in CI |
+| D2 CI | ✅ `.github/workflows/checks.yml`: Sanity-Checks, Tests, „Tailwind-Build aktuell?“ bei jedem Push |
+| D3 Build | ✅ `package.json` + Lockfile im Repo, `npm run build` / `npm run check` / `npm test` |
+| D7 Fehlerprotokoll | ✅ „📋 Fehlerprotokoll kopieren“ in den Einstellungen - nur lokal, ohne Buchinhalte und Keys |
+| D8 Datenverlust | ✅ verständliche „Speicher voll“-Meldung, Sicherungs-Erinnerung nach 30 Tagen |
+| E1 Zoom | ✅ Zoomen wieder erlaubt |
+
+**Weiterhin offen (bewusst, bei privater Nutzung nicht nötig oder nicht allein machbar):** A1-A3
+(nur bei Veröffentlichung), B2 Impressum (siehe unten), B4/B5/B7/B8, C1, C6, D4 automatisches
+Deployment (bräuchte eine Umstellung der GitHub-Pages-Einstellungen durch den Betreiber), D5 Linter,
+D6 `index.html` aufteilen, D9 Geräte-Matrix, D10, E3-E5.
+
+**Impressum bei privater Nutzung (per Websuche am 23.09.2026 nachgeprüft):** Es gibt zwei Pflichten.
+§ 5 DDG gilt für „geschäftsmäßige, in der Regel gegen Entgelt angebotene digitale Dienste“ - ein
+Familienwerkzeug ohne Werbung eher nicht, ein PayPal-Spendenlink kann das aber kippen. **§ 18 Abs. 1
+MStV** verlangt Name und **Anschrift** aber schon von jedem Angebot, das „nicht ausschließlich
+persönlichen oder familiären Zwecken“ dient - und das wird sehr eng ausgelegt. Eine frei im Netz
+erreichbare Seite mit Spendenlink, Play-Store-Plänen und öffentlichem Repo ist eher nicht „rein
+familiär“. **Realistisch bleibt also ein Impressum mit Anschrift nötig.** Die Wohnadresse muss es aber
+nicht sein, nötig ist eine *ladungsfähige* Anschrift (dort muss Post zugestellt werden können):
+Büro-/Coworking-Adresse mit Postannahme, Kanzlei mit Einverständnis, oder ein Impressums-/
+Anschriften-Service mit Zustellvollmacht (verbreitet, rechtlich nicht ganz unumstritten). Ein reines
+Postfach genügt nicht. Nur wenn die App wirklich nicht mehr öffentlich erreichbar ist (z.B. nur
+lokal oder hinter einem Zugangsschutz), entfällt die Pflicht sicher. Im Zweifel anwaltlich klären.
+
 ## Kurzfazit
 
 Als **privates Familienwerkzeug** ist LeseZauber Pro in erstaunlich gutem Zustand: saubere

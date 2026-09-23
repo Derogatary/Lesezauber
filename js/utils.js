@@ -633,11 +633,21 @@ Object.assign(app.utils, {
         return words[n] || `${n}.`;
     },
 
+    // FIX (v0.40.0-beta, Release-Prüfung): bisher über textContent/innerHTML -
+    // das escaped nur < > &, aber KEINE Anführungszeichen. sanitize() wird
+    // aber auch in Attributen benutzt (value="...", <option value="...">) -
+    // ein " in KI- oder Nutzertext konnte dort aus dem Attribut ausbrechen.
+    // Jetzt reines String-Escaping aller fünf HTML-Sonderzeichen: im Text
+    // sieht das Ergebnis identisch aus, in Attributen ist es sicher, und es
+    // läuft ohne Browser (Tests).
     sanitize(str) {
-        if (!str) return '';
-        const temp = document.createElement('div');
-        temp.textContent = str;
-        return temp.innerHTML;
+        if (str === null || str === undefined || str === '') return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
     },
 
     // Cover-Bild ermitteln: nutzt book.coverPageId falls gesetzt (per

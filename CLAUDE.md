@@ -111,6 +111,10 @@ import './actions/meineNeueDatei.js';
 | `js/studio/studioPrint.js` | SchreibZauber: Doppelseiten-Druck/PDF-Export (eigene Funktion, getrennt von `app.actions.printBook()`) - seit v0.28.0-beta comicfähig, seit v0.29.0-beta zusätzlich `printSpreadsKdp()` (echter KDP-Innenteil-Export: Bleed+Sicherheitsabstand, nur A5/A4 hoch, KEIN Umschlag) - Details CHANGELOG.md, TEIL F in `docs/KONZEPT-SchreibZauber.md`. FIX v0.37.2-beta: Bauplan-Auswahl (`index.html`) bot fälschlich 16 Seiten als kleinste Option an - unterhalb der absoluten KDP-Mindestseitenzahl (24, jede Farbstufe), Option entfernt |
 | `js/render/studioLibrary.js`, `render/studioWizard.js` | SchreibZauber: Werkstatt-Übersicht bzw. Stufen-Ansicht |
 | `js/vendor/` | PDF.js, JSZip, mp4-muxer (MIT) - NIE direkt bearbeiten, nur austauschen/aktualisieren. Lazy geladen, deshalb NICHT in der `APP_SHELL` von `sw.js` |
+| `js/actions/appHealth.js` | NEU v0.40.0-beta: Fehlerprotokoll (nur lokal, `copyErrorLog()`), Update-Hinweis statt stillem Service-Worker-Wechsel (`watchForAppUpdate()`), Sicherungs-Erinnerung (`checkBackupReminder()`) - wird in `main.js` als ERSTES Modul geladen |
+| `scripts/sanity-checks.mjs`, `tests/*.test.mjs`, `.github/workflows/checks.yml` | NEU v0.40.0-beta: Sanity-Checks als Skript, Unit-Tests (nur Module ohne Browser-Abhängigkeit beim Import, siehe `tests/helpers.mjs`), GitHub-Action |
+| `.claude/skills/releasecheck/SKILL.md` | NEU v0.40.0-beta: Projekt-Skill „Release-Check“ - Prüfpunkte, Befehle, Quellen mit Datum. `.gitignore` ignoriert `.claude/*` außer `.claude/skills/` |
+| `lizenzen.html`, `js/vendor/*/LICENSE*` | NEU v0.40.0-beta: Lizenzen der mitgelieferten Bibliotheken (Apache-2.0 verlangt die Weitergabe) |
 | `sw.js` | Service Worker - **`CACHE_NAME` bei jeder Datei-Änderung hochzählen**, neue Dateien zur `APP_SHELL`-Liste hinzufügen |
 
 ## Datenmodell (zentral, viel hängt davon ab)
@@ -221,7 +225,18 @@ Zwei getrennte Konzepte, nicht verwechseln:
 
 ## Sanity-Checks vor jedem Commit
 
-Diese Checks haben wiederholt echte Bugs vor dem Ausliefern gefangen. Immer laufen lassen:
+**Seit v0.40.0-beta als Skript + Tests (laufen auch automatisch per GitHub-Action `.github/workflows/checks.yml`):**
+
+```bash
+npm install        # einmalig (package.json/Lockfile liegen jetzt im Repo, Tailwind 4.3.3 fest)
+npm run check      # die vier Checks unten + zwei neue (JS-Datei fehlt in sw.js? Versionsanzeige/CACHE_NAME da?)
+npm test           # Unit-Tests in tests/*.test.mjs
+npm run build      # Tailwind - die Action meldet rot, wenn css/tailwind.css danach anders aussieht
+```
+
+Vor einer größeren Auslieferung zusätzlich den Projekt-Skill **`releasecheck`** laufen lassen (`.claude/skills/releasecheck/SKILL.md`, geht die komplette Release-Checkliste durch).
+
+Die ursprünglichen Einzelbefehle (weiterhin gültig, `npm run check` macht dasselbe):
 
 ```bash
 # 1. Syntax-Check aller eigenen JS-Dateien (vendor/ ausschließen)
@@ -299,7 +314,9 @@ Bewusst zurückgestellt (bräuchten einen eigenen Server): API-Key-Absicherung �
 
 - Kommentare auf **Deutsch** (Zielgruppe: der Projektbetreiber, kein englischsprachiges Team)
 - Jede neue/geänderte Codestelle mit kurzem `// NEU:` oder `// FIX:`-Kommentar, der WARUM erklärt, nicht nur was
-- Immer `app.utils.sanitize()` verwenden, bevor Nutzer-/KI-Text per `innerHTML` eingefügt wird (XSS-Schutz) - `.innerText`/`.textContent` brauchen das nicht
+- Immer `app.utils.sanitize()` verwenden, bevor Nutzer-/KI-Text per `innerHTML` eingefügt wird (XSS-Schutz) - `.innerText`/`.textContent` brauchen das nicht. Seit v0.40.0-beta escaped `sanitize()` auch `"` und `'`, ist also auch in Attributen (`value="..."`) sicher - aber NIE in JavaScript-Strings innerhalb von `onclick="...('${...}')"` verwenden (der Browser dekodiert die Entities vor dem Ausführen), dort nur IDs/Zahlen einsetzen
+- **Content-Security-Policy (seit v0.40.0-beta, `<meta>` in `index.html`):** ein NEUER externer Dienst (KI-Anbieter, Bildquelle) funktioniert erst, wenn seine Adresse bei `connect-src` ergänzt ist - sonst blockt der Browser still („Refused to connect“ in der Konsole). Neue Skripte nur als Datei unter `js/`, nie von fremden Servern
+- **Gemini-Aufrufe:** Key immer im Header `x-goog-api-key` (nie `?key=` in der URL), immer mit `safetySettings` (`SAFETY_BOOK` für Buchanalyse, `SAFETY_KIDS`/`app.api.safetySettingsKids` für alles frei Erfundene und den Kinder-Chat, siehe `js/api.js`)
 - Fehler nie stumm verschlucken - mindestens `console.error()`, meist zusätzlich `app.ui.toast(...)`
 - Vor dem Vorlesen IMMER `app.utils.stripEmojiForSpeech()` bzw. `speak()` nutzen (nie rohen Text direkt an `SpeechSynthesisUtterance`) - sonst versucht der Browser, Emojis auszusprechen
 - **Rückmeldungen an Kinder nie hart formulieren.** Der Kontroll-Prompt (`js/api.js`) verbietet der KI das Wort "falsch", verlangt im Zweifel "fast" bzw. `verdict: "unklar"` bei unklarem Foto - ein Kind, dem fälschlich gesagt wird, es habe sich vertan, verliert die Lust. Beim Anfassen dieses Prompts unbedingt beibehalten.
@@ -324,6 +341,6 @@ Feste Regeln:
 
 ## Versionsstand
 
-Aktuell `v0.39.0-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Version bei größeren Änderungen hochzählen (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).
+Aktuell `v0.40.0-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Version bei größeren Änderungen hochzählen (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).
 
 **Die vollständige Versionshistorie (was mit welcher Version kam, inkl. aller Entscheidungen) steht in [`CHANGELOG.md`](CHANGELOG.md), neueste Version zuerst.** Vor dem Einplanen eines Features dort nachsehen, sonst werden bereits gefallene Entscheidungen neu diskutiert. Neuer Eintrag bei jeder Versionserhöhung: oben in `CHANGELOG.md` ergänzen, nicht hier.

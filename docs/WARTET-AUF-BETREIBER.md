@@ -20,6 +20,19 @@ Vor jedem Schritt Richtung öffentlicher Veröffentlichung musst du entscheiden,
 bleibt und, falls nicht, welcher KI-Anbieter Kinder-Apps erlaubt und wer die KI-Kosten trägt.
 Dafür braucht es rechtliche bzw. Datenschutz-Beratung, das kann Claude nicht ersetzen.
 
+**✅ Entschieden (23.09.2026): bleibt erstmal privat.** Alles dafür Machbare ist in v0.40.0-beta
+umgesetzt (siehe `RELEASE-CHECKLISTE.md`, Abschnitt „Stand nach v0.40.0-beta“). Beachte: die
+Gemini-Bedingungen schließen Kinder-Apps auch bei privater Nutzung streng genommen aus.
+
+## 🏠 Impressum: welche Adresse?
+
+Nach § 18 MStV braucht auch ein nicht-kommerzielles Angebot Name und **ladungsfähige** Anschrift,
+sobald es nicht rein familiär ist - eine öffentlich erreichbare Seite mit Spendenlink ist das eher
+nicht. Die Wohnadresse muss es aber nicht sein. **Deine Entscheidung:** Büro-/Coworking-Adresse,
+Kanzlei, Anschriften-Service mit Zustellvollmacht, oder die App nicht mehr öffentlich erreichbar
+machen. Sobald du eine Adresse hast, trägt Claude sie in `impressum.html` und `datenschutz.html` ein.
+Details: `RELEASE-CHECKLISTE.md`, Absatz „Impressum bei privater Nutzung“.
+
 ## 🧪 Mit echten Keys/Geräten ausprobieren
 
 Das ist gebaut, aber ohne echte Anbieter-Keys getestet (in der Entwicklungsumgebung gibt es
@@ -30,6 +43,8 @@ keine Keys, Anfragen wurden dort nur simuliert).
 | **KI-Stimme in der Birkenbihl-Zielsprache** (v0.38.0-beta) | Einmal mit deiner KI-Stimme im Birkenbihl-Tab auf 🔊 tippen | Vor allem **Speechify**: spricht eine deutsche Stimme englischen/französischen Text sauber? Falls nein, Claude Bescheid geben, dann wird dort eine passende Stimme je Sprache hinterlegt |
 | **Ganzes Buch übersetzen** (v0.39.0-beta) | Ein kurzes Buch (5-10 Seiten) übersetzen lassen | Klingt die Übersetzung natürlich? Bleiben die Erzähler-Varianten unterschiedlich? Liest die Stimme in der richtigen Sprache vor? |
 | **Zwischenruf der Erzähler** (v0.39.0-beta) | Eine neue Seite scannen und die Erzähler durchtippen | Sind die Zwischenrufe kindgerecht und abwechslungsreich, oder nerven sie beim automatischen Vorlesen? (Ältere Seiten haben noch keinen - die bekommen ihn erst beim Neu-Auslesen) |
+| **Kinderschutz im Chat** (v0.40.0-beta) | Im Tab „Frag KI“ ein paar unpassende Fragen stellen (z.B. nach Waffen, nach Adresse) | Kommt „Das ist eine gute Frage für Mama, Papa ...“? Werden echte Buchseiten (Märchen mit Wolf/Hexe) trotz Filter normal ausgelesen? |
+| **Google Cloud TTS mit Key im Header** | Nur falls du Google Cloud TTS nutzt: Bescheid geben | Dann stellt Claude auch diesen Aufruf auf den Header um und du testest einmal |
 | **KDP: Quadratformat, Seitenaufbau, Panorama** (v0.39.0-beta) | Einen KDP-Innenteil als PDF speichern und im KDP-Vorschauer hochladen | Meldet der Vorschauer Fehler bei Beschnitt/Rand? Liegt das Panorama wirklich auf gegenüberliegenden Seiten? Vor einer echten Veröffentlichung zusätzlich eine Testbestellung |
 
 ## 🖼️ Braucht die Bild-API (Zahlungsmethode am Google-Konto)

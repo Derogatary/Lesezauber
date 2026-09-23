@@ -6,6 +6,18 @@ vollständige Historie, neueste Version zuerst. Diese Datei wurde aus
 `CLAUDE.md` ausgelagert, weil der Abschnitt dort mit der Zeit zu groß für
 schnellen Kontext wurde; inhaltlich unverändert übernommen.
 
+## v0.40.0-beta
+
+Release-Prüfung umgesetzt (`docs/RELEASE-CHECKLISTE.md`). Entscheidung des Betreibers: **die App bleibt vorerst privat** - erledigt wurde alles, was dafür ohne Rechts-/Anbieterentscheidung machbar war:
+
+- **Kinderschutz der KI:** ausdrückliche Gemini-Sicherheitsfilter für alle Aufrufe (Buchanalyse `BLOCK_MEDIUM_AND_ABOVE`, damit Märchen nicht blockiert werden; Kinder-Chat, SchreibZauber-Texte und -Bilder `BLOCK_LOW_AND_ABOVE`). „Frag den Zauberer“ bekommt feste kindgerechte Regeln, die Frage wird abgegrenzt und auf 300 Zeichen begrenzt, bei blockierten Fragen kommt „Das ist eine gute Frage für Mama, Papa ...“ statt einer Fehlermeldung. Analyse- und Kontroll-Prompts enthalten einen Schutzsatz gegen Anweisungen auf fotografierten Seiten.
+- **Sicherheit:** Gemini-Key im Header statt in der URL (Google Cloud TTS vorerst noch nicht, ungetestet); Content-Security-Policy; Backup-Import lässt nur sichere IDs und eingebettete Bilder durch; **`sanitize()` escaped jetzt auch Anführungszeichen** (neu gefundene Lücke in `value="..."`-Attributen).
+- **Betrieb:** Hinweis „Neue Version - Neu laden“ statt stillem Umschalten des Service Workers; „📋 Fehlerprotokoll kopieren“ in den Einstellungen (nur lokal, ohne Buchinhalte/Keys); verständliche „Speicher voll“-Meldung; Sicherungs-Erinnerung nach 30 Tagen ohne Export.
+- **Qualität:** `package.json` + Lockfile im Repo (Tailwind 4.3.3 fest), `npm run build` / `npm run check` (Sanity-Checks als Skript, zwei neue Checks) / `npm test` (17 Unit-Tests), GitHub-Action `.github/workflows/checks.yml` bei jedem Push inkl. „Tailwind-Build vergessen?“.
+- **Recht:** Datenschutzerklärung ergänzt (Pollinations, Kontroll-Fotos, Rechtsgrundlage, USA-Übermittlung, Speicherdauer, Beschwerderecht, TDDDG), Lizenztexte von PDF.js/JSZip + neue Seite `lizenzen.html`. Impressum unverändert - Optionen zur Wohnadresse stehen in der Checkliste.
+- **Barrierefreiheit:** Zoomen wieder erlaubt.
+- **Neuer Projekt-Skill `releasecheck`** (`.claude/skills/releasecheck/SKILL.md`): geht alle Prüfpunkte der Release-Checkliste mit Befehlen, Quellen und Datum durch.
+
 ## v0.39.0-beta
 
 Drei Nutzerwünsche aus einer Runde („KDP-Ideen umsetzen, überlege wie es geht“ / „wenn's kein großer Mehraufwand ist mehrere Personas übersetzen“ / „die Personas kommen noch nicht so stark zur Geltung bzw. man übersieht sie leicht“) plus Aufräumen der TODO-Liste:

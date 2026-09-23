@@ -1,7 +1,13 @@
 // Bei jeder inhaltlichen Änderung an einer dieser Dateien diese Nummer
 // erhöhen - sonst bekommen wiederkehrende Besucher weiter die alte
 // zwischengespeicherte Version ausgeliefert.
-const CACHE_NAME = 'lesezauber-shell-v73';
+const CACHE_NAME = 'lesezauber-shell-v74';
+
+// NEU (v74, v0.40.0-beta): Release-Prüfung, alles für die private Nutzung
+// Machbare - neue Datei js/actions/appHealth.js (Fehlerprotokoll, Update-
+// Hinweis, Sicherungs-Erinnerung), CSP in index.html, Sicherheitsfilter in
+// js/api.js, sanitize() escaped jetzt auch Anführungszeichen, neu gebaute
+// css/tailwind.css. install() ruft KEIN skipWaiting() mehr auf (siehe unten).
 
 // NEU (v73, v0.39.0-beta): KDP-Quadratformat/Seitenaufbau/Panorama
 // (js/studio/*), ganzes Buch übersetzen (neue Datei
@@ -250,6 +256,7 @@ const APP_SHELL = [
     './js/actions/workbookGenerator.js',
     './js/actions/prepareAudio.js',
     './js/actions/bookTranslate.js',
+    './js/actions/appHealth.js',
     './js/actions/audiobookExport.js',
     './js/actions/videoTimeline.js',
     './js/actions/videoPreview.js',
@@ -309,7 +316,14 @@ self.addEventListener('install', (event) => {
     event.waitUntil(
         caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL))
     );
-    self.skipWaiting();
+    // FIX (v0.40.0-beta, Release-Prüfung C5): KEIN sofortiges skipWaiting()
+    // mehr - eine neue Version wartet, bis der Nutzer im Hinweis "Neu laden"
+    // tippt (js/actions/appHealth.js watchForAppUpdate). Vorher lief eine
+    // offene Seite nach einem Update mit gemischten alten/neuen Dateien weiter.
+});
+
+self.addEventListener('message', (event) => {
+    if (event.data && event.data.type === 'SKIP_WAITING') self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {

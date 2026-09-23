@@ -1,0 +1,16 @@
+{
+  "name": "lesezauber-pro",
+  "private": true,
+  "description": "Nur für den lokalen Build (Tailwind) und die Tests - wird nicht deployed.",
+  "type": "module",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "build": "tailwindcss -i ./css/tailwind-input.css -o ./css/tailwind.css --minify",
+    "check": "node scripts/sanity-checks.mjs",
+    "test": "node --test \"tests/*.test.mjs\""
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "4.3.3",
+    "tailwindcss": "4.3.3"
+  }
+}

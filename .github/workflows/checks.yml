@@ -1,0 +1,29 @@
+# NEU (v0.40.0-beta, Release-Prüfung D2): automatische Prüfung bei jedem Push
+# und jedem Pull Request - vorher lief nichts automatisch. Rot = bitte nicht
+# mergen/hochladen, erst reparieren (Details stehen im Log der Action).
+name: Checks
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # Die vier Sanity-Checks aus CLAUDE.md + zwei neue (scripts/sanity-checks.mjs)
+      - run: npm run check
+      # Unit-Tests für die Kernlogik (tests/*.test.mjs)
+      - run: npm test
+      # Tailwind neu bauen und prüfen, dass sich css/tailwind.css NICHT ändert -
+      # sonst wurde nach einer Klassen-Änderung der Build vergessen (CLAUDE.md,
+      # "Kritischer Build-Schritt") und neue Klassen fehlen lautlos im Live-Betrieb.
+      - run: npm run build
+      - name: Tailwind-Build aktuell?
+        run: git diff --exit-code css/tailwind.css || (echo "css/tailwind.css ist veraltet - bitte 'npm run build' ausführen und committen." && exit 1)

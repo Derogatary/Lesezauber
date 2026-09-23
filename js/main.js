@@ -4,6 +4,9 @@
 // importieren - der Rest des Codes bleibt unangetastet.
 import { app } from './core.js';
 
+// NEU (v0.40.0-beta): möglichst früh laden, damit das Fehlerprotokoll
+// (js/actions/appHealth.js) auch Fehler beim Start der übrigen Module erfasst.
+import './actions/appHealth.js';
 import './config.js';
 import './state.js';
 import './db.js';
@@ -110,6 +113,10 @@ app.init = async function () {
     await app.dbOps.init();
     app.ui.hideLoader();
 
+    // NEU (v0.40.0-beta, Release-Prüfung D8): an eine Datensicherung erinnern,
+    // wenn die letzte lange her ist - alle Bücher liegen nur auf diesem Gerät.
+    app.actions.checkBackupReminder();
+
     // NEU: Online/Offline-Punkt gleich beim Start korrekt setzen (nicht
     // erst beim nächsten Wechsel)
     updateOnlineStatusDot();
@@ -140,7 +147,9 @@ window.app = app;
 // dem Netz geladen werden.
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js').catch((e) => {
+        // NEU (v0.40.0-beta, Release-Prüfung C5): auf neue Versionen hinweisen
+        // statt still umzuschalten (siehe js/actions/appHealth.js).
+        navigator.serviceWorker.register('./sw.js').then((reg) => app.actions.watchForAppUpdate(reg)).catch((e) => {
             console.error('Service Worker Registrierung fehlgeschlagen:', e);
         });
     });

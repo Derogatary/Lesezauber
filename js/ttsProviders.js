@@ -160,9 +160,9 @@ async function geminiRequest(model, text, voice, signal) {
         }
     };
 
-    return fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(app.settings.apiKey)}`, {
+    return fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': app.settings.apiKey },
         body: JSON.stringify(body),
         signal
     });
@@ -237,6 +237,9 @@ async function googleCloudSynthesize(text, { voice, rate, language, signal }) {
 
     let res;
     try {
+        // HINWEIS (Release-Prüfung C2): hier bewusst NOCH der Key in der URL -
+        // ob Google Cloud TTS den Header "x-goog-api-key" per CORS zulässt, ist
+        // ohne echten Key nicht geprüft (Gemini-Aufrufe sind schon umgestellt).
         res = await fetch(`https://texttospeech.googleapis.com/v1/text:synthesize?key=${encodeURIComponent(key)}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },

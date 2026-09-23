@@ -1,8 +1,13 @@
 node_modules/
-package.json
-package-lock.json
+
+# FIX (v0.40.0-beta, Release-Prüfung D3): package.json/package-lock.json
+# werden jetzt MIT eingecheckt - vorher stand die Tailwind-Version nirgends
+# fest und der Build war nicht reproduzierbar. Deployed werden sie trotzdem
+# nicht (GitHub Pages liefert sie zwar aus, die App lädt sie aber nie).
 
 # NEU: lokale Claude-Code-Infrastruktur (u.a. isolierte Git-Worktrees für
 # parallel laufende Sub-Agents, siehe .claude/worktrees/) - kein Projektinhalt,
-# nie committen.
-.claude/
+# nie committen. AUSNAHME (v0.40.0-beta): .claude/skills/ enthält Projekt-
+# Skills wie "releasecheck" und gehört ins Repo.
+.claude/*
+!.claude/skills/

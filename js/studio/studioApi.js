@@ -53,9 +53,10 @@ async function callGeminiText(prompt) {
     if (!app.settings.apiKey) throw new Error('API_KEY_MISSING');
 
     const textResult = await withGeminiModelRotation(async (model) => {
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${app.settings.apiKey}`, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.7 } })
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': app.settings.apiKey },
+            // NEU (Release-Prüfung A4): strenge Filterstufe, siehe js/api.js.
+            body: JSON.stringify({ safetySettings: app.api.safetySettingsKids, contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.7 } })
         });
 
         if (!res.ok) {

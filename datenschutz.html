@@ -30,6 +30,7 @@
             <ul class="list-disc pl-5 space-y-1">
                 <li><strong>Google Gemini API</strong> (Bildanalyse, Texterstellung, Bildgenerierung)</li>
                 <li><strong>Mistral AI</strong> (optionaler Rückfall, falls Gemini nicht erreichbar ist)</li>
+                <li>Optional, nur wenn in den Einstellungen ausdrücklich bestätigt: <strong>Pollinations.ai</strong> (kostenlose Bilderzeugung in der Werkstatt „SchreibZauber") - übertragen wird nur die Text-Beschreibung des gewünschten Bildes, stets mit der Einstellung „privat" (kein öffentlicher Bilder-Feed).</li>
                 <li>Optional, nur wenn in den Einstellungen ausdrücklich aktiviert: neuronale Sprachausgabe über <strong>ElevenLabs</strong>, <strong>OpenAI</strong>, <strong>Google Cloud</strong> (Chirp 3 HD) oder <strong>Speechify</strong> - dabei wird der vorzulesende Text an den gewählten Anbieter übertragen.</li>
             </ul>
             <p>LeseZauber Pro selbst betreibt dafür keinen eigenen Server und sieht die übertragenen Daten nicht ein. Für die Verarbeitung durch diese Anbieter gelten deren eigene Datenschutzbestimmungen:</p>
@@ -39,7 +40,9 @@
                 <li>ElevenLabs: <a class="text-indigo-600 underline" href="https://elevenlabs.io/privacy">elevenlabs.io/privacy</a></li>
                 <li>OpenAI: <a class="text-indigo-600 underline" href="https://openai.com/policies/privacy-policy">openai.com/policies/privacy-policy</a></li>
                 <li>Speechify: <a class="text-indigo-600 underline" href="https://speechify.com/privacy/">speechify.com/privacy</a></li>
+                <li>Pollinations.ai: <a class="text-indigo-600 underline" href="https://pollinations.ai/">pollinations.ai</a></li>
             </ul>
+            <p><strong>Wichtig bei kostenlosen Zugängen:</strong> Nutzt du bei Google Gemini das kostenlose Kontingent, darf Google die übertragenen Inhalte laut seinen Nutzungsbedingungen zur Verbesserung eigener Produkte verwenden. Fotografiere deshalb keine Gesichter und decke Namen oder andere persönliche Angaben ab, bevor du ein Foto analysieren lässt.</p>
         </section>
 
         <section class="space-y-2">
@@ -50,6 +53,7 @@
         <section class="space-y-2">
             <h2 class="text-lg font-bold text-slate-900">Kamera-/Fotozugriff</h2>
             <p>Die App nutzt die Kamera bzw. den Fotospeicher deines Geräts, um Buchseiten zu fotografieren oder vorhandene Fotos zu importieren. Diese Fotos verbleiben lokal auf deinem Gerät bzw. werden - wie oben beschrieben - zur Analyse an die gewählte KI übertragen.</p>
+            <p>Bei der <strong>Kontrolle bearbeiteter Übungsblätter</strong> wird ein Foto des vom Kind ausgefüllten Blattes an die KI geschickt. Darauf können Handschrift und ggf. der Name des Kindes zu sehen sein - bitte Namen vorher abdecken. Auf dem Gerät bleibt davon nur eine kleine Vorschau gespeichert, das volle Foto nicht.</p>
         </section>
 
         <section class="space-y-2">
@@ -59,7 +63,14 @@
 
         <section class="space-y-2">
             <h2 class="text-lg font-bold text-slate-900">Keine Werbung, kein Tracking, keine Cookies</h2>
-            <p>LeseZauber Pro enthält keine Werbung und kein Analyse-/Tracking-Tool. Die App setzt keine Cookies - deine Daten (Bücher, Fotos, Profile, Einstellungen) werden stattdessen im lokalen Browser-/Geräte-Speicher (IndexedDB) abgelegt, was für den Betrieb der von dir aufgerufenen Funktion technisch notwendig ist und deshalb keine Einwilligung erfordert (§ 25 Abs. 2 Nr. 2 TTDSG).</p>
+            <p>LeseZauber Pro enthält keine Werbung und kein Analyse-/Tracking-Tool. Die App setzt keine Cookies - deine Daten (Bücher, Fotos, Profile, Einstellungen) werden stattdessen im lokalen Browser-/Geräte-Speicher (IndexedDB) abgelegt, was für den Betrieb der von dir aufgerufenen Funktion technisch notwendig ist und deshalb keine Einwilligung erfordert (§ 25 Abs. 2 Nr. 2 TDDDG, Telekommunikation-Digitale-Dienste-Datenschutz-Gesetz).</p>
+        </section>
+
+        <section class="space-y-2">
+            <h2 class="text-lg font-bold text-slate-900">Rechtsgrundlagen, Übermittlung ins Ausland, Speicherdauer</h2>
+            <p>Daten werden nur an einen KI-Anbieter übertragen, wenn du die jeweilige Funktion selbst auslöst (z.B. „Seite auslesen", „Vorlesen" mit KI-Stimme). Rechtsgrundlage ist deine Einwilligung durch diese Handlung (Art. 6 Abs. 1 lit. a DSGVO), die du jederzeit durch Nichtnutzen der Funktion bzw. Löschen des API-Schlüssels beenden kannst.</p>
+            <p>Mehrere Anbieter (u.a. Google, OpenAI, ElevenLabs, Speechify) haben ihren Sitz in den USA oder verarbeiten Daten dort; Mistral AI sitzt in Frankreich. Welche Garantien für eine Übermittlung in die USA gelten (z.B. EU-US Data Privacy Framework oder Standardvertragsklauseln), steht in den oben verlinkten Datenschutzhinweisen der Anbieter.</p>
+            <p>Auf deinem Gerät bleiben die Daten gespeichert, bis du sie selbst löschst (Buch löschen, Stimmen-Speicher leeren, App-Daten löschen). Wie lange die Anbieter übertragene Daten aufbewahren, regeln deren Datenschutzhinweise.</p>
         </section>
 
         <section class="space-y-2">
@@ -70,6 +81,7 @@
         <section class="space-y-2">
             <h2 class="text-lg font-bold text-slate-900">Deine Rechte</h2>
             <p>Da keine personenbezogenen Daten auf einem Server des Anbieters gespeichert werden, betreffen Auskunfts-, Berichtigungs- und Löschrechte in erster Linie die Daten auf deinem eigenen Gerät - diese kannst du jederzeit selbst über die Einstellungen der App bzw. durch Löschen der App-Daten/Deinstallation entfernen. Für Fragen zu Daten, die bei den oben genannten Drittanbietern verarbeitet werden, wende dich bitte direkt an diese.</p>
+            <p>Du hast außerdem das Recht, dich bei einer Datenschutz-Aufsichtsbehörde zu beschweren (Art. 77 DSGVO), zum Beispiel beim <strong>Hamburgischen Beauftragten für Datenschutz und Informationsfreiheit</strong> (zuständig für den Sitz des Verantwortlichen).</p>
         </section>
 
         <section class="space-y-2">
@@ -77,7 +89,7 @@
             <p>Bei Fragen zum Datenschutz erreichst du uns unter: derogatary@proton.me</p>
         </section>
 
-        <p class="text-xs text-slate-400 pt-4">Stand: 19. September 2026</p>
+        <p class="text-xs text-slate-400 pt-4">Stand: 23. September 2026</p>
     </main>
 </body>
 </html>

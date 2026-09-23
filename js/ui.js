@@ -6,9 +6,13 @@ Object.assign(app.ui, {
 
     // "undoCallback" ist optional: wird sie mitgegeben, zeigt der Toast
     // einen "Rückgängig"-Knopf und bleibt etwas länger stehen.
-    toast(msg, icon = 'ℹ️', undoCallback = null) {
+    // NEU (v0.40.0-beta): optionales actionLabel - derselbe Knopf dient nicht
+    // nur für "Rückgängig", sondern z.B. auch für "Neu laden"/"Jetzt sichern"
+    // (js/actions/appHealth.js). Ohne Angabe bleibt es bei "Rückgängig".
+    toast(msg, icon = 'ℹ️', undoCallback = null, actionLabel = null) {
         const toast = document.getElementById('toast');
         const undoBtn = document.getElementById('toastUndoBtn');
+        if (undoBtn) undoBtn.innerText = actionLabel || 'Rückgängig';
 
         document.getElementById('toastMsg').innerText = msg;
         document.getElementById('toastIcon').innerText = icon;
@@ -22,7 +26,7 @@ Object.assign(app.ui, {
         this._toastTimeout = setTimeout(() => {
             toast.classList.add('opacity-0', 'pointer-events-none');
             this._undoCallback = null;
-        }, undoCallback ? 5000 : 3000);
+        }, undoCallback ? (actionLabel ? 10000 : 5000) : 3000);
     },
 
     handleUndo() {
