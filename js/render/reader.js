@@ -187,6 +187,9 @@ Object.assign(app.render, {
 
             document.getElementById('readerQuizQ').innerText = variant.quizQ || 'Welches Tier siehst du?';
             document.getElementById('readerQuizA').innerText = variant.quizA || 'Schau genau hin!';
+            // NEU (v0.41.0-beta, Meldeknopf): gemeldete Rätselfrage ausblenden
+            // statt der Ersatzfrage "Welches Tier siehst du?".
+            if (!isWorkbook) document.getElementById('pageQuizCard')?.classList.toggle('hidden', app.utils.isAiHidden(page, app.state.readingPersonaId, 'quiz'));
 
             // NEU: Schritt-für-Schritt-Hilfe und Lösung (nur im Heft-Modus)
             app.render.workbookHelp(isWorkbook ? variant : null);
@@ -217,6 +220,7 @@ Object.assign(app.render, {
         }
 
         document.getElementById('chatHistory').innerHTML = '';
+        app.state.chatAnswers = []; // NEU (Meldeknopf): Antworten gehören zur Seite
 
         // NEU (Birkenbihl-Methode): unabhängig von der Persona-Variante oben -
         // zeigt einen bereits vorhandenen Zwischenspeicher (page.birkenbihl)

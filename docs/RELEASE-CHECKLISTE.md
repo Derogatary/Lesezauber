@@ -12,7 +12,7 @@ späteren öffentlichen Schritt. Alles, was ohne diese Entscheidung machbar war,
 
 | Punkt | Erledigt in v0.40.0-beta |
 |---|---|
-| A4 Inhaltssicherheit | ✅ Sicherheitsfilter für ALLE Gemini-Aufrufe (Buchanalyse mittel, Kinder-Chat/SchreibZauber/Bilder streng), kindgerechte Regeln + abgegrenzte, längenbegrenzte Frage im „Frag den Zauberer“, freundliche Antwort statt Fehlermeldung bei blockierten Fragen, Schutzsatz gegen Anweisungen auf fotografierten Seiten. **Offen:** Meldeknopf (erst für Play Store nötig), Test-Set „rote Liste“ mit echtem Key |
+| A4 Inhaltssicherheit | ✅ (v0.41.0: **Meldeknopf 🚩** an allen KI-Texten + Liste für Eltern, Ausrichtung als Eltern-App) Sicherheitsfilter für ALLE Gemini-Aufrufe (Buchanalyse mittel, Kinder-Chat/SchreibZauber/Bilder streng), kindgerechte Regeln + abgegrenzte, längenbegrenzte Frage im „Frag den Zauberer“, freundliche Antwort statt Fehlermeldung bei blockierten Fragen, Schutzsatz gegen Anweisungen auf fotografierten Seiten. **Offen:** Test-Set „rote Liste“ mit echtem Key |
 | B1 Datenschutzerklärung | ✅ Pollinations, Kontroll-Fotos, Rechtsgrundlage, USA-Übermittlung, Speicherdauer, Beschwerderecht (HmbBfDI), TDDDG statt TTDSG, Hinweis auf Trainingsnutzung im kostenlosen Gemini-Kontingent |
 | B3 Haftung | ✅ **Korrektur:** der Befund war falsch - die Nutzungsbedingungen enthalten die Ausnahmen (Vorsatz, grobe Fahrlässigkeit, Leben/Körper/Gesundheit) bereits; das Zitat in der ersten Prüfung war abgeschnitten |
 | B6 Lizenzen | ✅ Lizenztexte PDF.js (Apache-2.0) + JSZip neben die Bibliotheken, neue Seite `lizenzen.html` (verlinkt in den Einstellungen) |
@@ -25,7 +25,7 @@ späteren öffentlichen Schritt. Alles, was ohne diese Entscheidung machbar war,
 | D2 CI | ✅ `.github/workflows/checks.yml`: Sanity-Checks, Tests, „Tailwind-Build aktuell?“ bei jedem Push |
 | D3 Build | ✅ `package.json` + Lockfile im Repo, `npm run build` / `npm run check` / `npm test` |
 | D7 Fehlerprotokoll | ✅ „📋 Fehlerprotokoll kopieren“ in den Einstellungen - nur lokal, ohne Buchinhalte und Keys |
-| D8 Datenverlust | ✅ verständliche „Speicher voll“-Meldung, Sicherungs-Erinnerung nach 30 Tagen |
+| D8 Datenverlust | ✅ verständliche „Speicher voll“-Meldung. **Korrektur:** eine Sicherungs-Erinnerung gab es schon (Banner nach 14 Tagen) - die zusätzliche Toast-Erinnerung wurde in v0.41.0 wieder entfernt |
 | E1 Zoom | ✅ Zoomen wieder erlaubt |
 
 **Weiterhin offen (bewusst, bei privater Nutzung nicht nötig oder nicht allein machbar):** A1-A3

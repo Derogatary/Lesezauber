@@ -22,7 +22,11 @@ Object.assign(app.actions, {
             app.state.apiBusy = true;
             const answer = await app.api.answerQuestion(b64, q);
             if (app.state.autoReadActive) app.tts.stopAutoRead();
-            history.innerHTML += `<div class="bg-purple-50 p-2 rounded-lg text-purple-900"><b>🧙‍♂️ Zauberer:</b> ${app.utils.sanitize(answer)}</div>`;
+            // NEU (v0.41.0-beta, Meldeknopf): Antwort merken und mit 🚩 versehen
+            // (app.actions.reportChatAnswer, js/actions/aiReports.js).
+            app.state.chatAnswers = app.state.chatAnswers || [];
+            const idx = app.state.chatAnswers.push({ question: q, answer }) - 1;
+            history.innerHTML += `<div class="bg-purple-50 p-2 rounded-lg text-purple-900 flex items-start gap-2"><span class="flex-1" data-chat-answer="${idx}"><b>🧙‍♂️ Zauberer:</b> ${app.utils.sanitize(answer)}</span><button onclick="app.actions.reportChatAnswer(${idx})" aria-label="Antwort melden" title="Unpassende Antwort melden" class="text-sm opacity-60 hover:opacity-100">🚩</button></div>`;
             history.scrollTop = history.scrollHeight;
             app.tts.speak(answer);
         } catch (e) {

@@ -59,7 +59,7 @@
                          Nur sichtbar, wenn die Hintergrund-Vorbereitung
                          überhaupt eingeschaltet ist UND etwas offen ist. -->
                     <button id="pregenBadge" onclick="app.nav.go('settings')" class="hidden text-xs font-bold text-indigo-600 mt-0.5 hover:underline"></button>
-                    <p data-app-version class="text-[10px] text-slate-400 font-semibold mt-0.5">v0.40.0-beta</p>
+                    <p data-app-version class="text-[10px] text-slate-400 font-semibold mt-0.5">v0.41.0-beta</p>
                 </div>
                 <div class="flex items-center gap-2 flex-shrink-0">
                     <button onclick="app.nav.go('help')" aria-label="Hilfe öffnen" title="Hilfe" class="w-10 h-10 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-600 hover:bg-slate-100 shadow-sm transition active:scale-95">
@@ -77,6 +77,14 @@
                     </button>
                 </div>
             </header>
+
+            <!-- NEU (v0.41.0-beta, Nutzerwunsch): Hinweis, für wen die App gedacht ist -
+                 einmal wegklickbar (localStorage lz_parent_notice_ok, js/actions/aiReports.js). -->
+            <div id="parentNotice" class="hidden mb-4 bg-indigo-50 border border-indigo-200 rounded-xl p-3 space-y-2">
+                <p class="text-xs text-indigo-900 font-semibold">👨‍👩‍👧 LeseZauber ist eine App für Eltern.</p>
+                <p class="text-[11px] text-indigo-800 leading-relaxed">Einrichten, Bücher anlegen, der SchreibZauber und alle Einstellungen sind für Erwachsene gedacht. Den Reader bitte zum Ausprobieren oder gemeinsam mit dem Kind nutzen: die KI kann Fehler machen. Unpassende Texte lassen sich mit 🚩 melden und ausblenden.</p>
+                <button onclick="app.actions.dismissParentNotice()" class="text-xs bg-indigo-600 text-white font-bold px-3 py-1.5 rounded-lg">Verstanden</button>
+            </div>
 
             <!-- NEU: sanfte Backup-Erinnerung -->
             <div id="backupReminder" class="hidden mb-4 bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-center justify-between gap-2">
@@ -351,6 +359,9 @@
                 <p class="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">🎭 Wer erzählt?</p>
                 <div id="readerPersonaChips" role="radiogroup" aria-label="Erzähler wählen" class="flex gap-2 overflow-x-auto pb-1"></div>
             </div>
+            <!-- NEU (v0.41.0-beta, Nutzerwunsch): LeseZauber ist eine App für Eltern -
+                 der Reader ist zum Ausprobieren oder zum gemeinsamen Lesen gedacht. -->
+            <p class="mb-3 text-[11px] text-slate-500 bg-slate-100 rounded-xl px-3 py-2">👨‍👩‍👧 Am besten gemeinsam mit einem Erwachsenen lesen - KI-Texte können Fehler enthalten. Unpassendes mit 🚩 melden, dann wird es ausgeblendet.</p>
 
             <!-- NEU (Ausbaustufe 5, Panels): nur bei Comic-Seiten mit
                  gespeicherter "sauberer" Zweitfassung sichtbar (siehe
@@ -439,6 +450,7 @@
                                     <p data-persona-text class="text-sm text-slate-800 leading-snug"></p>
                                 </div>
                                 <button onclick="app.actions.speakPersonaComment()" aria-label="Zwischenruf vorlesen" class="bg-amber-100 hover:bg-amber-200 text-amber-800 p-2 rounded-full transition text-lg leading-none">🔊</button>
+                                <button onclick="app.actions.reportAiContent('personaComment')" aria-label="Zwischenruf melden" title="Unpassend? Melden und ausblenden" class="text-sm opacity-50 hover:opacity-100 transition">🚩</button>
                             </div>
                         </div>
                     </div>
@@ -453,6 +465,7 @@
                             <button onclick="app.tts.speakCurrentText()" aria-label="Vereinfachten Text vorlesen" class="bg-indigo-100 hover:bg-indigo-200 text-indigo-700 p-2 rounded-full transition text-lg leading-none">
                                 🔊
                             </button>
+                            <button onclick="app.actions.reportAiContent('erstleserText')" aria-label="Erstleser-Text melden" title="Unpassend? Melden und ausblenden" class="text-sm opacity-50 hover:opacity-100 transition">🚩</button>
                         </div>
                         <p id="readerErstleserText" class="text-slate-800 leading-relaxed font-medium text-lg bg-indigo-50/50 p-4 rounded-xl border border-indigo-100">Lade Text...</p>
                         <!-- NEU (v0.39.0-beta): Zwischenruf der gewählten Persona
@@ -465,6 +478,7 @@
                                     <p data-persona-text class="text-sm text-slate-800 leading-snug"></p>
                                 </div>
                                 <button onclick="app.actions.speakPersonaComment()" aria-label="Zwischenruf vorlesen" class="bg-amber-100 hover:bg-amber-200 text-amber-800 p-2 rounded-full transition text-lg leading-none">🔊</button>
+                                <button onclick="app.actions.reportAiContent('personaComment')" aria-label="Zwischenruf melden" title="Unpassend? Melden und ausblenden" class="text-sm opacity-50 hover:opacity-100 transition">🚩</button>
                             </div>
                         </div>
                     </div>
@@ -473,13 +487,13 @@
                     <div id="contentQuiz" class="space-y-4 hidden">
                         <!-- AI Image Description -->
                         <div id="imageDescCard" class="bg-purple-50 p-4 rounded-2xl border border-purple-100">
-                            <h4 class="text-xs font-bold text-purple-800 uppercase tracking-wider mb-1">🖼️ Bildbeschreibung</h4>
+                            <div class="flex justify-between items-center mb-1"><h4 class="text-xs font-bold text-purple-800 uppercase tracking-wider">🖼️ Bildbeschreibung</h4><button onclick="app.actions.reportAiContent('desc')" aria-label="Bildbeschreibung melden" title="Unpassend? Melden und ausblenden" class="text-sm opacity-50 hover:opacity-100 transition">🚩</button></div>
                             <p id="readerImageDesc" class="text-sm text-purple-950 leading-relaxed">Lade Beschreibung...</p>
                         </div>
 
                         <!-- Quiz Card (bei Übungsheften ausgeblendet - die Seite stellt selbst die Aufgabe) -->
                         <div id="pageQuizCard" class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-2">
-                            <h4 class="text-xs font-bold text-amber-600 uppercase tracking-wider">❓ Rätselfrage</h4>
+                            <div class="flex justify-between items-center"><h4 class="text-xs font-bold text-amber-600 uppercase tracking-wider">❓ Rätselfrage</h4><button onclick="app.actions.reportAiContent('quiz')" aria-label="Rätselfrage melden" title="Unpassend? Melden und ausblenden" class="text-sm opacity-50 hover:opacity-100 transition">🚩</button></div>
                             <p id="readerQuizQ" class="text-sm font-bold text-slate-800">Lade Frage...</p>
                             <button id="btnShowQuizA" onclick="document.getElementById('readerQuizA').classList.toggle('hidden')" class="text-xs bg-amber-100 text-amber-800 px-3 py-1.5 rounded-lg font-bold hover:bg-amber-200 transition">
                                 Antwort verraten
@@ -1342,6 +1356,19 @@
                     </label>
                     <input id="inputApiKey" type="password" placeholder="AIzaSy..." class="w-full text-sm text-slate-900 bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 font-mono focus:outline-none focus:border-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed">
                     <p id="apiKeyChildLockHint" class="hidden text-[11px] text-amber-600 font-semibold mt-1">🔒 Für Kinderprofile gesperrt - zum Ändern oben in der Bibliothek zu einem Erwachsenen-Profil wechseln.</p>
+                    <!-- NEU (v0.41.0-beta, Nutzerwunsch): Risiken von API-Keys offen benennen. -->
+                    <details class="bg-amber-50 border border-amber-200 rounded-xl p-3 text-[11px] text-amber-900">
+                        <summary class="font-bold cursor-pointer">⚠️ Wichtig zu API-Schlüsseln (bitte einmal lesen)</summary>
+                        <ul class="list-disc pl-4 mt-2 space-y-1 leading-relaxed">
+                            <li><strong>Der Schlüssel ist wie ein Passwort mit Kreditkarte dran.</strong> Wer ihn hat, kann auf deine Rechnung bzw. dein Kontingent KI-Anfragen stellen.</li>
+                            <li>Er liegt <strong>unverschlüsselt</strong> im Browser dieses Geräts. Jeder mit Zugriff auf das entsperrte Gerät oder eine bösartige Browser-Erweiterung könnte ihn auslesen. Keine unbekannten Erweiterungen installieren, Gerät mit Sperre sichern.</li>
+                            <li><strong>Ausgabenlimit setzen:</strong> beim Anbieter (Google Cloud, OpenAI, ElevenLabs …) ein Budget/Limit und eine Benachrichtigung einrichten. Die App selbst kann keine harte Grenze erzwingen.</li>
+                            <li>Einen <strong>eigenen Schlüssel nur für LeseZauber</strong> anlegen und ihn in der Anbieter-Konsole auf die nötige Schnittstelle beschränken - dann lässt er sich bei Verdacht einfach löschen, ohne anderes zu stören.</li>
+                            <li>Schlüssel <strong>nie weitergeben</strong> und nicht in Screenshots zeigen. Bibliotheks-Sicherungen und das Fehlerprotokoll enthalten ihn nicht.</li>
+                            <li>Gerät verloren oder etwas kommt dir komisch vor? Schlüssel beim Anbieter sofort <strong>löschen und neu erzeugen</strong>.</li>
+                            <li>Im kostenlosen Gemini-Kontingent darf Google gesendete Inhalte zur Produktverbesserung nutzen - keine Gesichter oder Namen fotografieren. Laut Gemini-Bedingungen ist die Schnittstelle außerdem nicht für Anwendungen gedacht, die Kinder selbst bedienen - deshalb ist LeseZauber als Eltern-App ausgelegt.</li>
+                        </ul>
+                    </details>
                     <div class="flex justify-between items-center pt-1">
                         <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-xs text-indigo-600 font-semibold hover:underline flex items-center gap-1">
                             <span>🔑 Kostenlosen Key holen</span>
@@ -1623,6 +1650,18 @@
                         </button>
                     </div>
                     <input id="importFileInput" type="file" accept="application/json" onchange="app.actions.importLibrary(event)" class="hidden">
+                </div>
+
+                <!-- NEU (v0.41.0-beta, Meldeknopf): gemeldete KI-Inhalte für Eltern
+                     (js/actions/aiReports.js). -->
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-2">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-500">🚩 Gemeldete KI-Inhalte</label>
+                    <p class="text-[11px] text-slate-500">Texte, die im Reader mit 🚩 gemeldet wurden. Sie sind ausgeblendet (auch beim Vorlesen, Drucken und im Video), bis du sie hier wieder einblendest. Es wird nichts verschickt.</p>
+                    <div id="aiReportsList" class="space-y-2 max-h-72 overflow-y-auto"></div>
+                    <div class="flex gap-2">
+                        <button onclick="app.actions.copyAiReports()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 rounded-xl text-xs transition">📋 Kopieren</button>
+                        <button onclick="app.actions.clearAiReports()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 rounded-xl text-xs transition">🗑️ Liste leeren</button>
+                    </div>
                 </div>
 
                 <!-- NEU (v0.40.0-beta, Release-Prüfung D7): Fehlerprotokoll nur lokal,

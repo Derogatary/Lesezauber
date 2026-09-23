@@ -6,6 +6,16 @@ vollständige Historie, neueste Version zuerst. Diese Datei wurde aus
 `CLAUDE.md` ausgelagert, weil der Abschnitt dort mit der Zeit zu groß für
 schnellen Kontext wurde; inhaltlich unverändert übernommen.
 
+## v0.41.0-beta
+
+Nutzerwunsch: Meldeknopf, klare Ausrichtung als **App für Eltern** („den SchreibZauber bedienen Eltern, der Reader ist zum Testen oder in Begleitung“) und Hinweise auf die Risiken von API-Keys.
+
+- **🚩 KI-Inhalte melden** (`js/actions/aiReports.js`): Knopf an Zwischenruf, Erstleser-Text, Bildbeschreibung, Rätselfrage und jeder Zauberer-Antwort. Ein Tippen blendet den Text aus - zentral über `app.utils.resolvePageVariant()`, damit auch Vorlesen, Druck, Hörbuch und Video ihn nicht mehr benutzen (pro Persona, das Original bleibt gespeichert). Neue Liste „🚩 Gemeldete KI-Inhalte“ in den Einstellungen: wieder einblenden, kopieren (z.B. für Claude zum Nachschärfen der Prompts), leeren. Kein Server - es wird nichts verschickt.
+- **Hinweis „LeseZauber ist eine App für Eltern“**: wegklickbare Karte in der Bibliothek, kurzer Begleit-Hinweis im Reader, Absatz in den Nutzungsbedingungen.
+- **API-Key-Risiken**: aufklappbarer Hinweis direkt am Gemini-Key-Feld (Schlüssel = Passwort mit Kreditkarte, unverschlüsselt im Browser, Ausgabenlimit setzen, eigener Schlüssel nur für die App, bei Verlust sperren, Trainingsnutzung im kostenlosen Kontingent, Gemini-Bedingungen zu Kindern) und in den Nutzungsbedingungen.
+- **FIX:** Die in v0.40.0-beta ergänzte Sicherungs-Erinnerung als Toast war doppelt - ein Banner (`#backupReminder`, nach 14 Tagen) gab es schon. Wieder entfernt; der Befund D8 der Release-Prüfung war insoweit falsch.
+- 3 neue Unit-Tests (jetzt 20).
+
 ## v0.40.0-beta
 
 Release-Prüfung umgesetzt (`docs/RELEASE-CHECKLISTE.md`). Entscheidung des Betreibers: **die App bleibt vorerst privat** - erledigt wurde alles, was dafür ohne Rechts-/Anbieterentscheidung machbar war:

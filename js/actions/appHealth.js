@@ -12,13 +12,12 @@ import { app } from '../core.js';
 //    der Nutzung eingeschaltet (vorher self.skipWaiting() in sw.js), sondern
 //    per Hinweis "Neue Version - neu laden" - sonst liefen alte Seite und neue
 //    Dateien gemischt weiter.
-// 3. Sicherungs-Erinnerung (D8): alle Bücher liegen NUR auf diesem Gerät.
-//    Gibt es Bücher und wurde länger als BACKUP_REMIND_DAYS nicht exportiert,
-//    erinnert die App einmal pro Start daran.
+// (Eine Sicherungs-Erinnerung gibt es schon länger als Banner in der
+//  Bibliothek - #backupReminder, js/render/library.js - deshalb hier keine
+//  zweite. FIX v0.41.0-beta: die in v0.40.0-beta zusätzlich eingebaute
+//  Toast-Erinnerung war doppelt und wurde wieder entfernt.)
 
 const MAX_LOG_ENTRIES = 50;
-const BACKUP_REMIND_DAYS = 30;
-const LAST_BACKUP_KEY = 'lz_last_backup';
 
 const errorLog = [];
 
@@ -44,9 +43,6 @@ console.error = (...args) => {
 window.addEventListener('error', (e) => remember('window', [e.error || e.message]));
 window.addEventListener('unhandledrejection', (e) => remember('promise', [e.reason]));
 
-function readLastBackup() {
-    try { return parseInt(localStorage.getItem(LAST_BACKUP_KEY) || '0', 10) || 0; } catch (e) { return 0; }
-}
 
 Object.assign(app.actions, {
     // Kopiert Version, Browser und die letzten Fehler in die Zwischenablage.
@@ -75,23 +71,6 @@ Object.assign(app.actions, {
         }
     },
 
-    // Von exportLibrary() (js/actions/backup.js) nach erfolgreichem Export aufgerufen.
-    markBackupDone() {
-        try { localStorage.setItem(LAST_BACKUP_KEY, String(Date.now())); } catch (e) { originalConsoleError('Sicherungszeitpunkt nicht speicherbar:', e); }
-    },
-
-    // Einmal beim Start (js/main.js, nach dem Laden der Bibliothek).
-    checkBackupReminder() {
-        const bookCount = Object.keys(app.library || {}).length;
-        if (bookCount === 0) return;
-        const last = readLastBackup();
-        const days = last ? Math.floor((Date.now() - last) / 86400000) : null;
-        if (days !== null && days < BACKUP_REMIND_DAYS) return;
-        const msg = days === null
-            ? 'Deine Bücher liegen nur auf diesem Gerät - am besten ab und zu sichern.'
-            : `Letzte Sicherung vor ${days} Tagen - am besten wieder einmal sichern.`;
-        app.ui.toast(msg, '💾', () => app.actions.exportLibrary(), 'Jetzt sichern');
-    },
 
     // Service Worker: auf eine wartende neue Version hinweisen.
     watchForAppUpdate(registration) {

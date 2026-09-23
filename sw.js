@@ -1,7 +1,11 @@
 // Bei jeder inhaltlichen Änderung an einer dieser Dateien diese Nummer
 // erhöhen - sonst bekommen wiederkehrende Besucher weiter die alte
 // zwischengespeicherte Version ausgeliefert.
-const CACHE_NAME = 'lesezauber-shell-v74';
+const CACHE_NAME = 'lesezauber-shell-v75';
+
+// NEU (v75, v0.41.0-beta): Meldeknopf für KI-Inhalte (neue Datei
+// js/actions/aiReports.js), Hinweis "App für Eltern", API-Key-Warnungen,
+// doppelte Sicherungs-Erinnerung aus v74 wieder entfernt.
 
 // NEU (v74, v0.40.0-beta): Release-Prüfung, alles für die private Nutzung
 // Machbare - neue Datei js/actions/appHealth.js (Fehlerprotokoll, Update-
@@ -257,6 +261,7 @@ const APP_SHELL = [
     './js/actions/prepareAudio.js',
     './js/actions/bookTranslate.js',
     './js/actions/appHealth.js',
+    './js/actions/aiReports.js',
     './js/actions/audiobookExport.js',
     './js/actions/videoTimeline.js',
     './js/actions/videoPreview.js',

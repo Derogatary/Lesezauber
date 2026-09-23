@@ -85,15 +85,21 @@ Object.assign(app.utils, {
     // ohne "variants" - die dienen dann als universeller Rückfall für
     // jede Persona, die noch keine eigene Version hat.
     resolvePageVariant(page, personaId) {
-        if (page.variants && page.variants[personaId]) return page.variants[personaId];
+        // NEU (v0.41.0-beta, Meldeknopf): gemeldete KI-Felder (page.aiHidden,
+        // js/actions/aiReports.js) werden HIER zentral geleert - damit sind sie
+        // überall weg (Reader, Vorlesen, Druck, Hörbuch, Video), ohne dass jede
+        // dieser Stellen den Meldestatus kennen muss. Seiten ohne Meldung
+        // bekommen unverändert das gespeicherte Objekt.
+        const hide = (v) => (app.utils.stripHiddenAiFields ? app.utils.stripHiddenAiFields(page, personaId, v) : v);
+        if (page.variants && page.variants[personaId]) return hide(page.variants[personaId]);
         if (page.text) {
-            return {
+            return hide({
                 text: page.text,
                 erstleserText: page.erstleserText,
                 desc: page.desc,
                 quizQ: page.quizQ,
                 quizA: page.quizA
-            };
+            });
         }
         return null;
     },
@@ -120,7 +126,8 @@ Object.assign(app.utils, {
         if (preferred) return preferred;
         if (page.variants) {
             const anyKey = Object.keys(page.variants)[0];
-            if (anyKey) return page.variants[anyKey];
+            // NEU (v0.41.0-beta): auch hier gemeldete Felder ausblenden.
+            if (anyKey) return app.utils.stripHiddenAiFields ? app.utils.stripHiddenAiFields(page, anyKey, page.variants[anyKey]) : page.variants[anyKey];
         }
         return null;
     },

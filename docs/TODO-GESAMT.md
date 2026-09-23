@@ -243,6 +243,21 @@ es nicht (weiterhin 1 Anfrage pro Seite), also alle.
 
 ---
 
+## 💡 Ideen (v0.41.0-beta, von Claude vorgeschlagen - noch NICHT abgestimmt)
+
+Passend zur Ausrichtung „App für Eltern, Reader in Begleitung“. Vor dem Bauen mit dem Betreiber
+abstimmen, welche davon gewollt sind.
+
+| Idee | Aufwand | Warum |
+|---|---|---|
+| **Kinder-Lesemodus mit Eltern-Sperre** | **S-M** | Ein Tipp startet einen reinen Lese-Bildschirm (nur Seiten, Vorlesen, Vor/Zurück) ohne Einstellungen, SchreibZauber, Scannen und ohne freien Chat. Beenden nur über eine „Eltern-Frage“ (z.B. Rechenaufgabe) - die übliche Eltern-Schranke in Kinder-Apps. Macht „in Begleitung“ technisch sicherer, ohne dass Eltern daneben sitzen müssen |
+| **Bücher erst von Eltern freigeben** | **S** | Nach dem Auslesen ist ein Buch „ungeprüft“; Eltern blättern die KI-Texte einmal durch (mit 🚩) und tippen „Für Kinder freigeben“. Im Kinder-Lesemodus erscheinen nur freigegebene Bücher |
+| **Eigene Stimme aufnehmen** | **M** | Mama/Papa liest eine Seite selbst ein (Mikrofon), das Kind hört die vertraute Stimme - ohne KI-Anbieter, ohne Kosten, ohne Nutzungsbedingungen-Frage, offline. Passt in den bestehenden `ttsCache` und die Wort-Hervorhebung (geschätzt) |
+| **„Frag den Zauberer“ abschaltbar** | **S** | Einstellungs-Schalter pro Profil - der freie Chat ist die riskanteste KI-Funktion für Kinder |
+| **Monatsbudget-Warnung** | **S** | Der Kostenzähler (`js/costMeter.js`) zählt schon mit - eine selbst gesetzte Grenze („warn mich ab 2 €/Monat“) mit Hinweis beim Überschreiten |
+| **Eltern-Wochenrückblick** | **S-M** | Rein lokal: welche Bücher/Seiten gelesen, neue Wörter, geschaffte Hefte - als Karte in den Einstellungen |
+| **Wortkarten zum Ausdrucken** | **S** | Aus den „schwierigen Wörtern“ und dem Vokabeltrainer druckbare Karten (Wort + Emoji + Erklärung) |
+
 ## 🔍 Bereich: Diagnose (nicht reproduziert)
 
 → Beide Punkte (Scroll-Verhalten am Bildschirmrand, Zoom/Unschärfe im Fenstermodus) sind nach

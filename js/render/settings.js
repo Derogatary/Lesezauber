@@ -158,6 +158,8 @@ Object.assign(app.render, {
     },
 
     async settings() {
+        // NEU (v0.41.0-beta): Liste der gemeldeten KI-Inhalte aktualisieren.
+        app.render.aiReports?.();
         // NEU: Kinderprofile haben teure/heikle Einstellungen gesperrt
         // (Stimmen-Anbieter, API-Keys, Stimmen-Speicher-Verwaltung) - reine
         // Kindersicherung, sichtbar ausgegraut, kein Passwortschutz.

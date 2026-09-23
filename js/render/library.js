@@ -129,6 +129,11 @@ Object.assign(app.render, {
         }
 
         // NEU: sanfte Backup-Erinnerung, wenn lange kein Export gemacht wurde
+        // NEU (v0.41.0-beta): Hinweis "App für Eltern", bis er weggeklickt wurde.
+        let parentNoticeOk = false;
+        try { parentNoticeOk = localStorage.getItem('lz_parent_notice_ok') === '1'; } catch (e) { parentNoticeOk = false; }
+        document.getElementById('parentNotice')?.classList.toggle('hidden', parentNoticeOk);
+
         const reminderEl = document.getElementById('backupReminder');
         if (reminderEl) {
             const lastExport = parseInt(localStorage.getItem('lz_last_export') || '0', 10);

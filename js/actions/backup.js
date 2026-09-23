@@ -146,8 +146,6 @@ Object.assign(app.actions, {
         // NEU: Zeitstempel für die Backup-Erinnerung in der Bibliothek
         localStorage.setItem('lz_last_export', String(Date.now()));
 
-        // NEU (v0.40.0-beta): Zeitpunkt für die Sicherungs-Erinnerung merken.
-        app.actions.markBackupDone();
         app.ui.toast(`${bookCount} Buch/Bücher exportiert.`, '📤');
     },
 

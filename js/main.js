@@ -37,6 +37,9 @@ import './actions/workbookGenerator.js';
 import './actions/prepareAudio.js';
 // NEU (v0.39.0-beta): ganzes Buch übersetzen (Kopie in Zielsprache).
 import './actions/bookTranslate.js';
+// NEU (v0.41.0-beta): KI-Inhalte melden (🚩) - MUSS vor dem ersten Rendern
+// geladen sein, weil app.utils.resolvePageVariant() stripHiddenAiFields() nutzt.
+import './actions/aiReports.js';
 import './actions/audiobookExport.js';
 
 // NEU: Video-Export Weg B, Teil 1 - Renderer-Kern (Canvas) plus Zeitplan
@@ -112,10 +115,6 @@ app.init = async function () {
     app.ui.showLoader('Lade Bibliothek...', 'Einen Moment bitte');
     await app.dbOps.init();
     app.ui.hideLoader();
-
-    // NEU (v0.40.0-beta, Release-Prüfung D8): an eine Datensicherung erinnern,
-    // wenn die letzte lange her ist - alle Bücher liegen nur auf diesem Gerät.
-    app.actions.checkBackupReminder();
 
     // NEU: Online/Offline-Punkt gleich beim Start korrekt setzen (nicht
     // erst beim nächsten Wechsel)

@@ -8,7 +8,7 @@ Kontext für Claude Code an diesem Projekt. Liegt im Repo-Root, wird automatisch
 
 Seit v0.10.0-beta gibt es den **Heft-Modus**: ein Buch kann statt einer Geschichte ein **Übungsheft** sein - die KI wertet die Seite dann als Aufgabe aus (Aufgabenstellung, Erklärung, Hilfeschritte, Lösung) statt als Erzähltext. Seit v0.11.0-beta kann das Kind sein bearbeitetes Blatt abfotografieren und bekommt eine vorgelesene Rückmeldung (`js/actions/checkWork.js`). Details: `docs/KONZEPT-Uebungshefte.md`.
 
-**Zielgruppe:** eine Familie, rein privat. Der Betreiber ist technischer Laie ("kann ein bisschen HTML"), arbeitet aber regelmäßig mit Claude am Projekt weiter.
+**Zielgruppe:** eine Familie, rein privat. **Seit v0.41.0-beta ausdrücklich eine App für Eltern:** Einrichten, Bücher anlegen, SchreibZauber und Einstellungen bedienen Erwachsene; der Reader ist zum Ausprobieren oder zum gemeinsamen Lesen mit dem Kind gedacht (Hinweise in Bibliothek, Reader, Nutzungsbedingungen). Der Betreiber ist technischer Laie ("kann ein bisschen HTML"), arbeitet aber regelmäßig mit Claude am Projekt weiter.
 
 **Architektur-Grundprinzip: komplett client-seitig, kein eigener Server.** Läuft rein im Browser, gehostet auf GitHub Pages (statisch). Alle Daten (Bücher, Fotos, Profile, Vokabeln) liegen in IndexedDB auf dem Gerät. API-Keys liegen im Klartext im Browser - bekannte, akzeptierte Grenze (siehe README "Bekannte Grenzen"), keine zu fixende Sicherheitslücke.
 
@@ -111,7 +111,8 @@ import './actions/meineNeueDatei.js';
 | `js/studio/studioPrint.js` | SchreibZauber: Doppelseiten-Druck/PDF-Export (eigene Funktion, getrennt von `app.actions.printBook()`) - seit v0.28.0-beta comicfähig, seit v0.29.0-beta zusätzlich `printSpreadsKdp()` (echter KDP-Innenteil-Export: Bleed+Sicherheitsabstand, nur A5/A4 hoch, KEIN Umschlag) - Details CHANGELOG.md, TEIL F in `docs/KONZEPT-SchreibZauber.md`. FIX v0.37.2-beta: Bauplan-Auswahl (`index.html`) bot fälschlich 16 Seiten als kleinste Option an - unterhalb der absoluten KDP-Mindestseitenzahl (24, jede Farbstufe), Option entfernt |
 | `js/render/studioLibrary.js`, `render/studioWizard.js` | SchreibZauber: Werkstatt-Übersicht bzw. Stufen-Ansicht |
 | `js/vendor/` | PDF.js, JSZip, mp4-muxer (MIT) - NIE direkt bearbeiten, nur austauschen/aktualisieren. Lazy geladen, deshalb NICHT in der `APP_SHELL` von `sw.js` |
-| `js/actions/appHealth.js` | NEU v0.40.0-beta: Fehlerprotokoll (nur lokal, `copyErrorLog()`), Update-Hinweis statt stillem Service-Worker-Wechsel (`watchForAppUpdate()`), Sicherungs-Erinnerung (`checkBackupReminder()`) - wird in `main.js` als ERSTES Modul geladen |
+| `js/actions/appHealth.js` | NEU v0.40.0-beta: Fehlerprotokoll (nur lokal, `copyErrorLog()`), Update-Hinweis statt stillem Service-Worker-Wechsel (`watchForAppUpdate()`) - wird in `main.js` als ERSTES Modul geladen. (Sicherungs-Erinnerung gibt es als Banner `#backupReminder` in `js/render/library.js`) |
+| `js/actions/aiReports.js` | NEU v0.41.0-beta: 🚩 KI-Inhalte melden - `page.aiHidden`, `app.utils.stripHiddenAiFields()`/`isAiHidden()`, Meldeliste in localStorage `lz_ai_reports`, Einstellungen-Liste `#aiReportsList`, Hinweis „App für Eltern“ (`#parentNotice`) |
 | `scripts/sanity-checks.mjs`, `tests/*.test.mjs`, `.github/workflows/checks.yml` | NEU v0.40.0-beta: Sanity-Checks als Skript, Unit-Tests (nur Module ohne Browser-Abhängigkeit beim Import, siehe `tests/helpers.mjs`), GitHub-Action |
 | `.claude/skills/releasecheck/SKILL.md` | NEU v0.40.0-beta: Projekt-Skill „Release-Check“ - Prüfpunkte, Befehle, Quellen mit Datum. `.gitignore` ignoriert `.claude/*` außer `.claude/skills/` |
 | `lizenzen.html`, `js/vendor/*/LICENSE*` | NEU v0.40.0-beta: Lizenzen der mitgelieferten Bibliotheken (Apache-2.0 verlangt die Weitergabe) |
@@ -195,6 +196,11 @@ import './actions/meineNeueDatei.js';
   // NEU v0.39.0-beta, nur in übersetzten Büchern: false = diese Seite ist noch deutsch
   // ("Übersetzung fortsetzen" in der Buchansicht holt sie nach).
   translation: { lang, done },
+  // NEU v0.41.0-beta: per 🚩 gemeldete KI-Felder, Schlüssel "<personaId>:<feld>"
+  // (feld: personaComment | erstleserText | desc | quiz). app.utils.resolvePageVariant()
+  // leert diese Felder in einer KOPIE (erstleserText fällt auf text zurück) - dadurch
+  // sind sie überall weg; page.variants selbst bleibt unverändert (wieder einblendbar).
+  aiHidden: { 'papa:personaComment': zeitstempel },
   // Alte Bücher (vor der Variants-Architektur) haben stattdessen flache Felder
   // text/erstleserText/desc/quizQ/quizA direkt auf der Seite - IMMER über
   // app.utils.resolvePageVariant()/resolveAnyVariant() lesen, nie page.variants direkt.
@@ -341,6 +347,6 @@ Feste Regeln:
 
 ## Versionsstand
 
-Aktuell `v0.40.0-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Version bei größeren Änderungen hochzählen (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).
+Aktuell `v0.41.0-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Version bei größeren Änderungen hochzählen (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).
 
 **Die vollständige Versionshistorie (was mit welcher Version kam, inkl. aller Entscheidungen) steht in [`CHANGELOG.md`](CHANGELOG.md), neueste Version zuerst.** Vor dem Einplanen eines Features dort nachsehen, sonst werden bereits gefallene Entscheidungen neu diskutiert. Neuer Eintrag bei jeder Versionserhöhung: oben in `CHANGELOG.md` ergänzen, nicht hier.

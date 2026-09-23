@@ -5,7 +5,7 @@ description: Release-Check für LeseZauber Pro - geht die komplette Release-Chec
 
 # Release-Check - LeseZauber Pro
 
-**Datenstand dieses Skills: 23.09.2026 (App-Version v0.40.0-beta).**
+**Datenstand dieses Skills: 23.09.2026 (App-Version v0.41.0-beta).**
 Entstanden aus der Release-Prüfung vom 22./23.09.2026 (`docs/RELEASE-CHECKLISTE.md`).
 
 > **Keine Rechtsberatung.** Die rechtlichen Punkte sagen, *was* ein Anwalt bzw. eine
@@ -29,7 +29,7 @@ Entstanden aus der Release-Prüfung vom 22./23.09.2026 (`docs/RELEASE-CHECKLISTE
 ```bash
 npm install                         # bzw. npm ci
 npm run check                       # 7 Sanity-Checks (Syntax, IDs, onclick, sw.js-Liste, jede JS-Datei in sw.js, Version/CACHE_NAME, CSP deckt alle fetch-Adressen ab)
-npm test                            # Unit-Tests tests/*.test.mjs (Stand 23.09.2026: 17 Tests)
+npm test                            # Unit-Tests tests/*.test.mjs (Stand 23.09.2026: 20 Tests)
 npm run build && git diff --exit-code css/tailwind.css   # Tailwind-Build aktuell?
 ```
 
@@ -42,7 +42,7 @@ Dieselben Schritte laufen in `.github/workflows/checks.yml` bei jedem Push. Rot 
 | A4a | Sicherheitsfilter an jedem Gemini-Aufruf | `grep -rn "generateContent" js --include=*.js \| grep -v vendor \| wc -l` mit der Zahl der `safetySettings`-Stellen in `js/api.js`, `js/studio/studioApi.js`, `js/studio/imageSource.js` vergleichen | jeder Text-/Bild-Aufruf hat `SAFETY_BOOK` oder `SAFETY_KIDS`. Ausnahme: Gemini-TTS in `js/ttsProviders.js` (nur Vorlesen, erzeugt keinen neuen Inhalt) |
 | A4b | Kinder-Chat abgesichert | `answerQuestion()` in `js/api.js` lesen | feste Regeln, Frage zwischen `<<<` `>>>`, max. 300 Zeichen, `SAFETY_KIDS`, `BLOCKED_ANSWER` bei `blockReason`/`SAFETY` |
 | A4c | Schutz gegen Anweisungen auf Seiten | `grep -n "INJECTION_GUARD" js/api.js` | in Einzel-, Mehrfach-Persona- und Kontroll-Analyse angehängt |
-| A4d | Meldeknopf für KI-Antworten | Reader/Chat durchsehen | **offen** - erst nötig für Play Store (öffentlich) |
+| A4d | Meldeknopf für KI-Antworten | `grep -c "reportAiContent" index.html` + `grep -n "reportChatAnswer" js/actions/reader.js` + `tests/aiReports.test.mjs` | ≥5 Knöpfe (Zwischenruf ×2, Erstleser, Bildbeschreibung, Rätsel) + Chat; gemeldete Felder über `resolvePageVariant()` überall ausgeblendet |
 | C2 | Key nicht in der URL | `grep -rn "?key=" js --include=*.js \| grep -v vendor` | nur noch Google Cloud TTS (`js/ttsProviders.js`, ungetestet mit Header) |
 | C3 | Backup-Import geprüft | `grep -n "cleanImportedBook" js/actions/backup.js` + `tests/import.test.mjs` | Import läuft über `cleanImportedBook()`, Tests grün |
 | C3b | `sanitize()` escaped alle 5 Zeichen | `grep -n "sanitize(str)" -A8 js/utils.js` | `& < > " '` werden ersetzt |
@@ -52,7 +52,7 @@ Dieselben Schritte laufen in `.github/workflows/checks.yml` bei jedem Push. Rot 
 | C5 | kein stilles SW-Update | `grep -n "skipWaiting" sw.js` | nur im `message`-Handler (`SKIP_WAITING`), nicht in `install` |
 | B6 | Lizenzen vollständig | `ls js/vendor/*/LICENSE*` + `lizenzen.html` | je Bibliothek eine Lizenzdatei, jede neue Bibliothek auch in `lizenzen.html` |
 | B1 | Datenschutzerklärung deckt alle Anbieter ab | die Hosts aus `connect-src` (index.html) mit den Anbietern in `datenschutz.html` vergleichen | jeder Anbieter genannt (Stand: Google Gemini, Google Cloud TTS, Mistral, ElevenLabs, OpenAI, Speechify, Pollinations) |
-| D8 | Speicher voll / Sicherung | `grep -n "storageErrorMessage\|checkBackupReminder" js/db.js js/main.js` | vorhanden |
+| D8 | Speicher voll / Sicherung | `grep -n "storageErrorMessage" js/db.js` + `grep -n "backupReminder" js/render/library.js` | beides vorhanden (Sicherungs-Banner nach 14 Tagen) |
 | E1 | Zoomen erlaubt | `grep -n 'name="viewport"' index.html` | kein `user-scalable=no`, kein `maximum-scale` |
 | V | Versionen einheitlich | `data-app-version` in `index.html`, oberster Eintrag `CHANGELOG.md`, „Versionsstand“ in `CLAUDE.md`, Kommentar zu `CACHE_NAME` in `sw.js` | überall dieselbe Version, `CACHE_NAME` seit der letzten Auslieferung erhöht |
 
@@ -76,7 +76,7 @@ Status: ✅ erledigt · ⚠️ teilweise · ❌ offen. „Blocker?“: P = schon
 | A1 | Gemini-Bedingungen: keine Apps für unter 18-Jährige | ❌ | Ö (streng genommen auch P) | Anbieter muss Kinder-Apps erlauben, schriftlich prüfen lassen. Alle anderen Anbieter ebenfalls auf Altersklauseln prüfen |
 | A2 | EWR/CH/UK nur mit bezahltem Gemini-Zugang, unbezahlte Daten → Produktverbesserung | ❌ | Ö | Kostenmodell, bezahlter Tarif ohne Trainingsnutzung |
 | A3 | Kinderdaten/DSGVO: DSFA (Art. 35), Eltern-Einwilligung (Art. 8), Drittland (Art. 44 ff.) | ❌ | Ö | Datenschutzberatung |
-| A4 | Inhaltssicherheit | ⚠️ | P | Filter, Chat-Regeln und Schutzsatz ✅, Meldeknopf und „rote Liste“-Test mit echtem Key offen |
+| A4 | Inhaltssicherheit | ⚠️ | P | Filter, Chat-Regeln, Schutzsatz, Meldeknopf ✅, „rote Liste“-Test mit echtem Key offen |
 | B1 | Datenschutzerklärung vollständig | ✅ | P | bei jedem neuen Anbieter nachziehen |
 | B2 | Impressum / Wohnadresse | ❌ | P (§ 18 MStV gilt schon, wenn das Angebot nicht rein familiär ist, also bei öffentlicher Erreichbarkeit) | Anschrift muss ladungsfähig sein, nicht zwingend die Wohnadresse, kein Postfach. Optionen in `docs/RELEASE-CHECKLISTE.md` |
 | B3 | Haftungsklausel | ✅ | - | Ausnahmen (Vorsatz, grobe Fahrlässigkeit, Leben/Körper/Gesundheit) vorhanden |

@@ -5,4 +5,5 @@ await import('../js/config.js');
 await import('../js/utils.js');
 await import('../js/studio/wordSearch.js');
 await import('../js/studio/studioLayout.js');
+await import('../js/actions/aiReports.js');
 export { app };
