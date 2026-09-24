@@ -93,6 +93,25 @@ import './studio/worksheet.js';
 import './studio/studioBalloons.js';
 import './studio/studioComicPanels.js';
 
+// NEU (v0.47.0-beta): Buchatlas - Wiki & Übersetzung für eigene Texte,
+// wieder eingegliedert (vorher eigene Netlify-Seite). atlasCore.js zuerst:
+// Zustand, Navigation und die Brücke zu LeseZaubers Toast/Loader/Key.
+import './atlas/atlasCore.js';
+import './atlas/atlasUtils.js';
+import './atlas/atlasApi.js';
+import './atlas/atlasDb.js';
+import './atlas/actions/atlasReorder.js';
+import './atlas/actions/atlasBackup.js';
+import './atlas/actions/atlasWiki.js';
+import './atlas/actions/atlasTranslate.js';
+import './atlas/actions/atlasTextImport.js';
+import './atlas/actions/atlasFileImport.js';
+import './atlas/render/atlasLibrary.js';
+import './atlas/render/atlasBook.js';
+import './atlas/render/atlasSettings.js';
+import './atlas/render/atlasWiki.js';
+import './atlas/render/atlasTranslate.js';
+
 import './render/library.js';
 import './render/book.js';
 import './render/reader.js';

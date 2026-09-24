@@ -6,6 +6,25 @@ vollständige Historie, neueste Version zuerst. Diese Datei wurde aus
 `CLAUDE.md` ausgelagert, weil der Abschnitt dort mit der Zeit zu groß für
 schnellen Kontext wurde; inhaltlich unverändert übernommen.
 
+## v0.47.0-beta
+
+Nutzerwunsch: Buchatlas (war aus LeseZauber abgetrennt und stand kurz vor einem eigenen Netlify-Deployment) wieder eingliedern, als eigener Bereich wie der SchreibZauber. Netlify wird dadurch nicht mehr gebraucht.
+
+**🗺️ Buchatlas als eigener Bereich** (`js/atlas/`, Beschreibung in `docs/BUCHATLAS.md`)
+- Knopf „🗺️ Buchatlas“ in der Bibliothek neben SchreibZauber, nur für Eltern (im Kinder-Lesemodus gesperrt).
+- Eigene Bibliothek für Texte (Einfügen/.txt, ePub, PDF mit OCR-Rückfall, Bilder per OCR), pro Buch **📖 Wiki** und **🌐 Übersetzung** (Prüfen, Export als Markdown/Text/EPUB) - Funktionsumfang wie in der Einzel-App.
+- Eigener Namensraum `app.atlas.*` und ID-Präfix `atlas`, damit nichts mit gleichnamigen LeseZauber-Funktionen kollidiert.
+- Eigene IndexedDB `BuchatlasDB` und eigene Sicherungsdatei (Buchatlas-Einstellungen).
+
+**Anpassungen gegenüber der Einzel-App**
+- Kein Netlify-Proxy mehr: Buchatlas nutzt den Gemini-Key aus den LeseZauber-Einstellungen (Header `x-goog-api-key`), mit denselben Sicherheitsfiltern (`app.api.safetySettingsBook`) und derselben **Modell-Rotation** (`app.api.geminiModels`): bei 429 sofort das nächste Modell, erst wenn alle limitiert sind, Warten mit Backoff.
+- pdf.js/JSZip aus `js/vendor/` statt vom CDN (die CSP erlaubt keine fremden Skript-Server, und offline klappt der Import auch).
+- **FIX:** Die Datenbank-Migrationen der Einzel-App („alte LeseZauberDB übernehmen“, „lz_library übernehmen“) sind entfernt. Innerhalb von LeseZauber hätten sie beim ersten Start alle LeseZauber-Kinderbücher in den Buchatlas kopiert.
+- Import einer Buchatlas-Sicherung übernimmt nur Bücher im Buchatlas-Format, eine versehentlich gewählte LeseZauber-Sicherung wird abgelehnt.
+- Toast, Lade-Overlay und „Vorgang abbrechen“ kommen von LeseZauber. `app.state.apiBusy` ist gemeinsam: die Hintergrund-Vorbereitung pausiert, solange Buchatlas übersetzt oder ein Wiki baut.
+- Entfallen: eigener Hell/Dunkel-Schalter und Netlify-Key-Hinweis. Die Einstellungen verweisen auf den Key in den LeseZauber-Einstellungen.
+- `netlify/functions/gemini.mts`, `manifest.json` und der Service Worker der Einzel-App wurden nicht übernommen.
+
 ## v0.46.0-beta
 
 Nutzerfrage: „Sind die Bilderzeugungsprompts für Nano Banana angepasst, muss man sie für unterschiedliche Programme anpassen? … Schaue nach anderen Möglichkeiten, frei kommerziell Bilder mit KI und Konsistenz zu erzeugen, und ja, passe das so an. Bei weiteren Anbietern kann man es erweitern.“

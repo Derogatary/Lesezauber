@@ -73,6 +73,7 @@ Eine Web-App, mit der du Kinderbuch-Seiten mit dem Handy fotografierst (oder aus
 - 🎧 **Hörbuch-Export:** ein ganzes Buch als eine Audiodatei ausgeben, Bildbeschreibung und Quiz wahlweise mit - setzt eine KI-Stimme voraus (v0.13.0-beta)
 - 🎬 **Film-Vorschau:** zeigt ein Buch (oder eine einzelne Seite) als Film - Seitenbild mit langsamem Zoom, darunter der Text mit mitlaufender Wort-Hervorhebung, umschaltbar zwischen hochkant (Handy/Status), quer (Fernseher) und quadratisch. Die Vorschau ist stumm und kostet nichts (v0.15.0-beta)
 - 🎞️ **Video-Export:** aus derselben Vorschau heraus eine echte MP4-Datei mit Ton - Titelkarte, Ken-Burns-Zoom, Kreuzblende, Untertitel mit Wort-Hervorhebung, Abspann. Ganzes Buch oder einzelne Seite (die Einzelseite ist die Variante zum Verschicken, ein Buch-Film hat leicht über 100 MB). Sagt die ungefähre Größe vorher, läuft schneller als Echtzeit, jederzeit abbrechbar. **Nur bei selbst geschriebenen Büchern** (SchreibZauber) - bei abfotografierten fremden Büchern wäre eine weitergegebene Videodatei eine Vervielfältigung. Setzt eine KI-Stimme und einen Browser mit WebCodecs voraus (Chrome/Edge, neueres Safari) (v0.16.0-beta)
+- 🗺️ **Buchatlas:** eigener Bereich für Romane und E-Books (Text, ePub, PDF, Fotos per OCR) - erstellt ein Wiki (Kapitel, Personen, Orte, Monster, Fähigkeiten ...) und übersetzt das ganze Buch in eine frei wählbare Sprache, mit Prüfwerkzeugen und Export als Markdown/Text/EPUB. Eigene Bibliothek, nur für Eltern - siehe [`docs/BUCHATLAS.md`](docs/BUCHATLAS.md) (v0.47.0-beta)
 
 ## 🗣️ Echte KI-Stimmen statt Roboterstimme
 
@@ -204,6 +205,7 @@ js/
     imageFormats.js         Seitenformate für selbst erstellte Werke
     imageSource.js          Woher ein Bild kommt (Foto, Upload, KI)
     placeholder.js          Platzhalter-Bilder, solange kein echtes Bild da ist
+  atlas/                  🗺️ Buchatlas: Wiki & Übersetzung für eigene Texte (eigener Namensraum app.atlas)
   vendor/
     pdfjs/                  PDF.js (Mozilla) - wird nur bei PDF-Import nachgeladen
     mp4muxer/               mp4-muxer (MIT) - wird nur beim Video-Export nachgeladen
@@ -216,6 +218,7 @@ docs/
   KONZEPT-Bildquellen.md   Woher Bilder für selbst erstellte Werke kommen
   KONZEPT-Comic.md         KI-generierte Illustrationen/Comic (EPUB + SchreibZauber)
   KONZEPT-Uebungshefte.md  Bibel-Übungshefte: Stand + offener Heft-Generator
+  BUCHATLAS.md             Buchatlas: Aufbau, Funktionen, bekannte Grenzen
 ```
 
 **Neue Funktion hinzufügen?** In der Regel reicht eine neue Datei unter `js/actions/` oder `js/render/`, die in `js/main.js` importiert wird – der Rest des Codes muss dafür nicht angefasst werden.

@@ -908,6 +908,11 @@ Die Frage des Kindes steht zwischen <<< und >>>:
     // NEU (Release-Prüfung A4): strenge Filterstufe für alle Aufrufe, deren
     // Inhalt die KI frei erfindet (js/studio/studioApi.js, imageSource.js).
     safetySettingsKids: SAFETY_KIDS,
+    // NEU (v0.47.0-beta): Buchatlas (js/atlas/atlasApi.js) nutzt dieselbe
+    // Modell-Liste und dieselbe Filterstufe für Buchinhalte - so muss eine
+    // neue Gemini-Version nur an EINER Stelle (GEMINI_MODELS oben) ergänzt werden.
+    geminiModels: GEMINI_MODELS,
+    safetySettingsBook: SAFETY_BOOK,
 
     async generateBookQuiz(compiledText, personaId, langId = null) {
         const langInfo = langId ? app.birkenbihlLanguages.find(l => l.id === langId) : null;

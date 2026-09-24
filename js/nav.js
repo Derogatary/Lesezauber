@@ -65,7 +65,13 @@ Object.assign(app.nav, {
         if (app.state.videoPreview) app.actions.closeVideoPreview();
 
         // Hide all main views safely
-        ['viewLibrary', 'viewBook', 'viewScanner', 'viewReader', 'viewSettings', 'viewVocab', 'viewHelp', 'viewStudioLibrary', 'viewStudioWizard', 'viewWorkbookGenerator'].forEach(id => {
+        // NEU (v0.47.0-beta): Buchatlas-Mehrfachauswahl ist reine Sitzungs-
+        // logik - beim Verlassen der Buchatlas-Bibliothek zurücksetzen, sonst
+        // bliebe sie unbemerkt aktiv (js/atlas/render/atlasLibrary.js).
+        if (viewId !== 'atlas') app.atlas.actions.resetLibrarySelection?.();
+
+        // NEU (v0.47.0-beta): + die fünf Buchatlas-Ansichten (app.atlas.nav.viewIds)
+        ['viewLibrary', 'viewBook', 'viewScanner', 'viewReader', 'viewSettings', 'viewVocab', 'viewHelp', 'viewStudioLibrary', 'viewStudioWizard', 'viewWorkbookGenerator', ...(app.atlas.nav.viewIds || [])].forEach(id => {
             const el = document.getElementById(id);
             if (el) el.classList.add('view-hidden');
         });
@@ -100,6 +106,10 @@ Object.assign(app.nav, {
         } else if (viewId === 'workbookGenerator') {
             document.getElementById('viewWorkbookGenerator').classList.remove('view-hidden');
             app.render.workbookGenerator();
+        } else if (viewId.startsWith('atlas')) {
+            // NEU (v0.47.0-beta): Buchatlas-Ansichten (atlas, atlasBook,
+            // atlasWiki, atlasTranslate, atlasSettings) - js/atlas/atlasCore.js
+            app.atlas.nav.show(viewId);
         }
 
         // NEU: Verlaufseintrag NACH dem eigentlichen Wechsel, mit den für den
@@ -111,7 +121,9 @@ Object.assign(app.nav, {
                 view: viewId,
                 bookId: app.state.currentBookId,
                 pageIdx: app.state.currentPageIdx,
-                studioProjectId: app.state.currentStudioProjectId
+                studioProjectId: app.state.currentStudioProjectId,
+                // NEU (v0.47.0-beta): geöffnetes Buchatlas-Buch
+                atlasBookId: app.atlas.state.currentBookId
             });
         }
     }
@@ -122,5 +134,6 @@ window.addEventListener('popstate', (event) => {
     if (state.bookId !== undefined) app.state.currentBookId = state.bookId;
     if (state.pageIdx !== undefined) app.state.currentPageIdx = state.pageIdx;
     if (state.studioProjectId !== undefined) app.state.currentStudioProjectId = state.studioProjectId;
+    if (state.atlasBookId !== undefined) app.atlas.state.currentBookId = state.atlasBookId;
     app.nav.go(state.view, { fromHistory: true });
 });

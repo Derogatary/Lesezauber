@@ -1,7 +1,10 @@
 // Bei jeder inhaltlichen Änderung an einer dieser Dateien diese Nummer
 // erhöhen - sonst bekommen wiederkehrende Besucher weiter die alte
 // zwischengespeicherte Version ausgeliefert.
-const CACHE_NAME = 'lesezauber-shell-v81';
+const CACHE_NAME = 'lesezauber-shell-v82';
+
+// NEU (v82, v0.47.0-beta): Buchatlas (Wiki & Übersetzung für eigene Texte)
+// wieder eingegliedert - neue Dateien unter js/atlas/.
 
 // NEU (v81, v0.46.0-beta): Bild-Prompts nach Nano-Banana-Empfehlungen, Zielprogramme
 // beim manuellen Austausch (neue Datei js/studio/imageTargets.js).
@@ -341,6 +344,21 @@ const APP_SHELL = [
     './js/keyboard.js',
     './js/gestures.js',
     './js/edgeScroll.js',
+    './js/atlas/atlasCore.js',
+    './js/atlas/atlasUtils.js',
+    './js/atlas/atlasApi.js',
+    './js/atlas/atlasDb.js',
+    './js/atlas/actions/atlasReorder.js',
+    './js/atlas/actions/atlasBackup.js',
+    './js/atlas/actions/atlasWiki.js',
+    './js/atlas/actions/atlasTranslate.js',
+    './js/atlas/actions/atlasTextImport.js',
+    './js/atlas/actions/atlasFileImport.js',
+    './js/atlas/render/atlasLibrary.js',
+    './js/atlas/render/atlasBook.js',
+    './js/atlas/render/atlasSettings.js',
+    './js/atlas/render/atlasWiki.js',
+    './js/atlas/render/atlasTranslate.js',
     './js/actions/epubImport.js',
     './manifest.json'
 ];

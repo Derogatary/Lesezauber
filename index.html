@@ -61,7 +61,7 @@
                     <button id="pregenBadge" data-parent-only onclick="app.nav.go('settings')" class="hidden text-xs font-bold text-indigo-600 mt-0.5 hover:underline"></button>
                     <!-- NEU (v0.44.0-beta): direkt in den Nachtmodus -->
                     <button id="nightPrepLibBtn" data-parent-only onclick="app.actions.startNightPrep()" class="hidden text-xs font-bold text-slate-600 mt-0.5 ml-2 hover:underline">🌙 über Nacht</button>
-                    <p data-app-version class="text-[10px] text-slate-400 font-semibold mt-0.5">v0.46.0-beta</p>
+                    <p data-app-version class="text-[10px] text-slate-400 font-semibold mt-0.5">v0.47.0-beta</p>
                 </div>
                 <!-- FIX (v0.45.1-beta, Nutzer-Screenshot): seit dem Kindermodus-Knopf
                      passte die Knopfreihe nicht mehr aufs Handy und die ganze Seite
@@ -85,6 +85,10 @@
                     <!-- NEU: Einstieg in die SchreibZauber-Werkstatt (eigene Werke schreiben lassen) -->
                     <button data-parent-only onclick="app.nav.go('studio')" aria-label="SchreibZauber öffnen" title="SchreibZauber" class="h-10 px-3 bg-white border border-slate-200 rounded-full flex items-center gap-1.5 text-slate-600 hover:bg-slate-100 shadow-sm transition active:scale-95 text-xs font-bold">
                         <span>🪄</span><span>SchreibZauber</span>
+                    </button>
+                    <!-- NEU (v0.47.0-beta): Buchatlas - Wiki & Übersetzung für eigene Texte (js/atlas/) -->
+                    <button data-parent-only onclick="app.nav.go('atlas')" aria-label="Buchatlas öffnen (Wiki und Übersetzung)" title="Buchatlas: Wiki & Übersetzung" class="h-10 px-3 bg-white border border-slate-200 rounded-full flex items-center gap-1.5 text-slate-600 hover:bg-slate-100 shadow-sm transition active:scale-95 text-xs font-bold">
+                        <span>🗺️</span><span>Buchatlas</span>
                     </button>
                     <button data-parent-only onclick="app.nav.go('settings')" aria-label="Einstellungen öffnen" class="w-10 h-10 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-600 hover:bg-slate-100 shadow-sm transition active:scale-95">
                         ⚙️
@@ -1880,6 +1884,406 @@
                 </p>
             </div>
         </main>
+
+
+        <!-- ================= BUCHATLAS: BIBLIOTHEK =================
+             NEU (v0.47.0-beta): Buchatlas (Wiki & Übersetzung für eigene
+             Texte) wieder eingegliedert - alle IDs mit Präfix "atlas", Code in
+             js/atlas/, Aufruf über app.atlas.* (siehe js/atlas/atlasCore.js). -->
+        <main id="atlasViewLibrary" class="flex-grow overflow-y-auto pb-24 px-4 pt-6 view-hidden view-transition">
+            <header class="mb-6 flex flex-wrap justify-between items-center gap-2">
+                <button onclick="app.nav.go('lib')" class="p-2 -ml-2 text-slate-600 hover:text-slate-900 flex items-center gap-1 font-semibold text-sm flex-shrink-0">
+                    ❮ LeseZauber
+                </button>
+                <button onclick="app.atlas.nav.go('settings')" aria-label="Buchatlas-Einstellungen öffnen" title="Buchatlas-Einstellungen" class="w-10 h-10 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-600 hover:bg-slate-100 shadow-sm transition active:scale-95">
+                    ⚙️
+                </button>
+                <div class="w-full">
+                    <h1 class="text-2xl font-extrabold text-slate-900 flex items-center gap-2">
+                        <span>🗺️ Buchatlas</span>
+                    </h1>
+                    <p class="text-sm text-slate-500 font-semibold">Wiki &amp; Übersetzung für eigene Texte (Romane, E-Books)</p>
+                </div>
+            </header>
+
+            <!-- sanfte Backup-Erinnerung -->
+            <div id="atlasBackupReminder" class="hidden mb-4 bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-center justify-between gap-2">
+                <p class="text-xs text-amber-800 font-medium">💾 Lange kein Backup mehr gemacht.</p>
+                <div class="flex gap-2 flex-shrink-0">
+                    <button onclick="app.atlas.nav.go('settings')" class="text-xs bg-amber-600 text-white font-bold px-2.5 py-1 rounded-lg">Sichern</button>
+                    <button onclick="app.atlas.actions.dismissBackupReminder()" aria-label="Erinnerung schließen" class="text-xs text-amber-600 font-bold px-1">✕</button>
+                </div>
+            </div>
+
+            <!-- Text-Import - der Haupt-Weg, ein Buch anzulegen -->
+            <button onclick="app.atlas.actions.showTextImportModal()" class="w-full mb-3 bg-white border-2 border-indigo-100 hover:border-indigo-300 rounded-2xl p-4 text-center transition cursor-pointer shadow-sm active:scale-95 group">
+                <div class="bg-indigo-100 group-hover:bg-indigo-200 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-2 transition">
+                    <span class="text-2xl">📝</span>
+                </div>
+                <h3 class="text-sm font-bold text-indigo-900">Text importieren</h3>
+                <p class="text-[10px] text-slate-500 mt-0.5">Einfügen oder .txt-Datei - kein Foto/OCR nötig</p>
+            </button>
+
+            <!-- ePub/PDF - lesen den eingebetteten Text direkt aus, PDF mit automatischem OCR-Fallback für gescannte Seiten -->
+            <div class="flex gap-3 mb-2 justify-center flex-wrap">
+                <button onclick="app.atlas.actions.triggerEpubFileImport()" class="text-xs text-slate-500 hover:text-slate-700 font-semibold flex items-center justify-center gap-1.5 py-1">
+                    <span>📕</span>
+                    <span>ePub importieren</span>
+                </button>
+                <button onclick="app.atlas.actions.triggerPdfFileImport()" class="text-xs text-slate-500 hover:text-slate-700 font-semibold flex items-center justify-center gap-1.5 py-1">
+                    <span>📄</span>
+                    <span>PDF importieren</span>
+                </button>
+                <button onclick="app.atlas.actions.triggerImageFileImport()" class="text-xs text-slate-500 hover:text-slate-700 font-semibold flex items-center justify-center gap-1.5 py-1">
+                    <span>🖼️</span>
+                    <span>Bilder importieren (OCR)</span>
+                </button>
+            </div>
+            <p class="text-center text-[10px] text-slate-400 mb-6 px-4">PDF liest zuerst eingebetteten Text aus, gescannte Seiten ohne Textebene werden automatisch per OCR gelesen.</p>
+            <input id="atlasEpubFileInput" type="file" accept=".epub,application/epub+zip" onchange="app.atlas.actions.createBookFromEpubFile(event)" class="hidden">
+            <input id="atlasPdfFileInput" type="file" accept=".pdf,application/pdf" onchange="app.atlas.actions.createBookFromPdfFile(event)" class="hidden">
+            <input id="atlasImageFileInput" type="file" accept="image/*" multiple onchange="app.atlas.actions.createBookFromImageFiles(event)" class="hidden">
+
+            <section>
+                <div class="mb-4 flex gap-2">
+                    <input id="atlasLibrarySearch" type="text" oninput="app.atlas.actions.debounceLibrarySearch()" placeholder="🔍 Buch suchen..." aria-label="Bibliothek durchsuchen" class="flex-grow text-sm bg-white border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500 shadow-sm">
+                    <select id="atlasLibrarySort" onchange="app.atlas.render.library()" aria-label="Sortierung" class="text-sm bg-white border border-slate-200 rounded-xl px-2 py-2.5 focus:outline-none focus:border-indigo-500 shadow-sm">
+                        <option value="newest">Neueste</option>
+                        <option value="oldest">Älteste</option>
+                        <option value="title">A-Z</option>
+                    </select>
+                </div>
+                <div class="mb-3 flex items-center justify-between px-1">
+                    <h2 class="text-xs font-bold uppercase tracking-wider text-slate-500">Deine Bibliothek</h2>
+                    <button id="atlasLibrarySelectToggleBtn" onclick="app.atlas.actions.toggleLibrarySelectMode()" class="text-xs font-bold text-indigo-600 hover:text-indigo-800">
+                        Auswählen
+                    </button>
+                </div>
+                <div id="atlasLibraryList" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    <!-- Dynamic Books get injected here -->
+                </div>
+            </section>
+
+            <!-- Aktionsleiste für Mehrfachauswahl - nur sichtbar im Auswahlmodus -->
+            <div id="atlasLibrarySelectBar" class="hidden fixed bottom-4 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-md bg-slate-900 text-white rounded-2xl shadow-2xl p-3 flex items-center justify-between gap-2 z-40">
+                <span id="atlasLibrarySelectCount" class="text-xs font-bold flex-shrink-0">0 ausgewählt</span>
+                <div class="flex items-center gap-1.5">
+                    <button onclick="app.atlas.actions.exportSelectedBooks()" title="Ausgewählte exportieren" aria-label="Ausgewählte Bücher exportieren" class="text-xs bg-white/10 hover:bg-white/20 px-2.5 py-1.5 rounded-lg font-bold transition">
+                        📤
+                    </button>
+                    <button onclick="app.atlas.actions.confirmDeleteSelectedBooks()" title="Ausgewählte löschen" aria-label="Ausgewählte Bücher löschen" class="text-xs bg-red-500/20 hover:bg-red-500/40 text-red-200 px-2.5 py-1.5 rounded-lg font-bold transition">
+                        🗑️
+                    </button>
+                    <button onclick="app.atlas.actions.toggleLibrarySelectMode()" class="text-xs bg-white/10 hover:bg-white/20 px-2.5 py-1.5 rounded-lg font-bold transition">
+                        Fertig
+                    </button>
+                </div>
+            </div>
+        </main>
+
+        <!-- ================= BUCHATLAS: BUCH DETAIL & SEITEN ================= -->
+        <main id="atlasViewBook" class="flex-grow overflow-y-auto pb-24 px-4 pt-6 view-hidden view-transition">
+            <header class="mb-4 flex items-center justify-between gap-2">
+                <button onclick="app.atlas.nav.go('lib')" class="p-2 -ml-2 text-slate-600 hover:text-slate-900 flex items-center gap-1 font-semibold text-sm flex-shrink-0">
+                    ❮ Bibliothek
+                </button>
+                <div class="flex items-center gap-2 flex-wrap justify-end">
+                    <button onclick="app.atlas.actions.printBook()" aria-label="Buch drucken" title="Buch drucken" class="text-xs text-slate-600 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 px-2.5 py-1.5 rounded-lg font-bold transition">
+                        🖨️
+                    </button>
+                    <button onclick="app.atlas.nav.go('wiki')" class="text-xs text-purple-600 hover:text-purple-800 bg-purple-50 hover:bg-purple-100 px-2.5 py-1.5 rounded-lg font-bold transition">
+                        📖 Wiki
+                    </button>
+                    <button onclick="app.atlas.nav.go('translate')" class="text-xs text-teal-600 hover:text-teal-800 bg-teal-50 hover:bg-teal-100 px-2.5 py-1.5 rounded-lg font-bold transition">
+                        🌐 Übersetzung
+                    </button>
+                    <button onclick="app.atlas.actions.downloadBook(app.atlas.state.currentBookId)" class="text-xs text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1.5 rounded-lg font-bold transition">
+                        📥 Download
+                    </button>
+                    <button onclick="app.atlas.actions.confirmDeleteBook(app.atlas.state.currentBookId)" class="text-xs text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 px-2.5 py-1.5 rounded-lg font-bold transition">
+                        Löschen
+                    </button>
+                </div>
+            </header>
+
+            <div id="atlasBookDetailHeader" class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 mb-6 flex gap-4 items-center">
+                <!-- Book Meta injected here -->
+            </div>
+
+            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3 px-1">Enthaltene Seiten</h3>
+
+            <div id="atlasPagesGrid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                <!-- Page Cards injected here -->
+            </div>
+        </main>
+
+        <!-- ================= BUCHATLAS: BUCH-WIKI ================= -->
+        <main id="atlasViewWiki" class="flex-grow overflow-y-auto pb-24 px-4 pt-6 view-hidden view-transition">
+            <header class="mb-4 flex items-center justify-between gap-2">
+                <button onclick="app.atlas.nav.go('book')" class="p-2 -ml-2 text-slate-600 hover:text-slate-900 flex items-center gap-1 font-semibold text-sm flex-shrink-0">
+                    ❮ Buch
+                </button>
+                <h2 id="atlasWikiBookTitle" class="text-sm font-extrabold text-slate-900 truncate flex-grow text-center"></h2>
+                <div class="flex items-center gap-1.5 flex-shrink-0">
+                    <button id="atlasWikiRestoreBtn" onclick="app.atlas.actions.restorePreviousWiki()" title="Vorherige Wiki-Version wiederherstellen" aria-label="Vorherige Wiki-Version wiederherstellen" class="hidden text-xs text-slate-600 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 px-2.5 py-1.5 rounded-lg font-bold transition">
+                        ↩️
+                    </button>
+                    <button id="atlasWikiRegenerateBtn" onclick="app.atlas.actions.generateBookWiki(true)" title="Wiki neu erstellen" aria-label="Wiki neu erstellen" class="hidden text-xs text-slate-600 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 px-2.5 py-1.5 rounded-lg font-bold transition">
+                        🔄
+                    </button>
+                </div>
+            </header>
+
+            <div id="atlasWikiIncompleteNotice" class="hidden bg-amber-50 border border-amber-200 rounded-xl p-3 mb-4 flex items-center justify-between gap-2 flex-wrap">
+                <p id="atlasWikiIncompleteText" class="text-xs text-amber-800 font-medium"></p>
+                <div class="flex gap-2 flex-shrink-0">
+                    <button onclick="app.atlas.actions.generateBookWiki(false)" class="text-xs bg-amber-600 hover:bg-amber-700 text-white font-bold px-2.5 py-1.5 rounded-lg transition">
+                        ▶️ Fortsetzen
+                    </button>
+                </div>
+            </div>
+
+            <div id="atlasWikiEmptyState" class="hidden text-center py-12 px-4">
+                <div class="text-4xl mb-3">🧙‍♂️📚</div>
+                <p class="text-sm text-slate-600 font-medium mb-4">Noch kein Wiki für dieses Buch. Ich lese den Text aller Seiten durch, fasse die Kapitel zusammen und sammle Personen, Orte &amp; mehr.</p>
+                <button onclick="app.atlas.actions.generateBookWiki()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-5 rounded-xl shadow-lg transition active:scale-98">
+                    ✨ Wiki erstellen
+                </button>
+                <p id="atlasWikiEstimate" class="text-[11px] text-slate-400 mt-3"></p>
+            </div>
+
+            <div id="atlasWikiSearchBar" class="hidden mb-4">
+                <input id="atlasWikiSearchInput" type="text" oninput="app.atlas.render.bookWiki()" placeholder="🔍 Kapitel, Figur, Ort suchen..." aria-label="Wiki durchsuchen" class="w-full text-sm bg-white border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500 shadow-sm">
+            </div>
+
+            <div id="atlasWikiContent" class="space-y-6"></div>
+        </main>
+
+        <!-- ================= BUCHATLAS: ÜBERSETZUNG ================= -->
+        <main id="atlasViewTranslate" class="flex-grow overflow-y-auto pb-24 px-4 pt-6 view-hidden view-transition">
+            <header class="mb-4 flex items-center justify-between gap-2">
+                <button onclick="app.atlas.nav.go('book')" class="p-2 -ml-2 text-slate-600 hover:text-slate-900 flex items-center gap-1 font-semibold text-sm flex-shrink-0">
+                    ❮ Buch
+                </button>
+                <h2 id="atlasTranslateBookTitle" class="text-sm font-extrabold text-slate-900 truncate flex-grow text-center"></h2>
+                <div class="w-12"></div>
+            </header>
+
+            <!-- Fortschritts-Übersicht - auf einen Blick sichtbar, unabhängig vom gewählten Tab -->
+            <div id="atlasTranslateProgress" class="hidden bg-white p-3 rounded-2xl border border-slate-200 shadow-sm mb-4"></div>
+
+            <div class="flex bg-slate-100 rounded-xl p-1 mb-4 gap-1" role="tablist" aria-label="Übersetzungs-Bereiche">
+                <button role="tab" aria-selected="true" aria-controls="atlasTranslatePanel-translate" onclick="app.atlas.actions.switchTranslateTab('translate')" id="atlasTranslateTab-translate" class="flex-1 text-xs font-bold py-2 rounded-lg transition">
+                    Übersetzen
+                </button>
+                <button role="tab" aria-selected="false" aria-controls="atlasTranslatePanel-qa" onclick="app.atlas.actions.switchTranslateTab('qa')" id="atlasTranslateTab-qa" class="flex-1 text-xs font-bold py-2 rounded-lg transition">
+                    Prüfen<span id="atlasTranslateQaBadge" class="hidden ml-1 text-red-600">●</span>
+                </button>
+                <button role="tab" aria-selected="false" aria-controls="atlasTranslatePanel-export" onclick="app.atlas.actions.switchTranslateTab('export')" id="atlasTranslateTab-export" class="flex-1 text-xs font-bold py-2 rounded-lg transition">
+                    Export
+                </button>
+            </div>
+
+            <!-- ===== Tab: Übersetzen ===== -->
+            <div id="atlasTranslatePanel-translate" role="tabpanel" class="space-y-4 mb-4">
+                <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm space-y-2">
+                    <label for="atlasTranslateTargetLang" class="block text-xs font-bold uppercase tracking-wider text-slate-500">Zielsprache</label>
+                    <input id="atlasTranslateTargetLang" type="text" value="Deutsch" oninput="app.atlas.render.bookTranslate()" placeholder="z.B. Deutsch, Englisch..." class="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500">
+                    <p id="atlasTranslateWikiHint" class="text-[11px] text-slate-500"></p>
+                    <button onclick="app.atlas.actions.translateBook()" class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold py-2.5 px-4 rounded-xl shadow-lg hover:opacity-95 active:scale-98 transition flex items-center justify-center gap-2">
+                        <span>🌐</span>
+                        <span>Fehlende Seiten übersetzen</span>
+                    </button>
+                    <button onclick="app.atlas.actions.translateBook(true)" class="w-full text-xs text-slate-500 hover:text-slate-700 font-semibold py-1">
+                        🔄 Alle Seiten neu übersetzen
+                    </button>
+                </div>
+            </div>
+
+            <!-- ===== Tab: Prüfen ===== -->
+            <div id="atlasTranslatePanel-qa" role="tabpanel" class="hidden space-y-3 mb-4">
+                <p id="atlasTranslateQaEmptyHint" class="hidden text-xs text-slate-400 text-center py-4">Noch keine Seite übersetzt - Prüfungen brauchen mindestens eine übersetzte Seite.</p>
+
+                <div id="atlasTranslateQaSection" class="hidden space-y-3">
+                    <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm space-y-2">
+                        <p class="text-xs font-bold text-slate-700">🔍 Namens-Konsistenz</p>
+                        <p class="text-[11px] text-slate-500">Prüft, ob die Wiki-Namen auf den passenden Seiten in der Übersetzung vorkommen. Heuristisch (reiner Text-Abgleich) - kein Ersatz fürs Gegenlesen.</p>
+                        <button onclick="app.atlas.actions.runTranslationQaCheck()" class="w-full text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 rounded-lg transition">
+                            Jetzt prüfen
+                        </button>
+                    </div>
+                    <div id="atlasTranslateQaReport" class="hidden"></div>
+
+                    <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm space-y-2">
+                        <p class="text-xs font-bold text-slate-700">🔁 Rückübersetzungs-Stichprobe</p>
+                        <p class="text-[11px] text-slate-500">Übersetzt 2-3 über das Buch verteilte Beispielseiten zurück in die Ausgangssprache, zum manuellen Vergleich. Keine automatische Bewertung.</p>
+                        <button onclick="app.atlas.actions.runBackTranslationCheck()" class="w-full text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 rounded-lg transition">
+                            Stichprobe erstellen
+                        </button>
+                    </div>
+                    <div id="atlasTranslateBackTransReport" class="hidden bg-white p-3 rounded-2xl border border-slate-200 shadow-sm"></div>
+                </div>
+            </div>
+
+            <!-- ===== Tab: Export ===== -->
+            <div id="atlasTranslatePanel-export" role="tabpanel" class="hidden space-y-2 mb-4">
+                <p id="atlasTranslateExportEmptyHint" class="hidden text-xs text-slate-400 text-center py-4">Noch keine Seite übersetzt - hier erscheinen die Export-Optionen, sobald etwas übersetzt ist.</p>
+
+                <button id="atlasTranslateDownloadBtn" onclick="app.atlas.actions.downloadTranslation()" class="hidden w-full bg-white border border-slate-200 hover:border-indigo-300 rounded-xl p-3 text-left transition flex items-center gap-3">
+                    <span class="text-xl flex-shrink-0">📥</span>
+                    <div>
+                        <p class="text-sm font-bold text-slate-800">Original + Übersetzung</p>
+                        <p class="text-[11px] text-slate-500">Markdown-Datei zum Gegenlesen, Seite für Seite zugeordnet</p>
+                    </div>
+                </button>
+                <button id="atlasTranslateDownloadOnlyBtn" onclick="app.atlas.actions.downloadTranslationOnly()" class="hidden w-full bg-white border border-slate-200 hover:border-indigo-300 rounded-xl p-3 text-left transition flex items-center gap-3">
+                    <span class="text-xl flex-shrink-0">📄</span>
+                    <div>
+                        <p class="text-sm font-bold text-slate-800">Nur Übersetzung</p>
+                        <p class="text-[11px] text-slate-500">Reine Text-Datei zum Lesen/Weitergeben, ohne Original</p>
+                    </div>
+                </button>
+                <button id="atlasTranslateDownloadEpubBtn" onclick="app.atlas.actions.downloadTranslationEpub()" class="hidden w-full bg-white border border-slate-200 hover:border-indigo-300 rounded-xl p-3 text-left transition flex items-center gap-3">
+                    <span class="text-xl flex-shrink-0">📕</span>
+                    <div>
+                        <p class="text-sm font-bold text-slate-800">Als EPUB</p>
+                        <p class="text-[11px] text-slate-500">Zum Lesen in einer E-Reader-App</p>
+                    </div>
+                </button>
+            </div>
+
+            <div class="flex items-center justify-between mb-2 px-1">
+                <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500">Seiten</h3>
+            </div>
+            <input id="atlasTranslatePageSearch" type="text" oninput="app.atlas.render.bookTranslate()" placeholder="🔍 Original oder Übersetzung durchsuchen..." aria-label="Seiten durchsuchen" class="w-full text-sm bg-white border border-slate-200 rounded-xl px-3 py-2.5 mb-3 focus:outline-none focus:border-indigo-500 shadow-sm">
+            <div id="atlasTranslatePagesList" class="space-y-2"></div>
+        </main>
+
+        <!-- ================= BUCHATLAS: EINSTELLUNGEN ================= -->
+        <main id="atlasViewSettings" class="flex-grow overflow-y-auto pb-24 px-4 pt-6 view-hidden view-transition">
+            <header class="mb-6 flex items-center justify-between">
+                <button onclick="app.atlas.nav.go('lib')" class="p-2 -ml-2 text-slate-600 hover:text-slate-900 flex items-center gap-1 font-semibold text-sm">
+                    ❮ Zurück
+                </button>
+                <h1 class="text-lg font-bold text-slate-900">Buchatlas-Einstellungen</h1>
+                <div class="w-8"></div>
+            </header>
+
+            <div class="space-y-6">
+                <!-- FIX (v0.47.0-beta): kein eigener Key mehr - Buchatlas nutzt den
+                     Gemini-Key aus den LeseZauber-Einstellungen (js/atlas/atlasApi.js). -->
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-2">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-500">
+                        Google Gemini API Key
+                    </label>
+                    <p class="text-[11px] text-slate-500">🔑 Buchatlas nutzt denselben Gemini-Key wie der Rest von LeseZauber (inkl. automatischem Modellwechsel, wenn ein Tageskontingent aufgebraucht ist). Eintragen oder ändern in den LeseZauber-Einstellungen.</p>
+                    <button onclick="app.nav.go('settings')" class="w-full text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 rounded-lg transition">⚙️ LeseZauber-Einstellungen öffnen</button>
+                </div>
+
+                <!-- Benachrichtigungen -->
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-2">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-500">
+                        Benachrichtigungen
+                    </label>
+                    <p class="text-[11px] text-slate-500">Meldet sich per Browser-Benachrichtigung, wenn ein langer Wiki-/Übersetzungs-/Import-Lauf fertig ist, während der Tab im Hintergrund war.</p>
+                    <button id="atlasNotifyPermissionBtn" onclick="app.atlas.ui.requestNotifyPermission()" class="w-full text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 rounded-lg transition">
+                        🔔 Aktivieren
+                    </button>
+                </div>
+
+                <!-- API-Nutzung -->
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-1.5">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-500">
+                        API-Nutzung
+                    </label>
+                    <p id="atlasApiUsageInfo" class="text-[11px] text-slate-500">Wird ermittelt...</p>
+                    <button onclick="app.atlas.settingsConfig.resetApiUsageStats()" class="text-[11px] text-slate-400 hover:text-slate-600 font-semibold">
+                        Zurücksetzen
+                    </button>
+                </div>
+
+                <!-- Speicherplatz-Nutzung -->
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-2">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-500">
+                        Speicherplatz
+                    </label>
+                    <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                        <div id="atlasStorageBar" class="bg-indigo-500 h-full transition-all" style="width: 0%"></div>
+                    </div>
+                    <p id="atlasStorageInfo" class="text-[11px] text-slate-500">Wird ermittelt...</p>
+                </div>
+
+                <!-- Backup: Export & Import -->
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-500">
+                        Buchatlas-Bibliothek sichern
+                    </label>
+                    <p class="text-[11px] text-slate-500">Eigene Sicherungsdatei, getrennt von der LeseZauber-Sicherung. Speichert alle Buchatlas-Bücher als Datei - zum Sichern oder Übertragen auf ein neues Gerät.</p>
+                    <div class="flex gap-2">
+                        <button onclick="app.atlas.actions.exportLibrary()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 rounded-xl text-sm transition">
+                            📤 Exportieren
+                        </button>
+                        <button onclick="app.atlas.actions.triggerImportLibrary()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 rounded-xl text-sm transition">
+                            📥 Importieren
+                        </button>
+                    </div>
+                    <input id="atlasImportFileInput" type="file" accept="application/json" onchange="app.atlas.actions.importLibrary(event)" class="hidden">
+                </div>
+
+            </div>
+        </main>
+
+        <!-- Buchatlas: Text-Import-Modal - für bereits digitalen Text ohne Foto/OCR -->
+        <div id="atlasTextImportModal" role="dialog" aria-modal="true" aria-labelledby="atlasTextImportModalTitle" class="hidden fixed inset-0 bg-slate-900/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-5 space-y-3 max-h-[85vh] overflow-y-auto">
+                <h3 id="atlasTextImportModalTitle" class="text-base font-extrabold text-slate-900">📝 Text importieren</h3>
+                <p class="text-xs text-slate-500">Für bereits digitalen Text (z.B. E-Book, alte Übersetzung, Abschrift) - kein Foto/OCR nötig. Wird an erkannten Kapitelüberschriften gesplittet, sonst in Blöcke.</p>
+                <input id="atlasTextImportTitle" type="text" placeholder="Buchtitel (optional)" aria-label="Buchtitel (optional)" class="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500">
+                <textarea id="atlasTextImportTextarea" rows="8" placeholder="Text hier einfügen..." aria-label="Text zum Importieren" class="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500 resize-none"></textarea>
+                <button onclick="app.atlas.actions.triggerTextFileImport()" class="w-full text-xs text-slate-500 hover:text-slate-700 font-semibold flex items-center justify-center gap-1.5 py-1">
+                    <span>📄</span>
+                    <span>Oder: .txt-Datei wählen</span>
+                </button>
+                <input id="atlasTextImportFileInput" type="file" accept=".txt,text/plain" onchange="app.atlas.actions.createBookFromTextFile(event)" class="hidden">
+                <div class="flex gap-2 pt-1">
+                    <button onclick="app.atlas.actions.hideTextImportModal()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 rounded-xl text-sm transition">
+                        Abbrechen
+                    </button>
+                    <button onclick="app.atlas.actions.submitPastedText()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl text-sm transition">
+                        Importieren
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Buchatlas: Seiten-Text-Modal - leichtgewichtiger Ersatz für den früheren Bild-Reader -->
+        <div id="atlasPageTextModal" role="dialog" aria-modal="true" aria-labelledby="atlasPageTextTitle" class="hidden fixed inset-0 bg-slate-900/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-5 space-y-3 max-h-[85vh] overflow-y-auto flex flex-col">
+                <div class="flex items-center justify-between gap-2">
+                    <button id="atlasPageTextPrevBtn" onclick="app.atlas.actions.showAdjacentPageText(-1)" aria-label="Vorherige Seite" title="Vorherige Seite" class="p-1.5 text-slate-500 hover:text-slate-900 disabled:opacity-30 disabled:pointer-events-none flex-shrink-0">
+                        ◀️
+                    </button>
+                    <h3 id="atlasPageTextTitle" class="text-sm font-extrabold text-slate-900 text-center flex-grow truncate">Seite</h3>
+                    <button id="atlasPageTextNextBtn" onclick="app.atlas.actions.showAdjacentPageText(1)" aria-label="Nächste Seite" title="Nächste Seite" class="p-1.5 text-slate-500 hover:text-slate-900 disabled:opacity-30 disabled:pointer-events-none flex-shrink-0">
+                        ▶️
+                    </button>
+                    <button id="atlasPageTextCloseBtn" onclick="app.atlas.actions.hidePageTextModal()" aria-label="Schließen" title="Schließen" class="text-slate-400 hover:text-slate-700 text-xl leading-none px-1 flex-shrink-0">✕</button>
+                </div>
+                <p id="atlasPageTextBody" class="text-sm text-slate-700 leading-relaxed whitespace-pre-line overflow-y-auto"></p>
+                <textarea id="atlasPageTextEditArea" rows="10" class="hidden w-full text-sm text-slate-700 leading-relaxed border border-slate-200 rounded-xl p-2.5 focus:outline-none focus:border-indigo-500 resize-none" aria-label="Seitentext bearbeiten"></textarea>
+                <div class="flex gap-2 pt-1 flex-shrink-0">
+                    <button id="atlasPageTextEditBtn" onclick="app.atlas.actions.startEditPageText()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 rounded-xl text-xs transition">
+                        ✏️ Bearbeiten
+                    </button>
+                    <button id="atlasPageTextSaveBtn" onclick="app.atlas.actions.savePageTextEdit()" class="hidden flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 rounded-xl text-xs transition">
+                        Speichern
+                    </button>
+                    <button id="atlasPageTextCancelEditBtn" onclick="app.atlas.actions.cancelEditPageText()" class="hidden flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 rounded-xl text-xs transition">
+                        Abbrechen
+                    </button>
+                </div>
+            </div>
+        </div>
 
         <!-- Dynamic Loader Overlay -->
         <div id="loaderOverlay" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-50 flex flex-col items-center justify-center p-6 text-white hidden">
