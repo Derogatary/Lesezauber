@@ -126,6 +126,22 @@ function mergeWikiResults(partials) {
     return { chapters, entities: mergeSimilarNames(Array.from(entityMap.values())) };
 }
 
+// NEU (v0.47.0-beta, Nachtmodus): wie viele Wiki-Blöcke fehlen diesem Buch
+// noch? 0 = Wiki vollständig. Gleiche Fortsetz-Regel wie generateBookWiki():
+// hat sich die Block-Aufteilung geändert, fängt es von vorn an.
+Object.assign(app.atlas.utils, {
+    countWikiChunksOpen(book) {
+        const total = buildWikiChunks(book).length;
+        if (total === 0) return 0;
+        const wiki = book.wiki;
+        if (wiki && wiki.complete !== false) return 0;
+        if (wiki && wiki.complete === false && wiki.totalChunks === total) {
+            return Math.max(0, total - (wiki.processedChunkIndices || []).length);
+        }
+        return total;
+    }
+});
+
 Object.assign(app.atlas.actions, {
     // erstellt (oder zeigt bereits vorhandene) Kapitelübersicht + Wiki-
     // Einträge für das aktuelle Buch - Personen, Orte, Monster, Fähigkeiten,
@@ -140,22 +156,44 @@ Object.assign(app.atlas.actions, {
     // bereits erledigte Blöcke nochmal zu verarbeiten. Nur
     // forceRegenerate=true verwirft den Fortschritt und fängt komplett
     // neu an.
-    async generateBookWiki(forceRegenerate = false) {
-        const book = app.atlas.library[app.atlas.state.currentBookId];
+    //
+    // NEU (v0.47.0-beta, Nachtmodus): opts für den Lauf ohne Bildschirm-
+    // Bedienung (js/atlas/atlasNight.js):
+    //   opts.book         - dieses Buch statt des gerade geöffneten
+    //   opts.silent       - kein Lade-Fenster, keine Meldungen
+    //   opts.shouldCancel - eigene Abbruch-Prüfung (Nachtmodus beendet)
+    //   opts.maxChunks    - höchstens so viele Blöcke, dann als unvollständig
+    //                       speichern. Der Nachtmodus nimmt 1: so wird nach
+    //                       JEDEM Block gespeichert und der Fortschritt sichtbar -
+    //                       sonst hielte ihn ein langes Buch (viele Blöcke am
+    //                       Stück, erst am Ende gespeichert) fälschlich für
+    //                       "festgefahren" (20 min ohne Fortschritt).
+    // Gibt { complete } zurück (bzw. undefined, wenn nichts lief).
+    async generateBookWiki(forceRegenerate = false, opts = {}) {
+        const book = opts.book || app.atlas.library[app.atlas.state.currentBookId];
         if (!book) return;
+        const silent = !!opts.silent;
+        const isCancelled = () => (opts.shouldCancel ? opts.shouldCancel() : app.state.cancelAnalysis);
+        // Neu zeichnen nur, wenn dieses Buch gerade in der Wiki-Ansicht offen ist
+        const renderIfVisible = () => {
+            if (!silent || (app.state.currentView === 'atlasWiki' && app.atlas.state.currentBookId === book.id)) {
+                app.atlas.render.bookWiki();
+            }
+        };
 
         const chunks = buildWikiChunks(book);
         if (chunks.length === 0) {
-            app.atlas.ui.toast('Noch kein Text im Buch - Wiki kann noch nicht erstellt werden.', 'ℹ️');
+            if (!silent) app.atlas.ui.toast('Noch kein Text im Buch - Wiki kann noch nicht erstellt werden.', 'ℹ️');
             return;
         }
 
         if (book.wiki && !forceRegenerate && book.wiki.complete !== false) {
-            app.atlas.render.bookWiki(); // bereits vollständig vorhanden - nichts zu tun
-            return;
+            renderIfVisible(); // bereits vollständig vorhanden - nichts zu tun
+            return { complete: true };
         }
 
         if (!app.atlas.settings.apiKeys || app.atlas.settings.apiKeys.length === 0) {
+            if (silent) throw new Error('API_KEY_MISSING');
             app.atlas.ui.toast('Kein API-Key hinterlegt - unter ⚙️ Einstellungen eintragen.', '🔑', null, 6000);
             return;
         }
@@ -171,7 +209,7 @@ Object.assign(app.atlas.actions, {
         // möglich ist (Seiten haben sich geändert) - transparent machen,
         // statt stillschweigend neu zu starten und den Button-Text Lügen
         // zu strafen.
-        if (!forceRegenerate && hadIncompleteWiki && !canResume) {
+        if (!forceRegenerate && hadIncompleteWiki && !canResume && !silent) {
             app.atlas.ui.toast('Seiten haben sich geändert - starte Wiki-Erstellung neu statt fortzusetzen.', 'ℹ️');
         }
 
@@ -188,12 +226,13 @@ Object.assign(app.atlas.actions, {
         }
 
         const alreadyDone = canResume ? new Set(book.wiki.processedChunkIndices || []) : new Set();
-        const remainingIndices = chunks.map((_, i) => i).filter(i => !alreadyDone.has(i));
+        const allRemaining = chunks.map((_, i) => i).filter(i => !alreadyDone.has(i));
+        const remainingIndices = opts.maxChunks ? allRemaining.slice(0, opts.maxChunks) : allRemaining;
         const pacingMs = app.atlas.api.getPacingDelayMs();
 
-        app.state.cancelAnalysis = false;
+        if (!silent) app.state.cancelAnalysis = false;
         app.state.apiBusy = true;
-        app.atlas.ui.showLoader(
+        if (!silent) app.atlas.ui.showLoader(
             chunks.length > 1
                 ? (canResume ? 'Setze Wiki-Erstellung fort...' : 'Analysiere Buch in Textblöcken...')
                 : 'Durchsuche Buch nach Kapiteln, Personen & mehr...',
@@ -207,10 +246,10 @@ Object.assign(app.atlas.actions, {
 
         try {
             for (const chunkIdx of remainingIndices) {
-                if (app.state.cancelAnalysis) break;
+                if (isCancelled()) break;
 
                 const doneSoFar = alreadyDone.size + newlyProcessed.length;
-                app.atlas.ui.setProgress(`Block ${doneSoFar + 1} von ${chunks.length} · ${app.atlas.utils.formatEta(remainingIndices.length - newlyProcessed.length, pacingMs)}`);
+                if (!silent) app.atlas.ui.setProgress(`Block ${doneSoFar + 1} von ${chunks.length} · ${app.atlas.utils.formatEta(remainingIndices.length - newlyProcessed.length, pacingMs)}`);
 
                 try {
                     partials.push(await app.atlas.api.generateBookWiki(chunks[chunkIdx]));
@@ -223,15 +262,15 @@ Object.assign(app.atlas.actions, {
                 }
 
                 const isLast = chunkIdx === remainingIndices[remainingIndices.length - 1];
-                if (!isLast && !app.state.cancelAnalysis) {
-                    app.atlas.ui.setProgress('Warte auf API...');
+                if (!isLast && !isCancelled()) {
+                    if (!silent) app.atlas.ui.setProgress('Warte auf API...');
                     await new Promise(r => setTimeout(r, pacingMs));
                 }
             }
 
             if (partials.length === 0) {
-                app.atlas.ui.toast('Wiki-Erstellung abgebrochen', '⏹️');
-                return;
+                if (!silent) app.atlas.ui.toast('Wiki-Erstellung abgebrochen', '⏹️');
+                return { complete: false };
             }
 
             const processedIndices = Array.from(new Set([...alreadyDone, ...newlyProcessed])).sort((a, b) => a - b);
@@ -247,9 +286,9 @@ Object.assign(app.atlas.actions, {
                 ...(complete ? {} : { processedChunkIndices: processedIndices })
             };
             app.atlas.dbOps.saveBook(book);
-            app.atlas.render.bookWiki();
+            renderIfVisible();
 
-            if (chunks.length > 1) {
+            if (chunks.length > 1 && !silent) {
                 app.atlas.ui.toast(
                     complete
                         ? 'Wiki erstellt (in Textblöcken verarbeitet)'
@@ -257,15 +296,17 @@ Object.assign(app.atlas.actions, {
                     complete ? '✅' : '⏹️'
                 );
             }
-            if (complete) {
+            if (complete && !silent) {
                 app.atlas.ui.notifyIfHidden('Wiki fertig', `${book.title} - Wiki-Erstellung abgeschlossen.`);
             }
+            return { complete };
         } catch (e) {
             console.error('Buch-Wiki fehlgeschlagen:', e);
+            if (silent) throw e;
             app.atlas.ui.toastApiError(e, 'Wiki konnte nicht erstellt werden.');
         } finally {
             app.state.apiBusy = false;
-            app.atlas.ui.hideLoader();
+            if (!silent) app.atlas.ui.hideLoader();
         }
     },
 

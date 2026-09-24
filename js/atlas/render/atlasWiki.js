@@ -114,6 +114,9 @@ Object.assign(app.atlas.render, {
             }
         }
 
+        // NEU (v0.47.0-beta): für den Nachtmodus vorgemerkt?
+        app.atlas.render.nightJobInfo('atlasWikiNightInfo', { book, type: 'wiki' });
+
         const container = document.getElementById('atlasWikiContent');
         if (!hasWiki) { container.innerHTML = ''; return; }
 

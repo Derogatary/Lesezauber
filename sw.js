@@ -1,7 +1,9 @@
 // Bei jeder inhaltlichen Änderung an einer dieser Dateien diese Nummer
 // erhöhen - sonst bekommen wiederkehrende Besucher weiter die alte
 // zwischengespeicherte Version ausgeliefert.
-const CACHE_NAME = 'lesezauber-shell-v82';
+const CACHE_NAME = 'lesezauber-shell-v83';
+
+// NEU (v83, v0.48.0-beta): Buchatlas im Nachtmodus (neue Datei js/atlas/atlasNight.js).
 
 // NEU (v82, v0.47.0-beta): Buchatlas (Wiki & Übersetzung für eigene Texte)
 // wieder eingegliedert - neue Dateien unter js/atlas/.
@@ -359,6 +361,7 @@ const APP_SHELL = [
     './js/atlas/render/atlasSettings.js',
     './js/atlas/render/atlasWiki.js',
     './js/atlas/render/atlasTranslate.js',
+    './js/atlas/atlasNight.js',
     './js/actions/epubImport.js',
     './manifest.json'
 ];

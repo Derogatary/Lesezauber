@@ -61,7 +61,7 @@
                     <button id="pregenBadge" data-parent-only onclick="app.nav.go('settings')" class="hidden text-xs font-bold text-indigo-600 mt-0.5 hover:underline"></button>
                     <!-- NEU (v0.44.0-beta): direkt in den Nachtmodus -->
                     <button id="nightPrepLibBtn" data-parent-only onclick="app.actions.startNightPrep()" class="hidden text-xs font-bold text-slate-600 mt-0.5 ml-2 hover:underline">🌙 über Nacht</button>
-                    <p data-app-version class="text-[10px] text-slate-400 font-semibold mt-0.5">v0.47.0-beta</p>
+                    <p data-app-version class="text-[10px] text-slate-400 font-semibold mt-0.5">v0.48.0-beta</p>
                 </div>
                 <!-- FIX (v0.45.1-beta, Nutzer-Screenshot): seit dem Kindermodus-Knopf
                      passte die Knopfreihe nicht mehr aufs Handy und die ganze Seite
@@ -1552,7 +1552,7 @@
                     <!-- NEU (v0.44.0-beta): Nachtmodus - App bleibt offen, Bildschirm
                          dunkel, arbeitet alles ab (js/actions/nightPrep.js). -->
                     <button onclick="app.actions.startNightPrep()" class="w-full mt-1 bg-slate-900 hover:bg-slate-800 text-white font-bold py-2.5 rounded-xl text-sm transition">🌙 Über Nacht vorbereiten</button>
-                    <p class="text-[10px] text-slate-400">Eine Web-App wird beim Minimieren vom Gerät angehalten - deshalb bleibt sie dafür geöffnet: Gerät ans Ladekabel, Bildschirm wird schwarz, alles Offene wird abgearbeitet. Danach geht der Bildschirm von selbst aus.</p>
+                    <p class="text-[10px] text-slate-400">Eine Web-App wird beim Minimieren vom Gerät angehalten - deshalb bleibt sie dafür geöffnet: Bildschirm wird schwarz, alles Offene wird abgearbeitet, danach geht der Bildschirm von selbst aus. Am besten ans Ladekabel (der Bildschirm bleibt dafür die ganze Zeit an). Vorgemerkte 🗺️ Buchatlas-Aufträge kommen nach den LeseZauber-Aufgaben dran.</p>
                 </div>
 
                 <!-- NEU (SchreibZauber Stufe 2): echte Bildgenerierung ist bewusst
@@ -1915,6 +1915,14 @@
                 </div>
             </div>
 
+            <!-- NEU (v0.47.0-beta): vorgemerkte Nacht-Aufträge (js/atlas/atlasNight.js) -->
+            <div id="atlasNightQueue" class="hidden mb-4 bg-slate-900 text-slate-100 rounded-xl p-3 space-y-2">
+                <p class="text-xs font-bold">🌙 Für den Nachtmodus vorgemerkt</p>
+                <div id="atlasNightQueueList" class="space-y-1"></div>
+                <button onclick="app.actions.startNightPrep()" class="w-full text-xs bg-white/10 hover:bg-white/20 font-bold py-2 rounded-lg transition">🌙 Jetzt über Nacht starten</button>
+                <p class="text-[10px] text-slate-400">Zuerst werden offene LeseZauber-Aufgaben erledigt, danach der Buchatlas. App geöffnet lassen, am besten am Ladekabel.</p>
+            </div>
+
             <!-- Text-Import - der Haupt-Weg, ein Buch anzulegen -->
             <button onclick="app.atlas.actions.showTextImportModal()" class="w-full mb-3 bg-white border-2 border-indigo-100 hover:border-indigo-300 rounded-2xl p-4 text-center transition cursor-pointer shadow-sm active:scale-95 group">
                 <div class="bg-indigo-100 group-hover:bg-indigo-200 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-2 transition">
@@ -2040,6 +2048,9 @@
                     <button onclick="app.atlas.actions.generateBookWiki(false)" class="text-xs bg-amber-600 hover:bg-amber-700 text-white font-bold px-2.5 py-1.5 rounded-lg transition">
                         ▶️ Fortsetzen
                     </button>
+                    <button onclick="app.atlas.actions.queueNightWiki()" class="text-xs bg-slate-900 hover:bg-slate-800 text-white font-bold px-2.5 py-1.5 rounded-lg transition">
+                        🌙 Über Nacht
+                    </button>
                 </div>
             </div>
 
@@ -2049,8 +2060,15 @@
                 <button onclick="app.atlas.actions.generateBookWiki()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-5 rounded-xl shadow-lg transition active:scale-98">
                     ✨ Wiki erstellen
                 </button>
+                <!-- NEU (v0.47.0-beta): lange Bücher lieber im Nachtmodus -->
+                <button onclick="app.atlas.actions.queueNightWiki()" class="block mx-auto mt-3 text-xs bg-slate-900 hover:bg-slate-800 text-white font-bold py-2 px-4 rounded-lg transition">
+                    🌙 Über Nacht erstellen
+                </button>
                 <p id="atlasWikiEstimate" class="text-[11px] text-slate-400 mt-3"></p>
             </div>
+
+            <!-- NEU (v0.47.0-beta): Hinweis, dass das Wiki für den Nachtmodus vorgemerkt ist -->
+            <div id="atlasWikiNightInfo" class="hidden mb-4"></div>
 
             <div id="atlasWikiSearchBar" class="hidden mb-4">
                 <input id="atlasWikiSearchInput" type="text" oninput="app.atlas.render.bookWiki()" placeholder="🔍 Kapitel, Figur, Ort suchen..." aria-label="Wiki durchsuchen" class="w-full text-sm bg-white border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500 shadow-sm">
@@ -2097,6 +2115,11 @@
                     <button onclick="app.atlas.actions.translateBook(true)" class="w-full text-xs text-slate-500 hover:text-slate-700 font-semibold py-1">
                         🔄 Alle Seiten neu übersetzen
                     </button>
+                    <!-- NEU (v0.47.0-beta): statt jetzt zuzuschauen im Nachtmodus übersetzen lassen -->
+                    <button onclick="app.atlas.actions.queueNightTranslate()" class="w-full text-xs bg-slate-900 hover:bg-slate-800 text-white font-bold py-2 rounded-lg transition">
+                        🌙 Über Nacht übersetzen
+                    </button>
+                    <div id="atlasTranslateNightInfo" class="hidden space-y-1"></div>
                 </div>
             </div>
 

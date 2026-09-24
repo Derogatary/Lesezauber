@@ -35,6 +35,19 @@ eingegliedert - Netlify wird nicht mehr gebraucht.
 - Ein Buchatlas-Buch: `{ id, title, author, created, sourceType, pages: [{ id, text, status, translations: { [Sprache]: { text, generatedAt } } }], wiki, wikiPrevious, translationMemory, ... }` -
   reiner Text, keine Bilder, keine Persona-Varianten.
 
+## 🌙 Nachtmodus (seit v0.48.0-beta)
+
+- „🌙 Über Nacht übersetzen“ (Übersetzung) bzw. „🌙 Über Nacht erstellen“ (Wiki)
+  merken einen Auftrag am Buch vor: `book.nightJobs = { wiki: true, translate: ['Englisch'] }`.
+  Nur Vorgemerktes wird abgearbeitet, nichts automatisch.
+- Der LeseZauber-Nachtmodus (`js/actions/nightPrep.js`) erledigt zuerst die
+  LeseZauber-Textaufgaben, danach die Buchatlas-Aufträge (`js/atlas/atlasNight.js`):
+  pro Buch erst das Wiki (Block für Block), dann die Übersetzung (Seite für Seite).
+- App muss geöffnet bleiben (Bildschirm schwarz, per Wake Lock wach). Ladekabel
+  empfohlen, nicht nötig. Endet bei „alles erledigt“ oder nach 20 Minuten ohne
+  Fortschritt (meist Tageskontingent aller Modelle aufgebraucht); beim nächsten
+  Mal geht es an derselben Stelle weiter.
+
 ## ✨ Funktionen
 
 - 📝 Text per Copy-Paste oder .txt-Datei importieren

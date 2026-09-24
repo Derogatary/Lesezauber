@@ -27,7 +27,11 @@ const FADE_TO_BLACK_MS = 60 * 1000;
 
 const night = {
     active: false, finished: false, wakeLock: null, pollTimer: null, moveTimer: null, fadeTimer: null,
-    startedAt: 0, startOpen: 0, lastOpen: 0, lastProgressAt: 0
+    startedAt: 0, startOpen: 0, lastOpen: 0, lastProgressAt: 0,
+    // NEU (v0.47.0-beta): läuft gerade die Buchatlas-Schleife? LeseZauber-
+    // Teil (Hintergrund-Vorbereitung) mitzählen? (nein, wenn die Eltern das
+    // Einschalten abgelehnt haben und nur Buchatlas-Aufträge laufen sollen)
+    atlasLoopRunning: false, includeLz: true
 };
 
 Object.assign(app.utils, {
@@ -47,8 +51,68 @@ Object.assign(app.utils, {
             try { n += await app.utils.countMissingAudio(); } catch (e) { console.error('KI-Stimmen-Zählung fehlgeschlagen:', e); }
         }
         return n;
+    },
+
+    // NEU (v0.47.0-beta): Reihenfolge "erst LeseZauber, dann Buchatlas" -
+    // reine Entscheidung (Unit-Test). Buchatlas darf ran, sobald LeseZaubers
+    // TEXT-Aufgaben (Gemini, gleiches Kontingent) erledigt sind. Offene
+    // KI-Stimmen-Aufnahmen halten Buchatlas NICHT auf: die gehen an einen
+    // anderen Anbieter und laufen in der eigenen Schleife parallel.
+    atlasNightMayRun({ lzTextOpen, atlasOpen }) {
+        return lzTextOpen === 0 && atlasOpen > 0;
     }
 });
+
+// NEU (v0.47.0-beta): nur LeseZaubers Gemini-Text-Aufgaben (ohne KI-Stimmen)
+function countLzTextOpen() {
+    return app.utils.countMissingScans() + app.utils.countMissingVariants() + app.utils.countMissingBookQuiz()
+        + (app.settings.backgroundPregenBirkenbihl ? app.utils.countMissingBirkenbihl() : 0);
+}
+
+// NEU (v0.47.0-beta): alles, was der Nachtmodus abarbeitet - LeseZauber
+// (falls einbezogen) plus vorgemerkte Buchatlas-Aufträge.
+async function countNightOpen() {
+    const lz = night.includeLz ? await app.utils.countPregenOpen() : 0;
+    const lzText = night.includeLz ? countLzTextOpen() : 0;
+    const atlas = app.atlas.utils.countNightOpen?.() || 0;
+    return { total: lz + atlas, lzText, atlas };
+}
+
+// NEU (v0.47.0-beta): Buchatlas-Schleife - ein Schritt (Wiki-Block oder
+// Seite) nach dem anderen, mit derselben Pause wie im Buchatlas selbst.
+// Endet, wenn nichts mehr offen ist oder der Nachtmodus vorbei ist; poll()
+// startet sie bei Bedarf neu.
+async function runAtlasLoop() {
+    if (night.atlasLoopRunning) return;
+    night.atlasLoopRunning = true;
+    const stillRunning = () => night.active && !night.finished;
+    try {
+        while (stillRunning()) {
+            // Läuft gerade noch ein LeseZauber-Hintergrundschritt, abwarten
+            if (app.state.apiBusy) {
+                await new Promise(r => setTimeout(r, 5000));
+                continue;
+            }
+            let step = null;
+            try {
+                step = await app.atlas.night.runNext(() => !stillRunning());
+            } catch (e) {
+                // Kontingent/Netz: nicht abbrechen - die Stillstand-Erkennung
+                // (STALL_MS) beendet die Nacht, wenn gar nichts mehr geht.
+                console.warn('Nachtmodus/Buchatlas: Schritt fehlgeschlagen, neuer Versuch später.', e);
+                app.state.pregenActivity = { ...(app.state.pregenActivity || {}), lastErrorAt: Date.now(), lastError: e?.message || String(e) };
+                await new Promise(r => setTimeout(r, 60000));
+                continue;
+            }
+            if (!step) break;
+            if (step.usedApi && stillRunning()) {
+                await new Promise(r => setTimeout(r, app.atlas.api.getPacingDelayMs()));
+            }
+        }
+    } finally {
+        night.atlasLoopRunning = false;
+    }
+}
 
 async function requestWakeLock() {
     if (!('wakeLock' in navigator)) return false;
@@ -87,7 +151,9 @@ function clearTimers() {
 
 async function poll() {
     if (!night.active || night.finished) return;
-    const open = await app.utils.countPregenOpen();
+    // NEU (v0.47.0-beta): inkl. Buchatlas; der startet erst nach LeseZauber
+    const { total: open, lzText, atlas } = await countNightOpen();
+    if (app.utils.atlasNightMayRun({ lzTextOpen: lzText, atlasOpen: atlas })) runAtlasLoop();
     const now = Date.now();
     if (open < night.lastOpen) night.lastProgressAt = now;
     night.lastOpen = open;
@@ -114,13 +180,27 @@ function finish(reason) {
 Object.assign(app.actions, {
     async startNightPrep() {
         if (night.active) return;
+        // NEU (v0.47.0-beta): Buchatlas-Bibliothek muss geladen sein, bevor
+        // ihre vorgemerkten Aufträge gezählt werden
+        await app.atlas.dbOps.ready?.catch(() => {});
+        const atlasOpen = app.atlas.utils.countNightOpen?.() || 0;
+        night.includeLz = true;
         if (!app.settings.backgroundPregenEnabled) {
-            if (!confirm('Dafür muss „Im Hintergrund vorbereiten“ eingeschaltet sein. Jetzt einschalten?\n\nEs verbraucht KI-Anfragen deines Tageskontingents.')) return;
-            app.settingsConfig.toggleBackgroundPregen(true);
-            const t = document.getElementById('toggleBackgroundPregen');
-            if (t) t.checked = true;
+            // NEU (v0.47.0-beta): nur fragen, wenn in LeseZauber auch etwas
+            // offen ist - reine Buchatlas-Nächte brauchen den Schalter nicht.
+            const lzOpen = await app.utils.countPregenOpen();
+            if (lzOpen > 0 && confirm('Für die LeseZauber-Aufgaben muss „Im Hintergrund vorbereiten“ eingeschaltet sein. Jetzt einschalten?\n\nEs verbraucht KI-Anfragen deines Tageskontingents.')) {
+                app.settingsConfig.toggleBackgroundPregen(true);
+                const t = document.getElementById('toggleBackgroundPregen');
+                if (t) t.checked = true;
+            } else if (atlasOpen > 0) {
+                night.includeLz = false; // nur die Buchatlas-Aufträge
+            } else {
+                if (lzOpen === 0) app.ui.toast('Es ist nichts offen - alles schon vorbereitet.', '✅');
+                return;
+            }
         }
-        const open = await app.utils.countPregenOpen();
+        const { total: open } = await countNightOpen();
         if (open === 0) {
             app.ui.toast('Es ist nichts offen - alles schon vorbereitet.', '✅');
             return;
@@ -138,6 +218,9 @@ Object.assign(app.actions, {
         app.render.nightPrep({ open, done: 0, wakeLockOk: locked });
         document.addEventListener('visibilitychange', onVisibility);
         night.pollTimer = setInterval(poll, POLL_MS);
+        // NEU (v0.47.0-beta): sofort einmal prüfen, damit Buchatlas nicht
+        // erst nach 15 s loslegt, wenn LeseZauber nichts offen hat
+        poll();
         night.moveTimer = setInterval(() => app.render.nightPrepMove(), 60000);
     },
 
@@ -152,6 +235,8 @@ Object.assign(app.actions, {
         if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
         if (app.state.currentView === 'lib') app.render.library();
         if (app.state.currentView === 'settings') app.render.settings();
+        // NEU (v0.47.0-beta): Buchatlas-Ansichten auf den neuen Stand bringen
+        if (app.state.currentView?.startsWith('atlas')) app.atlas.nav.show(app.state.currentView);
     },
 
     // Fingertipp auf die schwarze Anzeige: nach dem Ende sofort schließen,

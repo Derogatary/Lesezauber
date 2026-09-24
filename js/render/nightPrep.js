@@ -18,7 +18,7 @@ Object.assign(app.render, {
         if (wakeLockOk === false) {
             el('nightPrepHint').innerText = 'Hinweis: Dieses Gerät kann den Bildschirm nicht wach halten - bitte die automatische Bildschirmsperre in den Geräte-Einstellungen länger stellen.';
         } else if (wakeLockOk === true) {
-            el('nightPrepHint').innerText = 'Gerät am Ladekabel liegen lassen, App geöffnet lassen. Tippen zum Beenden.';
+            el('nightPrepHint').innerText = 'App geöffnet lassen, am besten am Ladekabel (der Bildschirm bleibt an). Tippen zum Beenden.';
         }
     },
 

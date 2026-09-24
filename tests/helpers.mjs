@@ -10,4 +10,8 @@ await import('../js/actions/kidMode.js');
 await import('../js/actions/familyTools.js');
 await import('../js/actions/voiceRecord.js');
 await import('../js/actions/nightPrep.js');
+// NEU (v0.48.0-beta): Buchatlas-Teile ohne Browser-Abhängigkeit beim Import
+await import('../js/atlas/actions/atlasWiki.js');
+await import('../js/atlas/actions/atlasTranslate.js');
+await import('../js/atlas/atlasNight.js');
 export { app };

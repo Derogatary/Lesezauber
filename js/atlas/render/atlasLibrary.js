@@ -97,6 +97,14 @@ Object.assign(app.atlas.render, {
             reminderEl.classList.toggle('hidden', !shouldShow);
         }
 
+        // NEU (v0.47.0-beta): vorgemerkte Nacht-Aufträge (js/atlas/atlasNight.js)
+        const nightList = document.getElementById('atlasNightQueueList');
+        if (nightList) {
+            const rows = app.atlas.render.nightJobRows({ dark: true });
+            nightList.innerHTML = rows;
+            document.getElementById('atlasNightQueue')?.classList.toggle('hidden', !rows);
+        }
+
         // Auswahlmodus-UI (Button-Beschriftung, Aktionsleiste)
         const toggleBtn = document.getElementById('atlasLibrarySelectToggleBtn');
         if (toggleBtn) toggleBtn.textContent = selectMode ? 'Abbrechen' : 'Auswählen';

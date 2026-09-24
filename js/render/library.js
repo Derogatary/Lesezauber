@@ -67,7 +67,9 @@ Object.assign(app.render, {
             const showPregenBadge = (total) => {
                 pregenBadge.classList.toggle('hidden', total === 0);
                 // NEU (v0.44.0-beta): Nachtmodus-Knopf gleich daneben
-                document.getElementById('nightPrepLibBtn')?.classList.toggle('hidden', total === 0);
+                // NEU (v0.47.0-beta): auch bei vorgemerkten Buchatlas-Aufträgen
+                const atlasOpen = app.atlas.utils.countNightOpen?.() || 0;
+                document.getElementById('nightPrepLibBtn')?.classList.toggle('hidden', total === 0 && atlasOpen === 0);
                 if (total > 0) pregenBadge.innerText = `⏳ ${total} im Hintergrund offen`;
             };
             showPregenBadge(syncMissing);

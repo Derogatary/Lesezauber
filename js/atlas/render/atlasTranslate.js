@@ -143,6 +143,9 @@ Object.assign(app.atlas.render, {
                 : 'Tipp: Erstelle zuerst das 📖 Wiki - Namen/Orte werden dann konsistent übersetzt UND diese Ansicht gliedert sich automatisch nach Kapiteln.';
         }
 
+        // NEU (v0.47.0-beta): für den Nachtmodus vorgemerkte Übersetzungen dieses Buchs
+        app.atlas.render.nightJobInfo('atlasTranslateNightInfo', { book, type: 'translate' });
+
         const lang = (document.getElementById('atlasTranslateTargetLang')?.value || 'Deutsch').trim();
         const totalPages = book.pages.length;
         const translatedCount = book.pages.filter(p => p.translations && p.translations[lang]).length;

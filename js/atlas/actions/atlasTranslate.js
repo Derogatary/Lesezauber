@@ -33,6 +33,54 @@ function currentLang() {
 
 const TRANSLATE_TABS = ['translate', 'qa', 'export'];
 
+// NEU (v0.47.0-beta): EINE Seite übersetzen (inkl. Translation Memory) -
+// gemeinsam genutzt von translateBook() unten und vom Nachtmodus
+// (js/atlas/atlasNight.js), damit beide exakt gleich übersetzen.
+// Gibt 'memory' (Treffer, kein API-Aufruf) oder 'api' zurück, wirft bei Fehlern.
+async function translateOnePage(book, idx, lang, glossary) {
+    book.translationMemory = book.translationMemory || {};
+    const tm = (book.translationMemory[lang] = book.translationMemory[lang] || []);
+    const page = book.pages[idx];
+    const tmMatch = tm.find(e => e.text === page.text);
+
+    if (tmMatch) {
+        // 100%-Match gefunden - kein API-Call nötig
+        if (!page.translations) page.translations = {};
+        page.translations[lang] = { text: tmMatch.translation, generatedAt: Date.now(), fromMemory: true };
+        app.atlas.dbOps.saveBook(book);
+        return 'memory';
+    }
+
+    const translatedText = await app.atlas.api.translatePage(page.text, lang, glossary);
+    if (!page.translations) page.translations = {};
+    page.translations[lang] = { text: translatedText, generatedAt: Date.now() };
+
+    // Nur "sinnvoll lange" Texte ins Memory aufnehmen - eine einzelne kurze
+    // Zeile ("Kapitel 3") würde sonst schnell zu falschen Treffern bei
+    // eigentlich unterschiedlichen, zufällig kurzen Seiten führen.
+    if (page.text.length >= 40 && !tm.some(e => e.text === page.text)) {
+        tm.push({ text: page.text, translation: translatedText });
+    }
+    app.atlas.dbOps.saveBook(book);
+    return 'api';
+}
+
+// Seiten mit Text, denen die Übersetzung in "lang" noch fehlt
+function missingTranslationIndices(book, lang) {
+    const out = [];
+    book.pages.forEach((p, i) => {
+        if (p.text && !(p.translations && p.translations[lang])) out.push(i);
+    });
+    return out;
+}
+
+Object.assign(app.atlas.utils, {
+    // NEU (v0.47.0-beta, Nachtmodus): Anzahl noch fehlender Seiten
+    countMissingTranslation(book, lang) {
+        return missingTranslationIndices(book, lang).length;
+    }
+});
+
 // -------------------- EPUB-Export der Übersetzung --------------------
 // Dieselbe Bibliothek wie beim ePub-Import - seit v0.47.0-beta aus
 // js/vendor/ über app.atlas.utils.loadJSZip() statt vom CDN.
@@ -63,6 +111,24 @@ function randomId() {
 }
 
 Object.assign(app.atlas.actions, {
+    // NEU (v0.47.0-beta, Nachtmodus): übersetzt die NÄCHSTE fehlende Seite
+    // in "lang" - ohne Lade-Fenster, ein Schritt pro Aufruf (das Tempo gibt
+    // js/atlas/atlasNight.js vor). Gibt 'memory' | 'api' | null (nichts offen).
+    async _translateNextPageForNight(book, lang) {
+        const [idx] = missingTranslationIndices(book, lang);
+        if (idx === undefined) return null;
+        app.state.apiBusy = true;
+        try {
+            const result = await translateOnePage(book, idx, lang, buildGlossary(book));
+            if (app.state.currentView === 'atlasTranslate' && app.atlas.state.currentBookId === book.id) {
+                app.atlas.render.bookTranslate();
+            }
+            return result;
+        } finally {
+            app.state.apiBusy = false;
+        }
+    },
+
     // Wechselt zwischen den drei Tabs der Übersetzungs-Ansicht (Übersetzen/
     // Prüfen/Export). Merkt sich die Auswahl in app.atlas.state, damit sie nach
     // einem Re-Render (z.B. nach Abschluss eines Übersetzungs-Laufs) nicht
@@ -127,9 +193,8 @@ Object.assign(app.atlas.actions, {
         // Seitentext, z.B. wiederkehrendes Impressum, Kapitel-Trenner,
         // "Ende"-Seiten) werden wiederverwendet statt erneut übersetzt zu
         // werden - spart Zeit/Kontingent UND garantiert perfekte
-        // Konsistenz für diese Wiederholungen. Pro Buch+Sprache gespeichert.
-        book.translationMemory = book.translationMemory || {};
-        const tm = (book.translationMemory[lang] = book.translationMemory[lang] || []);
+        // Konsistenz für diese Wiederholungen. Pro Buch+Sprache gespeichert,
+        // siehe translateOnePage() oben.
 
         app.state.cancelAnalysis = false;
         app.state.apiBusy = true;
@@ -147,32 +212,12 @@ Object.assign(app.atlas.actions, {
             const remaining = pending.length - count + 1;
             if (sub) sub.innerText = `Seite ${idx + 1} (${count} von ${pending.length}) · ${app.atlas.utils.formatEta(remaining, pacingMs)}`;
 
-            const page = book.pages[idx];
-            const tmMatch = tm.find(e => e.text === page.text);
-
-            if (tmMatch) {
-                // 100%-Match gefunden - kein API-Call nötig, keine Pacing-
-                // Pause, sofort weiter zur nächsten Seite.
-                if (!page.translations) page.translations = {};
-                page.translations[lang] = { text: tmMatch.translation, generatedAt: Date.now(), fromMemory: true };
-                app.atlas.dbOps.saveBook(book);
-                tmHits++;
-                count++;
-                continue;
-            }
-
             try {
-                const translatedText = await app.atlas.api.translatePage(page.text, lang, glossary);
-                if (!page.translations) page.translations = {};
-                page.translations[lang] = { text: translatedText, generatedAt: Date.now() };
-                app.atlas.dbOps.saveBook(book);
-
-                // Nur "sinnvoll lange" Texte ins Memory aufnehmen - eine
-                // einzelne kurze Zeile ("Kapitel 3") würde sonst schnell zu
-                // falschen Treffern bei eigentlich unterschiedlichen,
-                // zufällig kurzen Seiten führen.
-                if (page.text.length >= 40 && !tm.some(e => e.text === page.text)) {
-                    tm.push({ text: page.text, translation: translatedText });
+                if (await translateOnePage(book, idx, lang, glossary) === 'memory') {
+                    // kein API-Call, keine Pacing-Pause - sofort weiter
+                    tmHits++;
+                    count++;
+                    continue;
                 }
             } catch (e) {
                 console.error(`Übersetzung Seite ${idx + 1} fehlgeschlagen:`, e);

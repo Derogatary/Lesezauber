@@ -6,6 +6,21 @@ vollständige Historie, neueste Version zuerst. Diese Datei wurde aus
 `CLAUDE.md` ausgelagert, weil der Abschnitt dort mit der Zeit zu groß für
 schnellen Kontext wurde; inhaltlich unverändert übernommen.
 
+## v0.48.0-beta
+
+Nutzerwunsch: Nachtmodus auch für den Buchatlas, Reihenfolge „erst LeseZauber, dann Buchatlas“.
+
+**🌙 Buchatlas im Nachtmodus** (`js/atlas/atlasNight.js`)
+- Neue Knöpfe **„🌙 Über Nacht übersetzen“** (Übersetzungs-Ansicht, aktuelle Zielsprache) und **„🌙 Über Nacht erstellen“** bzw. „🌙 Über Nacht“ (Wiki-Ansicht, leer oder unvollständig). Sie merken den Auftrag am Buch vor (`book.nightJobs = { wiki, translate: [Sprachen] }`) und fragen, ob der Nachtmodus gleich starten soll.
+- Bewusst **nur vorgemerkte** Aufträge, nichts wird automatisch erraten: eine Roman-Übersetzung kostet hunderte Anfragen aus demselben Tageskontingent wie LeseZauber.
+- Vorgemerkte Aufträge stehen in der Buchatlas-Bibliothek (mit ✕ zum Entfernen und „Jetzt über Nacht starten“) sowie in der jeweiligen Wiki-/Übersetzungs-Ansicht. Erledigte Aufträge räumen sich selbst weg. Der „🌙 über Nacht“-Knopf der LeseZauber-Bibliothek erscheint jetzt auch, wenn nur Buchatlas-Aufträge offen sind.
+- **Reihenfolge:** der Nachtmodus (`js/actions/nightPrep.js`) startet die Buchatlas-Schleife erst, wenn LeseZaubers **Text**-Aufgaben erledigt sind (gleiches Gemini-Kontingent, `app.utils.atlasNightMayRun()`). Offene KI-Stimmen-Aufnahmen halten Buchatlas nicht auf, die gehen an einen anderen Anbieter. Pro Buch zuerst das Wiki, dann die Übersetzung: das fertige Wiki dient als Namens-Glossar.
+- Wiki im Nachtmodus Block für Block (`generateBookWiki(false, { maxChunks: 1, silent: true, ... })`), damit nach jedem Block gespeichert wird. Sonst hielte die Stillstand-Erkennung (20 min ohne Fortschritt) ein langes Buch fälschlich für festgefahren.
+- Nur Buchatlas-Aufträge offen und „Im Hintergrund vorbereiten“ ist aus: keine Nachfrage mehr, der Nachtmodus arbeitet dann nur den Buchatlas ab.
+- Die Übersetzung einer Seite (inkl. Translation Memory) steckt jetzt in EINER Funktion `translateOnePage()`, die der normale Lauf und der Nachtmodus gemeinsam nutzen.
+
+**Ladekabel:** die Hinweise sagen jetzt „am besten am Ladekabel“ statt es vorauszusetzen. Nötig ist es nicht, aber der Bildschirm bleibt die ganze Zeit an.
+
 ## v0.47.0-beta
 
 Nutzerwunsch: Buchatlas (war aus LeseZauber abgetrennt und stand kurz vor einem eigenen Netlify-Deployment) wieder eingliedern, als eigener Bereich wie der SchreibZauber. Netlify wird dadurch nicht mehr gebraucht.

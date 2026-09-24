@@ -111,6 +111,8 @@ import './atlas/render/atlasBook.js';
 import './atlas/render/atlasSettings.js';
 import './atlas/render/atlasWiki.js';
 import './atlas/render/atlasTranslate.js';
+// NEU (v0.47.0-beta): Buchatlas im Nachtmodus (Aufträge vormerken/abarbeiten)
+import './atlas/atlasNight.js';
 
 import './render/library.js';
 import './render/book.js';
