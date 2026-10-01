@@ -511,6 +511,50 @@ Object.assign(app.utils, {
     // hervorgehoben werden kann (Speedreader-artig). Nutzt den bereits
     // emoji-bereinigten Text, damit die Zeichen-Positionen exakt zu dem
     // passen, was der Browser tatsächlich vorliest.
+    // NEU (Nutzer-Feedback "Hervorhebung nicht zeitgenau"): geschätzte
+    // Startzeit jedes Worts, wenn der Anbieter keine echten Wort-Zeitstempel
+    // liefert. Früher stur nach Buchstaben-Anteil verteilt - das ignoriert
+    // die Sprechpausen an Komma/Satzende, die Hervorhebung lief deshalb im
+    // Lauf der Seite immer weiter VORAUS. Jetzt: Gewicht pro Wort nach
+    // Silben (Vokalgruppen) plus Pausen-Gewicht für das Satzzeichen danach,
+    // kurze Stille am Anfang. "pieces" = Text ab Wortanfang bis zum nächsten
+    // Wortanfang (Wort + Satzzeichen + Leerraum). Gibt Sekunden zurück.
+    estimateWordStartTimes(pieces, duration) {
+        const weights = pieces.map(piece => {
+            const word = piece.trim();
+            const syllables = Math.max(1, (word.toLowerCase().match(/[aeiouyäöü]+/g) || []).length);
+            // Zahlen werden ausgesprochen deutlich länger ("1999")
+            const digits = (word.match(/\d/g) || []).length;
+            let pause = 0;
+            if (/[.!?…]["“”»«']*$/.test(word)) pause = 2.2;
+            else if (/[,;:]["“”»«']*$/.test(word)) pause = 1.1;
+            else if (/[–—-]$/.test(word)) pause = 0.8;
+            return { speak: 0.35 + syllables + digits * 1.5, pause };
+        });
+        const total = weights.reduce((sum, w, i) => sum + w.speak + (i < weights.length - 1 ? w.pause : 0), 0) || 1;
+        // kurze Stille vor dem ersten Wort (Synthese-Vorlauf), höchstens 8 %
+        const lead = Math.min(0.15, duration * 0.08);
+        const scale = Math.max(0, duration - lead) / total;
+        const starts = [];
+        let t = lead;
+        weights.forEach(w => {
+            starts.push(t);
+            t += (w.speak + w.pause) * scale;
+        });
+        return starts;
+    },
+
+    // NEU: grobe Sprechdauer für die Gerätestimme (die keine Länge meldet) -
+    // ca. 5 Silben pro Sekunde bei Tempo 1, plus Pausen an Satzzeichen.
+    estimateSpeechDurationSec(text, rate = 1) {
+        const t = String(text || '');
+        const syllables = (t.toLowerCase().match(/[aeiouyäöü]+/g) || []).length;
+        const digits = (t.match(/\d/g) || []).length;
+        const stops = (t.match(/[.!?…]/g) || []).length;
+        const commas = (t.match(/[,;:]/g) || []).length;
+        return (syllables * 0.2 + digits * 0.3 + stops * 0.45 + commas * 0.22) / (rate || 1);
+    },
+
     buildSpeechHighlightHtml(text) {
         const clean = this.stripEmojiForSpeech(text);
         let idx = 0;

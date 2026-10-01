@@ -61,7 +61,7 @@
                     <button id="pregenBadge" data-parent-only onclick="app.nav.go('settings')" class="hidden text-xs font-bold text-indigo-600 mt-0.5 hover:underline"></button>
                     <!-- NEU (v0.44.0-beta): direkt in den Nachtmodus -->
                     <button id="nightPrepLibBtn" data-parent-only onclick="app.actions.startNightPrep()" class="hidden text-xs font-bold text-slate-600 mt-0.5 ml-2 hover:underline">🌙 über Nacht</button>
-                    <p data-app-version class="text-[10px] text-slate-400 font-semibold mt-0.5">v0.48.0-beta</p>
+                    <p data-app-version class="text-[10px] text-slate-400 font-semibold mt-0.5">v0.49.0-beta</p>
                 </div>
                 <!-- FIX (v0.45.1-beta, Nutzer-Screenshot): seit dem Kindermodus-Knopf
                      passte die Knopfreihe nicht mehr aufs Handy und die ganze Seite
@@ -452,6 +452,14 @@
                 </div>
 
                 <div id="readerTabArea">
+                    <!-- NEU (Nutzer-Feedback): was beim automatischen Vorlesen NACH
+                         dem Seitentext gerade gesprochen wird (Wort-Erklärung,
+                         Bildbeschreibung, Rätsel, Zwischenruf) - mit Wort-
+                         Hervorhebung, gesteuert von app.tts._showSpeakCaption(). -->
+                    <div id="readerSpeakCaption" class="hidden mb-4 bg-indigo-50 border-2 border-indigo-200 rounded-2xl p-4" aria-live="polite">
+                        <p class="text-[10px] font-bold uppercase tracking-wider text-indigo-500 mb-1">🔊 Wird vorgelesen · <span id="readerSpeakCaptionLabel"></span></p>
+                        <p id="readerSpeakCaptionText" class="text-slate-800 leading-relaxed font-medium text-base"></p>
+                    </div>
                     <!-- Tab Switcher (Original / Erstleser / Zauberer) -->
                     <div class="flex bg-slate-200 p-1 rounded-xl mb-4 gap-1 text-xs font-bold">
                         <button id="tabOriginal" onclick="app.readerUI.setTab('original')" class="flex-1 py-2 rounded-lg text-center bg-white shadow-sm text-indigo-900">
@@ -715,7 +723,11 @@
                 <p id="nightPrepCount" class="text-sm"></p>
                 <p id="nightPrepCurrent" class="text-xs"></p>
                 <p id="nightPrepHint" class="text-[11px] max-w-xs mx-auto" style="color:#3b4252"></p>
+                <!-- NEU: statt System-Rückfrage (konnte im kleinen Fenster hängen) -->
+                <p id="nightPrepExit" class="hidden text-sm font-bold" style="color:#9aa3b5">Nochmal tippen zum Beenden</p>
             </div>
+            <!-- NEU: immer erreichbarer Ausgang oben rechts (ein Tipp genügt) -->
+            <button onclick="event.stopPropagation(); app.actions.stopNightPrep()" aria-label="Nachtmodus beenden" class="absolute top-3 right-3 w-10 h-10 rounded-full text-lg font-bold" style="color:#3b4252">✕</button>
         </div>
 
         <!-- ================= EIGENE STIMME: AUFNAHME-FENSTER (v0.43.0-beta) ================= -->

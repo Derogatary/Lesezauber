@@ -31,8 +31,22 @@ const night = {
     // NEU (v0.47.0-beta): läuft gerade die Buchatlas-Schleife? LeseZauber-
     // Teil (Hintergrund-Vorbereitung) mitzählen? (nein, wenn die Eltern das
     // Einschalten abgelehnt haben und nur Buchatlas-Aufträge laufen sollen)
-    atlasLoopRunning: false, includeLz: true
+    atlasLoopRunning: false, includeLz: true,
+    // NEU: Beenden per zweitem Fingertipp statt System-Rückfrage (siehe nightPrepTap)
+    exitArmedUntil: 0
 };
+
+// NEU (Nutzer-Feedback "Nachtmodus blockiert das ganze Handy, wenn die App
+// als Tab/kleines Fenster offen ist - erst Bildschirm aus/an hilft"):
+// Vollbild nur noch, wenn die App ohnehin (fast) den ganzen Bildschirm
+// einnimmt. In einem Teil-/Popup-Fenster oder geteilten Bildschirm kann ein
+// Vollbild-Element samt System-Rückfrage hängen bleiben und alle Eingaben
+// schlucken.
+function fullscreenIsSafe() {
+    const w = window.innerWidth, h = window.innerHeight;
+    const sw = window.screen?.width || w, sh = window.screen?.height || h;
+    return w >= sw * 0.9 && h >= sh * 0.75;
+}
 
 Object.assign(app.utils, {
     // Reine Funktion (Unit-Test): 'done' | 'stalled' | 'running'
@@ -136,6 +150,11 @@ function releaseWakeLock() {
 // Der Browser gibt den Wake Lock beim Verlassen der App selbst frei -
 // beim Zurückkommen neu anfordern, solange der Nachtmodus noch arbeitet.
 function onVisibility() {
+    // NEU: App wird verlassen (Fenster gewechselt, Bildschirm aus) -> Vollbild
+    // lösen, damit nichts über anderen Apps "hängen" bleibt
+    if (document.visibilityState === 'hidden' && document.fullscreenElement) {
+        document.exitFullscreen?.().catch(() => {});
+    }
     if (document.visibilityState === 'visible' && night.active && !night.finished && !night.wakeLock) {
         requestWakeLock();
         poll();
@@ -213,7 +232,7 @@ Object.assign(app.actions, {
         overlay.classList.remove('hidden');
         // Vollbild blendet Statusleiste/Navigation aus (braucht den Fingertipp,
         // der gerade passiert ist). Nicht schlimm, wenn es nicht klappt.
-        overlay.requestFullscreen?.().catch(() => {});
+        if (fullscreenIsSafe()) overlay.requestFullscreen?.().catch(() => {});
         const locked = await requestWakeLock();
         app.render.nightPrep({ open, done: 0, wakeLockOk: locked });
         document.addEventListener('visibilitychange', onVisibility);
@@ -242,8 +261,22 @@ Object.assign(app.actions, {
     // Fingertipp auf die schwarze Anzeige: nach dem Ende sofort schließen,
     // währenddessen erst nachfragen (ein versehentlicher Tipp in der Nacht
     // soll nicht alles abbrechen).
+    // FIX (Nutzer-Feedback, kleines Fenster blockierte das Handy): KEINE
+    // System-Rückfrage (confirm) mehr - die konnte hinter dem schwarzen
+    // Vollbild unsichtbar hängen. Stattdessen: erster Tipp zeigt "Nochmal
+    // tippen zum Beenden", ein zweiter Tipp innerhalb von 4 s beendet. Ein
+    // versehentlicher einzelner Tipp in der Nacht bricht also weiterhin nichts ab.
     nightPrepTap() {
-        if (night.finished || confirm('Vorbereitung über Nacht beenden?')) app.actions.stopNightPrep();
+        if (night.finished || Date.now() < night.exitArmedUntil) {
+            night.exitArmedUntil = 0;
+            app.actions.stopNightPrep();
+            return;
+        }
+        night.exitArmedUntil = Date.now() + 4000;
+        app.render.nightPrepExitHint?.(true);
+        setTimeout(() => {
+            if (Date.now() >= night.exitArmedUntil) app.render.nightPrepExitHint?.(false);
+        }, 4100);
     },
 
     isNightPrepActive() {

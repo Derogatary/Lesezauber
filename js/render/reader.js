@@ -86,6 +86,9 @@ Object.assign(app.render, {
         const page = book?.pages[pageIdx];
         if (!page) { app.nav.go('book'); return; }
 
+        // NEU: "Wird vorgelesen"-Karte gehört zur vorigen Seite (js/tts.js)
+        app.tts.hideSpeakCaption?.();
+
         // merkt sich die zuletzt geöffnete Seite fürs "Weiterlesen" -
         // inkl. Zeitstempel, damit die Bibliothek das zuletzt gelesene
         // Buch über alle Bücher hinweg ermitteln kann.

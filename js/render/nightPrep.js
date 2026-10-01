@@ -18,7 +18,7 @@ Object.assign(app.render, {
         if (wakeLockOk === false) {
             el('nightPrepHint').innerText = 'Hinweis: Dieses Gerät kann den Bildschirm nicht wach halten - bitte die automatische Bildschirmsperre in den Geräte-Einstellungen länger stellen.';
         } else if (wakeLockOk === true) {
-            el('nightPrepHint').innerText = 'App geöffnet lassen, am besten am Ladekabel (der Bildschirm bleibt an). Tippen zum Beenden.';
+            el('nightPrepHint').innerText = 'App geöffnet lassen, am besten am Ladekabel (der Bildschirm bleibt an). Zweimal tippen zum Beenden.';
         }
     },
 
@@ -29,6 +29,13 @@ Object.assign(app.render, {
             : `${done} erledigt, ${open} noch offen - vermutlich ist das Tageskontingent aufgebraucht. Beim nächsten Öffnen geht es weiter.`;
         el('nightPrepCurrent').innerText = '';
         el('nightPrepHint').innerText = 'Der Bildschirm geht gleich von selbst aus. Tippen zum Schließen.';
+    },
+
+    // NEU: Hinweis nach dem ersten Fingertipp (js/actions/nightPrep.js nightPrepTap)
+    nightPrepExitHint(show) {
+        const box = el('nightPrepBox');
+        if (show) box?.classList.remove('opacity-0');
+        el('nightPrepExit')?.classList.toggle('hidden', !show);
     },
 
     // Nach dem Ende: auch den Text ausblenden -> komplett schwarz.

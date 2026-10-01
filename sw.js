@@ -1,7 +1,9 @@
 // Bei jeder inhaltlichen Änderung an einer dieser Dateien diese Nummer
 // erhöhen - sonst bekommen wiederkehrende Besucher weiter die alte
 // zwischengespeicherte Version ausgeliefert.
-const CACHE_NAME = 'lesezauber-shell-v83';
+const CACHE_NAME = 'lesezauber-shell-v84';
+
+// FIX (v84, v0.49.0-beta): Vorlese-Ablauf, Hervorhebung, Nachtmodus im kleinen Fenster, Text-Erkennung.
 
 // NEU (v83, v0.48.0-beta): Buchatlas im Nachtmodus (neue Datei js/atlas/atlasNight.js).
 

@@ -204,8 +204,11 @@ Object.assign(app.ttsNeural, {
             return charStarts.map(charIndex => alignment.starts[Math.min(charIndex, alignment.starts.length - 1)] || 0);
         }
 
-        const total = cleanText.length || 1;
-        return charStarts.map(charIndex => duration * (charIndex / total));
+        // FIX (Nutzer-Feedback "Hervorhebung nicht zeitgenau"): Schätzung
+        // nach Silben + Satzzeichen-Pausen statt nach Buchstaben-Anteil
+        // (app.utils.estimateWordStartTimes, js/utils.js).
+        const pieces = charStarts.map((start, i) => cleanText.slice(start, i + 1 < charStarts.length ? charStarts[i + 1] : cleanText.length));
+        return app.utils.estimateWordStartTimes(pieces, duration);
     },
 
     // NEU (v0.43.0-beta): optionales durationOverride - eigene Aufnahmen

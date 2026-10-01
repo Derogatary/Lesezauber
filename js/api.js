@@ -409,7 +409,56 @@ Die Lösung muss wirklich zu dem passen, was in "body" steht - zähle selbst nac
 // JSON-Antwort trotz Anweisung in ```json ... ``` Markdown-Blöcke.
 function parseModelJson(rawText) {
     const cleaned = (rawText || '{}').replace(/^```(json)?\n?/, '').replace(/\n?```$/, '').trim();
-    return JSON.parse(cleaned);
+    try {
+        return JSON.parse(cleaned);
+    } catch (e) {
+        // FIX (Nutzer-Feedback "manchmal wird kein Text erfasst, obwohl Text
+        // da ist"): häufigste Ursache war wörtliche Rede mit GERADEN
+        // Anführungszeichen im Seitentext ("Hallo", sagte ...), die die KI
+        // nicht escaped - das ganze JSON war dann unlesbar, beim Mehrere-
+        // Personas-Aufruf ging so der komplette "core"-Block samt
+        // originalText verloren und die Seite bekam "Kein Text.". Zweiter
+        // Versuch mit reparierten Anführungszeichen; klappt auch der nicht,
+        // bleibt es beim ursprünglichen Fehler.
+        const repaired = repairJsonQuotes(cleaned);
+        if (repaired !== cleaned) {
+            try { return JSON.parse(repaired); } catch (e2) { /* ursprünglichen Fehler werfen */ }
+        }
+        throw e;
+    }
+}
+
+// NEU: escaped Anführungszeichen, die MITTEN in einem JSON-Text stehen.
+// Ein " innerhalb eines Strings gilt als schließend, wenn danach (nach
+// Leerzeichen) ":", "}", "]" oder das Textende kommt, oder ein Komma, dem
+// der nächste Schlüssel/Wert bzw. das Ende folgt (", \"..." / ", }" / ", 1").
+// Jedes andere " ist Teil des Textes (wörtliche Rede) und wird escaped.
+// Benannter Export nur für die Tests (tests/parse.test.mjs).
+export function repairJsonQuotes(str) {
+    let out = '';
+    let inString = false;
+    const nextNonSpace = (from) => {
+        let j = from;
+        while (j < str.length && /\s/.test(str[j])) j++;
+        return { ch: str[j], idx: j };
+    };
+    for (let i = 0; i < str.length; i++) {
+        const ch = str[i];
+        if (inString && ch === '\\') { out += ch + (str[i + 1] ?? ''); i++; continue; }
+        if (ch !== '"') { out += ch; continue; }
+        if (!inString) { inString = true; out += ch; continue; }
+        const next = nextNonSpace(i + 1);
+        let closes = next.ch === undefined || next.ch === ':' || next.ch === '}' || next.ch === ']';
+        if (!closes && next.ch === ',') {
+            const after = nextNonSpace(next.idx + 1);
+            // true/false/null nur als ganzes Wort - sonst würde z.B. ", fragte"
+            // (wörtliche Rede) fälschlich als nächster JSON-Wert gelten
+            closes = after.ch === undefined || /["}\]\[{0-9-]/.test(after.ch)
+                || /^(true|false|null)(?![\p{L}])/u.test(str.slice(after.idx, after.idx + 6));
+        }
+        if (closes) { inString = false; out += ch; } else { out += '\\"'; }
+    }
+    return out;
 }
 
 async function callGeminiAnalyze(prompt, base64Image) {

@@ -11,6 +11,10 @@ const WORKBOOK_STEP_PAUSE_MS = 3500;
 // nur das, was GERADE gesprochen wird, nicht den wartenden Timer).
 let stepRunId = 0;
 
+// NEU (Nutzer-Feedback "Pause zwischen Wort und Erklärung relativ groß"):
+// vorher 600 ms (plus Ladezeit der KI-Stimme, die jetzt vorab entsteht)
+const WORD_EXPLAIN_PAUSE_MS = 200;
+
 // NEU: Abwechslung statt immer derselben Ansage vor der Bildbeschreibung
 const IMAGE_INTROS = [
     'Schau mal, was hier zu sehen ist.',
@@ -209,10 +213,46 @@ Object.assign(app.tts, {
             utter.lang = 'de-DE';
         }
 
+        // NEU (Nutzer-Feedback "Hervorhebung nicht zeitgenau"): viele
+        // Android-Stimmen (u.a. Google) melden KEINE Wortgrenzen (boundary-
+        // Event) - dann blieb die Hervorhebung einfach stehen. Kommt nach
+        // dem Start 0,9 s lang keine Wortgrenze, läuft sie stattdessen nach
+        // geschätzter Sprechdauer mit (gleiche Schätzung wie bei den
+        // KI-Stimmen, app.utils.estimateWordStartTimes). Meldet die Stimme
+        // doch noch Wortgrenzen, übernehmen wieder die echten.
+        let gotBoundary = false;
+        let fallbackTimer = null;
+        const stopFallback = () => { if (fallbackTimer) { clearInterval(fallbackTimer); fallbackTimer = null; } };
         if (highlightElementId) {
             const container = document.getElementById(highlightElementId);
+            utter.onstart = () => {
+                const startedAt = performance.now();
+                setTimeout(() => {
+                    if (gotBoundary || !container || !this.synth.speaking) return;
+                    const spans = Array.from(container.querySelectorAll('.speech-word'));
+                    if (!spans.length) return;
+                    const charStarts = spans.map(sp => parseInt(sp.dataset.start, 10) || 0);
+                    const pieces = charStarts.map((st, i) => cleanText.slice(st, i + 1 < charStarts.length ? charStarts[i + 1] : cleanText.length));
+                    const times = app.utils.estimateWordStartTimes(pieces, app.utils.estimateSpeechDurationSec(cleanText, utter.rate));
+                    let last = -1;
+                    fallbackTimer = setInterval(() => {
+                        if (gotBoundary || !this.synth.speaking) { stopFallback(); return; }
+                        const t = (performance.now() - startedAt) / 1000;
+                        let cur = -1;
+                        for (let i = 0; i < times.length; i++) { if (times[i] <= t) cur = i; else break; }
+                        if (cur !== last && cur >= 0) {
+                            last = cur;
+                            spans.forEach(sp => sp.classList.remove('speech-highlight'));
+                            spans[cur].classList.add('speech-highlight');
+                            spans[cur].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+                        }
+                    }, 100);
+                }, 900);
+            };
             utter.onboundary = (event) => {
                 if (event.name !== 'word' || !container) return;
+                gotBoundary = true;
+                stopFallback();
                 const spans = container.querySelectorAll('.speech-word');
                 let target = null;
                 spans.forEach(span => {
@@ -226,8 +266,59 @@ Object.assign(app.tts, {
             };
         }
 
-        if (onEnd) utter.onend = onEnd;
+        utter.onend = () => { stopFallback(); if (onEnd) onEnd(); };
+        utter.onerror = () => stopFallback();
         this.synth.speak(utter);
+    },
+
+    // NEU (Nutzer-Feedback): kurze Ansage, bevor schwierige Wörter erklärt
+    // werden - feste Sätze (gut für den KI-Stimmen-Zwischenspeicher).
+    _wordsAnnouncement(count) {
+        return count === 1
+            ? 'Jetzt erkläre ich dir noch ein schwieriges Wort.'
+            : 'Jetzt erkläre ich dir noch ein paar schwierige Wörter.';
+    },
+
+    // NEU: "🔊 Wird vorgelesen"-Karte zeigen und die Element-ID für die
+    // Wort-Hervorhebung zurückgeben. Im Vollbild-Modus wird stattdessen der
+    // dortige Text (focusText) ersetzt.
+    _showSpeakCaption(label) {
+        if (app.state.focusMode) return 'focusText';
+        const box = document.getElementById('readerSpeakCaption');
+        if (!box) return null;
+        document.getElementById('readerSpeakCaptionLabel').innerText = label;
+        box.classList.remove('hidden');
+        // die Hervorhebung im fertig gelesenen Seitentext stehen zu lassen
+        // wäre irreführend
+        document.querySelectorAll('#readerOriginalText .speech-highlight, #readerErstleserText .speech-highlight')
+            .forEach(el => el.classList.remove('speech-highlight'));
+        box.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        return 'readerSpeakCaptionText';
+    },
+
+    hideSpeakCaption() {
+        document.getElementById('readerSpeakCaption')?.classList.add('hidden');
+    },
+
+    // NEU: bei einer KI-Stimme die Aufnahmen für Wort-Ansage, Wörter,
+    // Erklärungen, Bildbeschreibung, Rätsel und Zwischenruf schon erzeugen,
+    // während der Seitentext läuft - nacheinander (Anbieter mit
+    // Anfrage-Limit), nur was beim automatischen Vorlesen gleich ohnehin
+    // gesprochen wird. Ohne KI-Stimme passiert nichts.
+    async _warmUpPageSegments(page, variant, words) {
+        if (!app.ttsNeural.isActive()) return;
+        const texts = [];
+        if (words.length) {
+            texts.push(this._wordsAnnouncement(words.length));
+            words.forEach(w => texts.push(w.word, w.explanation));
+        }
+        if (variant.desc) texts.push(`${this._introForPage(page)} ${variant.desc}`);
+        if (app.state.autoReadWithQuiz && variant.quizQ) texts.push(variant.quizQ, variant.quizA);
+        if (variant.personaComment) texts.push(variant.personaComment);
+        for (const t of texts) {
+            if (!app.state.autoReadActive) return;
+            await app.ttsNeural.warmUp(t);
+        }
     },
 
     // NEU: feste Ansage je Seite statt Zufall. Bei einer KI-Stimme wird
@@ -349,6 +440,7 @@ Object.assign(app.tts, {
     // trotzdem im gerade sichtbaren Textfeld mit.
     speakCurrentText() {
         if (app.state.autoReadActive) this.stopAutoRead();
+        this.hideSpeakCaption();
         stepRunId++; // auch eine per Hand gestartete Schritt-Kette abbrechen
 
         const book = app.library[app.state.currentBookId];
@@ -493,6 +585,7 @@ Object.assign(app.tts, {
         // (ihre Pausen laufen über setTimeout, nicht über die Sprachausgabe).
         stepRunId++;
         this.stop();
+        this.hideSpeakCaption();
         const btn = document.getElementById('btnAutoRead');
         if (btn) btn.innerHTML = this.autoReadLabel();
         const focusBtn = document.getElementById('focusPlayBtn');
@@ -578,25 +671,46 @@ Object.assign(app.tts, {
             }
         }
 
+        // NEU (Nutzer-Feedback): beim Vorlesen von Wort-Erklärungen,
+        // Bildbeschreibung, Rätsel und Zwischenruf stand bisher weiter der
+        // (fertig vorgelesene) Seitentext da. Jetzt zeigt die Karte
+        // "🔊 Wird vorgelesen" (#readerSpeakCaption) genau den Text, der
+        // gerade gesprochen wird, mit Wort-Hervorhebung - im Vollbild-
+        // Modus ersetzt er den Text dort (focusText).
+        const caption = (label) => this._showSpeakCaption(label);
+
+        // NEU (Nutzer-Feedback): Reihenfolge geändert - der Zwischenruf der
+        // Persona leitet oft schon zur nächsten Seite über ("Wollen wir
+        // weiterblättern?"), kam aber VOR der Bildbeschreibung. Jetzt:
+        // Text -> schwierige Wörter -> Bildbeschreibung -> Rätsel ->
+        // Zwischenruf -> umblättern.
+        const sayPersonaComment = () => {
+            if (!app.state.autoReadActive) return;
+            if (!variant.personaComment) { this.hideSpeakCaption(); advanceToNext(); return; }
+            const persona = app.personas.find(p => p.id === app.state.readingPersonaId);
+            const target = caption(persona ? `${persona.icon || '💬'} ${persona.label.split('(')[0].trim()}` : '💬 Zwischenruf');
+            this.speak(variant.personaComment, () => { this.hideSpeakCaption(); advanceToNext(); }, target);
+        };
+
         // Kombinierter Modus: Rätselfrage sichtbar UND hörbar, mit Pause
         // zum Raten, bevor die Antwort kommt.
         const maybeAskQuiz = () => {
             if (!app.state.autoReadActive) return;
             if (app.state.autoReadWithQuiz && variant.quizQ) {
-                // NEU: zum Quiz-Tab wechseln, damit Frage/Antwort auch
-                // sichtbar sind, nicht nur hörbar.
-                app.readerUI.setTab('quiz');
+                // FIX: kein Tab-Wechsel mehr - Frage und Antwort stehen in
+                // der "Wird vorgelesen"-Karte (die Antwort zusätzlich wie
+                // bisher aufgedeckt im Quiz-Tab).
                 this.speak(variant.quizQ, () => {
                     if (!app.state.autoReadActive) return;
                     setTimeout(() => {
                         if (!app.state.autoReadActive) return;
                         const answerEl = document.getElementById('readerQuizA');
                         if (answerEl) answerEl.classList.remove('hidden');
-                        this.speak(variant.quizA, advanceToNext);
+                        this.speak(variant.quizA, sayPersonaComment, caption('✅ Antwort'));
                     }, 4000);
-                });
+                }, caption('❓ Rätselfrage'));
             } else {
-                advanceToNext();
+                sayPersonaComment();
             }
         };
 
@@ -607,49 +721,52 @@ Object.assign(app.tts, {
                 // Sprechvorgang. Vorher waren es zwei - bei einer KI-Stimme
                 // also zwei API-Aufrufe und zwei Aufnahmen pro Seite. Klingt
                 // nebenbei natürlicher, weil die Pause dazwischen wegfällt.
-                this.speak(`${this._introForPage(page)} ${variant.desc}`, maybeAskQuiz);
+                this.speak(`${this._introForPage(page)} ${variant.desc}`, maybeAskQuiz, caption('🖼️ Bildbeschreibung'));
             } else {
                 maybeAskQuiz();
             }
         };
 
-        // NEU (v0.39.0-beta, "Personas kommen nicht zur Geltung"): der eigene
-        // Zwischenruf der gewählten Persona (variant.personaComment) nach Text
-        // und Wort-Erklärungen, vor der Bildbeschreibung. Fehlt er (ältere
-        // Seiten), läuft es ohne Pause direkt weiter.
-        const sayPersonaComment = () => {
-            if (!app.state.autoReadActive) return;
-            if (variant.personaComment) this.speak(variant.personaComment, describeImage);
-            else describeImage();
-        };
-
         // NEU (Nutzerwunsch: "schwierige Wörter sollten nach dem Textteil
-        // leicht erklärt werden", konkretes Beispiel "Bibliothek könnte
-        // langsamer bzw. mit Pausen vorgelesen werden"): Wort und Erklärung
-        // als ZWEI getrennte Sprechvorgänge mit kurzer Pause dazwischen -
-        // isoliert vom Satzfluss, mit echter Pause zum Verarbeiten, ohne
-        // SSML-Pausen-Tags zu brauchen (funktioniert so auch mit der
-        // Gerätestimme). Gleiches Pausen-Muster wie bei der Rätselfrage
-        // oben (maybeAskQuiz). Läuft leer durch, wenn die Seite keine
-        // schwierigen Wörter hat (der Regelfall laut Prompt-Vorgabe).
+        // leicht erklärt werden"): Wort und Erklärung als ZWEI getrennte
+        // Sprechvorgänge mit kurzer Pause dazwischen. Läuft leer durch, wenn
+        // die Seite keine schwierigen Wörter hat.
+        // NEU (Nutzer-Feedback): vorher eine kurze Ansage ("Jetzt erkläre
+        // ich dir ...") statt kommentarlos weiterzusprechen, und die Pause
+        // zwischen Wort und Erklärung von 600 auf 200 ms verkürzt (dazu
+        // werden die Aufnahmen bei einer KI-Stimme vorab erzeugt, siehe
+        // _warmUpPageSegments - vorher kam die Ladezeit noch obendrauf).
+        const words = Array.isArray(variant.difficultWords) ? variant.difficultWords.filter(w => w && w.word && w.explanation) : [];
         const explainDifficultWords = () => {
             if (!app.state.autoReadActive) return;
-            const words = Array.isArray(variant.difficultWords) ? variant.difficultWords : [];
-            if (words.length === 0) { sayPersonaComment(); return; }
+            if (words.length === 0) { describeImage(); return; }
             const speakNext = (i) => {
                 if (!app.state.autoReadActive) return;
-                if (i >= words.length) { sayPersonaComment(); return; }
+                if (i >= words.length) { describeImage(); return; }
                 const w = words[i];
+                const target = caption(`📚 ${w.word}`);
                 this.speak(w.word, () => {
                     if (!app.state.autoReadActive) return;
                     setTimeout(() => {
                         if (!app.state.autoReadActive) return;
-                        this.speak(w.explanation, () => speakNext(i + 1));
-                    }, 600);
-                });
+                        this.speak(w.explanation, () => speakNext(i + 1), target);
+                    }, WORD_EXPLAIN_PAUSE_MS);
+                }, target);
             };
-            speakNext(0);
+            this.speak(this._wordsAnnouncement(words.length), () => {
+                if (!app.state.autoReadActive) return;
+                setTimeout(() => speakNext(0), 300);
+            }, caption('📚 Schwierige Wörter'));
         };
+
+        // Bei einer KI-Stimme: die übrigen Teile dieser Seite schon erzeugen,
+        // während der Seitentext läuft (wird ohnehin gleich vorgelesen).
+        // Kurz verzögert, damit die Aufnahme des Seitentexts selbst Vorrang
+        // hat (Anbieter mit Anfrage-Limit reihen die Aufrufe hintereinander).
+        const warmPageIdx = app.state.currentPageIdx;
+        setTimeout(() => {
+            if (app.state.autoReadActive && app.state.currentPageIdx === warmPageIdx) this._warmUpPageSegments(page, variant, words);
+        }, 1500);
 
         const startPageText = () => {
             // NEU (Nutzerwunsch): eine reine Bildseite ohne eigenen Text

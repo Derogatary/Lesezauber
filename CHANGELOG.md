@@ -6,6 +6,30 @@ vollständige Historie, neueste Version zuerst. Diese Datei wurde aus
 `CLAUDE.md` ausgelagert, weil der Abschnitt dort mit der Zeit zu groß für
 schnellen Kontext wurde; inhaltlich unverändert übernommen.
 
+## v0.49.0-beta
+
+Nutzer-Notizen aus dem Alltag (sieben Punkte).
+
+**🌙 Nachtmodus blockierte das ganze Handy im kleinen Fenster** (`js/actions/nightPrep.js`)
+- Ursache: Die schwarze Anzeige ging immer in den Vollbildmodus, das Beenden lief über eine System-Rückfrage (`confirm`). In einem Tab-, Popup- oder geteilten Fenster konnte die Rückfrage unsichtbar hinter dem Vollbild hängen und alle Eingaben schlucken, bis der Bildschirm einmal aus und an ging.
+- Vollbild jetzt nur, wenn die App ohnehin fast den ganzen Bildschirm einnimmt (`fullscreenIsSafe()`). Beim Verlassen der App wird das Vollbild gelöst.
+- Keine System-Rückfrage mehr: erster Tipp zeigt „Nochmal tippen zum Beenden“, ein zweiter Tipp innerhalb von 4 s beendet. Dazu oben rechts ein dezenter ✕-Knopf, der sofort beendet.
+
+**Text wurde manchmal nicht erfasst** (`js/api.js`, `js/actions/scanner.js`)
+- Häufigste Ursache: wörtliche Rede mit geraden Anführungszeichen ("Hallo", sagte …), die die KI im Antwortformat nicht escaped. Dadurch war der ganze Grundblock unlesbar, die Seite bekam „Kein Text.“.
+- `parseModelJson()` repariert solche Anführungszeichen jetzt im zweiten Versuch (`repairJsonQuotes()`, gilt für alle KI-Antworten).
+- Fehlt der Originaltext trotzdem, holt EINE zusätzliche Einzel-Analyse ihn nach (kostet nur in diesem Fehlerfall eine Anfrage).
+
+**Wort-Hervorhebung zeitgenauer** (`js/utils.js`, `js/ttsNeural.js`, `js/tts.js`)
+- KI-Stimmen ohne echte Wort-Zeitstempel (Gemini, OpenAI, Google Cloud): Schätzung jetzt nach Silben plus Sprechpausen an Komma und Satzende (`app.utils.estimateWordStartTimes()`), statt stur nach Buchstaben-Anteil. Vorher lief die Hervorhebung im Lauf der Seite immer weiter voraus. ElevenLabs und Speechify liefern echte Zeitstempel und bleiben exakt.
+- Gerätestimme: viele Android-Stimmen melden gar keine Wortgrenzen, die Hervorhebung blieb dann stehen. Kommt 0,9 s lang keine, läuft sie nach geschätzter Sprechdauer mit (`estimateSpeechDurationSec()`).
+
+**Automatisches Vorlesen** (`js/tts.js`)
+- **Neue Reihenfolge:** Text → schwierige Wörter → Bildbeschreibung → Rätsel → Zwischenruf der Persona → umblättern. Der Zwischenruf leitet oft schon zur nächsten Seite über („Wollen wir weiterblättern?“) und kam vorher vor der Bildbeschreibung.
+- **Ansage vor den Wort-Erklärungen:** „Jetzt erkläre ich dir noch ein paar schwierige Wörter.“ bzw. „… ein schwieriges Wort.“
+- **Kürzere Pause zwischen Wort und Erklärung:** 200 statt 600 ms. Bei einer KI-Stimme entstehen die Aufnahmen für Wörter, Erklärungen, Bildbeschreibung, Rätsel und Zwischenruf jetzt schon, während der Seitentext läuft (`_warmUpPageSegments()`, nur was ohnehin gleich vorgelesen wird). Vorher kam die Ladezeit noch obendrauf.
+- **Neue Karte „🔊 Wird vorgelesen“** (`#readerSpeakCaption`, über den Tabs): zeigt genau den Teil, der gerade gesprochen wird (Wort, Erklärung, Bildbeschreibung, Rätselfrage/Antwort, Zwischenruf), mit Wort-Hervorhebung. Die Hervorhebung im fertig gelesenen Seitentext verschwindet dabei. Im Vollbild-Vorlese-Modus ersetzt der Teil den Text dort. Das Rätsel wechselt nicht mehr in den Quiz-Tab.
+
 ## v0.48.0-beta
 
 Nutzerwunsch: Nachtmodus auch für den Buchatlas, Reihenfolge „erst LeseZauber, dann Buchatlas“.

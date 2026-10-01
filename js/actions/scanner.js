@@ -56,6 +56,21 @@ async function runPageAnalysisCore(book, pageIdx, personaId) {
             app.actions.recordVocabulary(result.vocabulary);
             applyPageMetadata(book, page, result, isCover);
         } else {
+            // FIX (Nutzer-Feedback "manchmal kein Text erfasst, obwohl Text da
+            // ist"): war der "core"-Block auch nach der Anführungszeichen-
+            // Reparatur (parseModelJson in js/api.js) unlesbar, fehlt
+            // originalText ganz - früher wurde daraus stillschweigend "Kein
+            // Text.". Jetzt EIN zusätzlicher Einzel-Aufruf, der den Text
+            // nachliefert (kostet nur in diesem Fehlerfall eine Anfrage).
+            if (!page.pdfSourceText && typeof core.originalText !== 'string') {
+                console.warn('Analyse: core-Block ohne Originaltext - hole den Text per Einzel-Analyse nach.');
+                try {
+                    const single = await app.api.analyze(b64, isCover, personaId, null, forceToc, bookType);
+                    Object.keys(single).forEach(k => { if (core[k] === undefined) core[k] = single[k]; });
+                } catch (e) {
+                    console.error('Einzel-Analyse für den Originaltext fehlgeschlagen:', e);
+                }
+            }
             personaIds.forEach(id => {
                 page.variants[id] = app.utils.buildPageVariant({ ...core, ...personas[id] }, page, bookType);
                 app.actions.recordVocabulary(personas[id].vocabulary);
