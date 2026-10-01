@@ -51,6 +51,9 @@ import './render/voiceRecord.js';
 import './actions/nightPrep.js';
 import './render/nightPrep.js';
 import './actions/audiobookExport.js';
+// NEU (v0.51.0-beta): Klappenbücher (Klappen-Fotos einer Seite zuordnen und vorlesen)
+import './actions/flapBook.js';
+import './render/flapBook.js';
 
 // NEU: Video-Export Weg B, Teil 1 - Renderer-Kern (Canvas) plus Zeitplan
 // und Vorschau. Reihenfolge unkritisch (alle drei hängen nur Funktionen an

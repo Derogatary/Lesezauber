@@ -118,6 +118,12 @@ Object.assign(app.render, {
             // (Leerseiten, Impressum etc.) werden nie analysiert, der
             // normale "Offen"-Badge wäre hier irreführend.
             if (p.excluded) statusBadge = `<span class="bg-slate-300 text-slate-700 text-[10px] font-bold px-2 py-0.5 rounded-full">🚫 Ausgeschlossen</span>`;
+            // NEU (v0.51.0-beta): Klappen-Foto eines Klappenbuchs (js/actions/flapBook.js)
+            if (p.flapOf) {
+                const baseIdx = book.pages.findIndex(b => b.id === p.flapOf);
+                const st = p.flap?.status === 'done' ? '' : p.flap?.status === 'error' ? ' ⚠️' : ' …';
+                statusBadge = `<span class="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded-full">🪟 Klappe von S. ${baseIdx >= 0 ? baseIdx + 1 : '?'}${st}</span>`;
+            }
 
             const isCover = book.coverPageId ? book.coverPageId === p.id : i === 0;
             // NEU: erledigte Seiten/Aufgaben sichtbar machen (pro Profil)
@@ -143,7 +149,11 @@ Object.assign(app.render, {
                                     <button onclick="app.actions.setCover(${p.id}); app.actions.toggleCardMenu(${p.id})" class="w-full text-left px-3 py-2 text-xs hover:bg-slate-50 ${isCover ? 'text-amber-600 font-bold' : 'text-slate-700'}">${isCover ? '⭐ Ist Cover' : '☆ Als Cover festlegen'}</button>
                                     ${(!p.excluded && (p.status === 'error' || p.status === 'pending')) ? `<button onclick="app.actions.retryPage(${i}); app.actions.toggleCardMenu(${p.id})" class="w-full text-left px-3 py-2 text-xs hover:bg-slate-50 text-indigo-600">${p.status === 'error' ? '🔄 Erneut versuchen' : '▶️ Analysieren'}</button>` : ''}
                                     ${(!p.excluded && p.status === 'done') ? `<button onclick="app.actions.toggleCardMenu(${p.id}); app.actions.reanalyzePage(${i})" class="w-full text-left px-3 py-2 text-xs hover:bg-slate-50 text-indigo-600">🔄 Neu auslesen</button>` : ''}
-                                    <button onclick="app.actions.togglePageExcluded(${p.id}); app.actions.toggleCardMenu(${p.id})" class="w-full text-left px-3 py-2 text-xs hover:bg-slate-50 ${p.excluded ? 'text-emerald-600 font-bold' : 'text-slate-700'}">${p.excluded ? '✅ Wieder einschließen' : '🚫 Von Analyse/Vorlesen ausschließen'}</button>
+                                    ${p.flapOf ? `
+                                    <button onclick="app.actions.toggleCardMenu(${p.id}); app.actions.analyzeFlapPage(${p.id})" class="w-full text-left px-3 py-2 text-xs hover:bg-slate-50 text-indigo-600">🔄 Klappe ${p.flap?.status === 'done' ? 'neu ' : ''}auslesen</button>
+                                    <button onclick="app.actions.toggleCardMenu(${p.id}); app.actions.unassignFlap(${p.id})" class="w-full text-left px-3 py-2 text-xs hover:bg-slate-50 text-slate-700">🪟 Klappe lösen (normale Seite)</button>` : `
+                                    ${book.flapBook ? `<button onclick="app.actions.toggleCardMenu(${p.id}); app.actions.assignFlap(${p.id})" class="w-full text-left px-3 py-2 text-xs hover:bg-slate-50 text-amber-700">🪟 Als Klappe zuordnen…</button>` : ''}
+                                    <button onclick="app.actions.togglePageExcluded(${p.id}); app.actions.toggleCardMenu(${p.id})" class="w-full text-left px-3 py-2 text-xs hover:bg-slate-50 ${p.excluded ? 'text-emerald-600 font-bold' : 'text-slate-700'}">${p.excluded ? '✅ Wieder einschließen' : '🚫 Von Analyse/Vorlesen ausschließen'}</button>`}
                                     <button onclick="app.actions.deletePage(${i})" class="w-full text-left px-3 py-2 text-xs hover:bg-red-50 text-red-500">🗑️ Entfernen</button>
                                 </div>
                             </div>

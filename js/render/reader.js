@@ -88,6 +88,10 @@ Object.assign(app.render, {
 
         // NEU: "Wird vorgelesen"-Karte gehört zur vorigen Seite (js/tts.js)
         app.tts.hideSpeakCaption?.();
+        // NEU (v0.51.0-beta): Klappenbuch - neue Seite startet mit geschlossener
+        // Klappe, Klappen-Knöpfe passend zur Seite (js/render/flapBook.js)
+        app.state.openFlapId = null;
+        app.render.readerFlaps?.(pageIdx);
 
         // merkt sich die zuletzt geöffnete Seite fürs "Weiterlesen" -
         // inkl. Zeitstempel, damit die Bibliothek das zuletzt gelesene

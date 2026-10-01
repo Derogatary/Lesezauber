@@ -36,7 +36,7 @@ Object.assign(app.render, {
                 ? 'bg-indigo-600 text-white border-indigo-600'
                 : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50';
             return `<button onclick="app.actions.setNewBookType('${t.id}')" title="${app.utils.sanitize(t.hint)}" class="text-[11px] font-bold px-2.5 py-1 rounded-lg border transition ${cls}">${t.icon} ${app.utils.sanitize(t.label)}</button>`;
-        }).join('');
+        }).join('') + (app.render.flapChipHtml?.() || ''); // NEU (v0.51.0-beta): Klappenbuch-Schalter
     },
 
     // NEU: Art-Anzeige und -Umschalter in der Buchansicht.
@@ -57,7 +57,7 @@ Object.assign(app.render, {
             <div class="flex items-center justify-between gap-2 bg-white px-3 py-2 rounded-2xl border border-slate-200 shadow-sm">
                 <span class="text-[11px] font-bold text-slate-500 flex-shrink-0">Art:</span>
                 <div class="flex gap-1 flex-wrap justify-end">${buttons}</div>
-            </div>`;
+            </div>${app.render.bookFlapToggleHtml?.(book) || ''}`;
     },
 
     // NEU: Hilfe-Karte im Reader (nur bei Übungsheften): Aufgabenart,

@@ -1,7 +1,9 @@
 // Bei jeder inhaltlichen Änderung an einer dieser Dateien diese Nummer
 // erhöhen - sonst bekommen wiederkehrende Besucher weiter die alte
 // zwischengespeicherte Version ausgeliefert.
-const CACHE_NAME = 'lesezauber-shell-v85';
+const CACHE_NAME = 'lesezauber-shell-v86';
+
+// NEU (v86, v0.51.0-beta): Klappenbücher (neue Dateien js/actions/flapBook.js, js/render/flapBook.js).
 
 // FIX (v85, v0.50.0-beta): Doppelpunkt-Pause, Speechify-Hervorhebung, Seite neu auslesen, sichtbare Hintergrund-Fehler.
 
@@ -350,6 +352,8 @@ const APP_SHELL = [
     './js/keyboard.js',
     './js/gestures.js',
     './js/edgeScroll.js',
+    './js/actions/flapBook.js',
+    './js/render/flapBook.js',
     './js/atlas/atlasCore.js',
     './js/atlas/atlasUtils.js',
     './js/atlas/atlasApi.js',

@@ -61,7 +61,7 @@
                     <button id="pregenBadge" data-parent-only onclick="app.nav.go('settings')" class="hidden text-xs font-bold text-indigo-600 mt-0.5 hover:underline"></button>
                     <!-- NEU (v0.44.0-beta): direkt in den Nachtmodus -->
                     <button id="nightPrepLibBtn" data-parent-only onclick="app.actions.startNightPrep()" class="hidden text-xs font-bold text-slate-600 mt-0.5 ml-2 hover:underline">🌙 über Nacht</button>
-                    <p data-app-version class="text-[10px] text-slate-400 font-semibold mt-0.5">v0.50.0-beta</p>
+                    <p data-app-version class="text-[10px] text-slate-400 font-semibold mt-0.5">v0.51.0-beta</p>
                 </div>
                 <!-- FIX (v0.45.1-beta, Nutzer-Screenshot): seit dem Kindermodus-Knopf
                      passte die Knopfreihe nicht mehr aufs Handy und die ganze Seite
@@ -460,6 +460,8 @@
                         <p class="text-[10px] font-bold uppercase tracking-wider text-indigo-500 mb-1">🔊 Wird vorgelesen · <span id="readerSpeakCaptionLabel"></span></p>
                         <p id="readerSpeakCaptionText" class="text-slate-800 leading-relaxed font-medium text-base"></p>
                     </div>
+                    <!-- NEU (v0.51.0-beta): Klappen der Seite auf-/zuklappen (js/render/flapBook.js) -->
+                    <div id="readerFlaps" class="hidden mb-4"></div>
                     <!-- Tab Switcher (Original / Erstleser / Zauberer) -->
                     <div class="flex bg-slate-200 p-1 rounded-xl mb-4 gap-1 text-xs font-bold">
                         <button id="tabOriginal" onclick="app.readerUI.setTab('original')" class="flex-1 py-2 rounded-lg text-center bg-white shadow-sm text-indigo-900">

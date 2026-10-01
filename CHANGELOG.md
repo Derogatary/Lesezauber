@@ -6,6 +6,21 @@ vollständige Historie, neueste Version zuerst. Diese Datei wurde aus
 `CLAUDE.md` ausgelagert, weil der Abschnitt dort mit der Zeit zu groß für
 schnellen Kontext wurde; inhaltlich unverändert übernommen.
 
+## v0.51.0-beta
+
+Nutzerwunsch: „Klappenbuch vorher als Auswahl, dann können Seiten als Klappen für Seiten zugeordnet werden.“
+
+**🪟 Klappenbücher** (`js/actions/flapBook.js`, `js/render/flapBook.js`)
+- **Auswahl beim Anlegen:** In „Neu anlegen als“ gibt es neben Geschichte/Übungsheft den Schalter „🪟 Klappenbuch“ (nur für Geschichten). Er setzt `book.flapBook` für Kamera, Galerie, PDF und EPUB (`app.utils.newBookFlapFields()`). Bestehende Bücher lassen sich in der Buchansicht unter „Art:“ umschalten.
+- **Zuordnen:** Jede Seite einmal mit geschlossener und einmal mit geöffneter Klappe fotografieren. Am Foto mit offener Klappe im ⋮-Menü „🪟 Als Klappe zuordnen…“ wählen und die Nummer der Hauptseite eingeben. Eine Hauptseite kann mehrere Klappen haben.
+  - Die Klappen-Seite bekommt `page.flapOf` (ID der Hauptseite) und `page.excluded = true`. Absicht: Damit überspringen sie alle bestehenden Stellen (Analyse, Hintergrund-Vorbereitung, Auto-Vorlesen, Hörbuch, Video, Zähler), ohne dass jede einzeln angepasst werden muss.
+  - Im Buch trägt die Karte „🪟 Klappe von S. X“. Das ⋮-Menü bietet dort „Klappe (neu) auslesen“ und „Klappe lösen“.
+- **Auslesen:** `app.api.analyzeFlap()` schickt Hauptseite und Klappen-Foto in EINER Anfrage. Die KI liefert nur das, was unter der Klappe NEU ist (`page.flap = { status, text, desc }`). Text, der schon auf der Hauptseite steht, wird so nicht doppelt vorgelesen. Läuft sofort beim Zuordnen (eine KI-Anfrage). Die Hintergrund-Vorbereitung liest Klappen nicht aus.
+- **Vorlesen:** Beim automatischen Vorlesen der Hauptseite kommt nach Text und schwierigen Wörtern „Heb mal die Klappe hoch!“. Das Bild wechselt dabei zum Foto mit offener Klappe (auch im Vollbild), vorgelesen wird der neue Text plus Beschreibung, danach wird zugeklappt und es geht mit der Bildbeschreibung weiter. Bei einer KI-Stimme wird die Klappe vorab erzeugt.
+- **Reader:** Über den Tabs „🪟 Klappe öffnen“/„Zuklappen“ (wechselt das Bild und liest vor). Blättert man von Hand auf ein Klappen-Foto, steht dort „Das ist die geöffnete Klappe von Seite X“.
+
+**FIX:** Die App-eigenen Bild-Ansagen kommen ohne Doppelpunkt aus („Schauen wir uns das Bild an.“ statt „Das Bild zeigt:“). Mit der Doppelpunkt-Sprechpause aus v0.50.0-beta klang „Das Bild zeigt:“ wie ein abgeschlossener Satz.
+
 ## v0.50.0-beta
 
 Weitere Nutzer-Notizen (mit Screenshot aus dem Vollbild-Vorlesen).

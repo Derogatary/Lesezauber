@@ -114,6 +114,7 @@ import './actions/meineNeueDatei.js';
 | `js/studio/studioManualImages.js`, `js/render/studioManualImages.js` | NEU v0.45.0-beta: „✍️ Bilder manuell austauschen“ (Stufe 6, auch aus Stufe 4) - Vollbild-Liste `#studioManualPanel` mit allen Figurenblättern, Doppelseiten bzw. Comic-Panels. `app.studio.manualPromptFor()` baut den Prompt FRISCH über `imageSource.buildPrompt()` (+ Pixelgröße + Referenzhinweis), `applyManualImage()` setzt ein Bild über `imageSource.request('upload')` ein (Comic: Seite neu zusammensetzen). Einfügen per Zwischenablage-Knopf, Strg+V (aktiver = zuletzt kopierter Eintrag), Datei, Drag & Drop. `panel.imageSource` merkt seitdem die Herkunft je Panel („alle Platzhalter ersetzen“ überspringt `upload`) |
 | `js/studio/imageTargets.js` | NEU v0.46.0-beta: Zielprogramme für kopierte Bild-Prompts (Nano Banana, ChatGPT/Copilot, „Leonardo & Co.“ englisch + Negativ-Prompt) - **neues Programm = neuer Eintrag in `TARGETS`** (id, label, lang, ratios, hint, negative). Englische Fassung übersetzt die freien Teile einmal per `app.studio.api.translateImagePromptParts()` (im Speicher gemerkt). Grundlage: `imageSource.promptParts()`/`germanPromptFromParts()`; `buildPrompt()` ist seit v0.46.0-beta nach Googles Nano-Banana-Empfehlungen positiv formuliert, Seitenverhältnis über `app.studio.formats.supportedAspect()`, beim Gemini-Bildaufruf zusätzlich als `imageConfig.aspectRatio`. Anbieter-Recherche (kommerziell/gratis): `docs/KONZEPT-Bildquellen.md` Abschnitt 4a |
 | `js/atlas/` (`atlasCore.js`, `atlasApi.js`, `atlasDb.js`, `atlasUtils.js`, `actions/atlas*.js`, `render/atlas*.js`) | NEU v0.47.0-beta: 🗺️ **Buchatlas** - Wiki & Übersetzung für eigene Texte (Romane/E-Books), wieder eingegliederte Einzel-App. Eigener Namensraum **`app.atlas.*`** (nicht mit `app.*` mischen), alle HTML-IDs mit Präfix `atlas`, eigene IndexedDB **`BuchatlasDB`** + eigene Sicherungsdatei. Ansichten `atlas`/`atlasBook`/`atlasWiki`/`atlasTranslate`/`atlasSettings` in `app.nav.go()` → `app.atlas.nav.show()`. Nutzt LeseZaubers Gemini-Key, `app.api.geminiModels` (Modell-Rotation) und `app.api.safetySettingsBook`. Seit v0.48.0-beta `atlasNight.js`: vorgemerkte Nacht-Aufträge (`book.nightJobs`), abgearbeitet vom Nachtmodus NACH LeseZaubers Text-Aufgaben. Details `docs/BUCHATLAS.md` |
+| `js/actions/flapBook.js`, `js/render/flapBook.js` | NEU v0.51.0-beta: 🪟 Klappenbücher - `book.flapBook` (Auswahl beim Anlegen per `app.state.newBookFlaps`/`app.utils.newBookFlapFields()`, Umschalter in der Buchansicht), Klappen-Foto per ⋮ einer Hauptseite zuordnen (`page.flapOf` + `page.excluded = true`, damit alle bestehenden Schleifen/Zähler sie überspringen), `app.api.analyzeFlap()` (zwei Bilder, nur das NEUE unter der Klappe → `page.flap`), Vorlesen im Auto-Vorlese-Ablauf nach den Wörtern (`app.utils.flapsForPage()`/`flapSpeech()`, Bildwechsel `app.actions.showFlapImage()`), Reader-Knöpfe `#readerFlaps` |
 | `js/render/studioLibrary.js`, `render/studioWizard.js` | SchreibZauber: Werkstatt-Übersicht bzw. Stufen-Ansicht |
 | `js/vendor/` | PDF.js, JSZip, mp4-muxer (MIT) - NIE direkt bearbeiten, nur austauschen/aktualisieren. Lazy geladen, deshalb NICHT in der `APP_SHELL` von `sw.js` |
 | `js/actions/appHealth.js` | NEU v0.40.0-beta: Fehlerprotokoll (nur lokal, `copyErrorLog()`), Update-Hinweis statt stillem Service-Worker-Wechsel (`watchForAppUpdate()`) - wird in `main.js` als ERSTES Modul geladen. (Sicherungs-Erinnerung gibt es als Banner `#backupReminder` in `js/render/library.js`) |
@@ -157,6 +158,7 @@ import './actions/meineNeueDatei.js';
                      // Vorlesen in der Fremdsprache (js/tts.js/ttsNeural.js), KEINE Neu-Analyse/
                      // Persona-Nachbau/Birkenbihl (würde deutsch), Buch-Quiz in der Buchsprache
   translatedFromBookId, // NEU v0.39.0-beta, optional: ID des deutschen Originals
+  flapBook,          // NEU v0.51.0-beta, optional bool: Klappenbuch (js/actions/flapBook.js)
   approvedForKids, approvedAt, // NEU v0.42.0-beta, optional: von Eltern für den
                      // Kinder-Lesemodus freigegeben (js/actions/kidMode.js) - fehlt = nicht freigegeben
   pages: [ ... ]
@@ -174,6 +176,9 @@ import './actions/meineNeueDatei.js';
                    // drucken kann statt über das Canvas-Seitenbild (imgUrl)
   chapterTitle,    // optional: von der KI erkannte Kapitelüberschrift
   tocEntries,      // optional: Array von Kapitelüberschriften, falls Inhaltsverzeichnis-Seite
+  flapOf, flap,    // NEU v0.51.0-beta, nur Klappenbücher: dieses Foto ist die geöffnete Klappe der
+                   // Seite mit ID flapOf (dann immer auch excluded: true); flap = { status, text, desc }
+                   // = nur das NEUE unter der Klappe (app.api.analyzeFlap)
   excluded,        // optional bool - Seite komplett von Analyse UND Auto-Vorlesen ausgeschlossen
                    // (Leerseiten, Impressum etc., togglePageExcluded) - manuelles Ansehen bleibt möglich
   variants: {
@@ -359,6 +364,6 @@ Feste Regeln:
 
 ## Versionsstand
 
-Aktuell `v0.50.0-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Version bei größeren Änderungen hochzählen (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).
+Aktuell `v0.51.0-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Version bei größeren Änderungen hochzählen (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).
 
 **Die vollständige Versionshistorie (was mit welcher Version kam, inkl. aller Entscheidungen) steht in [`CHANGELOG.md`](CHANGELOG.md), neueste Version zuerst.** Vor dem Einplanen eines Features dort nachsehen, sonst werden bereits gefallene Entscheidungen neu diskutiert. Neuer Eintrag bei jeder Versionserhöhung: oben in `CHANGELOG.md` ergänzen, nicht hier.

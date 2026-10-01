@@ -19,12 +19,15 @@ const WORD_EXPLAIN_PAUSE_MS = 200;
 const QUIZ_THINK_PAUSE_MS = 3000;
 
 // NEU: Abwechslung statt immer derselben Ansage vor der Bildbeschreibung
+// FIX (v0.51.0-beta): ohne Doppelpunkte - seit der Doppelpunkt-Sprechpause
+// (app.utils.stripEmojiForSpeech) klang "Das Bild zeigt:" wie ein
+// abgeschlossener Satz ("Das Bild zeigt.").
 const IMAGE_INTROS = [
     'Schau mal, was hier zu sehen ist.',
     'Auf diesem Bild passiert Folgendes.',
-    'Hier siehst du:',
-    'Das Bild zeigt:',
-    'Guck mal genau hin:'
+    'Schauen wir uns das Bild an.',
+    'Und jetzt zum Bild.',
+    'Guck mal genau hin!'
 ];
 
 Object.assign(app.tts, {
@@ -308,13 +311,14 @@ Object.assign(app.tts, {
     // während der Seitentext läuft - nacheinander (Anbieter mit
     // Anfrage-Limit), nur was beim automatischen Vorlesen gleich ohnehin
     // gesprochen wird. Ohne KI-Stimme passiert nichts.
-    async _warmUpPageSegments(page, variant, words) {
+    async _warmUpPageSegments(page, variant, words, flaps = []) {
         if (!app.ttsNeural.isActive()) return;
         const texts = [];
         if (words.length) {
             texts.push(this._wordsAnnouncement(words.length));
             words.forEach(w => texts.push(w.word, w.explanation));
         }
+        flaps.forEach((f, i) => texts.push(app.utils.flapSpeech(f, i)));
         if (variant.desc) texts.push(this._descWithIntro(page, variant.desc));
         if (app.state.autoReadWithQuiz && variant.quizQ) texts.push(variant.quizQ, variant.quizA);
         if (variant.personaComment) texts.push(variant.personaComment);
@@ -599,6 +603,8 @@ Object.assign(app.tts, {
         stepRunId++;
         this.stop();
         this.hideSpeakCaption();
+        // NEU (v0.51.0-beta): eine beim Vorlesen geöffnete Klappe wieder zuklappen
+        if (app.state.openFlapId) app.actions.showFlapImage?.(null);
         const btn = document.getElementById('btnAutoRead');
         if (btn) btn.innerHTML = this.autoReadLabel();
         const focusBtn = document.getElementById('focusPlayBtn');
@@ -751,13 +757,33 @@ Object.assign(app.tts, {
         // zwischen Wort und Erklärung von 600 auf 200 ms verkürzt (dazu
         // werden die Aufnahmen bei einer KI-Stimme vorab erzeugt, siehe
         // _warmUpPageSegments - vorher kam die Ladezeit noch obendrauf).
+        // NEU (v0.51.0-beta, Klappenbücher - js/actions/flapBook.js): nach den
+        // Wörtern jede zugeordnete Klappe "aufklappen" (Bild wechselt zum
+        // Foto mit offener Klappe) und vorlesen, was darunter neu ist; danach
+        // wieder zuklappen und mit der Bildbeschreibung der Seite weiter.
+        const flaps = app.utils.flapsForPage(book, page);
+        const readFlaps = () => {
+            if (!app.state.autoReadActive) return;
+            if (!flaps.length) { describeImage(); return; }
+            const next = (i) => {
+                if (!app.state.autoReadActive) return;
+                if (i >= flaps.length) { app.actions.showFlapImage(null); describeImage(); return; }
+                app.actions.showFlapImage(flaps[i]);
+                this.speak(app.utils.flapSpeech(flaps[i], i), () => {
+                    if (!app.state.autoReadActive) return;
+                    setTimeout(() => next(i + 1), 600);
+                }, caption(flaps.length > 1 ? `🪟 Klappe ${i + 1}` : '🪟 Klappe'));
+            };
+            next(0);
+        };
+
         const words = Array.isArray(variant.difficultWords) ? variant.difficultWords.filter(w => w && w.word && w.explanation) : [];
         const explainDifficultWords = () => {
             if (!app.state.autoReadActive) return;
-            if (words.length === 0) { describeImage(); return; }
+            if (words.length === 0) { readFlaps(); return; }
             const speakNext = (i) => {
                 if (!app.state.autoReadActive) return;
-                if (i >= words.length) { describeImage(); return; }
+                if (i >= words.length) { readFlaps(); return; }
                 const w = words[i];
                 const target = caption(`📚 ${w.word}`);
                 this.speak(w.word, () => {
@@ -780,7 +806,7 @@ Object.assign(app.tts, {
         // hat (Anbieter mit Anfrage-Limit reihen die Aufrufe hintereinander).
         const warmPageIdx = app.state.currentPageIdx;
         setTimeout(() => {
-            if (app.state.autoReadActive && app.state.currentPageIdx === warmPageIdx) this._warmUpPageSegments(page, variant, words);
+            if (app.state.autoReadActive && app.state.currentPageIdx === warmPageIdx) this._warmUpPageSegments(page, variant, words, flaps);
         }, 1500);
 
         const startPageText = () => {
