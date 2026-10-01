@@ -277,6 +277,33 @@ Object.assign(app.tts, {
         this.synth.speak(utter);
     },
 
+    // NEU (v0.52.0-beta, Klappenbücher): eine Klappe vorlesen - Einleitung,
+    // Klappen-Text (über _speakPageText, also auch mit eigener Aufnahme und
+    // demselben KI-Stimmen-Zwischenspeicher wie die Klappen-Seite selbst),
+    // dann die Bildbeschreibung der Klappe. flap = { page, variant } aus
+    // app.utils.flapsForPage(). opts.target(part) liefert die Element-ID für
+    // die Hervorhebung ('text' | 'desc'), opts.isActive() bricht ab.
+    speakFlap(flap, idx, onEnd, opts = {}) {
+        const target = opts.target || (() => 'readerFlapText');
+        const isActive = opts.isActive || (() => app.state.openFlapId === flap.page.id);
+        const v = flap.variant;
+        const sayDesc = () => {
+            if (!isActive()) return;
+            if (v.desc) this.speak(v.desc, () => { if (isActive() && onEnd) onEnd(); }, target('desc'));
+            else if (onEnd) onEnd();
+        };
+        const sayText = () => {
+            if (!isActive()) return;
+            if (v.text && v.text !== 'Kein Text.') {
+                const { plain, tagged } = this._pickSpeechVariant(v);
+                this._speakPageText(flap.page, plain, tagged, () => setTimeout(sayDesc, 300), target('text'));
+            } else {
+                sayDesc();
+            }
+        };
+        this.speak(app.utils.flapIntro(idx), () => setTimeout(sayText, 200), target('text'));
+    },
+
     // NEU (Nutzer-Feedback): kurze Ansage, bevor schwierige Wörter erklärt
     // werden - feste Sätze (gut für den KI-Stimmen-Zwischenspeicher).
     _wordsAnnouncement(count) {
@@ -318,7 +345,13 @@ Object.assign(app.tts, {
             texts.push(this._wordsAnnouncement(words.length));
             words.forEach(w => texts.push(w.word, w.explanation));
         }
-        flaps.forEach((f, i) => texts.push(app.utils.flapSpeech(f, i)));
+        // Klappen: Einleitung, Klappen-Text (gleicher Schlüssel wie beim
+        // Vorlesen der Klappen-Seite selbst) und Klappen-Bildbeschreibung
+        flaps.forEach((f, i) => {
+            texts.push(app.utils.flapIntro(i));
+            if (f.variant.text && f.variant.text !== 'Kein Text.') texts.push(this._pickSpeechVariant(f.variant).tagged || f.variant.text);
+            if (f.variant.desc) texts.push(f.variant.desc);
+        });
         if (variant.desc) texts.push(this._descWithIntro(page, variant.desc));
         if (app.state.autoReadWithQuiz && variant.quizQ) texts.push(variant.quizQ, variant.quizA);
         if (variant.personaComment) texts.push(variant.personaComment);
@@ -641,6 +674,9 @@ Object.assign(app.tts, {
         // z.B. Leerseiten/Impressum) werden übersprungen statt mit einer
         // Fehlermeldung abzubrechen.
         if (page.excluded) { advanceToNext(); return; }
+        // NEU (v0.52.0-beta): Klappen-Seiten werden innerhalb ihrer Hauptseite
+        // vorgelesen (js/actions/flapBook.js), nicht noch einmal als eigene Seite
+        if (app.utils.isFlapPage?.(book, page)) { advanceToNext(); return; }
 
         // NEU: die "Über den Autor"-Seite lässt sich vom Vorlesen ausnehmen
         // (siehe app.actions.toggleReadAuthorBioAloud), OHNE sie von der
@@ -678,7 +714,7 @@ Object.assign(app.tts, {
         const nextPage = book.pages[app.state.currentPageIdx + 1];
         // NEU (v0.43.0-beta): Seite mit eigener Aufnahme braucht keine KI-Aufnahme
         // (sonst würde Kontingent für etwas verbraucht, das nie abgespielt wird).
-        if (nextPage && !nextPage.excluded && !app.voice.speakerForPage?.(book.id, nextPage.id)) {
+        if (nextPage && !nextPage.excluded && !app.utils.isFlapPage?.(book, nextPage) && !app.voice.speakerForPage?.(book.id, nextPage.id)) {
             const nextVariant = app.utils.resolvePageVariant(nextPage, app.state.readingPersonaId);
             if (nextVariant && nextVariant.text) {
                 // NEU (Audio-Tags): dieselbe Fassung vorbereiten, die beim
@@ -735,17 +771,44 @@ Object.assign(app.tts, {
             }
         };
 
+        // NEU (v0.52.0-beta, Klappenbücher - js/actions/flapBook.js): hat die
+        // Seite zugeordnete Klappen (eigene, auf die Klappe zugeschnittene
+        // Fotos), gilt auf Nutzerwunsch eine eigene Reihenfolge:
+        //   Text -> Bildbeschreibung -> Klappen (Text + Bildbeschreibung) ->
+        //   schwierige Wörter (Seite + Klappen) -> Rätsel -> Zwischenruf.
+        // Ohne Klappen bleibt es bei Text -> Wörter -> Bildbeschreibung -> ...
+        const flaps = app.utils.flapsForPage(book, page, app.state.readingPersonaId);
+        const hasFlaps = flaps.length > 0;
+
         const describeImage = () => {
             if (!app.state.autoReadActive) return;
+            const next = hasFlaps ? readFlaps : maybeAskQuiz;
             if (variant.desc) {
                 // FIX: Ansage und Bildbeschreibung laufen jetzt in EINEM
                 // Sprechvorgang. Vorher waren es zwei - bei einer KI-Stimme
                 // also zwei API-Aufrufe und zwei Aufnahmen pro Seite. Klingt
                 // nebenbei natürlicher, weil die Pause dazwischen wegfällt.
-                this.speak(this._descWithIntro(page, variant.desc), maybeAskQuiz, caption('🖼️ Bildbeschreibung'));
+                this.speak(this._descWithIntro(page, variant.desc), next, caption('🖼️ Bildbeschreibung'));
             } else {
-                maybeAskQuiz();
+                next();
             }
+        };
+
+        // Jede Klappe: Bild wechselt zum Klappen-Foto, "Heb mal die Klappe
+        // hoch!", Klappen-Text, Klappen-Bildbeschreibung; danach zuklappen.
+        const readFlaps = () => {
+            if (!app.state.autoReadActive) return;
+            const next = (i) => {
+                if (!app.state.autoReadActive) return;
+                if (i >= flaps.length) { app.actions.showFlapImage(null); explainDifficultWords(); return; }
+                app.actions.showFlapImage(flaps[i].page);
+                const label = flaps.length > 1 ? `🪟 Klappe ${i + 1}` : '🪟 Klappe';
+                this.speakFlap(flaps[i], i, () => setTimeout(() => next(i + 1), 500), {
+                    target: (part) => caption(part === 'desc' ? `${label} · Bild` : label),
+                    isActive: () => app.state.autoReadActive
+                });
+            };
+            next(0);
         };
 
         // NEU (Nutzerwunsch: "schwierige Wörter sollten nach dem Textteil
@@ -757,33 +820,18 @@ Object.assign(app.tts, {
         // zwischen Wort und Erklärung von 600 auf 200 ms verkürzt (dazu
         // werden die Aufnahmen bei einer KI-Stimme vorab erzeugt, siehe
         // _warmUpPageSegments - vorher kam die Ladezeit noch obendrauf).
-        // NEU (v0.51.0-beta, Klappenbücher - js/actions/flapBook.js): nach den
-        // Wörtern jede zugeordnete Klappe "aufklappen" (Bild wechselt zum
-        // Foto mit offener Klappe) und vorlesen, was darunter neu ist; danach
-        // wieder zuklappen und mit der Bildbeschreibung der Seite weiter.
-        const flaps = app.utils.flapsForPage(book, page);
-        const readFlaps = () => {
-            if (!app.state.autoReadActive) return;
-            if (!flaps.length) { describeImage(); return; }
-            const next = (i) => {
-                if (!app.state.autoReadActive) return;
-                if (i >= flaps.length) { app.actions.showFlapImage(null); describeImage(); return; }
-                app.actions.showFlapImage(flaps[i]);
-                this.speak(app.utils.flapSpeech(flaps[i], i), () => {
-                    if (!app.state.autoReadActive) return;
-                    setTimeout(() => next(i + 1), 600);
-                }, caption(flaps.length > 1 ? `🪟 Klappe ${i + 1}` : '🪟 Klappe'));
-            };
-            next(0);
-        };
-
-        const words = Array.isArray(variant.difficultWords) ? variant.difficultWords.filter(w => w && w.word && w.explanation) : [];
+        // Bei Klappen: Wörter von Seite UND Klappen zusammen, ohne Doppelte.
+        const words = app.utils.mergeDifficultWords([
+            Array.isArray(variant.difficultWords) ? variant.difficultWords : [],
+            ...flaps.map(f => Array.isArray(f.variant.difficultWords) ? f.variant.difficultWords : [])
+        ]);
         const explainDifficultWords = () => {
             if (!app.state.autoReadActive) return;
-            if (words.length === 0) { readFlaps(); return; }
+            const afterWords = hasFlaps ? maybeAskQuiz : describeImage;
+            if (words.length === 0) { afterWords(); return; }
             const speakNext = (i) => {
                 if (!app.state.autoReadActive) return;
-                if (i >= words.length) { readFlaps(); return; }
+                if (i >= words.length) { afterWords(); return; }
                 const w = words[i];
                 const target = caption(`📚 ${w.word}`);
                 this.speak(w.word, () => {
@@ -799,6 +847,8 @@ Object.assign(app.tts, {
                 setTimeout(() => speakNext(0), 300);
             }, caption('📚 Schwierige Wörter'));
         };
+        // was direkt nach dem Seitentext kommt
+        const afterPageText = hasFlaps ? describeImage : explainDifficultWords;
 
         // Bei einer KI-Stimme: die übrigen Teile dieser Seite schon erzeugen,
         // während der Seitentext läuft (wird ohnehin gleich vorgelesen).
@@ -817,7 +867,7 @@ Object.assign(app.tts, {
             // (schwierige Wörter/Bildbeschreibung, falls vorhanden), statt
             // die Seite mit einer verwirrenden Ansage zu eröffnen.
             if (variant.text === 'Kein Text.' && variant.desc) {
-                explainDifficultWords();
+                afterPageText();
                 return;
             }
             // NEU: im Mitmachmodus den Erstleser-Text mit Rate-Pausen
@@ -828,11 +878,11 @@ Object.assign(app.tts, {
                 app.readerUI.setTab('erstleser');
                 // NEU: siehe speakCurrentText() oben - Pausen-Tags statt
                 // Gerätestimme, sofern der Anbieter das unterstützt.
-                app.ttsNeural.speakMitmach(variant.erstleserText, explainDifficultWords, this._currentTextElementId());
+                app.ttsNeural.speakMitmach(variant.erstleserText, afterPageText, this._currentTextElementId());
             } else {
                 const { plain, tagged } = this._pickSpeechVariant(variant);
                 // NEU (v0.43.0-beta): eigene Aufnahme hat Vorrang (siehe _speakPageText)
-                this._speakPageText(page, plain, tagged, explainDifficultWords, this._currentTextElementId());
+                this._speakPageText(page, plain, tagged, afterPageText, this._currentTextElementId());
             }
         };
 

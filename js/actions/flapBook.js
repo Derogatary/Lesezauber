@@ -1,25 +1,25 @@
 import { app } from '../core.js';
 
-// ================= 🪟 Klappenbücher (v0.51.0-beta) =================
+// ================= 🪟 Klappenbücher (v0.51.0-beta, überarbeitet v0.52.0-beta) =================
 // NEU (Nutzerwunsch: "vorher als Auswahl Klappenbuch, dann können Seiten als
-// Klappen für Seiten zugeordnet werden"). Ablauf:
+// Klappen für Seiten zugeordnet werden").
+// FIX v0.52.0-beta (Nutzer-Klarstellung): die Klappe wird als EIGENES,
+// schon auf die Klappe zugeschnittenes Foto aufgenommen (beim Fotografieren
+// bzw. beim Erstellen der PDF auf die Klappe begrenzt) und ganz normal wie
+// eine Seite ausgelesen - kein Zwei-Bilder-Vergleich mehr (das frühere
+// app.api.analyzeFlap ist entfernt).
+//
+// Ablauf:
 // 1. Beim Anlegen "🪟 Klappenbuch" wählen (oder später in der Buchansicht
 //    umschalten) -> book.flapBook = true.
-// 2. Jede Seite einmal mit geschlossener und einmal mit geöffneter Klappe
-//    fotografieren. Das Foto mit offener Klappe im ⋮-Menü "Als Klappe
-//    zuordnen" -> Nummer der Hauptseite.
-// 3. Die KI vergleicht beide Fotos in EINER Anfrage (app.api.analyzeFlap)
-//    und beschreibt nur, was unter der Klappe NEU ist.
-//
-// Datenmodell an der Klappen-Seite:
-//   page.flapOf  = ID der Hauptseite
-//   page.excluded = true  -> bewusst: damit überspringen sie ALLE bestehenden
-//                            Stellen (Analyse, Hintergrund-Vorbereitung,
-//                            Auto-Vorlesen, Hörbuch, Video, Zähler), ohne dass
-//                            jede einzeln angepasst werden muss
-//   page.flap    = { status: 'pending'|'done'|'error', text, desc, generatedAt }
-// Vorgelesen wird die Klappe beim Auto-Vorlesen der HAUPTSEITE (js/tts.js),
-// nach Text und schwierigen Wörtern, vor der Bildbeschreibung.
+// 2. Klappen-Foto im ⋮-Menü "Als Klappe zuordnen" -> Nummer der Hauptseite
+//    -> page.flapOf = ID der Hauptseite. Sonst bleibt es eine normale Seite
+//    (Analyse, Personas, Hintergrund-Vorbereitung, KI-Stimme wie immer).
+// 3. Beim automatischen Vorlesen wird die Klappen-Seite NICHT als eigene
+//    Seite gelesen, sondern innerhalb der Hauptseite (js/tts.js):
+//    Text -> Bildbeschreibung -> je Klappe "Heb mal die Klappe hoch!" +
+//    Klappen-Text + Klappen-Bildbeschreibung -> schwierige Wörter (Seite +
+//    Klappen) -> Rätsel -> Zwischenruf.
 
 Object.assign(app.state, {
     newBookFlaps: false
@@ -37,17 +37,38 @@ Object.assign(app.utils, {
         return app.state.newBookFlaps && app.state.newBookType !== 'workbook' ? { flapBook: true } : {};
     },
 
-    // Fertig ausgelesene Klappen einer Hauptseite, in Seiten-Reihenfolge
-    flapsForPage(book, page) {
-        if (!book || !page || !book.flapBook) return [];
-        return book.pages.filter(p => p.flapOf === page.id && p.flap && p.flap.status === 'done' && (p.flap.text || p.flap.desc));
+    // Ist diese Seite eine zugeordnete Klappe (und das Buch ein Klappenbuch)?
+    isFlapPage(book, page) {
+        return !!(book && book.flapBook && page && page.flapOf && book.pages.some(p => p.id === page.flapOf));
     },
 
-    // Was beim Vorlesen einer Klappe gesagt wird (ein Sprechvorgang = eine
-    // KI-Aufnahme). Feste Einleitungen, gut für den Zwischenspeicher.
-    flapSpeech(flapPage, idx) {
-        const intro = FLAP_INTROS[Math.min(idx, FLAP_INTROS.length - 1)];
-        return [intro, flapPage.flap.text, flapPage.flap.desc].filter(Boolean).join(' ');
+    // Fertig ausgelesene Klappen einer Hauptseite (in Seiten-Reihenfolge),
+    // jeweils mit der Fassung des gewählten Erzählers.
+    flapsForPage(book, page, personaId) {
+        if (!book || !page || !book.flapBook || page.flapOf) return [];
+        return book.pages
+            .filter(p => p.flapOf === page.id && !p.excluded && p.status === 'done')
+            .map(p => ({ page: p, variant: app.utils.resolvePageVariant(p, personaId) }))
+            .filter(f => f.variant);
+    },
+
+    // Feste Einleitung je Klappe (gut für den KI-Stimmen-Zwischenspeicher)
+    flapIntro(idx) {
+        return FLAP_INTROS[Math.min(idx, FLAP_INTROS.length - 1)];
+    },
+
+    // Schwierige Wörter von Seite + Klappen zusammen, ohne Doppelte
+    mergeDifficultWords(lists) {
+        const seen = new Set();
+        const out = [];
+        lists.flat().forEach(w => {
+            if (!w || !w.word || !w.explanation) return;
+            const key = w.word.trim().toLowerCase();
+            if (seen.has(key)) return;
+            seen.add(key);
+            out.push(w);
+        });
+        return out;
     }
 });
 
@@ -64,20 +85,19 @@ Object.assign(app.actions, {
         const book = currentBook();
         if (!book) return;
         const hasFlaps = book.pages.some(p => p.flapOf);
-        if (book.flapBook && hasFlaps && !confirm('Klappenbuch ausschalten? Die zugeordneten Klappen werden beim Vorlesen dann nicht mehr vorgelesen (die Zuordnung bleibt gespeichert).')) return;
+        if (book.flapBook && hasFlaps && !confirm('Klappenbuch ausschalten? Die Klappen werden dann wieder als eigene Seiten vorgelesen (die Zuordnung bleibt gespeichert).')) return;
         book.flapBook = !book.flapBook;
         app.dbOps.saveBook(book);
         app.render.book(book.id);
-        app.ui.toast(book.flapBook ? '🪟 Klappenbuch: Fotos mit offener Klappe über ⋮ → „Als Klappe zuordnen“' : 'Kein Klappenbuch mehr', 'ℹ️');
+        app.ui.toast(book.flapBook ? '🪟 Klappenbuch: Klappen-Fotos über ⋮ → „Als Klappe zuordnen“' : 'Kein Klappenbuch mehr', 'ℹ️');
     },
 
-    async assignFlap(pageId) {
+    assignFlap(pageId) {
         const book = currentBook();
         const page = book?.pages.find(p => p.id === pageId);
         if (!page) return;
         const ownIdx = book.pages.indexOf(page);
-        const suggestion = ownIdx > 0 ? ownIdx : '';
-        const answer = prompt(`Zu welcher Seite gehört diese Klappe? (Seitennummer der Seite mit GESCHLOSSENER Klappe)`, String(suggestion));
+        const answer = prompt('Zu welcher Seite gehört diese Klappe? (Nummer der Hauptseite)', String(ownIdx > 0 ? ownIdx : ''));
         if (answer === null) return;
         const baseIdx = parseInt(answer, 10) - 1;
         const base = book.pages[baseIdx];
@@ -89,12 +109,18 @@ Object.assign(app.actions, {
             app.ui.toast(`Seite ${baseIdx + 1} ist selbst eine Klappe - bitte die Hauptseite wählen.`, '⚠️');
             return;
         }
+        if (book.pages.some(p => p.flapOf === page.id)) {
+            app.ui.toast('Diese Seite hat selbst Klappen - sie kann keine Klappe sein.', '⚠️');
+            return;
+        }
         page.flapOf = base.id;
-        page.excluded = true;
-        page.flap = { status: 'pending' };
         app.dbOps.saveBook(book);
         app.render.book(book.id);
-        await this.analyzeFlapPage(pageId);
+        app.ui.toast(`🪟 Klappe von Seite ${baseIdx + 1} - wird dort mit vorgelesen.`, '✅');
+        // Noch nicht ausgelesen? Wie jede andere Seite auslesen.
+        if ((page.status === 'pending' || page.status === 'error') && !page.excluded && app.settings.apiKey) {
+            app.actions.analyzePage(ownIdx).catch(() => {});
+        }
     },
 
     unassignFlap(pageId) {
@@ -102,43 +128,9 @@ Object.assign(app.actions, {
         const page = book?.pages.find(p => p.id === pageId);
         if (!page) return;
         delete page.flapOf;
-        delete page.flap;
-        page.excluded = false;
         app.dbOps.saveBook(book);
         app.render.book(book.id);
-        app.ui.toast('Klappe gelöst - ist wieder eine normale Seite.', '✅');
-    },
-
-    // Klappe (neu) auslesen: Hauptseite + Klappen-Foto in einer Anfrage
-    async analyzeFlapPage(pageId) {
-        const book = currentBook();
-        const page = book?.pages.find(p => p.id === pageId);
-        const base = page && book.pages.find(p => p.id === page.flapOf);
-        if (!page || !base) {
-            app.ui.toast('Die Hauptseite dieser Klappe gibt es nicht mehr.', '⚠️');
-            return;
-        }
-        if (!app.settings.apiKey) {
-            app.ui.toast('Klappe zugeordnet - zum Auslesen bitte erst den API Key eintragen.', '🔑');
-            return;
-        }
-        app.state.apiBusy = true;
-        app.ui.showLoader('Lese Klappe aus...', `Vergleiche Seite ${book.pages.indexOf(base) + 1} mit offener Klappe`);
-        try {
-            const result = await app.api.analyzeFlap(base.imgUrl.split(',')[1], page.imgUrl.split(',')[1], app.state.readingPersonaId || app.settings.persona);
-            page.flap = { status: 'done', text: result.text, desc: result.desc, generatedAt: Date.now() };
-            if (!result.text && !result.desc) app.ui.toast('Unter dieser Klappe hat die KI nichts Neues erkannt.', 'ℹ️');
-            else app.ui.toast('Klappe ausgelesen 🪟', '✅');
-        } catch (e) {
-            console.error('Klappe konnte nicht ausgelesen werden:', e);
-            page.flap = { status: 'error' };
-            app.ui.toast(e.message === 'API_KEY_MISSING' ? 'Bitte zuerst API Key eintragen!' : `Klappe konnte nicht ausgelesen werden: ${e.message}`, '❌');
-        } finally {
-            app.state.apiBusy = false;
-            app.ui.hideLoader();
-            app.dbOps.saveBook(book);
-            if (app.state.currentView === 'book') app.render.book(book.id);
-        }
+        app.ui.toast('Klappe gelöst - ist wieder eine eigene Seite.', '✅');
     },
 
     // Bild im Reader (und Vollbild) auf das Klappen-Foto umschalten -
@@ -147,7 +139,7 @@ Object.assign(app.actions, {
         const book = currentBook();
         const page = book?.pages[app.state.currentPageIdx];
         if (!page) return;
-        const url = flapPage ? flapPage.imgUrl : app.utils.resolveDisplayImageUrl(page);
+        const url = flapPage ? app.utils.resolveDisplayImageUrl(flapPage) : app.utils.resolveDisplayImageUrl(page);
         const img = document.getElementById('readerImg');
         if (img) img.src = url;
         if (app.state.focusMode && app.state._focusFrontImg) app.state._focusFrontImg.src = url;
@@ -155,18 +147,36 @@ Object.assign(app.actions, {
         app.render.readerFlaps?.();
     },
 
-    // Knöpfe im Reader: Klappe auf-/zuklappen und vorlesen
+    // Knöpfe im Reader: Klappe aufklappen (Bild + Text + vorlesen) / zuklappen
     toggleReaderFlap(flapId) {
         const book = currentBook();
-        const flapPage = book?.pages.find(p => p.id === flapId);
-        if (!flapPage) return;
+        const base = book?.pages[app.state.currentPageIdx];
+        const flaps = app.utils.flapsForPage(book, base, app.state.readingPersonaId);
+        const idx = flaps.findIndex(f => f.page.id === flapId);
+        if (idx < 0) return;
+        if (app.state.autoReadActive) app.tts.stopAutoRead();
+        app.tts.stop();
         if (app.state.openFlapId === flapId) {
-            app.tts.stop?.();
             this.showFlapImage(null);
             return;
         }
-        this.showFlapImage(flapPage);
-        const idx = app.utils.flapsForPage(book, book.pages[app.state.currentPageIdx]).indexOf(flapPage);
-        app.tts.speak(app.utils.flapSpeech(flapPage, Math.max(0, idx)), null, 'readerFlapText');
+        this.showFlapImage(flaps[idx].page);
+        app.tts.speakFlap(flaps[idx], idx, null);
     }
 });
+
+// FIX v0.52.0-beta: Klappen aus v0.51.0-beta (Zwei-Bilder-Vergleich) hatten
+// excluded=true und ein eigenes "flap"-Feld - auf das neue Modell umstellen,
+// damit sie wieder normal ausgelesen werden. Läuft beim Öffnen eines Buchs.
+app.utils.migrateOldFlaps = function (book) {
+    if (!book) return false;
+    let changed = false;
+    book.pages.forEach(p => {
+        if (p.flapOf && p.flap) {
+            delete p.flap;
+            p.excluded = false;
+            changed = true;
+        }
+    });
+    return changed;
+};

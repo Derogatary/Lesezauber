@@ -1,7 +1,9 @@
 // Bei jeder inhaltlichen Änderung an einer dieser Dateien diese Nummer
 // erhöhen - sonst bekommen wiederkehrende Besucher weiter die alte
 // zwischengespeicherte Version ausgeliefert.
-const CACHE_NAME = 'lesezauber-shell-v86';
+const CACHE_NAME = 'lesezauber-shell-v87';
+
+// FIX (v87, v0.52.0-beta): Klappen als eigene, normal ausgelesene Seiten.
 
 // NEU (v86, v0.51.0-beta): Klappenbücher (neue Dateien js/actions/flapBook.js, js/render/flapBook.js).
 

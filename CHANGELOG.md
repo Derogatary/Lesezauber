@@ -6,6 +6,24 @@ vollständige Historie, neueste Version zuerst. Diese Datei wurde aus
 `CLAUDE.md` ausgelagert, weil der Abschnitt dort mit der Zeit zu groß für
 schnellen Kontext wurde; inhaltlich unverändert übernommen.
 
+## v0.52.0-beta
+
+Nutzer-Klarstellung zu den Klappenbüchern: „Ich fotografiere bzw. begrenze beim Erstellen der PDF auf die Klappe, und die wird dann wie eine Seite vorgelesen. Reihenfolge: Text der normalen Seite, Bildbeschreibung der normalen Seite, Klappenseite Text und Bildbeschreibung, schwierige Wörter, Rätselfrage.“
+
+**🪟 Klappen sind jetzt eigene, normal ausgelesene Seiten** (`js/actions/flapBook.js`)
+- Das Klappen-Foto ist schon auf die Klappe zugeschnitten (beim Fotografieren bzw. beim Erstellen der PDF) und wird wie jede andere Seite ausgelesen: alle Erzähler, schwierige Wörter, Hintergrund-Vorbereitung, KI-Stimme, eigene Aufnahme.
+- Zuordnen weiter über ⋮ → „Als Klappe zuordnen…“ → Nummer der Hauptseite. Nur noch `page.flapOf`, kein `excluded` mehr. Ist das Foto noch nicht ausgelesen, wird es dabei ausgelesen.
+- Entfernt: der Zwei-Bilder-Vergleich `app.api.analyzeFlap()` und `page.flap`. Klappen aus v0.51.0-beta werden beim Öffnen des Buchs umgestellt (`app.utils.migrateOldFlaps()`).
+
+**Neue Vorlese-Reihenfolge für Seiten mit Klappen** (`js/tts.js`)
+- Text → Bildbeschreibung → je Klappe „Heb mal die Klappe hoch!“ + Klappen-Text + Klappen-Bildbeschreibung (das Bild wechselt dabei zum Klappen-Foto) → schwierige Wörter von Seite UND Klappen (ohne Doppelte, `app.utils.mergeDifficultWords()`) → Rätsel → Zwischenruf → umblättern.
+- Seiten ohne Klappen behalten die bisherige Reihenfolge (Text → Wörter → Bildbeschreibung → Rätsel → Zwischenruf).
+- Die Klappen-Seite wird beim automatischen Vorlesen nicht noch einmal als eigene Seite gelesen (`app.utils.isFlapPage()`).
+- Der Klappen-Text läuft über `_speakPageText()`: Er nutzt dieselbe KI-Stimmen-Aufnahme wie die Klappen-Seite und, falls vorhanden, die eigene Aufnahme.
+- Reader: „🪟 Klappe öffnen“ zeigt das Klappen-Foto und liest Einleitung, Text und Bildbeschreibung der Klappe vor.
+
+**Bekannt:** Hörbuch und Video enthalten die Klappen-Seite als eigene Seite an ihrer Stelle im Buch, nicht eingebettet in die Hauptseite.
+
 ## v0.51.0-beta
 
 Nutzerwunsch: „Klappenbuch vorher als Auswahl, dann können Seiten als Klappen für Seiten zugeordnet werden.“

@@ -888,51 +888,6 @@ Object.assign(app.api, {
         return parseMultiPersonaResponse(rawText);
     },
 
-    // NEU (v0.51.0-beta, Klappenbücher - js/actions/flapBook.js): EIN Aufruf
-    // mit ZWEI Bildern - die Seite mit geschlossener Klappe und dieselbe
-    // Seite mit geöffneter Klappe. Die KI soll NUR das beschreiben, was
-    // unter der Klappe neu dazukommt; der übrige Seitentext ist schon über
-    // die Hauptseite erfasst und würde sonst doppelt vorgelesen.
-    async analyzeFlap(baseB64, flapB64, personaId) {
-        if (!app.settings.apiKey) throw new Error('API_KEY_MISSING');
-        const prompt = `Rolle: ${personaInstruction(personaId)}
-Das ist eine Seite aus einem Klappenbuch für kleine Kinder. BILD 1 zeigt die Seite mit GESCHLOSSENER Klappe, BILD 2 dieselbe Seite mit GEÖFFNETER Klappe (aufgeklappt oder hochgehoben).
-Finde heraus, was durch das Öffnen der Klappe NEU zu sehen ist, und antworte AUSSCHLIESSLICH als valides JSON ohne Markdown:
-{
-  "revealedText": "Text, der NUR unter/auf der geöffneten Klappe gedruckt ist, exakt wie gedruckt. Text, der schon auf Bild 1 zu lesen war, NICHT wiederholen. Kein neuer Text: leerer String.",
-  "revealedDescription": "1-2 kurze Sätze für ein Kind (ca. 2-5 Jahre), was unter der Klappe zum Vorschein kommt - beginne mit 'Unter der Klappe ...' oder 'Da ist ja ...'. Nur beschreiben, was wirklich zu sehen ist."
-}
-${INJECTION_GUARD}`;
-        const payload = {
-            safetySettings: SAFETY_BOOK,
-            contents: [{ parts: [
-                { text: prompt },
-                { inlineData: { mimeType: 'image/webp', data: baseB64 } },
-                { inlineData: { mimeType: 'image/webp', data: flapB64 } }
-            ] }],
-            generationConfig: { temperature: 0.2 }
-        };
-        const textResult = await withGeminiModelRotation(async (model) => {
-            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
-                method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': app.settings.apiKey }, body: JSON.stringify(payload)
-            });
-            if (!res.ok) {
-                if (res.status === 400) throw new Error('Falscher API-Key (400)');
-                if (res.status === 403) throw new Error('API-Key ungültig (403)');
-                if (res.status === 429) throw new Error('RATE_LIMITED');
-                throw new Error(`Gemini-Fehler ${res.status}`);
-            }
-            const data = await res.json();
-            return data.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
-        });
-        app.costMeter.trackGeminiText(prompt.length);
-        const parsed = parseModelJson(textResult);
-        return {
-            text: typeof parsed.revealedText === 'string' ? parsed.revealedText.trim() : '',
-            desc: typeof parsed.revealedDescription === 'string' ? parsed.revealedDescription.trim() : ''
-        };
-    },
-
     async answerQuestion(base64Image, question) {
         // FIX (v0.40.0-beta, Release-Prüfung A4): bisher ging die Kinderfrage
         // ohne jede Schutzanweisung durch ("Beantworte die Frage eines Kindes
