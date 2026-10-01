@@ -50,3 +50,16 @@ test('Klappenbuch-Auswahl gilt nur für Geschichten', () => {
     app.state.newBookFlaps = false;
     app.state.newBookType = 'story';
 });
+
+// NEU (v0.53.0-beta): Hörbuch/Video bekommen die Klappen in Vorlese-Reihenfolge
+test('Sprach-Teile: Text, Bild, Klappe (mit Klappen-Foto), Rätsel', () => {
+    const base = { id: 1, imgUrl: 'B', status: 'done', variants: { standard: { text: 'Wo?', desc: 'Wiese.', quizQ: 'Wer?', quizA: 'Hase.' } } };
+    const flap = { id: 2, imgUrl: 'F', flapOf: 1, status: 'done', variants: { standard: { text: 'Kuckuck!', desc: 'Ein Hase.' } } };
+    const book = { flapBook: true, pages: [base, flap] };
+    const parts = app.utils.pageSpeechParts(book, base, base.variants.standard, 'standard', { includeDescription: true, includeQuiz: true });
+    assert.deepEqual(parts.map(p => p.kind), ['text', 'desc', 'flap0Intro', 'flap0Text', 'flap0Desc', 'quizQ', 'quizA']);
+    assert.deepEqual(parts.map(p => p.imgUrl), ['B', 'B', 'F', 'F', 'F', 'B', 'B']);
+    assert.equal(parts.find(p => p.kind === 'flap0Text').isPageText, true);
+    const noDesc = app.utils.pageSpeechParts(book, base, base.variants.standard, 'standard', { includeDescription: false });
+    assert.deepEqual(noDesc.map(p => p.kind), ['text', 'flap0Intro', 'flap0Text']);
+});

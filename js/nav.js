@@ -64,6 +64,10 @@ Object.assign(app.nav, {
         // Ansicht stehen bleiben (samt laufendem Animationsschritt).
         if (app.state.videoPreview) app.actions.closeVideoPreview();
 
+        // NEU (v0.53.0-beta): offenes Zuschneide-Fenster (js/actions/pageCrop.js)
+        // nicht über der nächsten Ansicht stehen lassen
+        if (!document.getElementById('cropOverlay')?.classList.contains('hidden')) app.actions.closePageCrop?.(false);
+
         // Hide all main views safely
         // NEU (v0.47.0-beta): Buchatlas-Mehrfachauswahl ist reine Sitzungs-
         // logik - beim Verlassen der Buchatlas-Bibliothek zurücksetzen, sonst

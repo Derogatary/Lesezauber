@@ -1,6 +1,20 @@
 # ✅ Gesamt-To-Do (alle Zweige zusammengeführt)
 
-**Stand: v0.39.0-beta, September 2026** (Tabellen laufend nachgezogen, der Einleitungstext unten stammt noch aus v0.18.0-beta)
+**Stand: v0.53.0-beta, Oktober 2026** (Tabellen laufend nachgezogen, der Einleitungstext unten stammt noch aus v0.18.0-beta)
+
+> **Stand Oktober 2026 (v0.53.0-beta): Die baubaren Punkte sind abgearbeitet.** Offen sind nur noch
+> große, bewusst zurückgestellte Vorhaben: Comic-Generator als eigenes lokales Werkzeug (**L**),
+> volle App-Oberfläche in anderen Sprachen (**L**, nicht angefragt), höhere Bildauflösung im Video
+> (`videoUrl`, niedrigste Priorität) und die Arbeitsheft-Aufgabentypen Nachspuren/Ausmalen/Schneiden
+> (brauchen Kontur-Schrift bzw. Bildgenerierung). Alles Weitere wartet auf Tests oder Entscheidungen
+> des Betreibers, siehe [`WARTET-AUF-BETREIBER.md`](WARTET-AUF-BETREIBER.md).
+>
+> **Seit v0.47.0-beta dazugekommen und erledigt** (Details in `CHANGELOG.md`):
+> 🗺️ Buchatlas eingegliedert (v0.47) · Buchatlas im Nachtmodus (v0.48) · Vorlese-Ablauf mit
+> „Wird vorgelesen“-Karte, Wort-Ansage, Hervorhebung nach Silben/Pausen, Nachtmodus im kleinen
+> Fenster (v0.49) · Doppelpunkt-Pause, Speechify-Zuordnung über Wörter, Seite neu auslesen,
+> sichtbare Hintergrund-Fehler (v0.50) · 🪟 Klappenbücher (v0.51/0.52) · Klappen in Hörbuch und
+> Video, ✂️ Seite zuschneiden (v0.53)
 
 > **NEU (v0.39.0-beta): Diese Liste enthält nur noch Punkte, an denen Claude direkt bauen kann.**
 > Alles, was ein Konto, ein echtes Gerät, eine Beobachtung aus dem Alltag oder eine Entscheidung

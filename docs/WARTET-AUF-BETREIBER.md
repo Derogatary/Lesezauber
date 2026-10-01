@@ -1,6 +1,6 @@
 # ⏳ Wartet auf den Betreiber
 
-**Stand: v0.43.0-beta, September 2026**
+**Stand: v0.53.0-beta, Oktober 2026**
 
 Diese Punkte wurden aus [`docs/TODO-GESAMT.md`](TODO-GESAMT.md) hierher verschoben, weil
 Claude sie **nicht allein erledigen kann**. Es fehlt jeweils etwas, das nur du hast: ein Konto,
@@ -58,6 +58,24 @@ inzwischen auch über Pollinations (v0.37.0-beta), allerdings ohne Referenzbilde
 |---|---|---|
 | **Comic: zweiter Testlauf mit korrigiertem Prompt** | **S** | Ein Testbild hat zwei Prompt-Probleme aufgedeckt, der korrigierte Wortlaut ist noch nicht erprobt. Du müsstest ein Testbild erzeugen (Gemini mit Zahlungsmethode, oder Pollinations) und das Ergebnis zeigen - Details [`KONZEPT-Comic.md`](KONZEPT-Comic.md) |
 | **Heft-Generator: Ausmalbilder per KI** | **L** | Braucht funktionierende Bildgenerierung UND eine Entscheidung, ob Ausmalbilder überhaupt gewünscht sind (s/w-Konturen, Kosten pro Bild). Konzept: [`KONZEPT-Comic.md`](KONZEPT-Comic.md), [`KONZEPT-Bildquellen.md`](KONZEPT-Bildquellen.md) |
+
+## 🧪 Mit echtem Key / echtem Gerät ausprobieren (seit v0.47.0-beta)
+
+Gebaut und mit simulierter KI/Stimme im Browser getestet - wie es sich mit echten Diensten
+anfühlt, kann nur der Alltag zeigen. Bitte kurz Rückmeldung, wenn etwas nicht passt.
+
+| Punkt | Worauf achten |
+|---|---|
+| **🗺️ Buchatlas: Wiki + Übersetzung mit echtem Gemini-Key** | Kommt das Wiki vollständig? Klappt der Modellwechsel bei aufgebrauchtem Kontingent? |
+| **Wort-Hervorhebung** | Passt sie jetzt mit deiner Stimme (Speechify / Gemini / Gerätestimme)? Wenn nicht: welche Stimme und läuft sie zu früh oder zu spät? |
+| **🪟 Klappenbuch mit einem echten Buch** | Zuschneiden, Zuordnen, Reihenfolge beim Vorlesen, Bildwechsel. Fotografierte Klappen werden beim Fotografieren sofort ausgelesen - nach dem Zuschneiden ein zweites Mal (eine Anfrage mehr). Stört das, ließe sich das automatische Auslesen bei Klappenbüchern zurückhalten |
+| **Text-Erkennung bei wörtlicher Rede** | Fehlen noch Texte? Dann die Seite mit 🔄 neu auslesen und Bescheid geben |
+
+## 🤔 Offene Entscheidung
+
+| Punkt | Frage |
+|---|---|
+| **Vorlese-Reihenfolge für alle Seiten?** | Seiten MIT Klappen: Text → Bildbeschreibung → Klappen → Wörter → Rätsel. Seiten OHNE Klappen: Text → Wörter → Bildbeschreibung → Rätsel. Soll die erste Reihenfolge (Bild vor den Wörtern) für alle Seiten gelten? |
 
 ## 👀 Beobachtung aus dem Alltag
 

@@ -57,6 +57,34 @@ Object.assign(app.utils, {
         return FLAP_INTROS[Math.min(idx, FLAP_INTROS.length - 1)];
     },
 
+    // NEU (v0.53.0-beta): Sprach-Teile einer Seite in Vorlese-Reihenfolge für
+    // Hörbuch (app.ttsNeural.renderPageSegments) und Video
+    // (js/actions/videoTimeline.js) - EINE Stelle, damit beide dieselbe
+    // Reihenfolge haben wie das automatische Vorlesen (js/tts.js):
+    //   Text -> Bildbeschreibung -> je Klappe Einleitung/Text/Bild -> Rätsel.
+    // Jeder Teil: { kind, text, page, imgUrl, isPageText } - "kind" ist
+    // eindeutig (flap0Text, flap1Desc ...), damit das Video den passenden
+    // Ton-Abschnitt per kind wiederfindet; imgUrl ist bei Klappen das
+    // Klappen-Foto (das Video wechselt dort das Bild); isPageText = hier darf
+    // eine eigene Aufnahme (js/actions/voiceRecord.js) den Text ersetzen.
+    pageSpeechParts(book, page, variant, personaId, { includeDescription = true, includeQuiz = false } = {}) {
+        const parts = [{ kind: 'text', text: variant.text, page, imgUrl: page.imgUrl, isPageText: true }];
+        if (includeDescription && variant.desc) parts.push({ kind: 'desc', text: variant.desc, page, imgUrl: page.imgUrl });
+        app.utils.flapsForPage(book, page, personaId).forEach((f, i) => {
+            const img = f.page.imgUrl;
+            parts.push({ kind: `flap${i}Intro`, text: app.utils.flapIntro(i), page: f.page, imgUrl: img });
+            if (f.variant.text && f.variant.text !== 'Kein Text.') {
+                parts.push({ kind: `flap${i}Text`, text: f.variant.text, page: f.page, imgUrl: img, isPageText: true });
+            }
+            if (includeDescription && f.variant.desc) parts.push({ kind: `flap${i}Desc`, text: f.variant.desc, page: f.page, imgUrl: img });
+        });
+        if (includeQuiz && variant.quizQ) {
+            parts.push({ kind: 'quizQ', text: variant.quizQ, page, imgUrl: page.imgUrl });
+            if (variant.quizA) parts.push({ kind: 'quizA', text: variant.quizA, page, imgUrl: page.imgUrl });
+        }
+        return parts;
+    },
+
     // Schwierige Wörter von Seite + Klappen zusammen, ohne Doppelte
     mergeDifficultWords(lists) {
         const seen = new Set();
@@ -118,8 +146,19 @@ Object.assign(app.actions, {
         app.render.book(book.id);
         app.ui.toast(`🪟 Klappe von Seite ${baseIdx + 1} - wird dort mit vorgelesen.`, '✅');
         // Noch nicht ausgelesen? Wie jede andere Seite auslesen.
-        if ((page.status === 'pending' || page.status === 'error') && !page.excluded && app.settings.apiKey) {
-            app.actions.analyzePage(ownIdx).catch(() => {});
+        const analyzeIfNeeded = (cropped) => {
+            if ((page.status === 'pending' || page.status === 'error') && !page.excluded && app.settings.apiKey) {
+                app.actions.analyzePage(ownIdx).catch(() => {});
+            } else if (cropped && page.status === 'done') {
+                // Ausschnitt geändert -> Text passt evtl. nicht mehr
+                app.actions.reanalyzePage(ownIdx, { skipConfirm: true });
+            }
+        };
+        // NEU (v0.53.0-beta): direkt auf die Klappe zuschneiden (js/actions/pageCrop.js)
+        if (!page.originalImgUrl && confirm('Das Foto jetzt auf die Klappe zuschneiden?\n\n(Nicht nötig, wenn es schon nur die Klappe zeigt.)' + (page.status === 'done' ? '\nDie Seite wird danach neu ausgelesen (eine KI-Anfrage).' : ''))) {
+            app.actions.openPageCrop(page.id, { hint: 'Rahmen um die Klappe ziehen.', onDone: (applied) => analyzeIfNeeded(applied) });
+        } else {
+            analyzeIfNeeded(false);
         }
     },
 

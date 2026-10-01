@@ -6,6 +6,22 @@ vollständige Historie, neueste Version zuerst. Diese Datei wurde aus
 `CLAUDE.md` ausgelagert, weil der Abschnitt dort mit der Zeit zu groß für
 schnellen Kontext wurde; inhaltlich unverändert übernommen.
 
+## v0.53.0-beta
+
+Nutzerwunsch: „Tue die Todos und offenen Punkte.“ Abgearbeitet wurden die offenen Punkte aus den letzten Runden. Die Liste in `docs/TODO-GESAMT.md` enthält sonst nur noch große, bewusst zurückgestellte Vorhaben. Test- und Entscheidungspunkte stehen jetzt gesammelt in `docs/WARTET-AUF-BETREIBER.md`.
+
+**🪟 Klappen in Hörbuch und Video** (`app.utils.pageSpeechParts()` in `js/actions/flapBook.js`)
+- Neu ist EINE gemeinsame Teile-Liste für Hörbuch (`app.ttsNeural.renderPageSegments()`) und Video (`js/actions/videoTimeline.js`). Die Reihenfolge entspricht dem Vorlesen: Text → Bildbeschreibung → je Klappe Einleitung/Text/Bild → Rätsel.
+- Klappen-Seiten laufen dort nicht mehr als eigene Seite. Im Video wechselt das Bild während der Klappe zum Klappen-Foto (jedes Segment trägt sein `imgUrl`, die bestehende Überblendung greift).
+- Eigene Aufnahmen gelten jetzt auch für den Klappen-Text (`isPageText`).
+
+**✂️ Seite zuschneiden** (`js/actions/pageCrop.js`, Fenster `#cropOverlay`)
+- Im ⋮-Menü jeder Seite gibt es „✂️ Zuschneiden“: einen Rahmen mit dem Finger oder der Maus aufziehen, dann „Übernehmen“. Wie beim Import entstehen zwei WebP-Größen.
+- Das Originalfoto bleibt beim ersten Zuschnitt erhalten (`page.originalImgUrl`) und lässt sich mit „↩️ Original“ jederzeit zurückholen.
+- War die Seite schon ausgelesen, fragt die App, ob sie mit dem neuen Ausschnitt neu ausgelesen werden soll (`reanalyzePage(idx, { skipConfirm })`).
+- Beim Zuordnen einer Klappe bietet die App das Zuschneiden direkt an („Das Foto jetzt auf die Klappe zuschneiden?“), danach wird ausgelesen.
+- Ein Ansichtswechsel schließt ein offenes Zuschneide-Fenster.
+
 ## v0.52.0-beta
 
 Nutzer-Klarstellung zu den Klappenbüchern: „Ich fotografiere bzw. begrenze beim Erstellen der PDF auf die Klappe, und die wird dann wie eine Seite vorgelesen. Reihenfolge: Text der normalen Seite, Bildbeschreibung der normalen Seite, Klappenseite Text und Bildbeschreibung, schwierige Wörter, Rätselfrage.“

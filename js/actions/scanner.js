@@ -274,7 +274,9 @@ Object.assign(app.actions, {
     // wenn Text fehlt oder falsch erkannt wurde. Die bisherigen Fassungen
     // bleiben erhalten, bis die neue Analyse geklappt hat (bei einem Fehler
     // wird der alte Stand wiederhergestellt). Kostet eine KI-Anfrage.
-    async reanalyzePage(idx) {
+    // NEU (v0.53.0-beta): opts.skipConfirm - wenn schon vorher gefragt wurde
+    // (z.B. nach dem Zuschneiden, js/actions/pageCrop.js)
+    async reanalyzePage(idx, opts = {}) {
         const book = app.library[app.state.currentBookId];
         const page = book?.pages[idx];
         if (!page || page.status === 'processing') return;
@@ -288,7 +290,7 @@ Object.assign(app.actions, {
             app.ui.toast('Bitte zuerst API Key eintragen!', '🔑');
             return;
         }
-        if (!confirm(`Seite ${idx + 1} neu auslesen?\n\nText, Erstleser-Fassungen, Bildbeschreibung, Rätsel und schwierige Wörter werden für alle Erzähler neu erzeugt. Kostet eine KI-Anfrage.`)) return;
+        if (!opts.skipConfirm && !confirm(`Seite ${idx + 1} neu auslesen?\n\nText, Erstleser-Fassungen, Bildbeschreibung, Rätsel und schwierige Wörter werden für alle Erzähler neu erzeugt. Kostet eine KI-Anfrage.`)) return;
         const backup = { variants: page.variants, birkenbihl: page.birkenbihl, status: page.status, chapterTitle: page.chapterTitle, tocEntries: page.tocEntries };
         // leeren, damit keine veralteten Fassungen anderer Erzähler stehen bleiben
         page.variants = {};

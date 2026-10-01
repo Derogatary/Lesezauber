@@ -53,6 +53,8 @@ import './render/nightPrep.js';
 import './actions/audiobookExport.js';
 // NEU (v0.51.0-beta): Klappenbücher (Klappen-Fotos einer Seite zuordnen und vorlesen)
 import './actions/flapBook.js';
+// NEU (v0.53.0-beta): Seite zuschneiden (Rahmen aufziehen)
+import './actions/pageCrop.js';
 import './render/flapBook.js';
 
 // NEU: Video-Export Weg B, Teil 1 - Renderer-Kern (Canvas) plus Zeitplan

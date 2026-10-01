@@ -1,7 +1,9 @@
 // Bei jeder inhaltlichen Änderung an einer dieser Dateien diese Nummer
 // erhöhen - sonst bekommen wiederkehrende Besucher weiter die alte
 // zwischengespeicherte Version ausgeliefert.
-const CACHE_NAME = 'lesezauber-shell-v87';
+const CACHE_NAME = 'lesezauber-shell-v88';
+
+// NEU (v88, v0.53.0-beta): Klappen in Hörbuch/Video, Seite zuschneiden (neue Datei js/actions/pageCrop.js).
 
 // FIX (v87, v0.52.0-beta): Klappen als eigene, normal ausgelesene Seiten.
 
@@ -355,6 +357,7 @@ const APP_SHELL = [
     './js/gestures.js',
     './js/edgeScroll.js',
     './js/actions/flapBook.js',
+    './js/actions/pageCrop.js',
     './js/render/flapBook.js',
     './js/atlas/atlasCore.js',
     './js/atlas/atlasUtils.js',

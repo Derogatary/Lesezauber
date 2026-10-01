@@ -154,6 +154,7 @@ Object.assign(app.render, {
                                     ${book.flapBook ? (p.flapOf
                                         ? `<button onclick="app.actions.toggleCardMenu(${p.id}); app.actions.unassignFlap(${p.id})" class="w-full text-left px-3 py-2 text-xs hover:bg-slate-50 text-amber-700">🪟 Klappe lösen (eigene Seite)</button>`
                                         : `<button onclick="app.actions.toggleCardMenu(${p.id}); app.actions.assignFlap(${p.id})" class="w-full text-left px-3 py-2 text-xs hover:bg-slate-50 text-amber-700">🪟 Als Klappe zuordnen…</button>`) : ''}
+                                    ${p.imgUrl ? `<button onclick="app.actions.toggleCardMenu(${p.id}); app.actions.openPageCrop(${p.id})" class="w-full text-left px-3 py-2 text-xs hover:bg-slate-50 text-slate-700">✂️ Zuschneiden${p.originalImgUrl ? ' (zugeschnitten)' : ''}</button>` : ''}
                                     <button onclick="app.actions.togglePageExcluded(${p.id}); app.actions.toggleCardMenu(${p.id})" class="w-full text-left px-3 py-2 text-xs hover:bg-slate-50 ${p.excluded ? 'text-emerald-600 font-bold' : 'text-slate-700'}">${p.excluded ? '✅ Wieder einschließen' : '🚫 Von Analyse/Vorlesen ausschließen'}</button>
                                     <button onclick="app.actions.deletePage(${i})" class="w-full text-left px-3 py-2 text-xs hover:bg-red-50 text-red-500">🗑️ Entfernen</button>
                                 </div>

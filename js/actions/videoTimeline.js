@@ -229,6 +229,8 @@ Object.assign(app.cinema, {
             // Ausgeschlossene Seiten (Leerseiten, Impressum) überall gleich
             // behandeln wie beim automatischen Vorlesen, siehe js/tts.js.
             if (!page || page.excluded) continue;
+            // NEU (v0.53.0-beta): Klappen laufen innerhalb ihrer Hauptseite
+            if (app.utils.isFlapPage?.(book, page)) continue;
 
             if (cards && book.titlePageId && page.id === book.titlePageId) {
                 // Die Titelseite wird zur Titelkarte und läuft NICHT zusätzlich
@@ -264,12 +266,9 @@ Object.assign(app.cinema, {
             const variant = app.utils.resolveAnyVariant(page, personaId);
             if (!variant) { skipped.push(pageIdx); return; }
 
-            const parts = [{ kind: 'text', text: variant.text }];
-            if (includeDescription && variant.desc) parts.push({ kind: 'desc', text: variant.desc });
-            if (includeQuiz && variant.quizQ) {
-                parts.push({ kind: 'quizQ', text: variant.quizQ });
-                if (variant.quizA) parts.push({ kind: 'quizA', text: variant.quizA });
-            }
+            // NEU (v0.53.0-beta): gemeinsame Teile-Liste mit Hörbuch/Vorlesen
+            // (app.utils.pageSpeechParts) - inkl. Klappen mit eigenem Bild
+            const parts = app.utils.pageSpeechParts(book, page, variant, personaId, { includeDescription, includeQuiz });
 
             const rendered = segmentsByPage ? segmentsByPage[pageIdx] : null;
             parts.forEach(part => {
@@ -283,7 +282,7 @@ Object.assign(app.cinema, {
                 const segment = rendered ? this._findSegment(rendered, part.kind) : null;
                 if (segment && segment.durationSec > 0 && segment.words && segment.words.length) {
                     planned.push({
-                        pageIdx, kind: part.kind, imgUrl: page.imgUrl, text: segment.text || clean,
+                        pageIdx, kind: part.kind, imgUrl: part.imgUrl || page.imgUrl, text: segment.text || clean,
                         durationSec: segment.durationSec, words: segment.words,
                         // Der Export braucht den Ton; die Vorschau rührt ihn nicht an.
                         audio: { blob: segment.blob, mime: segment.mime },
@@ -292,7 +291,7 @@ Object.assign(app.cinema, {
                 } else {
                     const durationSec = this.estimateDurationSec(clean);
                     planned.push({
-                        pageIdx, kind: part.kind, imgUrl: page.imgUrl, text: clean,
+                        pageIdx, kind: part.kind, imgUrl: part.imgUrl || page.imgUrl, text: clean,
                         durationSec, words: this._estimateWords(clean, durationSec),
                         audio: null, exact: false
                     });

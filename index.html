@@ -61,7 +61,7 @@
                     <button id="pregenBadge" data-parent-only onclick="app.nav.go('settings')" class="hidden text-xs font-bold text-indigo-600 mt-0.5 hover:underline"></button>
                     <!-- NEU (v0.44.0-beta): direkt in den Nachtmodus -->
                     <button id="nightPrepLibBtn" data-parent-only onclick="app.actions.startNightPrep()" class="hidden text-xs font-bold text-slate-600 mt-0.5 ml-2 hover:underline">🌙 über Nacht</button>
-                    <p data-app-version class="text-[10px] text-slate-400 font-semibold mt-0.5">v0.52.0-beta</p>
+                    <p data-app-version class="text-[10px] text-slate-400 font-semibold mt-0.5">v0.53.0-beta</p>
                 </div>
                 <!-- FIX (v0.45.1-beta, Nutzer-Screenshot): seit dem Kindermodus-Knopf
                      passte die Knopfreihe nicht mehr aufs Handy und die ganze Seite
@@ -736,6 +736,28 @@
             </div>
             <!-- NEU: immer erreichbarer Ausgang oben rechts (ein Tipp genügt) -->
             <button onclick="event.stopPropagation(); app.actions.stopNightPrep()" aria-label="Nachtmodus beenden" class="absolute top-3 right-3 w-10 h-10 rounded-full text-lg font-bold" style="color:#3b4252">✕</button>
+        </div>
+
+        <!-- NEU (v0.53.0-beta): Seite zuschneiden - Rahmen aufziehen (js/actions/pageCrop.js) -->
+        <div id="cropOverlay" class="hidden fixed inset-0 z-[55] bg-black/95 flex flex-col p-3 gap-3">
+            <div class="flex items-center justify-between gap-2 text-white">
+                <div>
+                    <p class="text-sm font-bold">✂️ Zuschneiden</p>
+                    <p id="cropHint" class="text-[11px] text-slate-300"></p>
+                </div>
+                <button onclick="app.actions.closePageCrop(false)" aria-label="Zuschneiden abbrechen" class="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 font-bold">✕</button>
+            </div>
+            <div class="flex-grow flex items-center justify-center overflow-hidden">
+                <div id="cropImgWrap" class="relative touch-none select-none cursor-crosshair">
+                    <img id="cropImg" alt="Seite zum Zuschneiden" class="block max-w-full max-h-[70vh] pointer-events-none" src="">
+                    <div id="cropRect" class="absolute border-2 border-amber-400 pointer-events-none" style="box-shadow: 0 0 0 9999px rgba(0,0,0,0.55)"></div>
+                </div>
+            </div>
+            <div class="flex gap-2">
+                <button id="cropResetBtn" onclick="app.actions.resetPageCrop()" class="hidden flex-1 bg-white/10 hover:bg-white/20 text-white font-bold py-3 rounded-xl text-sm">↩️ Original</button>
+                <button onclick="app.actions.closePageCrop(false)" class="flex-1 bg-white/10 hover:bg-white/20 text-white font-bold py-3 rounded-xl text-sm">Abbrechen</button>
+                <button onclick="app.actions.applyPageCrop()" class="flex-1 bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 rounded-xl text-sm">Übernehmen</button>
+            </div>
         </div>
 
         <!-- ================= EIGENE STIMME: AUFNAHME-FENSTER (v0.43.0-beta) ================= -->

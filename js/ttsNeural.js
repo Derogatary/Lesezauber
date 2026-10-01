@@ -773,24 +773,14 @@ Object.assign(app.ttsNeural, {
 
         // NEU (v0.43.0-beta): selbst eingesprochener Seitentext hat Vorrang
         // (js/actions/voiceRecord.js) - kostet nichts und klingt vertraut.
-        // Ohne KI-Stimme bleibt es dann bei diesem einen Baustein (die
+        // Ohne KI-Stimme bleibt es dann bei den eigenen Aufnahmen (die
         // Gerätestimme liefert keine Datei für Bildbeschreibung/Rätsel).
-        const ownText = await app.voice.renderSegment(bookId, page, variant.text).catch(e => {
-            console.error('Eigene Aufnahme nicht lesbar:', e);
-            return null;
-        });
+        // NEU (v0.53.0-beta): Teile + Reihenfolge kommen aus
+        // app.utils.pageSpeechParts() (js/actions/flapBook.js) - damit sind
+        // Klappen (Klappenbücher) wie beim Vorlesen in die Seite eingebettet.
+        // Jedes Segment trägt sein imgUrl (bei Klappen das Klappen-Foto).
         const neuralOk = !!(app.ttsProviders.current().neural);
-        if (ownText && !neuralOk) {
-            if (onProgress) onProgress(1, 1, 'text');
-            return { imgUrl: page.imgUrl, totalDurationSec: ownText.durationSec, segments: [{ kind: 'text', ...ownText }] };
-        }
-
-        const planned = [{ kind: 'text', text: variant.text }];
-        if (includeDescription && variant.desc) planned.push({ kind: 'desc', text: variant.desc });
-        if (includeQuiz && variant.quizQ) {
-            planned.push({ kind: 'quizQ', text: variant.quizQ });
-            if (variant.quizA) planned.push({ kind: 'quizA', text: variant.quizA });
-        }
+        const planned = app.utils.pageSpeechParts(book, page, variant, usedPersona, { includeDescription, includeQuiz });
 
         const segments = [];
         // Bewusst nacheinander statt parallel: die Anbieter haben Limits
@@ -798,9 +788,18 @@ Object.assign(app.ttsNeural, {
         for (let i = 0; i < planned.length; i++) {
             const part = planned[i];
             if (onProgress) onProgress(i + 1, planned.length, part.kind);
-            if (part.kind === 'text' && ownText) { segments.push({ kind: 'text', ...ownText }); continue; }
+            if (part.isPageText) {
+                const own = await app.voice.renderSegment(bookId, part.page, part.text).catch(e => {
+                    console.error('Eigene Aufnahme nicht lesbar:', e);
+                    return null;
+                });
+                if (own) { segments.push({ kind: part.kind, imgUrl: part.imgUrl, ...own }); continue; }
+            }
+            // Ohne KI-Stimme nur eigene Aufnahmen. Fehlt beim Haupttext auch
+            // die, wirft renderAudio() die verständliche Gerätestimmen-Meldung.
+            if (!neuralOk && !(part.kind === 'text' && segments.length === 0)) continue;
             const rendered = await this.renderAudio(part.text, { personaId: usedPersona, cacheOnly, language: app.utils.bookSpeechLang(book) });
-            if (rendered) segments.push({ kind: part.kind, ...rendered });
+            if (rendered) segments.push({ kind: part.kind, imgUrl: part.imgUrl, ...rendered });
         }
 
         return {

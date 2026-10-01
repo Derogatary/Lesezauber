@@ -29,7 +29,9 @@ Object.assign(app.actions, {
         // automatischen Vorlesen (js/tts.js) auch.
         const pageIndices = book.pages
             .map((p, i) => i)
-            .filter(i => !book.pages[i].excluded);
+            .filter(i => !book.pages[i].excluded)
+            // NEU (v0.53.0-beta): Klappen stecken schon in ihrer Hauptseite
+            .filter(i => !app.utils.isFlapPage?.(book, book.pages[i]));
 
         if (pageIndices.length === 0) {
             app.ui.toast('Keine vorlesbaren Seiten in diesem Buch.', 'ℹ️');
@@ -208,6 +210,7 @@ Object.assign(app.actions, {
 });
 
 function kindLabel(kind) {
+    if (String(kind).startsWith('flap')) return 'Klappe';
     if (kind === 'desc') return 'Bildbeschreibung';
     if (kind === 'quizQ') return 'Rätselfrage';
     if (kind === 'quizA') return 'Antwort';
