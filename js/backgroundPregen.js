@@ -335,8 +335,12 @@ async function runOneAudioBackgroundTask() {
         // runOneBackgroundTask() oben, hier separat, weil beide Schleifen
         // unabhängig voneinander laufen.
         if (app.state.currentView === 'lib') app.render.library();
+        // NEU: für die Fehler-Anzeige in den Einstellungen (render/settings.js)
+        app.state.pregenActivity = { ...(app.state.pregenActivity || {}), lastAudioSuccessAt: Date.now() };
     } catch (e) {
         console.warn('Hintergrund-Vorbereitung (KI-Stimme): ein Versuch fehlgeschlagen, wird später erneut versucht.', e);
+        // FIX (Nutzerfrage nach "stillen" Fehlern): vorher nur in der Konsole
+        app.state.pregenActivity = { ...(app.state.pregenActivity || {}), lastAudioErrorAt: Date.now(), lastAudioError: e?.message || String(e) };
     } finally {
         audioTaskRunning = false;
     }

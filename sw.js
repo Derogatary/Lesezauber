@@ -1,7 +1,9 @@
 // Bei jeder inhaltlichen Änderung an einer dieser Dateien diese Nummer
 // erhöhen - sonst bekommen wiederkehrende Besucher weiter die alte
 // zwischengespeicherte Version ausgeliefert.
-const CACHE_NAME = 'lesezauber-shell-v84';
+const CACHE_NAME = 'lesezauber-shell-v85';
+
+// FIX (v85, v0.50.0-beta): Doppelpunkt-Pause, Speechify-Hervorhebung, Seite neu auslesen, sichtbare Hintergrund-Fehler.
 
 // FIX (v84, v0.49.0-beta): Vorlese-Ablauf, Hervorhebung, Nachtmodus im kleinen Fenster, Text-Erkennung.
 

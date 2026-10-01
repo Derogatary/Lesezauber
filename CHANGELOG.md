@@ -6,6 +6,31 @@ vollständige Historie, neueste Version zuerst. Diese Datei wurde aus
 `CLAUDE.md` ausgelagert, weil der Abschnitt dort mit der Zeit zu groß für
 schnellen Kontext wurde; inhaltlich unverändert übernommen.
 
+## v0.50.0-beta
+
+Weitere Nutzer-Notizen (mit Screenshot aus dem Vollbild-Vorlesen).
+
+**Keine doppelte Bild-Ansage mehr** (`js/tts.js` `_descWithIntro()`)
+- Vorher: „Das Bild zeigt: Auf dem Bild siehst du …“. Der Analyse-Prompt lässt die KI die Bildbeschreibung schon selbst so beginnen. Beginnt sie bereits mit einem Bild-Bezug, entfällt die App-eigene Ansage. Ältere Beschreibungen ohne solchen Einstieg behalten sie.
+
+**Pause bei Doppelpunkten** (`js/utils.js` `stripEmojiForSpeech()`)
+- Fürs Sprechen wird „: “ zu „. “ (folgt ein Großbuchstabe oder ein Anführungszeichen) bzw. „, “. Zeichengenau 1:1 ersetzt, deshalb bleiben die Positionen der Wort-Hervorhebung gleich, und die Anzeige zeigt weiter den Doppelpunkt (`buildSpeechHighlightHtml()` mit `keepColons`). „10:30“ bleibt unverändert.
+- Gilt für alle Stimmen. Texte mit Doppelpunkt werden bei einer KI-Stimme einmal neu erzeugt (anderer Zwischenspeicher-Schlüssel).
+
+**Speechify-Hervorhebung** (`js/ttsProviders.js` `alignmentBySpeechMarkValues()`)
+- Die Wort-Zeitstempel werden jetzt über die gesprochenen Wörter selbst (`value`) der Reihe nach den Wörtern im Text zugeordnet. Bisher lief das nur über Zeichen-Positionen im SSML: Zählt Speechify Tags oder Entities anders, verschob sich die Hervorhebung um ganze Wörter. Bei zu wenigen Treffern greift die alte Zuordnung.
+
+**Rätsel:** Bedenkzeit zwischen Frage und Antwort 4 s → 3 s.
+
+**Neu: einzelne Seite neu auslesen** (`app.actions.reanalyzePage()`, `js/actions/scanner.js`)
+- 🔄 im Reader neben 🔊 (nur Eltern) und „🔄 Neu auslesen“ im ⋮-Menü jeder fertigen Seite. Bisher ging das nur bei fehlerhaften oder offenen Seiten.
+- Mit Rückfrage, kostet eine KI-Anfrage. Erzeugt alle Erzähler-Fassungen neu. Schlägt die Analyse fehl, kommt der alte Stand zurück.
+
+**Stille Fehler sichtbar gemacht** (Nutzerfrage „Gibt es Stellen, die man für erledigt hält, die es aber nicht sind?“)
+- Hintergrund-Vorbereitung: Der letzte Fehler wurde gemerkt, aber nirgends angezeigt. Bei falschem Key oder leerem Kontingent stand tagelang nur „offen“. Jetzt erscheint er in den Einstellungen unter der Übersicht (⚠️, solange danach nichts mehr geklappt hat), getrennt für Text und KI-Stimme.
+- Nachtmodus: zeigt den letzten Fehler statt nur „gerade: …“. Am Ende steht der echte Grund statt pauschal „vermutlich Tageskontingent“.
+- KI-Stimmen-Zwischenspeicher: Kann nicht gespeichert werden (z.B. Speicher voll), wird jede Seite bei jedem Vorlesen neu bezahlt. Bisher passierte das ohne Hinweis, jetzt kommt ein Hinweis, einmal pro Sitzung.
+
 ## v0.49.0-beta
 
 Nutzer-Notizen aus dem Alltag (sieben Punkte).

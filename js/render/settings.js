@@ -286,7 +286,21 @@ Object.assign(app.render, {
             if (neuralActive) {
                 lines.push(line('🎧 KI-Stimme', await app.utils.countMissingAudio()));
             }
-            pregenOverview.innerHTML = lines.map(l => `<p>${app.utils.sanitize(l)}</p>`).join('');
+            // FIX (Nutzerfrage nach "stillen" Fehlern): der letzte Fehler der
+            // Hintergrund-Vorbereitung wurde zwar gemerkt, aber nirgends
+            // angezeigt - bei falschem Key/leerem Kontingent stand hier
+            // tagelang "offen", ohne Grund. Jetzt sichtbar, solange danach
+            // nichts mehr geklappt hat.
+            const act = app.state.pregenActivity || {};
+            const errLines = [];
+            if (act.lastErrorAt && !(act.lastSuccessAt > act.lastErrorAt)) {
+                errLines.push(`⚠️ Letzter Versuch fehlgeschlagen (${new Date(act.lastErrorAt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}): ${act.lastError}`);
+            }
+            if (act.lastAudioErrorAt && !(act.lastAudioSuccessAt > act.lastAudioErrorAt)) {
+                errLines.push(`⚠️ KI-Stimme im Hintergrund fehlgeschlagen (${new Date(act.lastAudioErrorAt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}): ${act.lastAudioError}`);
+            }
+            pregenOverview.innerHTML = lines.map(l => `<p>${app.utils.sanitize(l)}</p>`).join('')
+                + errLines.map(l => `<p class="text-amber-700">${app.utils.sanitize(l)}</p>`).join('');
         }
 
         // NEU: Kino-Effekte (Ken-Burns + Kreuzblende) - Schalterstellung anzeigen

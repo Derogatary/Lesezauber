@@ -269,6 +269,41 @@ Object.assign(app.actions, {
         this.analyzePage(idx).catch(() => {});
     },
 
+    // NEU (Nutzer-Feedback "einzelne Seiten kann man, wenn sie analysiert
+    // sind, nicht neu analysieren"): eine FERTIGE Seite neu auslesen - z.B.
+    // wenn Text fehlt oder falsch erkannt wurde. Die bisherigen Fassungen
+    // bleiben erhalten, bis die neue Analyse geklappt hat (bei einem Fehler
+    // wird der alte Stand wiederhergestellt). Kostet eine KI-Anfrage.
+    async reanalyzePage(idx) {
+        const book = app.library[app.state.currentBookId];
+        const page = book?.pages[idx];
+        if (!page || page.status === 'processing') return;
+        // dieselben Sperren wie in analyzePage() - VOR dem Leeren prüfen,
+        // sonst stünde die Seite danach ohne Fassungen da
+        if (page.excluded || book.language) {
+            app.ui.toast(page.excluded ? 'Diese Seite ist ausgeschlossen.' : 'Das ist eine Übersetzung - neu auslesen geht nur im deutschen Original.', 'ℹ️');
+            return;
+        }
+        if (!app.settings.apiKey) {
+            app.ui.toast('Bitte zuerst API Key eintragen!', '🔑');
+            return;
+        }
+        if (!confirm(`Seite ${idx + 1} neu auslesen?\n\nText, Erstleser-Fassungen, Bildbeschreibung, Rätsel und schwierige Wörter werden für alle Erzähler neu erzeugt. Kostet eine KI-Anfrage.`)) return;
+        const backup = { variants: page.variants, birkenbihl: page.birkenbihl, status: page.status, chapterTitle: page.chapterTitle, tocEntries: page.tocEntries };
+        // leeren, damit keine veralteten Fassungen anderer Erzähler stehen bleiben
+        page.variants = {};
+        try {
+            await this.analyzePage(idx, false, app.state.readingPersonaId || app.settings.persona);
+            app.ui.toast(`Seite ${idx + 1} neu ausgelesen.`, '✅');
+        } catch (e) {
+            console.error('Neu auslesen fehlgeschlagen - alter Stand wiederhergestellt:', e);
+            Object.assign(page, backup);
+            app.dbOps.saveBook(book);
+            if (app.state.currentView === 'reader') app.render.reader(app.state.currentPageIdx);
+            else app.render.book(book.id);
+        }
+    },
+
     // NEU: personaId ist jetzt optional (Standard: globale Persona) - so
     // kann man beim Lesen gezielt eine andere Persona nachladen lassen,
     // ohne den bestehenden Aufruf (Batch, Kamera, Retry) zu verändern.

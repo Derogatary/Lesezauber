@@ -61,7 +61,7 @@
                     <button id="pregenBadge" data-parent-only onclick="app.nav.go('settings')" class="hidden text-xs font-bold text-indigo-600 mt-0.5 hover:underline"></button>
                     <!-- NEU (v0.44.0-beta): direkt in den Nachtmodus -->
                     <button id="nightPrepLibBtn" data-parent-only onclick="app.actions.startNightPrep()" class="hidden text-xs font-bold text-slate-600 mt-0.5 ml-2 hover:underline">🌙 über Nacht</button>
-                    <p data-app-version class="text-[10px] text-slate-400 font-semibold mt-0.5">v0.49.0-beta</p>
+                    <p data-app-version class="text-[10px] text-slate-400 font-semibold mt-0.5">v0.50.0-beta</p>
                 </div>
                 <!-- FIX (v0.45.1-beta, Nutzer-Screenshot): seit dem Kindermodus-Knopf
                      passte die Knopfreihe nicht mehr aufs Handy und die ganze Seite
@@ -482,9 +482,15 @@
                     <div id="contentOriginal" class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-4">
                         <div class="flex justify-between items-start">
                             <h3 id="readerOriginalHeading" class="text-xs font-bold uppercase tracking-wider text-slate-500">Gedruckter Text</h3>
-                            <button onclick="app.tts.speakCurrentText()" aria-label="Text vorlesen" class="bg-indigo-100 hover:bg-indigo-200 text-indigo-700 p-2 rounded-full transition text-lg leading-none">
-                                🔊
-                            </button>
+                            <div class="flex items-center gap-1">
+                                <!-- NEU: Seite neu auslesen, wenn Text fehlt/falsch ist (nur Eltern) -->
+                                <button data-parent-only onclick="app.actions.reanalyzePage(app.state.currentPageIdx)" aria-label="Seite neu auslesen" title="Text fehlt oder ist falsch? Seite neu auslesen" class="bg-slate-100 hover:bg-slate-200 text-slate-600 p-2 rounded-full transition text-lg leading-none">
+                                    🔄
+                                </button>
+                                <button onclick="app.tts.speakCurrentText()" aria-label="Text vorlesen" class="bg-indigo-100 hover:bg-indigo-200 text-indigo-700 p-2 rounded-full transition text-lg leading-none">
+                                    🔊
+                                </button>
+                            </div>
                         </div>
                         <p id="readerOriginalText" class="text-slate-800 leading-relaxed font-medium text-base">Lade Text...</p>
                         <!-- NEU (v0.39.0-beta): Zwischenruf der gewählten Persona

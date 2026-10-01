@@ -6,6 +6,13 @@ import { app } from '../core.js';
 
 function el(id) { return document.getElementById(id); }
 
+// NEU: Fehlertext, solange seit dem letzten Fehler nichts mehr geklappt hat
+function lastFailure() {
+    const act = app.state.pregenActivity || {};
+    if (!act.lastErrorAt || act.lastSuccessAt > act.lastErrorAt) return '';
+    return String(act.lastError || '').slice(0, 120);
+}
+
 Object.assign(app.render, {
     nightPrep({ open, done, wakeLockOk }) {
         const box = el('nightPrepBox');
@@ -14,7 +21,10 @@ Object.assign(app.render, {
         el('nightPrepTitle').innerText = '🌙 Wird vorbereitet …';
         el('nightPrepCount').innerText = `Noch ${open} ${open === 1 ? 'Auftrag' : 'Aufträge'} offen${done ? ` · ${done} erledigt` : ''}`;
         const act = app.state.pregenActivity || {};
-        el('nightPrepCurrent').innerText = act.current ? `gerade: ${act.current}` : '';
+        // FIX (Nutzerfrage nach "stillen" Fehlern): hängt es, steht jetzt der
+        // Grund da statt nur "gerade: ..." (z.B. Kontingent aufgebraucht)
+        el('nightPrepCurrent').innerText = (act.current ? `gerade: ${act.current}` : '')
+            + (lastFailure() ? `\nletzter Fehler: ${lastFailure()}` : '');
         if (wakeLockOk === false) {
             el('nightPrepHint').innerText = 'Hinweis: Dieses Gerät kann den Bildschirm nicht wach halten - bitte die automatische Bildschirmsperre in den Geräte-Einstellungen länger stellen.';
         } else if (wakeLockOk === true) {
@@ -26,7 +36,7 @@ Object.assign(app.render, {
         el('nightPrepTitle').innerText = reason === 'done' ? '✅ Fertig' : '💤 Pause bis morgen';
         el('nightPrepCount').innerText = reason === 'done'
             ? `${done} ${done === 1 ? 'Auftrag' : 'Aufträge'} erledigt.`
-            : `${done} erledigt, ${open} noch offen - vermutlich ist das Tageskontingent aufgebraucht. Beim nächsten Öffnen geht es weiter.`;
+            : `${done} erledigt, ${open} noch offen - ${lastFailure() ? `letzter Fehler: ${lastFailure()}` : 'vermutlich ist das Tageskontingent aufgebraucht'}. Beim nächsten Öffnen geht es weiter.`;
         el('nightPrepCurrent').innerText = '';
         el('nightPrepHint').innerText = 'Der Bildschirm geht gleich von selbst aus. Tippen zum Schließen.';
     },

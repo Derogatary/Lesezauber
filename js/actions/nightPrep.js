@@ -119,6 +119,7 @@ async function runAtlasLoop() {
                 continue;
             }
             if (!step) break;
+            app.state.pregenActivity = { ...(app.state.pregenActivity || {}), lastSuccessAt: Date.now() };
             if (step.usedApi && stillRunning()) {
                 await new Promise(r => setTimeout(r, app.atlas.api.getPacingDelayMs()));
             }

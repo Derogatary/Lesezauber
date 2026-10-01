@@ -372,7 +372,64 @@ async function openaiSynthesize(text, { voice, rate, styleHint, language, signal
 // "am Seitenanfang hinterher, gegen Seitenende plötzlich wieder synchron"
 // erklären würde. Chunks außerhalb der Grenzen werden jetzt übersprungen
 // statt ihnen (fälschlich) Zeichen-Index 0 zuzuweisen.
+// NEU (Nutzer-Feedback "Hervorhebung bei Speechify noch nicht ganz
+// richtig"): Speechify liefert pro Wort auch das gesprochene Wort selbst
+// ("value"). Statt nur über Zeichen-Positionen im SSML zuzuordnen (hängt
+// davon ab, wie Speechify Tags/Entities mitzählt - eine kleine Abweichung
+// verschiebt die Hervorhebung um ganze Wörter), werden die Wörter jetzt der
+// Reihe nach mit den Wörtern des Textes abgeglichen. Reicht das nicht
+// (zu wenige Treffer), greift die bisherige Positions-Zuordnung.
+function flattenSpeechMarkWords(node, out = []) {
+    if (!node || typeof node !== 'object') return out;
+    if (node.type === 'word' && typeof node.start_time === 'number') out.push(node);
+    if (Array.isArray(node.chunks)) node.chunks.forEach(c => flattenSpeechMarkWords(c, out));
+    return out;
+}
+
+const normWord = (w) => String(w || '').toLowerCase().replace(/[^\p{L}\p{N}]/gu, '');
+
+export function alignmentBySpeechMarkValues(marks, text) {
+    const words = flattenSpeechMarkWords(marks).filter(w => normWord(w.value));
+    if (!words.length) return null;
+    // Wörter des Textes wie bei der Hervorhebung (Trennung an Leerraum)
+    const tokens = [];
+    const re = /\S+/g;
+    let m;
+    while ((m = re.exec(text))) {
+        const n = normWord(m[0]);
+        if (n) tokens.push({ start: m.index, n });
+    }
+    const startSecByCharIndex = new Map();
+    let cursor = 0;
+    let hits = 0;
+    for (const w of words) {
+        const v = normWord(w.value);
+        // höchstens 4 Wörter vorausschauen (übersprungene/zusammengezogene Wörter)
+        for (let k = cursor; k < Math.min(tokens.length, cursor + 5); k++) {
+            const t = tokens[k].n;
+            if (t === v || (v.length >= 3 && (t.startsWith(v) || v.startsWith(t)))) {
+                if (!startSecByCharIndex.has(tokens[k].start)) startSecByCharIndex.set(tokens[k].start, w.start_time / 1000);
+                cursor = k + 1;
+                hits++;
+                break;
+            }
+        }
+    }
+    if (hits < Math.max(1, Math.ceil(words.length * 0.6))) return null;
+    const characters = Array.from(text);
+    const starts = new Array(characters.length).fill(0);
+    let current = 0;
+    for (let i = 0; i < characters.length; i++) {
+        if (startSecByCharIndex.has(i)) current = startSecByCharIndex.get(i);
+        starts[i] = current;
+    }
+    return { characters, starts };
+}
+
 function alignmentFromSpeechMarks(marks, text, offsetMap, contentBounds) {
+    const byValue = alignmentBySpeechMarkValues(marks, text);
+    if (byValue) return byValue;
+
     const chunks = marks && marks.chunks;
     if (!Array.isArray(chunks) || !chunks.length) return null;
 

@@ -15,6 +15,9 @@ let stepRunId = 0;
 // vorher 600 ms (plus Ladezeit der KI-Stimme, die jetzt vorab entsteht)
 const WORD_EXPLAIN_PAUSE_MS = 200;
 
+// Bedenkzeit zwischen Rätselfrage und Antwort beim automatischen Vorlesen
+const QUIZ_THINK_PAUSE_MS = 3000;
+
 // NEU: Abwechslung statt immer derselben Ansage vor der Bildbeschreibung
 const IMAGE_INTROS = [
     'Schau mal, was hier zu sehen ist.',
@@ -312,7 +315,7 @@ Object.assign(app.tts, {
             texts.push(this._wordsAnnouncement(words.length));
             words.forEach(w => texts.push(w.word, w.explanation));
         }
-        if (variant.desc) texts.push(`${this._introForPage(page)} ${variant.desc}`);
+        if (variant.desc) texts.push(this._descWithIntro(page, variant.desc));
         if (app.state.autoReadWithQuiz && variant.quizQ) texts.push(variant.quizQ, variant.quizA);
         if (variant.personaComment) texts.push(variant.personaComment);
         for (const t of texts) {
@@ -326,6 +329,16 @@ Object.assign(app.tts, {
     // hätte pro Seite bis zu fünf verschiedene Aufnahmen erzeugt. Aus der
     // Seiten-ID abgeleitet bleibt die Abwechslung zwischen den Seiten
     // erhalten, dieselbe Seite klingt aber immer gleich.
+    // FIX (Nutzer-Screenshot "Das Bild zeigt: Auf dem Bild siehst du ..."):
+    // der Analyse-Prompt (js/api.js) lässt die KI die Bildbeschreibung schon
+    // selbst mit "Auf dem Bild siehst du ..." beginnen - dann keine zweite
+    // Ansage davor. Nur ältere Beschreibungen ohne solchen Einstieg
+    // bekommen weiter eine aus IMAGE_INTROS.
+    _descWithIntro(page, desc) {
+        const startsWithIntro = /^\s*(auf (dem|diesem) bild|hier (siehst|sehen|sieht)|(das|dieses|im|auf dem) bild|wir sehen|man sieht|du siehst|schau|guck|zu sehen)/i.test(desc || '');
+        return startsWithIntro ? desc : `${this._introForPage(page)} ${desc}`;
+    },
+
     _introForPage(page) {
         const id = String((page && page.id) || '');
         let sum = 0;
@@ -707,7 +720,9 @@ Object.assign(app.tts, {
                         const answerEl = document.getElementById('readerQuizA');
                         if (answerEl) answerEl.classList.remove('hidden');
                         this.speak(variant.quizA, sayPersonaComment, caption('✅ Antwort'));
-                    }, 4000);
+                    // FIX (Nutzer-Feedback "Wartezeit nach der Rätselfrage ein
+                    // Tick zu lang"): 4 s -> 3 s Bedenkzeit
+                    }, QUIZ_THINK_PAUSE_MS);
                 }, caption('❓ Rätselfrage'));
             } else {
                 sayPersonaComment();
@@ -721,7 +736,7 @@ Object.assign(app.tts, {
                 // Sprechvorgang. Vorher waren es zwei - bei einer KI-Stimme
                 // also zwei API-Aufrufe und zwei Aufnahmen pro Seite. Klingt
                 // nebenbei natürlicher, weil die Pause dazwischen wegfällt.
-                this.speak(`${this._introForPage(page)} ${variant.desc}`, maybeAskQuiz, caption('🖼️ Bildbeschreibung'));
+                this.speak(this._descWithIntro(page, variant.desc), maybeAskQuiz, caption('🖼️ Bildbeschreibung'));
             } else {
                 maybeAskQuiz();
             }

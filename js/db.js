@@ -96,6 +96,9 @@ async function getAllBooksFromDB() {
 // NEU (v0.40.0-beta, Release-Prüfung D8): "Speicher voll" verständlich
 // erklären statt nur "Speichern fehlgeschlagen" - sonst weiß niemand, was
 // zu tun ist, und neue Seiten gehen beim nächsten Neuladen verloren.
+// NEU: Hinweis "Zwischenspeicher geht nicht" nur einmal pro Sitzung
+let ttsCacheWarned = false;
+
 function storageErrorMessage(e, fallback) {
     if (e && (e.name === 'QuotaExceededError' || /quota/i.test(e.message || ''))) {
         return 'Gerätespeicher voll! Bitte in den Einstellungen den Stimmen-Speicher leeren oder alte Bücher sichern und löschen.';
@@ -381,6 +384,13 @@ Object.assign(app.dbOps, {
             // Häufigster Fall: Gerätespeicher voll. Das Vorlesen selbst
             // funktioniert trotzdem, nur eben ohne Zwischenspeicher.
             console.error('Stimme konnte nicht zwischengespeichert werden:', e);
+            // FIX (Nutzerfrage nach "stillen" Fehlern): ohne Zwischenspeicher
+            // wird JEDE Aufnahme bei jedem Vorlesen neu bezahlt - das soll man
+            // merken. Einmal pro Sitzung, nicht bei jeder Seite.
+            if (!ttsCacheWarned) {
+                ttsCacheWarned = true;
+                app.ui.toast(storageErrorMessage(e, 'KI-Stimme kann nicht zwischengespeichert werden - jede Seite wird neu erzeugt (kostet Kontingent).'), '⚠️');
+            }
         }
     },
 

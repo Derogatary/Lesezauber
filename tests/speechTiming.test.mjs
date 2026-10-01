@@ -20,3 +20,14 @@ test('Sprechdauer der Gerätestimme: langsamer = länger', () => {
     assert.ok(d1 > 0.5 && d1 < 3);
     assert.ok(Math.abs(d2 - d1 * 2) < 1e-9);
 });
+
+// NEU: Doppelpunkt bekommt beim Sprechen eine Pause, Anzeige bleibt gleich
+test('Doppelpunkt: Pause beim Sprechen, Anzeige und Positionen unverändert', () => {
+    const text = 'Das Bild zeigt: Auf dem Bild ist es 10:30 und er sagt: ja.';
+    const spoken = app.utils.stripEmojiForSpeech(text);
+    assert.equal(spoken, 'Das Bild zeigt. Auf dem Bild ist es 10:30 und er sagt, ja.');
+    const { clean, html } = app.utils.buildSpeechHighlightHtml(text);
+    assert.equal(clean, spoken);
+    assert.ok(html.includes('zeigt:') && html.includes('sagt:'));
+    assert.equal(clean.length, app.utils.stripEmojiForSpeech(text, true).length);
+});

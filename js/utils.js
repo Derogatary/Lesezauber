@@ -471,13 +471,22 @@ Object.assign(app.utils, {
     // NEU: entfernt Emojis vor dem Vorlesen (Browser würden sonst versuchen,
     // sie als Wort auszusprechen) und ersetzt sie durch ein Komma als
     // kleine, natürliche Sprechpause.
-    stripEmojiForSpeech(text) {
+    // NEU (Nutzer-Feedback "bei Doppelpunkten keine Pause"): ein Doppelpunkt
+    // vor einem Leerzeichen wird fürs Sprechen zu einem Punkt (folgt ein
+    // Großbuchstabe/Anführungszeichen) bzw. Komma - Stimmen machen dort
+    // sonst kaum eine Pause. Zeichen-genau 1:1 ersetzt, damit die
+    // Positionen für die Wort-Hervorhebung gleich bleiben; keepColons=true
+    // liefert dieselbe Fassung MIT Doppelpunkt für die Anzeige
+    // (buildSpeechHighlightHtml). "10:30" (ohne Leerzeichen) bleibt.
+    stripEmojiForSpeech(text, keepColons = false) {
         if (!text) return text;
-        return text
+        const result = text
             .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{1F1E6}-\u{1F1FF}\u{2B00}-\u{2BFF}]/gu, ', ')
             .replace(/,\s*,/g, ',')
             .replace(/\s+/g, ' ')
             .trim();
+        if (keepColons) return result;
+        return result.replace(/:(?= (\S))/g, (m, next) => (/[\p{Lu}"„“»«]/u.test(next) ? '.' : ','));
     },
 
     // NEU (Audio-Tags): entfernt Sprech-Anweisungen in eckigen Klammern
@@ -557,8 +566,10 @@ Object.assign(app.utils, {
 
     buildSpeechHighlightHtml(text) {
         const clean = this.stripEmojiForSpeech(text);
+        // Anzeige mit Doppelpunkten, gleiche Länge/Positionen wie "clean"
+        const display = this.stripEmojiForSpeech(text, true);
         let idx = 0;
-        const html = clean.split(/(\s+)/).map(token => {
+        const html = display.split(/(\s+)/).map(token => {
             const start = idx;
             idx += token.length;
             if (token === '' || /^\s+$/.test(token)) return token;
