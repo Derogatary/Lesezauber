@@ -4,6 +4,10 @@ import { app } from '../js/core.js';
 await import('../js/config.js');
 await import('../js/utils.js');
 await import('../js/studio/wordSearch.js');
+// NEU (v0.55.0-beta): Arbeitsheft-Ausmalbilder (Prompts)
+await import('../js/studio/studioPrompts.js');
+await import('../js/studio/imageTargets.js');
+await import('../js/studio/worksheetImages.js');
 await import('../js/studio/studioLayout.js');
 await import('../js/actions/aiReports.js');
 await import('../js/actions/kidMode.js');

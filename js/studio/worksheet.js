@@ -32,19 +32,19 @@ import './wordSearch.js';
 // zeichenbasiert, brauchen also kein einziges Bild, siehe worksheetCanvas.js).
 // NEU: Suchsel ist inzwischen als sechster Typ dazugekommen (eigener
 // Gitter-Generator in js/studio/wordSearch.js, kein Bild nötig).
-// Die restlichen drei (Nachspuren, Ausmalen, Schneiden&Kleben)
-// brauchen entweder eine Kontur-/Rasterschrift oder ein Ausmalbild - beides
-// eine eigene, spätere Ausbaustufe (siehe docs/KONZEPT-Bildquellen.md
-// Abschnitt 1.5/5 Punkt 4 zur Clipart-Frage dafür).
+// NEU (v0.55.0-beta): auch die letzten drei sind da. Nachspuren (Konturschrift)
+// und Schneiden & Kleben (Schnipselstreifen + Klebefelder) zeichnet die App selbst
+// auf Canvas; für Ausmalen gibt die App einen Prompt zum Kopieren aus und nimmt das
+// fertige Ausmalbild zurück (js/studio/worksheetImages.js).
 const TASK_TYPES = [
     { id: 'zuordnen', icon: '🔗', label: 'Zuordnen', implemented: true },
     { id: 'luecke', icon: '✏️', label: 'Lückentext', implemented: true },
     { id: 'ankreuzen', icon: '☑️', label: 'Ankreuzen', implemented: true },
-    { id: 'nachspuren', icon: '〰️', label: 'Nachspuren', implemented: false },
-    { id: 'ausmalen', icon: '🎨', label: 'Ausmalen nach Regel', implemented: false },
+    { id: 'nachspuren', icon: '〰️', label: 'Nachspuren', implemented: true },
+    { id: 'ausmalen', icon: '🎨', label: 'Ausmalen nach Regel', implemented: true },
     { id: 'rechnen', icon: '➕', label: 'Rechnen', implemented: true },
     { id: 'suchsel', icon: '🔍', label: 'Suchsel / Rätsel', implemented: true },
-    { id: 'schneiden', icon: '✂️', label: 'Schneiden & Kleben', implemented: false },
+    { id: 'schneiden', icon: '✂️', label: 'Schneiden & Kleben', implemented: true },
     { id: 'frei', icon: '📝', label: 'Frei schreiben', implemented: true }
 ];
 const IMPLEMENTED_TYPES = TASK_TYPES.filter(t => t.implemented).map(t => t.id);
@@ -77,6 +77,9 @@ function blankTaskData(type) {
         case 'zuordnen': return { left: [''], right: [''], matches: [0] };
         case 'frei': return { prompt: '', lines: 4 };
         case 'suchsel': return app.studio.wordSearch.buildTaskData([], 1);
+        case 'nachspuren': return { words: [''] };
+        case 'ausmalen': return { motif: '' };
+        case 'schneiden': return { items: ['', ''] };
         default: return {};
     }
 }
@@ -121,6 +124,21 @@ function sanitizeTaskData(type, raw) {
             // NEU: Gitter IMMER selbst bauen, nie ein von der KI geliefertes
             // übernehmen - siehe Kommentar in js/studio/wordSearch.js.
             return app.studio.wordSearch.buildTaskData(d.words, Number.isInteger(d.seed) ? d.seed : 1);
+        case 'nachspuren':
+            // höchstens 3 Wörter - jedes bekommt große Konturschrift plus Schreiblinie
+            return { words: (Array.isArray(d.words) ? d.words : []).map(w => String(w || '').trim()).filter(Boolean).slice(0, 3) };
+        case 'ausmalen': {
+            const out = { motif: String(d.motif || '').trim() };
+            // ein schon eingesetztes Ausmalbild bleibt erhalten
+            if (typeof d.imgUrl === 'string' && d.imgUrl.startsWith('data:')) {
+                out.imgUrl = d.imgUrl;
+                if (typeof d.thumbUrl === 'string') out.thumbUrl = d.thumbUrl;
+            }
+            return out;
+        }
+        case 'schneiden':
+            // in RICHTIGER Reihenfolge gespeichert; das Durcheinander baut das Druckbild
+            return { items: (Array.isArray(d.items) ? d.items : []).map(s => String(s || '').trim()).filter(Boolean).slice(0, 6) };
         default:
             return {};
     }
@@ -150,6 +168,10 @@ function normalizeTask(raw) {
 function taskSolution(type, data, rawSolution) {
     if (type === 'frei') return '';
     if (type === 'suchsel') return app.studio.wordSearch.solutionText(data.placements);
+    // NEU (v0.55.0-beta)
+    if (type === 'nachspuren') return `Nachgespurt werden: ${(data.words || []).join(', ')}`;
+    if (type === 'ausmalen') return rawSolution || 'Hier gibt es kein richtig oder falsch - Hauptsache bunt!';
+    if (type === 'schneiden') return (data.items || []).map((s, i) => `${i + 1}. ${s}`).join('   ');
     return rawSolution || '';
 }
 
@@ -183,7 +205,10 @@ const HELP_STEP = {
     rechnen: 'Tipp: Nutze deine Finger oder kleine Striche zum Zählen, wenn du unsicher bist.',
     zuordnen: 'Tipp: Sprich jedes Wort einmal laut - dann findest du leichter das passende Gegenstück.',
     frei: 'Tipp: Schreib einfach drauflos - Rechtschreibfehler sind hier nicht schlimm.',
-    suchsel: 'Tipp: Die Wörter verstecken sich nur von links nach rechts oder von oben nach unten. Fahre mit dem Finger Zeile für Zeile entlang.'
+    suchsel: 'Tipp: Die Wörter verstecken sich nur von links nach rechts oder von oben nach unten. Fahre mit dem Finger Zeile für Zeile entlang.',
+    nachspuren: 'Tipp: Fahre die gestrichelten Linien langsam mit dem Stift nach, von links nach rechts. Schreibe das Wort danach noch einmal allein.',
+    ausmalen: 'Tipp: Lies zuerst die Malregel. Male dann Fläche für Fläche, ohne über die Linien zu malen.',
+    schneiden: 'Tipp: Schneide die Streifen an den gestrichelten Linien aus. Lege sie erst richtig hin, dann klebe sie auf.'
 };
 
 Object.assign(app.studio, {
@@ -403,6 +428,16 @@ Object.assign(app.studio, {
             data[key] = rawValue.split(',').map(s => s.trim()).filter(Boolean);
         } else if (key === 'problems') {
             data.problems = rawValue.split('\n').map(s => s.trim()).filter(Boolean);
+        } else if (key === 'items') {
+            // NEU (Schneiden & Kleben): ein Streifen pro Zeile, in der RICHTIGEN Reihenfolge
+            const target = editableTarget(task);
+            target.data.items = rawValue.split('\n').map(s => s.trim()).filter(Boolean).slice(0, 6);
+            target.solution = taskSolution('schneiden', target.data);
+        } else if (key === 'traceWords') {
+            // NEU (Nachspuren): heißt im Formular anders als beim Suchsel ('words' baut dort ein Gitter)
+            const target = editableTarget(task);
+            target.data.words = rawValue.split(',').map(s => s.trim()).filter(Boolean).slice(0, 3);
+            target.solution = taskSolution('nachspuren', target.data);
         } else if (key === 'answers' || key === 'matches') {
             data[key] = rawValue.split(',').map(s => s.trim()).filter(s => s !== '').map(Number);
         } else if (key === 'words') {
@@ -460,6 +495,8 @@ Object.assign(app.studio, {
         try {
             const alt = await app.studio.api.generateTaskLevel(project.worksheet, chapter, task, level);
             const altData = sanitizeTaskData(task.type, alt.data);
+            // Ausmalbild gehört zur Aufgabe, nicht zum Niveau - die Variante nutzt dasselbe Bild
+            if (task.type === 'ausmalen' && task.data?.imgUrl) { altData.imgUrl = task.data.imgUrl; altData.thumbUrl = task.data.thumbUrl; }
             task.altLevels[level] = {
                 instruction: alt.instruction || task.instruction,
                 explanation: alt.explanation || alt.instruction || task.explanation,
@@ -486,15 +523,36 @@ Object.assign(app.studio, {
     // Bilderbuch-Feldern - siehe CLAUDE.md-Datenmodell und
     // app.utils.buildPageVariant() (dort schon für bookType 'workbook'
     // vorbereitet, hier nur benutzt statt danebengebaut).
-    exportWorkbookToLibrary() {
+    async exportWorkbookToLibrary() {
         const project = currentProject();
         if (!project || !project.worksheet) return;
+
+        // NEU (v0.55.0-beta): eingesetzte Ausmalbilder vorab laden - das Zeichnen des
+        // Blatts (worksheetCanvas.js) ist synchron und braucht fertige <img>-Elemente.
+        const imageEls = new Map();
+        for (const chapter of project.worksheet.chapters) {
+            for (const page of chapter.pages) {
+                for (const t of page.tasks) {
+                    if (t.type !== 'ausmalen' || !t.data?.imgUrl) continue;
+                    try {
+                        imageEls.set(t.id, await new Promise((resolve, reject) => {
+                            const img = new Image();
+                            img.onload = () => resolve(img);
+                            img.onerror = () => reject(new Error('Ausmalbild nicht lesbar'));
+                            img.src = t.data.imgUrl;
+                        }));
+                    } catch (e) {
+                        console.error('Ausmalbild konnte nicht geladen werden - Platzhalter im Druck:', e);
+                    }
+                }
+            }
+        }
 
         const contentPages = [];
         project.worksheet.chapters.forEach(chapter => {
             chapter.pages.forEach(page => {
                 if (page.tasks.length === 0) return;
-                const resolved = page.tasks.map(resolveTaskContent);
+                const resolved = page.tasks.map(t => ({ ...resolveTaskContent(t), imageEl: imageEls.get(t.id) || null }));
                 const multi = resolved.length > 1;
 
                 const draw = app.studio.worksheetCanvas.drawArbeitsheftPage({

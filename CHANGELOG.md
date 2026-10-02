@@ -6,6 +6,16 @@ vollständige Historie, neueste Version zuerst. Diese Datei wurde aus
 `CLAUDE.md` ausgelagert, weil der Abschnitt dort mit der Zeit zu groß für
 schnellen Kontext wurde; inhaltlich unverändert übernommen.
 
+## v0.55.0-beta
+
+Nutzerentscheid: „Bildauflösung ist nicht nötig“ (Video) - der Punkt entfällt. Frage „Comic-Generator, haben wir den nicht?“ und Wunsch „Arbeitsheft-Aufgaben bei der Bilderzeugung als Prompts ausgeben, damit man sie kopieren kann“.
+
+- **Arbeitsheft: alle 9 Aufgabentypen sind jetzt freigeschaltet.** Neu: 〰️ **Nachspuren** (bis zu 3 Wörter als gestrichelte Konturschrift mit Schreiblinie, von der App gezeichnet), ✂️ **Schneiden & Kleben** (Schnipsel in gemischter Reihenfolge zum Ausschneiden + nummerierte Klebefelder, Lösung = richtige Reihenfolge), 🎨 **Ausmalen** (Ausmalbild + Malregel).
+- **Ausmalen über kopierbare Prompts** (`js/studio/worksheetImages.js`): pro Aufgabe „Prompt kopieren“ (Zielprogramm wählbar wie bei den Bildern im SchreibZauber: Nano Banana, ChatGPT/Copilot, „Leonardo & Co.“ englisch mit Negativ-Prompt), danach das Ergebnis per Zwischenablage, Datei oder Drag & Drop einsetzen. „Alle offenen Ausmal-Prompts kopieren“ sammelt alle auf einmal. Ohne Bild druckt das Heft einen gestrichelten Platzhalter. Kein automatischer Bildaufruf, keine Kosten.
+- KI-Planung (`TASK_SCHEMA_HINT`) kennt die drei Typen; Hilfeschritte/Lösung für alle drei.
+- Tests: `tests/worksheetImages.test.mjs`.
+- **Entfallen (Nutzerentscheid):** höhere Bildauflösung im Video; das „Comic-Generator-Werkzeug“ (TEIL A in `docs/KONZEPT-Comic.md`, ein eigenes lokales Node-Werkzeug für fremde Text-EPUBs) wird nicht gebaut - der Comic-Werktyp im SchreibZauber (TEIL B) existiert und bleibt, Prompts lassen sich dort ebenfalls kopieren.
+
 ## v0.54.0-beta
 
 Nutzerentscheid: „Reihenfolge für alle Seiten übernehmen, also Bild vor schwierigen Wörtern.“

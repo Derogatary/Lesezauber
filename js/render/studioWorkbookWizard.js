@@ -105,6 +105,34 @@ function levelButtonsHtml(chapterIdx, pageIdx, taskIdx, activeLevel) {
         </button>`).join('');
 }
 
+// NEU (v0.55.0-beta): Bild-Bereich der Ausmal-Aufgabe - Prompt kopieren, Bild zurückholen
+// (js/studio/worksheetImages.js). Gleiche Zielprogramm-Auswahl wie beim Bilder-Austausch.
+function coloringImageHtml(chapterIdx, pageIdx, taskIdx, d) {
+    const ids = `${chapterIdx}, ${pageIdx}, ${taskIdx}`;
+    const targets = app.studio.imageTargets.list();
+    const current = app.studio.imageTargets.currentId();
+    const target = app.studio.imageTargets.get(current);
+    const btn = 'text-[10px] font-bold px-2 py-1 rounded-lg border border-indigo-200 text-indigo-700 bg-white hover:bg-indigo-50 transition';
+    return `
+    <div class="bg-amber-50 border border-amber-200 rounded-lg p-2 space-y-2"
+        ondragover="event.preventDefault()" ondrop="app.studio.dropColoringImage(event, ${ids})">
+        <p class="text-[10px] font-bold text-amber-800">🎨 Ausmalbild ${d.imgUrl ? '(eingesetzt)' : '(fehlt noch)'}</p>
+        <label class="text-[10px] font-bold text-slate-500 block">Prompt für welches Programm?</label>
+        <select onchange="app.studio.setColoringTarget(this.value)" class="w-full text-xs text-slate-900 bg-white border border-slate-300 rounded-lg px-2 py-1.5">
+            ${targets.map(t => `<option value="${t.id}" ${t.id === current ? 'selected' : ''}>${app.utils.sanitize(t.label)}</option>`).join('')}
+        </select>
+        <div class="flex flex-wrap gap-1.5">
+            <button onclick="app.studio.copyColoringPrompt(${ids})" class="${btn}">📋 Prompt kopieren</button>
+            ${target.lang === 'en' ? `<button onclick="app.studio.copyColoringNegative(${ids})" class="${btn}">🚫 Negativ-Prompt kopieren</button>` : ''}
+            <button onclick="app.studio.pasteColoringImage(${ids})" class="${btn}">📥 Bild einfügen</button>
+            <button onclick="app.studio.pickColoringImage(${ids})" class="${btn}">📁 Datei</button>
+            ${d.imgUrl ? `<button onclick="app.studio.removeColoringImage(${ids})" class="${btn} !text-red-600 !border-red-200">🗑️ Bild entfernen</button>` : ''}
+        </div>
+        ${d.thumbUrl ? `<img src="${d.thumbUrl}" alt="Ausmalbild" class="w-28 h-28 object-contain bg-white border border-slate-200 rounded-lg">` : ''}
+        <p class="text-[10px] text-slate-500">Ablauf: Prompt kopieren → im Bild-Programm einfügen und das Ausmalbild erzeugen → Bild kopieren → hier „Bild einfügen“ (oder Datei wählen / hierher ziehen). ${app.utils.sanitize(target.hint || '')} Ohne Bild druckt das Blatt einen leeren Rahmen.</p>
+    </div>`;
+}
+
 // Baut die editierbaren Datenfelder EINER Aufgabe passend zu ihrem Typ -
 // siehe app.studio.updateTaskData() in js/studio/worksheet.js für die
 // Gegenseite (parst dieselben Feldnamen zurück).
@@ -144,6 +172,19 @@ function taskDataFieldsHtml(chapterIdx, pageIdx, taskIdx, content) {
         return field('Versteckte Wörter (Komma-getrennt, je max. 10 Buchstaben)', (d.words || []).join(', '), 'words', 'HUND, KATZE, MAUS')
             + (preview ? `<pre class="text-xs font-mono leading-snug text-slate-800 bg-white border border-slate-200 rounded-lg p-2 overflow-x-auto">${app.utils.sanitize(preview)}</pre>` : '')
             + `<button onclick="app.studio.reshuffleWordSearch(${chapterIdx}, ${pageIdx}, ${taskIdx})" class="text-[10px] font-bold px-2 py-1 rounded-lg border border-indigo-200 text-indigo-700 bg-white hover:bg-indigo-50 transition">🔀 Neu mischen</button>`;
+    }
+    // NEU (v0.55.0-beta): Nachspuren, Schneiden & Kleben, Ausmalen
+    if (content.type === 'nachspuren') {
+        return field('Wörter zum Nachspuren (Komma-getrennt, höchstens 3)', (d.words || []).join(', '), 'traceWords', 'Hund, Katze');
+    }
+    if (content.type === 'schneiden') {
+        return `<div><label class="text-[10px] font-bold text-slate-400 block mb-0.5">Streifen in der RICHTIGEN Reihenfolge (einer pro Zeile, höchstens 6) - die App mischt sie fürs Blatt</label>
+            <textarea rows="4" onchange="app.studio.updateTaskData(${chapterIdx}, ${pageIdx}, ${taskIdx}, 'items', this.value)"
+                class="w-full text-xs text-slate-900 bg-white border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:border-indigo-500">${app.utils.sanitize((d.items || []).join('\n'))}</textarea></div>`;
+    }
+    if (content.type === 'ausmalen') {
+        return field('Motiv des Ausmalbilds (was soll gezeichnet sein?)', d.motif, 'motif', 'ein lachender Apfel mit Blatt')
+            + coloringImageHtml(chapterIdx, pageIdx, taskIdx, d);
     }
     if (content.type === 'frei') {
         return field('Schreibimpuls', d.prompt, 'prompt')
@@ -202,6 +243,9 @@ function fillTasksStage(project) {
     document.getElementById('studioTaskChapterList').innerHTML = chapters.map((c, i) => taskChapterCardHtml(c, i)).join('');
     const hasAnyTask = chapters.some(c => c.pages.some(p => p.tasks.length > 0));
     document.getElementById('studioWBExportBtn').classList.toggle('hidden', !hasAnyTask);
+    // NEU (v0.55.0-beta): Sammel-Knopf, solange Ausmal-Aufgaben ohne Bild da sind
+    const openColoring = chapters.some(c => c.pages.some(p => p.tasks.some(t => t.type === 'ausmalen' && !t.data?.imgUrl && (t.data?.motif || '').trim())));
+    document.getElementById('studioWBColoringBtn')?.classList.toggle('hidden', !openColoring);
 }
 
 Object.assign(app.render, {

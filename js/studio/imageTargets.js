@@ -92,6 +92,12 @@ Object.assign(app.studio, {
             return this.get(targetId).lang === 'en' && !translations.has(JSON.stringify(freeTextOf(parts)));
         },
 
+        // NEU (v0.55.0-beta): bereits gemerkte Übersetzung dieser Bausteine (oder undefined) -
+        // für die Ausmal-Prompts im Arbeitsheft (js/studio/worksheetImages.js)
+        translatedOf(parts) {
+            return translations.get(JSON.stringify(freeTextOf(parts)));
+        },
+
         // Übersetzt die frei geschriebenen Teile einmal (Gemini, sonst Mistral).
         // Ohne Key oder bei Fehlern bleibt es deutsch - mit Hinweis, nie stumm.
         async translate(parts) {

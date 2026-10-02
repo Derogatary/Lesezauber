@@ -61,7 +61,7 @@
                     <button id="pregenBadge" data-parent-only onclick="app.nav.go('settings')" class="hidden text-xs font-bold text-indigo-600 mt-0.5 hover:underline"></button>
                     <!-- NEU (v0.44.0-beta): direkt in den Nachtmodus -->
                     <button id="nightPrepLibBtn" data-parent-only onclick="app.actions.startNightPrep()" class="hidden text-xs font-bold text-slate-600 mt-0.5 ml-2 hover:underline">🌙 über Nacht</button>
-                    <p data-app-version class="text-[10px] text-slate-400 font-semibold mt-0.5">v0.54.0-beta</p>
+                    <p data-app-version class="text-[10px] text-slate-400 font-semibold mt-0.5">v0.55.0-beta</p>
                 </div>
                 <!-- FIX (v0.45.1-beta, Nutzer-Screenshot): seit dem Kindermodus-Knopf
                      passte die Knopfreihe nicht mehr aufs Handy und die ganze Seite
@@ -1445,6 +1445,8 @@
                 <div id="studioTaskChapterList" class="space-y-3">
                     <!-- Dynamic Kapitel mit Seiten/Aufgaben get injected here -->
                 </div>
+                <!-- NEU (v0.55.0-beta): alle noch offenen Ausmal-Prompts nummeriert kopieren -->
+                <button id="studioWBColoringBtn" onclick="app.studio.copyAllColoringPrompts()" class="hidden w-full bg-amber-50 border border-amber-300 text-amber-800 font-bold py-2.5 rounded-xl hover:bg-amber-100 transition text-sm">🎨 Alle offenen Ausmal-Prompts kopieren</button>
                 <button id="studioWBExportBtn" onclick="app.studio.exportWorkbookToLibrary()" class="hidden w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl shadow-md transition">📖 Ins Regal stellen (mit Lösungsteil)</button>
             </section>
             </div>

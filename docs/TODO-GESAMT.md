@@ -4,9 +4,7 @@
 
 > **Stand Oktober 2026 (v0.53.0-beta): Die baubaren Punkte sind abgearbeitet.** Offen sind nur noch
 > große, bewusst zurückgestellte Vorhaben: Comic-Generator als eigenes lokales Werkzeug (**L**),
-> volle App-Oberfläche in anderen Sprachen (**L**, nicht angefragt), höhere Bildauflösung im Video
-> (`videoUrl`, niedrigste Priorität) und die Arbeitsheft-Aufgabentypen Nachspuren/Ausmalen/Schneiden
-> (brauchen Kontur-Schrift bzw. Bildgenerierung). Alles Weitere wartet auf Tests oder Entscheidungen
+> volle App-Oberfläche in anderen Sprachen (**L**, nicht angefragt), (Video-Bildauflösung und Comic-Generator entfallen laut Nutzerentscheid v0.55.0-beta; Arbeitsheft Nachspuren/Ausmalen/Schneiden sind erledigt). Alles Weitere wartet auf Tests oder Entscheidungen
 > des Betreibers, siehe [`WARTET-AUF-BETREIBER.md`](WARTET-AUF-BETREIBER.md).
 >
 > **Seit v0.47.0-beta dazugekommen und erledigt** (Details in `CHANGELOG.md`):
@@ -162,7 +160,7 @@ Der größte Brocken im Projekt - dafür in Stufen geschnitten, die **einzeln li
 | ~~**SchreibZauber Stufe 4 - Arbeitsheft**~~ | **L** | ✅ **erledigt** - Lernziel/Progression/Aufgabenbaukasten als eigener Wizard-Zweig (`js/studio/worksheet.js`, `js/render/studioWorkbookWizard.js`), 5 von 9 Aufgabentypen umgesetzt (Lückentext/Ankreuzen/Rechnen/Zuordnen/Frei schreiben - alle ohne Bildbedarf), Differenzierung (⭐/⭐⭐/⭐⭐⭐, auf Abruf nachgeneriert), automatischer Lösungsteil am Heftende, Export „ins Regal" mit `bookType: 'workbook'`. Details/offene Rest-Typen: `docs/KONZEPT-SchreibZauber.md`, Abschnitt „Stand nach Stufe 4" |
 | ~~**SchreibZauber Stufe 5 - Comic**~~ | **L** | ✅ **erledigt** - Panel-Layouts, Sprechblasen-Overlay, seit v0.28.0-beta auch comicfähiger Druck. Details: CHANGELOG.md v0.24.0/v0.26.0/v0.28.0-beta |
 | ~~**SchreibZauber Stufe 6 - Politur**~~ | **M** | ✅ **erledigt** - projektübergreifende Figuren, Vorlagen (CHANGELOG.md v0.25.0-beta). Die zweite Einstiegsseite `schreiben.html` wird laut Nutzerentscheid (Sept. 2026) **nicht gebraucht** - endgültig verworfen, keine Tab-Lösung wird zur zweiten App ausgebaut |
-| **Comic-Generator-Werkzeug** | **L** | Bewusst **kein** App-Feature: eigenes Node-Werkzeug lokal beim Betreiber (`tools/comic-gen/`), weil Browser nur CORS-fähige Bild-Anbieter erreichen |
+| ~~**Comic-Generator-Werkzeug**~~ | **L** | ❌ **entfällt (Nutzerentscheid v0.55.0-beta)** -  Bewusst **kein** App-Feature: eigenes Node-Werkzeug lokal beim Betreiber (`tools/comic-gen/`), weil Browser nur CORS-fähige Bild-Anbieter erreichen |
 | ~~**KDP-Fertigstellung: Trimm-Format 8,5×8,5", Seiten-Layout-Varianten, echte Doppelseiten-Bilder**~~ | **M/L** | ✅ **erledigt (v0.39.0-beta)** auf Nutzerwunsch: Bauplan-Format „Quadratisch 8,5 Zoll“, Seitenaufbau „Bild + Textstreifen“ / „Vollbild ohne Text“ pro Doppelseite, Panorama über zwei Buchseiten (Druck teilt das Bild und schiebt bei Bedarf eine Leerseite ein). Test im echten KDP-Vorschauer steht noch aus, siehe `WARTET-AUF-BETREIBER.md`. Details: `docs/KONZEPT-SchreibZauber.md`, Nachtrag "KDP-Ideen umgesetzt" |
 
 **✅ Bedingung erfüllt: Stufe 1 ist gebaut und in `main`.** Damit war die im Konzept

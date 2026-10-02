@@ -93,6 +93,8 @@ import './studio/studioPrint.js';
 // docs/KONZEPT-SchreibZauber.md TEIL C.4. worksheet.js importiert
 // worksheetCanvas.js selbst mit, deshalb reicht hier ein Eintrag.
 import './studio/worksheet.js';
+// NEU (v0.55.0-beta): Ausmalbilder fürs Arbeitsheft (Prompt kopieren, Bild einfügen)
+import './studio/worksheetImages.js';
 // NEU (Ausbaustufe 5 - Comic): Sprechblasen-Overlay + -Verwaltung, sowie
 // Panel-Layout/Zusammensetzen, siehe docs/KONZEPT-SchreibZauber.md TEIL E.
 import './studio/studioBalloons.js';

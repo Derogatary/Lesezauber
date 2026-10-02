@@ -18,6 +18,7 @@ const TASK_TYPE_LABELS = {
     luecke:    '✏️ Lückentext',
     rechnen:   '➕ Rechnen',
     frei:      '📝 Frei schreiben',
+    schneiden: '✂️ Schneiden & Kleben',
     gemischt:  '🧩 Mehrere Aufgaben',
     loesung:   '✅ Lösungen',
     sonstiges: '📋 Aufgabe'

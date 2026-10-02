@@ -31,12 +31,23 @@ const MAX_WIDTH = PAGE_W - MARGIN_X * 2;
 // werden ohnehin gemeinsam von main.js geladen, aber lose Kopplung ist
 // hier bewusst - reine Anzeige-Konstante, kein Verhalten).
 const TASK_ICON = {
-    luecke: '✏️', ankreuzen: '☑️', rechnen: '➕', zuordnen: '🔗', frei: '📝', suchsel: '🔍'
+    luecke: '✏️', ankreuzen: '☑️', rechnen: '➕', zuordnen: '🔗', frei: '📝', suchsel: '🔍',
+    // NEU (v0.55.0-beta)
+    nachspuren: '〰️', ausmalen: '🎨', schneiden: '✂️'
 };
 const STAR_FOR_LEVEL = { 1: '⭐', 2: '⭐⭐', 3: '⭐⭐⭐' };
 // NEU (Suchsel): Kästchengröße des Buchstabengitters - 10 Kästchen (Maximum,
 // siehe js/studio/wordSearch.js) = 560px, passt bequem in die Seitenbreite.
 const GRID_CELL = 56;
+// NEU (v0.55.0-beta): Seitenlänge des Ausmalbild-Rahmens
+const COLOR_BOX = 500;
+
+// Streifen fürs Ausschneiden in ANDERER Reihenfolge als die richtige: einfach
+// umgedreht (deterministisch, damit Bildschirm und Druck immer gleich aussehen).
+function shuffledStrips(items) {
+    const rev = [...items].reverse();
+    return rev.some((s, i) => s !== items[i]) ? rev : [...items];
+}
 
 function makeCanvas() {
     const canvas = document.createElement('canvas');
@@ -113,6 +124,19 @@ function taskToLines(task) {
         if (Array.isArray(data.words) && data.words.length) {
             lines.push(`Finde: ${data.words.map(w => `☐ ${w}`).join('   ')}`);
         }
+    } else if (task.type === 'nachspuren') {
+        // NEU: Marker, auf dem Canvas als gestrichelte Konturschrift + Schreiblinie gezeichnet
+        (data.words || []).slice(0, 3).forEach(w => lines.push(`___TRACE___${w}`));
+    } else if (task.type === 'ausmalen') {
+        // NEU: Bildrahmen (mit dem eingesetzten Ausmalbild, sonst gestrichelter Platzhalter)
+        lines.push(`___COLORIMG___${data.motif || ''}`);
+    } else if (task.type === 'schneiden') {
+        // NEU: Streifen gemischt zum Ausschneiden, darunter nummerierte Klebefelder
+        const items = data.items || [];
+        lines.push('Zum Ausschneiden:');
+        shuffledStrips(items).forEach(it => lines.push(`___CUT___${it}`));
+        lines.push('Hier aufkleben - in der richtigen Reihenfolge:');
+        items.forEach((_, i) => lines.push(`___CUTBOX___${i + 1}`));
     } else if (task.type === 'frei') {
         lines.push(data.prompt || '');
         const lineCount = Math.max(2, Math.min(8, data.lines || 4));
@@ -189,6 +213,96 @@ function drawArbeitsheftPage({ chapterTitle, pageGoal, pageNumber, tasks }) {
                 ctx.strokeStyle = '#cbd5e1';
                 y += cell;
                 bodyLines.push(letters.join(' '));
+                return;
+            }
+            if (rawLine.startsWith('___TRACE___')) {
+                // NEU (Nachspuren): großes Wort in gestrichelter Kontur (Kinder fahren nach),
+                // darunter eine Linie zum Selberschreiben. Schrift verkleinern, falls das Wort zu breit ist.
+                const word = rawLine.slice('___TRACE___'.length);
+                let size = 96;
+                ctx.save();
+                ctx.font = `bold ${size}px sans-serif`;
+                while (size > 40 && ctx.measureText(word).width > MAX_WIDTH) { size -= 4; ctx.font = `bold ${size}px sans-serif`; }
+                ctx.setLineDash([9, 9]);
+                ctx.lineWidth = 3;
+                ctx.strokeStyle = '#64748b';
+                ctx.strokeText(word, MARGIN_X, y);
+                ctx.restore();
+                y += size + 30;
+                ctx.beginPath();
+                ctx.moveTo(MARGIN_X, y + 34);
+                ctx.lineTo(PAGE_W - MARGIN_X, y + 34);
+                ctx.stroke();
+                y += lineHeight + 14;
+                bodyLines.push(`〰️ ${word}`);
+                bodyLines.push('_______________________________________________');
+                return;
+            }
+            if (rawLine.startsWith('___COLORIMG___')) {
+                // NEU (Ausmalen): quadratischer Rahmen, mittig. Mit Bild: Ausmalvorlage hineingesetzt.
+                // Ohne Bild: gestrichelter Platzhalter, damit beim Ausdruck sofort auffällt, dass es fehlt.
+                const motif = rawLine.slice('___COLORIMG___'.length);
+                const x = MARGIN_X + (MAX_WIDTH - COLOR_BOX) / 2;
+                ctx.save();
+                if (task.imageEl) {
+                    const el = task.imageEl;
+                    const k = Math.min(COLOR_BOX / el.naturalWidth, COLOR_BOX / el.naturalHeight);
+                    const w = el.naturalWidth * k, h = el.naturalHeight * k;
+                    ctx.drawImage(el, x + (COLOR_BOX - w) / 2, y + (COLOR_BOX - h) / 2, w, h);
+                    ctx.strokeStyle = '#e2e8f0';
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(x, y, COLOR_BOX, COLOR_BOX);
+                } else {
+                    ctx.setLineDash([12, 10]);
+                    ctx.lineWidth = 3;
+                    ctx.strokeStyle = '#94a3b8';
+                    ctx.strokeRect(x, y, COLOR_BOX, COLOR_BOX);
+                    ctx.setLineDash([]);
+                    ctx.fillStyle = '#94a3b8';
+                    ctx.textAlign = 'center';
+                    ctx.font = 'italic 26px sans-serif';
+                    ctx.fillText('Hier kommt das Ausmalbild hin', x + COLOR_BOX / 2, y + COLOR_BOX / 2 - 40);
+                    wrapLine(ctx, motif, 'italic 24px sans-serif', COLOR_BOX - 60).slice(0, 3).forEach((l, i) => {
+                        ctx.font = 'italic 24px sans-serif';
+                        ctx.fillText(l, x + COLOR_BOX / 2, y + COLOR_BOX / 2 + 5 + i * 30);
+                    });
+                }
+                ctx.restore();
+                y += COLOR_BOX + 24;
+                bodyLines.push(`[Ausmalbild: ${motif}]`);
+                return;
+            }
+            if (rawLine.startsWith('___CUT___')) {
+                // NEU (Schneiden & Kleben): Streifen mit gestrichelter Schnittlinie
+                const text = rawLine.slice('___CUT___'.length);
+                const h = 66;
+                ctx.save();
+                ctx.setLineDash([14, 8]);
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = '#334155';
+                ctx.strokeRect(MARGIN_X + 50, y, MAX_WIDTH - 50, h);
+                ctx.restore();
+                ctx.font = '30px sans-serif';
+                ctx.fillText('✂️', MARGIN_X, y + 16);
+                ctx.font = 'bold 30px sans-serif';
+                ctx.fillText(wrapLine(ctx, text, 'bold 30px sans-serif', MAX_WIDTH - 90)[0] || '', MARGIN_X + 70, y + 17);
+                y += h + 16;
+                bodyLines.push(`✂ ${text}`);
+                return;
+            }
+            if (rawLine.startsWith('___CUTBOX___')) {
+                // NEU (Schneiden & Kleben): leeres, nummeriertes Klebefeld
+                const n = rawLine.slice('___CUTBOX___'.length);
+                const h = 66;
+                ctx.save();
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = '#334155';
+                ctx.strokeRect(MARGIN_X + 50, y, MAX_WIDTH - 50, h);
+                ctx.restore();
+                ctx.font = 'bold 32px sans-serif';
+                ctx.fillText(`${n}.`, MARGIN_X + 4, y + 16);
+                y += h + 16;
+                bodyLines.push(`${n}. ______________________`);
                 return;
             }
             if (rawLine === '___LINE___') {

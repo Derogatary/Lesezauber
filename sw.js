@@ -1,7 +1,7 @@
 // Bei jeder inhaltlichen Änderung an einer dieser Dateien diese Nummer
 // erhöhen - sonst bekommen wiederkehrende Besucher weiter die alte
 // zwischengespeicherte Version ausgeliefert.
-const CACHE_NAME = 'lesezauber-shell-v89';
+const CACHE_NAME = 'lesezauber-shell-v90';
 
 // FIX (v89, v0.54.0-beta): Vorlese-Reihenfolge Bild vor Wörtern für alle Seiten.
 
@@ -340,6 +340,7 @@ const APP_SHELL = [
     // NEU (Ausbaustufe 4 - Arbeitsheft): eigener Werktyp-Pfad, siehe
     // docs/KONZEPT-SchreibZauber.md TEIL C.4.
     './js/studio/worksheet.js',
+    './js/studio/worksheetImages.js',
     './js/studio/worksheetCanvas.js',
     './js/studio/wordSearch.js',
     // NEU (Ausbaustufe 5 - Comic): Sprechblasen-Overlay + -Verwaltung,
