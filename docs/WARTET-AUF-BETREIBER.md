@@ -71,12 +71,6 @@ anfühlt, kann nur der Alltag zeigen. Bitte kurz Rückmeldung, wenn etwas nicht 
 | **🪟 Klappenbuch mit einem echten Buch** | Zuschneiden, Zuordnen, Reihenfolge beim Vorlesen, Bildwechsel. Fotografierte Klappen werden beim Fotografieren sofort ausgelesen - nach dem Zuschneiden ein zweites Mal (eine Anfrage mehr). Stört das, ließe sich das automatische Auslesen bei Klappenbüchern zurückhalten |
 | **Text-Erkennung bei wörtlicher Rede** | Fehlen noch Texte? Dann die Seite mit 🔄 neu auslesen und Bescheid geben |
 
-## 🤔 Offene Entscheidung
-
-| Punkt | Frage |
-|---|---|
-| **Vorlese-Reihenfolge für alle Seiten?** | Seiten MIT Klappen: Text → Bildbeschreibung → Klappen → Wörter → Rätsel. Seiten OHNE Klappen: Text → Wörter → Bildbeschreibung → Rätsel. Soll die erste Reihenfolge (Bild vor den Wörtern) für alle Seiten gelten? |
-
 ## 👀 Beobachtung aus dem Alltag
 
 | Punkt | Was fehlt |

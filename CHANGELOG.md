@@ -6,6 +6,14 @@ vollständige Historie, neueste Version zuerst. Diese Datei wurde aus
 `CLAUDE.md` ausgelagert, weil der Abschnitt dort mit der Zeit zu groß für
 schnellen Kontext wurde; inhaltlich unverändert übernommen.
 
+## v0.54.0-beta
+
+Nutzerentscheid: „Reihenfolge für alle Seiten übernehmen, also Bild vor schwierigen Wörtern.“
+
+**Einheitliche Vorlese-Reihenfolge** (`js/tts.js`)
+- Für ALLE Seiten gilt jetzt: Text → Bildbeschreibung → (Klappen) → schwierige Wörter → Rätsel → Zwischenruf → umblättern. Bisher galt das nur für Seiten mit Klappen. Seiten ohne Klappen lasen die Wörter vor der Bildbeschreibung.
+- Hörbuch und Video enthalten keine Wort-Erklärungen und sind deshalb nicht betroffen.
+
 ## v0.53.0-beta
 
 Nutzerwunsch: „Tue die Todos und offenen Punkte.“ Abgearbeitet wurden die offenen Punkte aus den letzten Runden. Die Liste in `docs/TODO-GESAMT.md` enthält sonst nur noch große, bewusst zurückgestellte Vorhaben. Test- und Entscheidungspunkte stehen jetzt gesammelt in `docs/WARTET-AUF-BETREIBER.md`.

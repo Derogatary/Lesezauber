@@ -1,7 +1,9 @@
 // Bei jeder inhaltlichen Änderung an einer dieser Dateien diese Nummer
 // erhöhen - sonst bekommen wiederkehrende Besucher weiter die alte
 // zwischengespeicherte Version ausgeliefert.
-const CACHE_NAME = 'lesezauber-shell-v88';
+const CACHE_NAME = 'lesezauber-shell-v89';
+
+// FIX (v89, v0.54.0-beta): Vorlese-Reihenfolge Bild vor Wörtern für alle Seiten.
 
 // NEU (v88, v0.53.0-beta): Klappen in Hörbuch/Video, Seite zuschneiden (neue Datei js/actions/pageCrop.js).
 

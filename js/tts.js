@@ -771,18 +771,16 @@ Object.assign(app.tts, {
             }
         };
 
-        // NEU (v0.52.0-beta, Klappenbücher - js/actions/flapBook.js): hat die
-        // Seite zugeordnete Klappen (eigene, auf die Klappe zugeschnittene
-        // Fotos), gilt auf Nutzerwunsch eine eigene Reihenfolge:
-        //   Text -> Bildbeschreibung -> Klappen (Text + Bildbeschreibung) ->
+        // Reihenfolge (v0.52.0-beta für Klappen, seit v0.54.0-beta auf
+        // Nutzerentscheid für ALLE Seiten):
+        //   Text -> Bildbeschreibung -> [Klappen: Text + Bildbeschreibung] ->
         //   schwierige Wörter (Seite + Klappen) -> Rätsel -> Zwischenruf.
-        // Ohne Klappen bleibt es bei Text -> Wörter -> Bildbeschreibung -> ...
         const flaps = app.utils.flapsForPage(book, page, app.state.readingPersonaId);
         const hasFlaps = flaps.length > 0;
 
         const describeImage = () => {
             if (!app.state.autoReadActive) return;
-            const next = hasFlaps ? readFlaps : maybeAskQuiz;
+            const next = hasFlaps ? readFlaps : explainDifficultWords;
             if (variant.desc) {
                 // FIX: Ansage und Bildbeschreibung laufen jetzt in EINEM
                 // Sprechvorgang. Vorher waren es zwei - bei einer KI-Stimme
@@ -827,7 +825,7 @@ Object.assign(app.tts, {
         ]);
         const explainDifficultWords = () => {
             if (!app.state.autoReadActive) return;
-            const afterWords = hasFlaps ? maybeAskQuiz : describeImage;
+            const afterWords = maybeAskQuiz;
             if (words.length === 0) { afterWords(); return; }
             const speakNext = (i) => {
                 if (!app.state.autoReadActive) return;
@@ -848,7 +846,8 @@ Object.assign(app.tts, {
             }, caption('📚 Schwierige Wörter'));
         };
         // was direkt nach dem Seitentext kommt
-        const afterPageText = hasFlaps ? describeImage : explainDifficultWords;
+        // FIX (v0.54.0-beta, Nutzerentscheid): für ALLE Seiten Bild vor den Wörtern
+        const afterPageText = describeImage;
 
         // Bei einer KI-Stimme: die übrigen Teile dieser Seite schon erzeugen,
         // während der Seitentext läuft (wird ohnehin gleich vorgelesen).
