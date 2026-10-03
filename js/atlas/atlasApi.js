@@ -91,7 +91,10 @@ async function fetchGeminiWithRetry(action, options) {
             continue;
         }
 
-        if (res.ok) return res;
+        if (res.ok) {
+            app.geminiQuota.noteSuccess(model); // NEU (v0.56.1-beta): Anfragen mitzählen
+            return res;
+        }
 
         if (res.status === 429) {
             // NEU (v0.56.0-beta): Sperre merken (Tageslimit bis Mitternacht

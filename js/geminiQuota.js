@@ -39,12 +39,21 @@ function load() {
     try {
         const raw = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
         // anderer Key = anderes Projekt = anderes Kontingent
-        if (raw.keyTag !== keyTag()) return { keyTag: keyTag(), models: {} };
-        return { keyTag: raw.keyTag, models: raw.models || {} };
+        if (raw.keyTag !== keyTag()) return { keyTag: keyTag(), models: {}, usage: null };
+        return { keyTag: raw.keyTag, models: raw.models || {}, usage: raw.usage || null };
     } catch (e) {
         console.error('Kontingent-Speicher unlesbar - wird zurückgesetzt:', e);
-        return { keyTag: keyTag(), models: {} };
+        return { keyTag: keyTag(), models: {}, usage: null };
     }
+}
+
+// NEU (v0.56.1-beta, Nutzerfrage "kann man abrufen, welche Rates noch offen
+// sind?"): Google bietet dafür KEINE Abfrage an - die Antworten tragen keine
+// Kontingent-Angaben, sichtbar ist es nur in AI Studio. Deshalb zählt die App
+// selbst mit: erfolgreiche Anfragen je Modell seit dem letzten Zurücksetzen
+// (Kalendertag in Pazifik-Zeit). Zählt nur, was DIESES Gerät geschickt hat.
+function dayKey(now = Date.now()) {
+    return new Intl.DateTimeFormat('en-CA', { timeZone: RESET_TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(now));
 }
 
 function save(state) {
@@ -160,11 +169,28 @@ app.geminiQuota = {
 
     // Für die Anzeige in den Einstellungen
     status(models = app.api.geminiModels || [], now = Date.now()) {
-        return models.map(m => ({ model: m, block: this.blockOf(m, now) }));
+        const used = this.usedToday(now);
+        return models.map(m => ({ model: m, block: this.blockOf(m, now), used: used[m] || 0 }));
+    },
+
+    // Erfolgreiche Anfrage mitzählen (aufgerufen von allen drei Rotationen)
+    noteSuccess(model, now = Date.now()) {
+        const state = load();
+        const day = dayKey(now);
+        if (!state.usage || state.usage.day !== day) state.usage = { day, counts: {} };
+        state.usage.counts[model] = (state.usage.counts[model] || 0) + 1;
+        save(state);
+    },
+
+    // { modell: anzahl } seit dem letzten Zurücksetzen bei Google
+    usedToday(now = Date.now()) {
+        const usage = load().usage;
+        return usage && usage.day === dayKey(now) ? { ...usage.counts } : {};
     },
 
     clear() {
-        save({ keyTag: keyTag(), models: {} });
+        // Zähler bleibt - er beschreibt, was heute wirklich verschickt wurde
+        save({ keyTag: keyTag(), models: {}, usage: load().usage });
         app.render.geminiQuotaStatus?.();
     }
 };

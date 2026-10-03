@@ -61,7 +61,7 @@
                     <button id="pregenBadge" data-parent-only onclick="app.nav.go('settings')" class="hidden text-xs font-bold text-indigo-600 mt-0.5 hover:underline"></button>
                     <!-- NEU (v0.44.0-beta): direkt in den Nachtmodus -->
                     <button id="nightPrepLibBtn" data-parent-only onclick="app.actions.startNightPrep()" class="hidden text-xs font-bold text-slate-600 mt-0.5 ml-2 hover:underline">🌙 über Nacht</button>
-                    <p data-app-version class="text-[10px] text-slate-400 font-semibold mt-0.5">v0.56.0-beta</p>
+                    <p data-app-version class="text-[10px] text-slate-400 font-semibold mt-0.5">v0.56.1-beta</p>
                 </div>
                 <!-- FIX (v0.45.1-beta, Nutzer-Screenshot): seit dem Kindermodus-Knopf
                      passte die Knopfreihe nicht mehr aufs Handy und die ganze Seite
@@ -388,6 +388,8 @@
             <div id="readerPersonaBar" class="mb-3">
                 <p class="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">🎭 Wer erzählt?</p>
                 <div id="readerPersonaChips" role="radiogroup" aria-label="Erzähler wählen" class="flex gap-2 overflow-x-auto pb-1"></div>
+                <!-- NEU (v0.56.1-beta): Erzähler-Fassung wird nachgeholt / fehlt (js/render/reader.js) -->
+                <p id="readerPersonaFillHint" class="hidden mt-2 text-[11px] text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2"></p>
             </div>
             <!-- NEU (v0.43.0-beta): eigene Stimme - wer liest den Seitentext vor
                  (Mama/Papa/Vorlesestimme), plus Einsprechen für Eltern

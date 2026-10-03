@@ -357,25 +357,25 @@ Object.assign(app.render, {
     geminiQuotaStatus() {
         const box = document.getElementById('geminiQuotaStatus');
         if (!box) return;
+        if (!app.settings.apiKey) { box.innerHTML = ''; return; }
         const rows = app.geminiQuota.status();
         const blocked = rows.filter(r => r.block);
-        if (!app.settings.apiKey || blocked.length === 0) {
-            box.innerHTML = app.settings.apiKey ? '<p class="text-[11px] text-slate-500">📊 Gemini-Kontingent: alle Modelle frei.</p>' : '';
-            return;
-        }
+        const total = rows.reduce((n, r) => n + r.used, 0);
+        // NEU (v0.56.1-beta): Zähler je Modell - Google selbst verrät die
+        // Restmenge nicht, nur AI Studio zeigt sie an.
         const list = rows.map(r => {
             const b = r.block;
             const state = !b ? '✅ frei'
                 : b.kind === 'day' ? `⛔ Tageslimit - frei ab ${app.geminiQuota.formatWhen(b.until)}`
                 : `⏳ Minutenlimit - frei ab ${app.geminiQuota.formatWhen(b.until)}`;
-            return `<li><span class="font-mono">${app.utils.sanitize(r.model)}</span>: ${state}</li>`;
+            return `<li><span class="font-mono">${app.utils.sanitize(r.model)}</span>: ${r.used} heute · ${state}</li>`;
         }).join('');
         box.innerHTML = `
-            <div class="text-[11px] text-slate-600 bg-amber-50 border border-amber-200 rounded-xl p-2 space-y-1">
-                <p class="font-bold">📊 Gemini-Kontingent (${blocked.length} von ${rows.length} Modellen gesperrt)</p>
-                <ul class="space-y-0.5">${list}</ul>
-                <p class="text-slate-500">Google setzt die Tageskontingente um Mitternacht Pazifik-Zeit zurück (bei uns meist 9:00 Uhr) - die Sperre hier läuft dann von selbst ab.</p>
-                <button onclick="app.actions.resetGeminiQuota()" class="text-[11px] font-bold px-2.5 py-1 rounded-lg border border-slate-300 bg-white hover:bg-slate-50">🔄 Sperren jetzt zurücksetzen</button>
-            </div>`;
+            <details class="text-[11px] text-slate-600 ${blocked.length ? 'bg-amber-50 border-amber-200' : 'bg-slate-50 border-slate-200'} border rounded-xl p-2" ${blocked.length ? 'open' : ''}>
+                <summary class="font-bold cursor-pointer">📊 Gemini heute: ${total} ${total === 1 ? 'Anfrage' : 'Anfragen'}${blocked.length ? ` · ${blocked.length} von ${rows.length} Modellen gesperrt` : ' · alle Modelle frei'}</summary>
+                <ul class="space-y-0.5 mt-1">${list}</ul>
+                <p class="text-slate-500 mt-1">Gezählt wird, was dieses Gerät seit dem letzten Zurücksetzen geschickt hat. Wie viele noch übrig sind, verrät Google der App nicht - das zeigt nur <a href="https://aistudio.google.com/" target="_blank" rel="noopener" class="underline">Google AI Studio</a> (dort das Projekt wählen, Bereich Nutzung/Rate-Limits). Faustregel: volle Flash-Modelle ca. 20 am Tag, Flash-Lite deutlich mehr. Zurückgesetzt wird um Mitternacht Pazifik-Zeit (bei uns meist 9:00 Uhr).</p>
+                ${blocked.length ? '<button onclick="app.actions.resetGeminiQuota()" class="mt-1 text-[11px] font-bold px-2.5 py-1 rounded-lg border border-slate-300 bg-white hover:bg-slate-50">🔄 Sperren jetzt zurücksetzen</button>' : ''}
+            </details>`;
     }
 });

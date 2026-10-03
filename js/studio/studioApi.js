@@ -43,7 +43,9 @@ async function withGeminiModelRotation(callModel) {
     const models = app.geminiQuota.usable(GEMINI_MODELS);
     for (const model of models) {
         try {
-            return await callModel(model);
+            const result = await callModel(model);
+            app.geminiQuota.noteSuccess(model); // NEU (v0.56.1-beta): Anfragen mitzählen
+            return result;
         } catch (e) {
             if (e.message !== 'RATE_LIMITED') throw e;
             console.warn(`${model}: Ratenbegrenzung erreicht, versuche nächstes Modell`);

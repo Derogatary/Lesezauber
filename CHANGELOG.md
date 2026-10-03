@@ -6,6 +6,13 @@ vollständige Historie, neueste Version zuerst. Diese Datei wurde aus
 `CLAUDE.md` ausgelagert, weil der Abschnitt dort mit der Zeit zu groß für
 schnellen Kontext wurde; inhaltlich unverändert übernommen.
 
+## v0.56.1-beta
+
+Nutzer-Rückmeldung: „Kann man abrufen, welche Rates noch offen sind? Er stoppt immer noch bei der zweiten Seite, bei der ich den Erzähler gewechselt hatte.“
+
+- **FIX Vorlesen stoppt nach Erzählerwechsel:** fehlte auf einer Seite die Fassung des gewählten Erzählers (z.B. ältere Seite oder Nachholen am leeren Tageskontingent gescheitert), hielt das automatische Vorlesen dort an („Seite noch nicht bereit“). Jetzt liest es die vorhandene Fassung eines anderen Erzählers (ohne dessen Zwischenruf) und blättert weiter; der Reader zeigt diese Fassung ebenfalls an, mit Hinweis `#readerPersonaFillHint` („⏳ … erzählt diese Seite gleich“ bzw. warum es nicht ging), und holt die fehlende Fassung einmal im Hintergrund nach (`requestPersonaFill()` in `js/render/reader.js`).
+- **📊 Anfragen-Zähler:** Google liefert die verbleibenden Anfragen NICHT an Apps aus (keine Kontingent-Header, keine Abfrage) - nur Google AI Studio zeigt sie. Die App zählt deshalb selbst: erfolgreiche Anfragen je Modell seit dem letzten Zurücksetzen (Mitternacht Pazifik-Zeit), sichtbar in den Einstellungen unter dem Gemini-Key („📊 Gemini heute: …“), mit Sperrstatus je Modell und Link zu AI Studio (`app.geminiQuota.noteSuccess()`/`usedToday()`).
+
 ## v0.56.0-beta
 
 Nutzer-Rückmeldungen: Bilder im Vollbild, Fragerunde, Klappentext, hängender Erzählerwechsel, Gemini-Rotation/Kontingent.

@@ -48,6 +48,36 @@ function applyBookTypeLabels(isWorkbook) {
 // bleibende) Bild geblendet - reines CSS, keine neue Abhängigkeit. Wird nur
 // bei einem tatsächlichen Seitenwechsel bzw. beim Öffnen des Kino-Modus
 // aufgerufen (siehe app.render.focusMode()), nicht bei jedem Play/Pause.
+// NEU (v0.56.1-beta, Nutzer-Feedback "er stoppt immer noch bei der Seite,
+// bei der ich den Erzähler gewechselt hatte"): fehlende Erzähler-Fassung
+// EINMAL pro Seite+Erzähler und App-Sitzung nachholen. Bis sie da ist (oder
+// wenn es scheitert, z.B. Tageskontingent leer), zeigt/liest der Reader die
+// vorhandene Fassung eines anderen Erzählers, statt stehen zu bleiben.
+// Rückgabe: { failed, reason }
+function requestPersonaFill(book, page, pageIdx, personaId) {
+    const key = `${book.id}|${page.id}|${personaId}`;
+    const attempts = app.state._personaFillAttempts || (app.state._personaFillAttempts = {});
+    const reasons = app.state._personaFillReasons || (app.state._personaFillReasons = {});
+    if (page.status !== 'processing' && !attempts[key] && !book.language) {
+        attempts[key] = 'running';
+        app.actions.analyzePage(pageIdx, false, personaId)
+            .then(() => {
+                // trotz Einzel-Rückfall keine Fassung -> nicht endlos erneut
+                if (!app.utils.resolvePageVariant(page, personaId)) attempts[key] = 'failed';
+            })
+            .catch(e => {
+                console.error('Erzähler-Fassung fehlgeschlagen:', e);
+                attempts[key] = 'failed';
+                // z.B. "Gemini-Tageskontingent ... wieder frei ab 9:00 Uhr"
+                reasons[key] = e?.message || '';
+            })
+            .finally(() => {
+                if (app.state.currentView === 'reader' && app.state.currentPageIdx === pageIdx) app.render.reader(pageIdx);
+            });
+    }
+    return { failed: attempts[key] === 'failed', reason: reasons[key] || '' };
+}
+
 function updateFocusImage(page, pageIdx) {
     const imgA = document.getElementById('focusImg');
     const imgB = document.getElementById('focusImgB');
@@ -184,7 +214,26 @@ Object.assign(app.render, {
             }).join('');
         }
 
-        const variant = app.utils.resolvePageVariant(page, app.state.readingPersonaId);
+        let variant = app.utils.resolvePageVariant(page, app.state.readingPersonaId);
+        // NEU (v0.56.1-beta): Fassung des gewählten Erzählers fehlt noch ->
+        // nachholen und solange die vorhandene eines anderen zeigen
+        const fillHint = document.getElementById('readerPersonaFillHint');
+        let usingFallback = false;
+        if (!variant && page.status !== 'pending' && page.status !== 'error') {
+            const fallback = app.utils.resolveAnyVariant(page, app.state.readingPersonaId);
+            if (fallback) {
+                const fill = requestPersonaFill(book, page, pageIdx, app.state.readingPersonaId);
+                variant = fallback;
+                usingFallback = true;
+                if (fillHint) {
+                    const name = app.utils.personaShortName(app.personas.find(p => p.id === app.state.readingPersonaId) || { label: 'Erzähler' });
+                    fillHint.innerText = fill.failed
+                        ? `ℹ️ ${name}: Fassung für diese Seite konnte nicht erstellt werden${fill.reason ? ` (${fill.reason})` : ''}. Hier steht die eines anderen Erzählers. Erneut versuchen: oben noch einmal auf ${name} tippen.`
+                        : `⏳ ${name} erzählt diese Seite gleich - bis dahin steht hier die Fassung eines anderen Erzählers.`;
+                }
+            }
+        }
+        fillHint?.classList.toggle('hidden', !usingFallback);
 
         // NEU (v0.39.0-beta): Zwischenruf der Persona als Sprechblase unter
         // dem Text (Original- UND Erstleser-Tab). Ältere Seiten ohne
@@ -193,7 +242,8 @@ Object.assign(app.render, {
         ['readerPersonaComment', 'readerPersonaCommentErst'].forEach(id => {
             const box = document.getElementById(id);
             if (!box) return;
-            const comment = variant && variant.personaComment;
+            // Zwischenruf eines ANDEREN Erzählers nicht unter falschem Namen zeigen
+            const comment = variant && !usingFallback && variant.personaComment;
             box.classList.toggle('hidden', !comment);
             if (!comment) return;
             box.querySelector('[data-persona-icon]').innerText = activePersona?.icon || '🎭';
@@ -233,47 +283,18 @@ Object.assign(app.render, {
             document.getElementById('readerQuizA').innerText = '';
             app.render.workbookHelp(null);
         } else {
-            // Seite ist für eine ANDERE Persona schon fertig, aber noch
-            // nicht für die gerade gewählte - jetzt gezielt nachholen.
-            const personaLabel = app.personas.find(p => p.id === app.state.readingPersonaId)?.label || '';
-            // FIX (Nutzer-Feedback "bei der Erzählervariante bleibt es
-            // hängen"): pro Seite+Erzähler nur EIN automatischer Versuch je
-            // App-Sitzung. Vorher stieß jedes Neuzeichnen die Analyse erneut
-            // an (bei fehlendem Block eine Endlos-Schleife aus KI-Anfragen),
-            // und ein Fehler blieb unsichtbar ("Wird erstellt..." für immer).
-            const attemptKey = `${book.id}|${page.id}|${app.state.readingPersonaId}`;
-            const attempts = app.state._personaFillAttempts || (app.state._personaFillAttempts = {});
-            const busy = page.status === 'processing';
-            const failed = attempts[attemptKey] === 'failed';
-            const failReason = app.state._personaFillReasons?.[attemptKey];
-            document.getElementById('readerOriginalText').innerText = failed
-                ? `Die Fassung für "${personaLabel}" konnte nicht erstellt werden${failReason ? ` (${failReason})` : ''}. Tippe oben noch einmal auf den Erzähler, um es erneut zu versuchen - oder wähle einen anderen.`
-                : `Wird für "${personaLabel}" erstellt...`;
+            // Kein Text in irgendeiner Fassung (sollte bei einer fertigen
+            // Seite nicht vorkommen) - nachholen, ohne Endlos-Schleife
+            const fill = requestPersonaFill(book, page, pageIdx, app.state.readingPersonaId);
+            document.getElementById('readerOriginalText').innerText = fill.failed
+                ? `Diese Seite konnte nicht erstellt werden${fill.reason ? ` (${fill.reason})` : ''}.`
+                : 'Wird erstellt...';
             document.getElementById('readerErstleserText').innerText = '...';
             document.getElementById('imageDescCard')?.classList.add('hidden');
             document.getElementById('readerImageDesc').innerText = '';
             document.getElementById('readerQuizQ').innerText = '';
             document.getElementById('readerQuizA').innerText = '';
             app.render.workbookHelp(null);
-            if (!busy && !attempts[attemptKey]) {
-                attempts[attemptKey] = 'running';
-                const wantedPersona = app.state.readingPersonaId;
-                app.actions.analyzePage(pageIdx, false, wantedPersona)
-                    .then(() => {
-                        // trotz Einzel-Rückfall keine Fassung -> nicht endlos erneut
-                        if (!app.utils.resolvePageVariant(page, wantedPersona)) {
-                            attempts[attemptKey] = 'failed';
-                            if (app.state.currentView === 'reader') app.render.reader(app.state.currentPageIdx);
-                        }
-                    })
-                    .catch(e => {
-                        console.error('Erzähler-Fassung fehlgeschlagen:', e);
-                        attempts[attemptKey] = 'failed';
-                        // z.B. "Gemini-Tageskontingent ... wieder frei ab 9:00 Uhr"
-                        (app.state._personaFillReasons ||= {})[attemptKey] = e?.message || '';
-                        if (app.state.currentView === 'reader') app.render.reader(app.state.currentPageIdx);
-                    });
-            }
         }
 
         document.getElementById('chatHistory').innerHTML = '';

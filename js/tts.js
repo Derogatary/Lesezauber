@@ -693,7 +693,12 @@ Object.assign(app.tts, {
             return;
         }
 
-        const variant = app.utils.resolvePageVariant(page, app.state.readingPersonaId);
+        // FIX (v0.56.1-beta, Nutzer-Feedback "er stoppt immer noch bei der
+        // Seite, bei der ich den Erzähler gewechselt hatte"): fehlt nur die
+        // Fassung des gewählten Erzählers, die eines anderen vorlesen statt
+        // anzuhalten (der Reader holt die fehlende parallel nach).
+        const variant = app.utils.resolvePageVariant(page, app.state.readingPersonaId)
+            || (page.status === 'done' || page.status === 'processing' ? app.utils.resolveAnyVariant(page, app.state.readingPersonaId) : null);
         if (!variant) {
             this.stopAutoRead();
             app.ui.toast('Seite noch nicht bereit zum Vorlesen.', 'ℹ️');
@@ -748,7 +753,8 @@ Object.assign(app.tts, {
         // Zwischenruf -> umblättern.
         const sayPersonaComment = () => {
             if (!app.state.autoReadActive) return;
-            if (!variant.personaComment) { this.hideSpeakCaption(); advanceToNext(); return; }
+            // Zwischenruf nur vom gewählten Erzähler selbst (nicht aus einer Ersatz-Fassung)
+            if (!variant.personaComment || !app.utils.resolvePageVariant(page, app.state.readingPersonaId)) { this.hideSpeakCaption(); advanceToNext(); return; }
             const persona = app.personas.find(p => p.id === app.state.readingPersonaId);
             const target = caption(persona ? `${persona.icon || '💬'} ${persona.label.split('(')[0].trim()}` : '💬 Zwischenruf');
             this.speak(variant.personaComment, () => { this.hideSpeakCaption(); advanceToNext(); }, target);

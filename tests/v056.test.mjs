@@ -71,3 +71,20 @@ test('Fragerunde: Rätsel + Wörter je Seite, Wörter nur einmal, dann Buchfrage
     assert.equal(items[2].pageIdx, 1);
     assert.equal(app.utils.buildReviewQuizItems({ ...b, bookType: 'workbook' }, 'papa').length, 0);
 });
+
+test('Kontingent: Anfragen je Modell und Tag mitzählen', () => {
+    const store = {};
+    globalThis.localStorage = { getItem: k => store[k] ?? null, setItem: (k, v) => { store[k] = String(v); } };
+    app.settings.apiKey = 'TESTKEY123';
+    const day1 = Date.UTC(2026, 9, 3, 12, 0, 0); // 05:00 PDT
+    app.geminiQuota.noteSuccess('m1', day1);
+    app.geminiQuota.noteSuccess('m1', day1);
+    app.geminiQuota.noteSuccess('m2', day1);
+    assert.deepEqual(app.geminiQuota.usedToday(day1), { m1: 2, m2: 1 });
+    // nach Mitternacht Pazifik-Zeit wieder bei 0
+    assert.deepEqual(app.geminiQuota.usedToday(Date.UTC(2026, 9, 4, 8, 0, 0)), {});
+    // anderer Key = anderes Projekt
+    app.settings.apiKey = 'ANDERERKEY99';
+    assert.deepEqual(app.geminiQuota.usedToday(day1), {});
+    delete globalThis.localStorage;
+});
