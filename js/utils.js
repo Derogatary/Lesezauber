@@ -256,6 +256,7 @@ Object.assign(app.utils, {
         Object.values(app.library).forEach(book => {
             book.pages.forEach(page => {
                 if (page.excluded) return;
+                if (app.utils.isPregenSkipped(book, page)) return; // NEU (v0.56.2-beta)
                 if (page.status === 'pending' || page.status === 'error') missing++;
             });
         });
@@ -270,6 +271,7 @@ Object.assign(app.utils, {
             book.pages.forEach(page => {
                 if (page.excluded) return; // FIX: ausgeschlossene Seiten nie mitzählen (werden nie analysiert)
                 if (page.status !== 'done') return;
+                if (app.utils.isPregenSkipped(book, page)) return; // NEU (v0.56.2-beta)
                 // NEU (übersetzte Bücher): dort werden fehlende Personas nicht
                 // nachgebaut (siehe findNextMissingTask() in backgroundPregen.js).
                 if (book.language) return;
@@ -764,5 +766,31 @@ Object.assign(app.utils, {
         const pos = order.indexOf(currentIdx);
         if (pos < 0) return currentIdx + 1 < order.length ? currentIdx + 1 : null;
         return pos + 1 < order.length ? order[pos + 1] : null;
+    }
+});
+
+// NEU (v0.56.2-beta, Nutzer-Screenshot "Nachtmodus hängt bei Erzähler-
+// Variante · Seite 2"): eine Seite, an der die Hintergrund-Vorbereitung
+// dreimal hintereinander ohne Fortschritt scheitert, wird für diese
+// App-Sitzung übersprungen - sonst blockiert sie die ganze Warteschlange
+// (und verbrennt bei jedem Versuch eine Anfrage). Nur im Speicher: nach dem
+// nächsten Öffnen der App wird sie wieder versucht.
+const PREGEN_MAX_FAILS = 3;
+const pregenFails = {};
+Object.assign(app.utils, {
+    pregenFailKey(book, page) {
+        return `${book.id}|${page.id}`;
+    },
+    isPregenSkipped(book, page) {
+        return (pregenFails[app.utils.pregenFailKey(book, page)] || 0) >= PREGEN_MAX_FAILS;
+    },
+    notePregenResult(book, page, progressed) {
+        const key = app.utils.pregenFailKey(book, page);
+        if (progressed) delete pregenFails[key];
+        else pregenFails[key] = (pregenFails[key] || 0) + 1;
+        return pregenFails[key] || 0;
+    },
+    countPregenSkipped() {
+        return Object.values(pregenFails).filter(n => n >= PREGEN_MAX_FAILS).length;
     }
 });

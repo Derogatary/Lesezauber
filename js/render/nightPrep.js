@@ -24,7 +24,9 @@ Object.assign(app.render, {
         // FIX (Nutzerfrage nach "stillen" Fehlern): hängt es, steht jetzt der
         // Grund da statt nur "gerade: ..." (z.B. Kontingent aufgebraucht)
         el('nightPrepCurrent').innerText = (act.current ? `gerade: ${act.current}` : '')
-            + (lastFailure() ? `\nletzter Fehler: ${lastFailure()}` : '');
+            + (lastFailure() ? `\nletzter Fehler: ${lastFailure()}` : '')
+            // NEU (v0.56.2-beta): Seiten, die dreimal nicht weiterkamen
+            + (app.utils.countPregenSkipped() ? `\n${app.utils.countPregenSkipped()} ${app.utils.countPregenSkipped() === 1 ? 'Seite kommt' : 'Seiten kommen'} nicht weiter und ${app.utils.countPregenSkipped() === 1 ? 'wird' : 'werden'} übersprungen.` : '');
         if (wakeLockOk === false) {
             el('nightPrepHint').innerText = 'Hinweis: Dieses Gerät kann den Bildschirm nicht wach halten - bitte die automatische Bildschirmsperre in den Geräte-Einstellungen länger stellen.';
         } else if (wakeLockOk === true) {

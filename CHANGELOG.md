@@ -6,6 +6,14 @@ vollständige Historie, neueste Version zuerst. Diese Datei wurde aus
 `CLAUDE.md` ausgelagert, weil der Abschnitt dort mit der Zeit zu groß für
 schnellen Kontext wurde; inhaltlich unverändert übernommen.
 
+## v0.56.2-beta
+
+Nutzer-Screenshot: Nachtmodus „hängt immer noch“ bei „Erzähler-Variante · Seite 2 · Wir bekommen ein Baby“ (196 offen, kein Fehler angezeigt).
+
+- **FIX Endlos-Schleife der Hintergrund-Vorbereitung:** bei Geschichten wurde für eine Seite mit fehlendem Erzähler immer die STANDARD-Persona angefragt (`findNextMissingTask()` in `js/backgroundPregen.js`), die meist schon vorhanden war. Lieferte der Sammel-Aufruf den fehlenden Erzähler nicht (z.B. Antwort abgeschnitten, Block unlesbar), füllte der Einzel-Rückfall nur die vorhandene nach - die Seite blieb „offen“ und kam alle 9 Sekunden wieder dran, jedes Mal mit einer verbrauchten Anfrage und ohne Fehlermeldung. Jetzt wird der tatsächlich fehlende Erzähler übergeben, der Einzel-Rückfall (v0.56.0-beta) holt ihn gezielt nach.
+- **Sicherheitsnetz:** kommt eine Seite dreimal hintereinander nicht weiter, wird sie bis zum nächsten Öffnen der App übersprungen (`app.utils.isPregenSkipped()`/`notePregenResult()`), zählt nicht mehr als offen und blockiert die übrigen Seiten nicht; der Nachtmodus zeigt „N Seiten kommen nicht weiter und werden übersprungen“. Ein leeres Kontingent zählt dabei nicht als Fehlschlag der Seite.
+- Ein Fehler beim Nachholen setzt eine fertige Seite im Hintergrund nicht mehr auf „Fehler“.
+
 ## v0.56.1-beta
 
 Nutzer-Rückmeldung: „Kann man abrufen, welche Rates noch offen sind? Er stoppt immer noch bei der zweiten Seite, bei der ich den Erzähler gewechselt hatte.“

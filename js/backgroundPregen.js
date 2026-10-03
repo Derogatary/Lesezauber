@@ -63,6 +63,8 @@ async function findNextMissingTask() {
             // NEU: ausgeschlossene Seiten (Leerseiten, Impressum etc.) nie
             // automatisch anfassen - dieselbe Regel wie beim manuellen Scan.
             if (page.excluded) continue;
+            // NEU (v0.56.2-beta): dreimal ohne Fortschritt -> diese Sitzung überspringen
+            if (app.utils.isPregenSkipped(book, page)) continue;
 
             // NEU (höchste Priorität): eine noch gar nicht ausgelesene oder
             // zuletzt fehlgeschlagene Seite hat noch KEIN Grundmaterial -
@@ -80,9 +82,16 @@ async function findNextMissingTask() {
                 // app.api.analyzeAllPersonas() erzeugt ohnehin ALLE
                 // Personas auf einmal, ein erneuter Aufruf mit irgendeiner
                 // Persona-ID füllt also automatisch auch die übrigen.
-                const missingAny = app.personas.some(p => !(page.variants && page.variants[p.id]));
-                if (missingAny) {
-                    return { type: 'persona', bookId, pageIdx: i, personaId: app.settings.persona };
+                // FIX (v0.56.2-beta, Nutzer-Screenshot "hängt bei Erzähler-
+                // Variante · Seite 2"): hier stand immer die STANDARD-Persona
+                // (meist schon vorhanden). Lieferte der Sammel-Aufruf den
+                // fehlenden Erzähler wieder nicht (z.B. Antwort abgeschnitten),
+                // füllte der Einzel-Rückfall in runPageAnalysisCore() nur die
+                // schon vorhandene nach -> dieselbe Seite kam endlos wieder.
+                // Jetzt die tatsächlich FEHLENDE Persona übergeben.
+                const missing = app.personas.find(p => !(page.variants && page.variants[p.id]));
+                if (missing) {
+                    return { type: 'persona', bookId, pageIdx: i, personaId: missing.id };
                 }
             } else {
                 for (const persona of app.personas) {
@@ -135,11 +144,14 @@ async function findNextMissingTask() {
 // Buch offen hat) - alles läuft über direkt übergebene Objekte.
 async function analyzePageInBackground(book, pageIdx, personaId) {
     const page = book.pages[pageIdx];
+    // FIX (v0.56.2-beta): beim Nachholen einer Persona bleibt eine fertige
+    // Seite bei einem Fehler "fertig" (die übrigen Fassungen sind ja da)
+    const wasDone = page.status === 'done';
     page.status = 'processing';
     try {
         await app.actions._analyzePageCore(book, pageIdx, personaId);
     } catch (e) {
-        page.status = 'error';
+        page.status = wasDone && page.variants && Object.keys(page.variants).length ? 'done' : 'error';
         throw e;
     } finally {
         app.dbOps.saveBook(book);
@@ -262,7 +274,22 @@ async function runOneBackgroundTask() {
             // (fehlende Variante einer schon ausgelesenen Seite) laufen
             // beide über denselben Analyse-Kern - bei 'scan' ist personaId
             // noch nicht bekannt, dann zählt die globale Standard-Persona.
-            await analyzePageInBackground(app.library[task.bookId], task.pageIdx, task.personaId || app.settings.persona);
+            // NEU (v0.56.2-beta): Fortschritt messen (fehlende Fassungen vorher/nachher)
+            const taskBookObj = app.library[task.bookId];
+            const taskPage = taskBookObj.pages[task.pageIdx];
+            const missingBefore = app.personas.filter(p => !(taskPage.variants && taskPage.variants[p.id])).length;
+            try {
+                await analyzePageInBackground(taskBookObj, task.pageIdx, task.personaId || app.settings.persona);
+            } catch (e) {
+                // leeres Kontingent ist nicht die Schuld der Seite
+                if (!e?.quotaExhausted) app.utils.notePregenResult(taskBookObj, taskPage, false);
+                throw e;
+            }
+            const missingAfter = app.personas.filter(p => !(taskPage.variants && taskPage.variants[p.id])).length;
+            const progressed = taskPage.status === 'done' && (task.type === 'scan' || missingAfter < missingBefore);
+            if (app.utils.notePregenResult(taskBookObj, taskPage, progressed) >= 3) {
+                console.warn(`Hintergrund-Vorbereitung: Seite ${task.pageIdx + 1} in „${taskBookObj.title}“ kommt nicht weiter - wird bis zum nächsten Öffnen übersprungen.`);
+            }
             // Nur neu zeichnen, wenn genau dieses Buch/diese Seite gerade
             // sichtbar ist - sonst nicht in eine fremde Ansicht eingreifen.
             if (app.state.currentBookId === task.bookId) {

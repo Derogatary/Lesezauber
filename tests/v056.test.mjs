@@ -88,3 +88,16 @@ test('Kontingent: Anfragen je Modell und Tag mitzählen', () => {
     assert.deepEqual(app.geminiQuota.usedToday(day1), {});
     delete globalThis.localStorage;
 });
+
+test('Hintergrund: Seite ohne Fortschritt wird nach drei Versuchen übersprungen', () => {
+    const b = { id: 'x' }, p = { id: 7 };
+    assert.equal(app.utils.isPregenSkipped(b, p), false);
+    app.utils.notePregenResult(b, p, false);
+    app.utils.notePregenResult(b, p, false);
+    assert.equal(app.utils.isPregenSkipped(b, p), false);
+    app.utils.notePregenResult(b, p, false);
+    assert.equal(app.utils.isPregenSkipped(b, p), true);
+    assert.equal(app.utils.countPregenSkipped(), 1);
+    app.utils.notePregenResult(b, p, true);
+    assert.equal(app.utils.isPregenSkipped(b, p), false);
+});
