@@ -63,6 +63,8 @@ Object.assign(app.nav, {
         // läuft als Overlay über allem und würde sonst über der neuen
         // Ansicht stehen bleiben (samt laufendem Animationsschritt).
         if (app.state.videoPreview) app.actions.closeVideoPreview();
+        // NEU (v0.56.0-beta): Fragerunde (Overlay) ebenso schließen
+        if (app.actions.isReviewQuizOpen?.()) app.actions.closeReviewQuiz();
 
         // NEU (v0.53.0-beta): offenes Zuschneide-Fenster (js/actions/pageCrop.js)
         // nicht über der nächsten Ansicht stehen lassen

@@ -739,3 +739,30 @@ Object.assign(app.utils, {
         return page.imgUrl;
     }
 });
+
+// NEU (v0.56.0-beta, Nutzerwunsch "der Klappentext soll automatisch nach der
+// Titelseite vorgelesen werden"): Reihenfolge der Seiten beim automatischen
+// Vorlesen. Wie gescannt - nur die als "Rückseite/Klappentext" markierte
+// Seite (book.backCoverPageId, Buchansicht → Seiten-Rollen) steht direkt
+// hinter der Titelseite (book.titlePageId, sonst Seite 1). Reine Funktionen.
+Object.assign(app.utils, {
+    autoReadOrder(book) {
+        const n = book?.pages?.length || 0;
+        const order = Array.from({ length: n }, (_, i) => i);
+        if (!book?.backCoverPageId) return order;
+        const backIdx = book.pages.findIndex(p => p.id === book.backCoverPageId);
+        const titleIdx = book.titlePageId ? book.pages.findIndex(p => p.id === book.titlePageId) : 0;
+        if (backIdx < 0 || titleIdx < 0 || backIdx === titleIdx) return order;
+        const rest = order.filter(i => i !== backIdx);
+        rest.splice(rest.indexOf(titleIdx) + 1, 0, backIdx);
+        return rest;
+    },
+
+    // Nächste Seite nach currentIdx in dieser Reihenfolge, null = Buchende
+    autoReadNextIdx(book, currentIdx) {
+        const order = app.utils.autoReadOrder(book);
+        const pos = order.indexOf(currentIdx);
+        if (pos < 0) return currentIdx + 1 < order.length ? currentIdx + 1 : null;
+        return pos + 1 < order.length ? order[pos + 1] : null;
+    }
+});

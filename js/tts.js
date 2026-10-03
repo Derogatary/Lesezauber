@@ -658,13 +658,20 @@ Object.assign(app.tts, {
         if (!page) { this.stopAutoRead(); return; }
 
         const advanceToNext = () => {
-            const isLastPage = app.state.currentPageIdx >= book.pages.length - 1;
-            if (isLastPage) {
+            // NEU (v0.56.0-beta, Nutzerwunsch "der Klappentext soll
+            // automatisch nach der Titelseite vorgelesen werden"): die
+            // Reihenfolge kommt aus app.utils.autoReadOrder() - die als
+            // Rückseite/Klappentext markierte Seite rückt direkt hinter die
+            // Titelseite und wird an ihrer eigentlichen Stelle übersprungen.
+            const nextIdx = app.utils.autoReadNextIdx(book, app.state.currentPageIdx);
+            if (nextIdx === null) {
                 this.stopAutoRead();
                 app.ui.toast('Buch zu Ende vorgelesen 🎉', '📖');
+                // NEU (v0.56.0-beta): Fragerunde zum ganzen Buch anschließen
+                app.actions.offerReviewQuizAtEnd?.(book);
                 return;
             }
-            app.state.currentPageIdx++;
+            app.state.currentPageIdx = nextIdx;
             app.render.reader(app.state.currentPageIdx);
             if (app.state.focusMode) app.render.focusMode();
             setTimeout(() => this._readCurrentThenAdvance(), 600);

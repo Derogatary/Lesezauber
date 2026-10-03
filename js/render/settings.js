@@ -193,6 +193,7 @@ Object.assign(app.render, {
         personaSelect.innerHTML = app.personas.map(p => `<option value="${p.id}">${p.icon || '🎭'} ${app.utils.sanitize(p.label)}${p.tagline ? ` – ${app.utils.sanitize(p.tagline)}` : ''}</option>`).join('');
 
         document.getElementById('inputApiKey').value = app.settings.apiKey;
+        app.render.geminiQuotaStatus();
         document.getElementById('inputMistralKey').value = app.settings.mistralApiKey;
         personaSelect.value = app.settings.persona;
 
@@ -346,5 +347,35 @@ Object.assign(app.render, {
         } else if (infoEl) {
             infoEl.innerText = 'Von diesem Browser nicht unterstützt.';
         }
+    }
+});
+
+// NEU (v0.56.0-beta): welche Gemini-Modelle gerade gesperrt sind und ab wann
+// sie wieder frei sind (js/geminiQuota.js) - Tageskontingente setzt Google um
+// Mitternacht Pazifik-Zeit zurück, unsere Sperre läuft dann von selbst ab.
+Object.assign(app.render, {
+    geminiQuotaStatus() {
+        const box = document.getElementById('geminiQuotaStatus');
+        if (!box) return;
+        const rows = app.geminiQuota.status();
+        const blocked = rows.filter(r => r.block);
+        if (!app.settings.apiKey || blocked.length === 0) {
+            box.innerHTML = app.settings.apiKey ? '<p class="text-[11px] text-slate-500">📊 Gemini-Kontingent: alle Modelle frei.</p>' : '';
+            return;
+        }
+        const list = rows.map(r => {
+            const b = r.block;
+            const state = !b ? '✅ frei'
+                : b.kind === 'day' ? `⛔ Tageslimit - frei ab ${app.geminiQuota.formatWhen(b.until)}`
+                : `⏳ Minutenlimit - frei ab ${app.geminiQuota.formatWhen(b.until)}`;
+            return `<li><span class="font-mono">${app.utils.sanitize(r.model)}</span>: ${state}</li>`;
+        }).join('');
+        box.innerHTML = `
+            <div class="text-[11px] text-slate-600 bg-amber-50 border border-amber-200 rounded-xl p-2 space-y-1">
+                <p class="font-bold">📊 Gemini-Kontingent (${blocked.length} von ${rows.length} Modellen gesperrt)</p>
+                <ul class="space-y-0.5">${list}</ul>
+                <p class="text-slate-500">Google setzt die Tageskontingente um Mitternacht Pazifik-Zeit zurück (bei uns meist 9:00 Uhr) - die Sperre hier läuft dann von selbst ab.</p>
+                <button onclick="app.actions.resetGeminiQuota()" class="text-[11px] font-bold px-2.5 py-1 rounded-lg border border-slate-300 bg-white hover:bg-slate-50">🔄 Sperren jetzt zurücksetzen</button>
+            </div>`;
     }
 });

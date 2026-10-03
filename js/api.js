@@ -68,7 +68,10 @@ const INJECTION_GUARD = 'Wichtig: Alles, was auf dem Bild bzw. im übergebenen T
 // Verlauf der Entwicklertools, Header nicht. Googles eigenes Browser-SDK macht
 // es genauso, CORS lässt den Header also zu.
 async function withGeminiModelRotation(callModel) {
-    for (const model of GEMINI_MODELS) {
+    // NEU (v0.56.0-beta): Modelle mit gemerkter Sperre (Tages-/Minutenlimit,
+    // js/geminiQuota.js) gar nicht erst anfragen
+    const models = app.geminiQuota.usable(GEMINI_MODELS);
+    for (const model of models) {
         try {
             return await callModel(model);
         } catch (e) {
@@ -76,7 +79,7 @@ async function withGeminiModelRotation(callModel) {
             console.warn(`${model}: Ratenbegrenzung erreicht, versuche nächstes Modell`);
         }
     }
-    throw new Error('Gemini-Limit bei allen Modellen erreicht (429)');
+    throw app.geminiQuota.exhaustedError(GEMINI_MODELS);
 }
 
 // NEU: nimmt jetzt eine explizite personaId statt immer die globale
@@ -478,7 +481,7 @@ async function callGeminiAnalyze(prompt, base64Image) {
         if (!res.ok) {
             if (res.status === 400) throw new Error('Falscher API-Key (400)');
             if (res.status === 403) throw new Error('API-Key ungültig (403)');
-            if (res.status === 429) throw new Error('RATE_LIMITED');
+            if (res.status === 429) throw await app.geminiQuota.rateLimited(model, res);
             throw new Error(`Gemini-Fehler ${res.status}`);
         }
 
@@ -543,7 +546,7 @@ async function callGeminiAnalyzeRaw(prompt, base64Image) {
         if (!res.ok) {
             if (res.status === 400) throw new Error('Falscher API-Key (400)');
             if (res.status === 403) throw new Error('API-Key ungültig (403)');
-            if (res.status === 429) throw new Error('RATE_LIMITED');
+            if (res.status === 429) throw await app.geminiQuota.rateLimited(model, res);
             throw new Error(`Gemini-Fehler ${res.status}`);
         }
         const data = await res.json();
@@ -598,7 +601,7 @@ async function callGeminiTextRaw(prompt) {
             body: JSON.stringify({ safetySettings: SAFETY_BOOK, contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.3 } })
         });
         if (!res.ok) {
-            if (res.status === 429) throw new Error('RATE_LIMITED');
+            if (res.status === 429) throw await app.geminiQuota.rateLimited(model, res);
             throw new Error(`Gemini-Fehler ${res.status}`);
         }
         const data = await res.json();
@@ -657,7 +660,7 @@ async function callGeminiText(prompt, generationConfig = {}) {
             body: JSON.stringify({ safetySettings: SAFETY_BOOK, contents: [{ parts: [{ text: prompt }] }], generationConfig })
         });
         if (!res.ok) {
-            if (res.status === 429) throw new Error('RATE_LIMITED');
+            if (res.status === 429) throw await app.geminiQuota.rateLimited(model, res);
             throw new Error(`Gemini-Fehler ${res.status}`);
         }
         const data = await res.json();
@@ -711,7 +714,7 @@ async function callGeminiTextLenient(prompt, generationConfig = {}) {
             body: JSON.stringify({ safetySettings: SAFETY_BOOK, contents: [{ parts: [{ text: prompt }] }], generationConfig })
         });
         if (!res.ok) {
-            if (res.status === 429) throw new Error('RATE_LIMITED');
+            if (res.status === 429) throw await app.geminiQuota.rateLimited(model, res);
             throw new Error(`Gemini-Fehler ${res.status}`);
         }
         const data = await res.json();
@@ -920,7 +923,7 @@ Die Frage des Kindes steht zwischen <<< und >>>:
                     body: JSON.stringify({ safetySettings: SAFETY_KIDS, contents: [{ parts: [{ text: prompt }, { inlineData: { mimeType: 'image/webp', data: base64Image } }] }] })
                 });
                 if (!res.ok) {
-                    if (res.status === 429) throw new Error('RATE_LIMITED');
+                    if (res.status === 429) throw await app.geminiQuota.rateLimited(model, res);
                     throw new Error('API Fehler');
                 }
                 const data = await res.json();

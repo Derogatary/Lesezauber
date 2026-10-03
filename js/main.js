@@ -12,6 +12,8 @@ import './state.js';
 import './db.js';
 import './profiles.js';
 import './nav.js';
+// NEU (v0.56.0-beta): gemerkte Gemini-Sperren - vor api.js, das es nutzt
+import './geminiQuota.js';
 import './api.js';
 import './tts.js';
 import './ttsProviders.js';
@@ -25,6 +27,9 @@ import './actions/reader.js';
 import './actions/reorder.js';
 import './actions/backup.js';
 import './actions/bookQuiz.js';
+// NEU (v0.56.0-beta): Fragerunde zum ganzen Buch
+import './actions/reviewQuiz.js';
+import './render/reviewQuiz.js';
 import './actions/birkenbihl.js';
 import './actions/focusMode.js';
 import './actions/pdfImport.js';

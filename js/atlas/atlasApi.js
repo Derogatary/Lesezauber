@@ -59,28 +59,16 @@ function backoffDelay(attempt) {
     return base + Math.random() * 1000;
 }
 
-// Manche Gemini-429-Antworten enthalten einen konkreten Vorschlag, wie
-// lange zu warten ist (error.details[].retryDelay, z.B. "31s"). Wenn
-// vorhanden, nutzen wir diesen statt unserer eigenen Schätzung.
-async function parseServerRetryDelayMs(res) {
-    try {
-        const body = await res.clone().json();
-        const details = body?.error?.details || [];
-        const retryInfo = details.find(d => (d['@type'] || '').includes('RetryInfo'));
-        const seconds = parseFloat(retryInfo?.retryDelay || '');
-        return isNaN(seconds) ? null : seconds * 1000;
-    } catch (e) {
-        return null; // Antwort war kein JSON oder ohne RetryInfo - kein Beinbruch
-    }
-}
-
 // NEU (v0.47.0-beta): "action" statt kompletter URL - das Modell wählt die
 // Rotation. Key im Header x-goog-api-key (nie ?key= in der URL, siehe
 // CLAUDE.md), Sicherheitsfilter über withSafety().
 async function fetchGeminiWithRetry(action, options) {
     const apiKey = app.settings.apiKey;
     if (!apiKey) throw new Error('API_KEY_MISSING');
-    const models = app.api.geminiModels || [];
+    const allModels = app.api.geminiModels || [];
+    // NEU (v0.56.0-beta): gemerkte Sperren (js/geminiQuota.js) überspringen
+    let models = app.geminiQuota.usable(allModels);
+    if (models.length === 0) throw app.geminiQuota.exhaustedError(allModels);
     const finalOptions = withSafety({
         ...options,
         headers: { ...(options.headers || {}), 'x-goog-api-key': apiKey }
@@ -106,21 +94,27 @@ async function fetchGeminiWithRetry(action, options) {
         if (res.ok) return res;
 
         if (res.status === 429) {
-            // Erst die übrigen Modelle durchprobieren (jedes hat sein eigenes
-            // Tageskontingent) - kostet keine Wartezeit.
-            if (modelIdx < models.length - 1) {
+            // NEU (v0.56.0-beta): Sperre merken (Tageslimit bis Mitternacht
+            // Pazifik-Zeit, Minutenlimit laut Google), dann das nächste
+            // freie Modell - kostet keine Wartezeit.
+            await app.geminiQuota.rateLimited(model, res);
+            models = app.geminiQuota.usable(allModels);
+            if (models.length > 0) {
                 console.warn(`Buchatlas: ${model} limitiert, versuche nächstes Modell`);
-                modelIdx++;
+                modelIdx = 0;
                 continue;
             }
-            // Alle limitiert - jetzt hilft nur Warten, dann wieder von vorn
-            // (Minuten-Limits erholen sich schnell, das beste Modell zuerst).
-            if (waitAttempt >= MAX_RETRIES) throw new Error('Gemini-Fehler 429');
-            const serverDelay = await parseServerRetryDelayMs(res);
-            const delay = Math.min(serverDelay ?? backoffDelay(waitAttempt), MAX_BACKOFF_MS);
+            // Alle Tageskontingente leer: Warten bringt heute nichts mehr.
+            if (app.geminiQuota.dailyExhausted(allModels)) throw app.geminiQuota.exhaustedError(allModels);
+            // Nur Minutenlimits: so lange warten, bis das erste Modell frei ist
+            if (waitAttempt >= MAX_RETRIES) throw app.geminiQuota.exhaustedError(allModels);
+            const freeAt = app.geminiQuota.nextFreeAt(allModels) || (Date.now() + backoffDelay(waitAttempt));
+            const delay = Math.min(Math.max(1000, freeAt - Date.now() + 500), MAX_BACKOFF_MS);
             app.atlas.ui.setProgress(`Rate-Limit bei allen Modellen - automatischer neuer Versuch in ${Math.round(delay / 1000)}s...`);
             await sleep(delay);
             waitAttempt++;
+            models = app.geminiQuota.usable(allModels);
+            if (models.length === 0) models = allModels.slice(); // Sicherheitsnetz
             modelIdx = 0;
             continue;
         }

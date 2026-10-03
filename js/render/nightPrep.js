@@ -34,8 +34,12 @@ Object.assign(app.render, {
 
     nightPrepFinished(reason, { done, open }) {
         el('nightPrepTitle').innerText = reason === 'done' ? '✅ Fertig' : '💤 Pause bis morgen';
+        // NEU (v0.56.0-beta): Tageskontingent bekannt leer (js/geminiQuota.js)
+        const freeAt = app.geminiQuota.nextFreeAt();
         el('nightPrepCount').innerText = reason === 'done'
             ? `${done} ${done === 1 ? 'Auftrag' : 'Aufträge'} erledigt.`
+            : reason === 'quota'
+            ? `${done} erledigt, ${open} noch offen - das Gemini-Tageskontingent ist aufgebraucht. Neues gibt es ab ${freeAt ? app.geminiQuota.formatWhen(freeAt) : 'morgen früh'}; danach geht es beim nächsten Öffnen bzw. Nachtmodus weiter.`
             : `${done} erledigt, ${open} noch offen - ${lastFailure() ? `letzter Fehler: ${lastFailure()}` : 'vermutlich ist das Tageskontingent aufgebraucht'}. Beim nächsten Öffnen geht es weiter.`;
         el('nightPrepCurrent').innerText = '';
         el('nightPrepHint').innerText = 'Der Bildschirm geht gleich von selbst aus. Tippen zum Schließen.';

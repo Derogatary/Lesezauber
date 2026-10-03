@@ -38,7 +38,10 @@ function parseModelJson(rawText) {
 // GEMINI_MODELS der Reihe nach, sobald eins mit HTTP 429 antwortet. Jeder
 // andere Fehler bricht sofort ab - ein anderes Modell hätte dasselbe Problem.
 async function withGeminiModelRotation(callModel) {
-    for (const model of GEMINI_MODELS) {
+    // NEU (v0.56.0-beta): Modelle mit gemerkter Sperre (Tages-/Minutenlimit,
+    // js/geminiQuota.js) gar nicht erst anfragen
+    const models = app.geminiQuota.usable(GEMINI_MODELS);
+    for (const model of models) {
         try {
             return await callModel(model);
         } catch (e) {
@@ -46,7 +49,7 @@ async function withGeminiModelRotation(callModel) {
             console.warn(`${model}: Ratenbegrenzung erreicht, versuche nächstes Modell`);
         }
     }
-    throw new Error('Gemini-Limit bei allen Modellen erreicht (429)');
+    throw app.geminiQuota.exhaustedError(GEMINI_MODELS);
 }
 
 async function callGeminiText(prompt) {
@@ -62,7 +65,7 @@ async function callGeminiText(prompt) {
         if (!res.ok) {
             if (res.status === 400) throw new Error('Falscher API-Key (400)');
             if (res.status === 403) throw new Error('API-Key ungültig (403)');
-            if (res.status === 429) throw new Error('RATE_LIMITED');
+            if (res.status === 429) throw await app.geminiQuota.rateLimited(model, res);
             throw new Error(`Gemini-Fehler ${res.status}`);
         }
 

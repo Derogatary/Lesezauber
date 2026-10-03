@@ -33,6 +33,15 @@ document.addEventListener('keydown', (e) => {
         return;
     }
 
+    // NEU (v0.56.0-beta): Fragerunde schließen bzw. mit Pfeilen blättern
+    if (app.actions.isReviewQuizOpen?.()) {
+        if (e.key === 'Escape') app.actions.closeReviewQuiz();
+        else if (e.key === 'ArrowRight') app.actions.reviewQuizNext();
+        else if (e.key === 'ArrowLeft') app.actions.reviewQuizPrev();
+        else if (e.key === ' ') { e.preventDefault(); app.actions.reviewQuizTogglePlay(); }
+        return;
+    }
+
     if (e.key === 'Escape' && app.state.focusMode) {
         app.actions.toggleFocusMode();
         return;

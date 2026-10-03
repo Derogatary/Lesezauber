@@ -50,8 +50,13 @@ function fullscreenIsSafe() {
 
 Object.assign(app.utils, {
     // Reine Funktion (Unit-Test): 'done' | 'stalled' | 'running'
-    nightPrepStatus({ open, lastProgressAt, now, stallMs = STALL_MS }) {
+    // NEU (v0.56.0-beta): 'quota' = nur noch Gemini-Aufgaben offen, deren
+    // Tageskontingent laut js/geminiQuota.js leer ist - warten bringt vor
+    // dem Zurücksetzen (Mitternacht Pazifik-Zeit = meist 9:00 Uhr bei uns)
+    // nichts, also ehrlich beenden statt 20 Minuten Stillstand abzuwarten.
+    nightPrepStatus({ open, lastProgressAt, now, stallMs = STALL_MS, quotaBlocked = false, otherOpen = 0 }) {
         if (open === 0) return 'done';
+        if (quotaBlocked && otherOpen === 0) return 'quota';
         if (now - lastProgressAt >= stallMs) return 'stalled';
         return 'running';
     },
@@ -177,7 +182,10 @@ async function poll() {
     const now = Date.now();
     if (open < night.lastOpen) night.lastProgressAt = now;
     night.lastOpen = open;
-    const status = app.utils.nightPrepStatus({ open, lastProgressAt: night.lastProgressAt, now });
+    // Offenes, das NICHT an Gemini hängt (KI-Stimmen-Aufnahmen)
+    const otherOpen = Math.max(0, open - lzText - atlas);
+    const quotaBlocked = app.geminiQuota.dailyExhausted() && !app.settings.mistralApiKey;
+    const status = app.utils.nightPrepStatus({ open, lastProgressAt: night.lastProgressAt, now, quotaBlocked, otherOpen });
     app.render.nightPrep({ open, done: Math.max(0, night.startOpen - open) });
     if (status !== 'running') finish(status);
 }
@@ -220,9 +228,14 @@ Object.assign(app.actions, {
                 return;
             }
         }
-        const { total: open } = await countNightOpen();
+        const { total: open, lzText, atlas } = await countNightOpen();
         if (open === 0) {
             app.ui.toast('Es ist nichts offen - alles schon vorbereitet.', '✅');
+            return;
+        }
+        // NEU (v0.56.0-beta): heute geht bei Gemini nichts mehr -> gleich sagen
+        if (app.geminiQuota.dailyExhausted() && !app.settings.mistralApiKey && open - lzText - atlas <= 0) {
+            app.ui.toast(`Das Gemini-Tageskontingent ist aufgebraucht - neues gibt es ab ${app.geminiQuota.formatWhen(app.geminiQuota.nextFreeAt())}.`, '💤');
             return;
         }
         Object.assign(night, { active: true, finished: false, startedAt: Date.now(), startOpen: open, lastOpen: open, lastProgressAt: Date.now() });

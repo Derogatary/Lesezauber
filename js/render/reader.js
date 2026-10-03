@@ -29,6 +29,10 @@ function applyBookTypeLabels(isWorkbook) {
 
     // Rätselfragen beim Auto-Vorlesen gibt es nur bei Geschichten.
     document.getElementById('autoQuizToggleRow')?.classList.toggle('hidden', isWorkbook);
+    // NEU (v0.56.0-beta): Fragerunde nur bei Geschichten
+    document.getElementById('reviewAtEndToggleRow')?.classList.toggle('hidden', isWorkbook);
+    const reviewToggle = document.getElementById('toggleReviewAtEnd');
+    if (reviewToggle) reviewToggle.checked = app.utils.reviewQuizAtEnd();
     document.getElementById('pageQuizCard')?.classList.toggle('hidden', isWorkbook);
 
     // NEU (Birkenbihl-Methode): der Tab passt nur zu Erzähltext, nicht zu
@@ -76,6 +80,22 @@ function updateFocusImage(page, pageIdx) {
     back.style.opacity = '0';
     void back.offsetWidth;
     back.style.opacity = '1';
+
+    // FIX (Nutzer-Feedback "Bilder unterschiedlicher Größe sind im Vollbild
+    // hinter dem jetzigen Bild sichtbar"): das alte Bild blieb dauerhaft mit
+    // voller Deckkraft hinten stehen - ist das neue kleiner/schmaler, schaute
+    // es an den Rändern hervor. Nach der Überblendung wird es ausgeblendet
+    // (bzw. sofort, wenn keine Effekte laufen). Die Prüfung auf
+    // _focusFrontImg verhindert, dass ein schneller zweiter Seitenwechsel
+    // das inzwischen wieder vorne liegende Bild versteckt.
+    const hideOld = () => {
+        if (app.state._focusFrontImg === back) {
+            front.style.transition = 'none';
+            front.style.opacity = '0';
+        }
+    };
+    if (effectsOn) setTimeout(hideOld, 1150);
+    else hideOld();
 
     app.state._focusFrontImg = back;
 }
@@ -216,14 +236,44 @@ Object.assign(app.render, {
             // Seite ist für eine ANDERE Persona schon fertig, aber noch
             // nicht für die gerade gewählte - jetzt gezielt nachholen.
             const personaLabel = app.personas.find(p => p.id === app.state.readingPersonaId)?.label || '';
-            document.getElementById('readerOriginalText').innerText = `Wird für "${personaLabel}" erstellt...`;
+            // FIX (Nutzer-Feedback "bei der Erzählervariante bleibt es
+            // hängen"): pro Seite+Erzähler nur EIN automatischer Versuch je
+            // App-Sitzung. Vorher stieß jedes Neuzeichnen die Analyse erneut
+            // an (bei fehlendem Block eine Endlos-Schleife aus KI-Anfragen),
+            // und ein Fehler blieb unsichtbar ("Wird erstellt..." für immer).
+            const attemptKey = `${book.id}|${page.id}|${app.state.readingPersonaId}`;
+            const attempts = app.state._personaFillAttempts || (app.state._personaFillAttempts = {});
+            const busy = page.status === 'processing';
+            const failed = attempts[attemptKey] === 'failed';
+            const failReason = app.state._personaFillReasons?.[attemptKey];
+            document.getElementById('readerOriginalText').innerText = failed
+                ? `Die Fassung für "${personaLabel}" konnte nicht erstellt werden${failReason ? ` (${failReason})` : ''}. Tippe oben noch einmal auf den Erzähler, um es erneut zu versuchen - oder wähle einen anderen.`
+                : `Wird für "${personaLabel}" erstellt...`;
             document.getElementById('readerErstleserText').innerText = '...';
             document.getElementById('imageDescCard')?.classList.add('hidden');
             document.getElementById('readerImageDesc').innerText = '';
             document.getElementById('readerQuizQ').innerText = '';
             document.getElementById('readerQuizA').innerText = '';
             app.render.workbookHelp(null);
-            app.actions.analyzePage(pageIdx, false, app.state.readingPersonaId).catch(() => {});
+            if (!busy && !attempts[attemptKey]) {
+                attempts[attemptKey] = 'running';
+                const wantedPersona = app.state.readingPersonaId;
+                app.actions.analyzePage(pageIdx, false, wantedPersona)
+                    .then(() => {
+                        // trotz Einzel-Rückfall keine Fassung -> nicht endlos erneut
+                        if (!app.utils.resolvePageVariant(page, wantedPersona)) {
+                            attempts[attemptKey] = 'failed';
+                            if (app.state.currentView === 'reader') app.render.reader(app.state.currentPageIdx);
+                        }
+                    })
+                    .catch(e => {
+                        console.error('Erzähler-Fassung fehlgeschlagen:', e);
+                        attempts[attemptKey] = 'failed';
+                        // z.B. "Gemini-Tageskontingent ... wieder frei ab 9:00 Uhr"
+                        (app.state._personaFillReasons ||= {})[attemptKey] = e?.message || '';
+                        if (app.state.currentView === 'reader') app.render.reader(app.state.currentPageIdx);
+                    });
+            }
         }
 
         document.getElementById('chatHistory').innerHTML = '';

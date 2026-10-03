@@ -20,4 +20,7 @@ await import('../js/atlas/actions/atlasTranslate.js');
 await import('../js/atlas/atlasNight.js');
 // NEU (v0.51.0-beta): Klappenbücher
 await import('../js/actions/flapBook.js');
+// NEU (v0.56.0-beta): Gemini-Kontingent-Speicher, Fragerunde
+await import('../js/geminiQuota.js');
+await import('../js/actions/reviewQuiz.js');
 export { app };

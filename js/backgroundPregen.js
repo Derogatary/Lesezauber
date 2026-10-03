@@ -232,6 +232,20 @@ async function runOneBackgroundTask() {
     const task = await findNextMissingTask();
     if (!task) return;
 
+    // NEU (v0.56.0-beta, js/geminiQuota.js): sind alle Gemini-Modelle
+    // gesperrt und kein Mistral-Key da, gar nicht erst anfragen - vorher lief
+    // alle 9 Sekunden eine sinnlose Anfrage gegen das leere Kontingent.
+    if (app.geminiQuota.allBlocked() && !app.settings.mistralApiKey) {
+        const at = app.geminiQuota.nextFreeAt();
+        app.state.pregenActivity = {
+            ...(app.state.pregenActivity || {}),
+            current: `⏸ Gemini-Kontingent aufgebraucht - weiter ab ${app.geminiQuota.formatWhen(at)}`,
+            quotaPausedUntil: at
+        };
+        return;
+    }
+    if (app.state.pregenActivity?.quotaPausedUntil) app.state.pregenActivity.quotaPausedUntil = null;
+
     // NEU (v0.44.0-beta, Nachtmodus js/actions/nightPrep.js): was gerade
     // bearbeitet wird und ob der letzte Versuch geklappt hat - nur Anzeige.
     const taskBook = app.library[task.bookId];

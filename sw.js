@@ -1,7 +1,7 @@
 // Bei jeder inhaltlichen Änderung an einer dieser Dateien diese Nummer
 // erhöhen - sonst bekommen wiederkehrende Besucher weiter die alte
 // zwischengespeicherte Version ausgeliefert.
-const CACHE_NAME = 'lesezauber-shell-v90';
+const CACHE_NAME = 'lesezauber-shell-v91';
 
 // FIX (v89, v0.54.0-beta): Vorlese-Reihenfolge Bild vor Wörtern für alle Seiten.
 
@@ -272,6 +272,7 @@ const APP_SHELL = [
     './js/db.js',
     './js/profiles.js',
     './js/nav.js',
+    './js/geminiQuota.js',
     './js/api.js',
     './js/tts.js',
     './js/ttsProviders.js',
@@ -286,6 +287,8 @@ const APP_SHELL = [
     './js/actions/reorder.js',
     './js/actions/backup.js',
     './js/actions/bookQuiz.js',
+    './js/actions/reviewQuiz.js',
+    './js/render/reviewQuiz.js',
     './js/actions/birkenbihl.js',
     './js/actions/focusMode.js',
     './js/actions/pdfImport.js',

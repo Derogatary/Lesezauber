@@ -278,7 +278,17 @@ Object.assign(app.dbOps, {
 
             const books = await getAllBooksFromDB();
             app.library = {};
-            books.forEach(book => { app.library[book.id] = book; });
+            books.forEach(book => {
+                // FIX (Nutzer-Feedback "bei der Erzählervariante bleibt es
+                // hängen"): wurde die App mitten im Auslesen geschlossen, blieb
+                // "processing" gespeichert - analyzePage() hielt die Seite dann
+                // für "läuft gerade" und tat für immer nichts. Beim Start kann
+                // nichts laufen, also zurücksetzen.
+                book.pages?.forEach(p => {
+                    if (p.status === 'processing') p.status = (p.variants && Object.keys(p.variants).length) || p.text ? 'done' : 'pending';
+                });
+                app.library[book.id] = book;
+            });
 
             const vocab = await getAllVocabFromDB();
             app.vocabulary = {};

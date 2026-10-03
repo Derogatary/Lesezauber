@@ -61,7 +61,7 @@
                     <button id="pregenBadge" data-parent-only onclick="app.nav.go('settings')" class="hidden text-xs font-bold text-indigo-600 mt-0.5 hover:underline"></button>
                     <!-- NEU (v0.44.0-beta): direkt in den Nachtmodus -->
                     <button id="nightPrepLibBtn" data-parent-only onclick="app.actions.startNightPrep()" class="hidden text-xs font-bold text-slate-600 mt-0.5 ml-2 hover:underline">🌙 über Nacht</button>
-                    <p data-app-version class="text-[10px] text-slate-400 font-semibold mt-0.5">v0.55.0-beta</p>
+                    <p data-app-version class="text-[10px] text-slate-400 font-semibold mt-0.5">v0.56.0-beta</p>
                 </div>
                 <!-- FIX (v0.45.1-beta, Nutzer-Screenshot): seit dem Kindermodus-Knopf
                      passte die Knopfreihe nicht mehr aufs Handy und die ganze Seite
@@ -252,6 +252,7 @@
                 <p id="bookApprovalStatus" class="text-[11px] text-slate-600"></p>
                 <div class="flex gap-2 flex-wrap">
                     <button id="bookApprovalBtn" onclick="app.actions.toggleBookApproval()" class="flex-1 bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm font-bold py-2 px-3 rounded-xl hover:bg-emerald-100 transition"></button>
+                    <button onclick="app.actions.startReviewQuiz()" class="flex-1 bg-amber-50 border border-amber-200 text-amber-800 text-sm font-bold py-2 px-3 rounded-xl hover:bg-amber-100 transition">📝 Fragerunde</button>
                     <button id="bookWordCardsBtn" onclick="app.actions.printWordCards('book')" class="flex-1 bg-slate-50 border border-slate-200 text-slate-700 text-sm font-bold py-2 px-3 rounded-xl hover:bg-slate-100 transition">🃏 Wortkarten drucken</button>
                 </div>
             </div>
@@ -416,6 +417,14 @@
                 <input type="checkbox" id="toggleAutoQuiz" onchange="app.state.autoReadWithQuiz = this.checked" class="accent-indigo-600">
                 🧠 Beim automatischen Vorlesen auch Rätselfragen stellen
             </label>
+            <!-- NEU (v0.56.0-beta): Fragerunde (alle Rätsel + schwierige Wörter) am Buchende -->
+            <div id="reviewAtEndToggleRow" class="flex items-center gap-2 mb-3 text-xs text-slate-600">
+                <label class="flex items-center gap-2">
+                    <input type="checkbox" id="toggleReviewAtEnd" onchange="app.actions.toggleReviewQuizAtEnd(this.checked)" class="accent-indigo-600">
+                    📝 Am Buchende eine Fragerunde zum ganzen Buch (Rätsel + schwierige Wörter)
+                </label>
+                <button onclick="app.actions.startReviewQuiz()" class="ml-auto text-[11px] font-bold px-2 py-1 rounded-lg border border-indigo-200 text-indigo-700 bg-indigo-50 hover:bg-indigo-100 flex-shrink-0">Jetzt starten</button>
+            </div>
 
             <!-- NEU: Mitmachmodus - liest den Erstleser-Text statt des Originaltexts,
                  mit Sprechpause zum Mitraten bei jedem durch ein Emoji ersetzten Wort -->
@@ -623,6 +632,8 @@
                         <div id="bookQuizSection" class="hidden space-y-3">
                             <div class="bg-indigo-50 p-4 rounded-2xl border border-indigo-100 text-center space-y-2">
                                 <p class="text-sm font-bold text-indigo-900">🎉 Du hast das ganze Buch geschafft!</p>
+                                <!-- NEU (v0.56.0-beta): Fragerunde (js/actions/reviewQuiz.js) -->
+                                <button onclick="app.actions.startReviewQuiz()" class="bg-amber-400 hover:bg-amber-500 text-amber-950 font-bold text-xs px-4 py-2 rounded-xl transition">📝 Fragerunde zum ganzen Buch</button>
                                 <button id="bookQuizGenerateBtn" onclick="app.actions.generateBookQuiz()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-4 py-2 rounded-xl transition">
                                     Verständnisfragen zum Buch erstellen
                                 </button>
@@ -725,6 +736,29 @@
         <!-- ================= NACHTMODUS (v0.44.0-beta) ================= -->
         <!-- NEU: schwarze Vollbild-Anzeige, solange über Nacht vorbereitet wird.
              Bewusst reines Schwarz mit sehr gedimmtem Text (OLED: praktisch aus). -->
+        <!-- NEU (v0.56.0-beta): 📝 Fragerunde zum ganzen Buch (js/actions/reviewQuiz.js) -->
+        <div id="reviewQuizOverlay" class="hidden fixed inset-0 z-[55] bg-slate-900 text-white flex flex-col" role="dialog" aria-label="Fragerunde">
+            <div class="flex items-center justify-between p-3">
+                <span class="text-sm font-bold">📝 Fragerunde</span>
+                <span id="reviewQuizCounter" class="text-xs font-bold bg-white/10 px-3 py-1 rounded-full"></span>
+                <button onclick="app.actions.closeReviewQuiz()" aria-label="Fragerunde schließen" class="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-lg">✕</button>
+            </div>
+            <div class="flex-grow min-h-0 flex items-center justify-center px-4">
+                <img id="reviewQuizImg" class="hidden max-w-full max-h-full object-contain rounded-xl" alt="Buchseite zur Frage">
+            </div>
+            <div class="p-4 space-y-3 max-w-2xl w-full mx-auto">
+                <p id="reviewQuizLabel" class="text-xs font-bold text-indigo-200"></p>
+                <p id="reviewQuizQ" class="text-lg font-bold leading-relaxed"></p>
+                <button id="reviewQuizRevealBtn" onclick="app.actions.reviewQuizReveal()" class="text-sm bg-amber-400 text-amber-950 font-bold px-4 py-2 rounded-xl">👀 Antwort zeigen</button>
+                <p id="reviewQuizA" class="hidden text-base leading-relaxed bg-emerald-500/20 border border-emerald-400/40 rounded-xl p-3"></p>
+                <div class="flex items-center justify-center gap-4 pt-1">
+                    <button id="reviewQuizPrevBtn" onclick="app.actions.reviewQuizPrev()" aria-label="Vorherige Frage" class="w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 text-xl disabled:opacity-30">‹</button>
+                    <button id="reviewQuizPlayBtn" onclick="app.actions.reviewQuizTogglePlay()" aria-label="Vorlesen starten oder anhalten" class="w-16 h-16 rounded-full bg-white/20 hover:bg-white/30 text-2xl">▶️</button>
+                    <button id="reviewQuizNextBtn" onclick="app.actions.reviewQuizNext()" aria-label="Nächste Frage" class="w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 text-xl disabled:opacity-30">›</button>
+                </div>
+            </div>
+        </div>
+
         <div id="nightPrepOverlay" onclick="app.actions.nightPrepTap()" class="hidden fixed inset-0 z-[60] bg-black flex items-center justify-center p-6 cursor-pointer select-none">
             <div id="nightPrepBox" class="text-center space-y-2 transition-all duration-1000" style="color:#5b6477">
                 <p id="nightPrepTitle" class="text-xl font-bold"></p>
@@ -1531,6 +1565,8 @@
                     </label>
                     <input id="inputApiKey" type="password" placeholder="AIzaSy..." class="w-full text-sm text-slate-900 bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 font-mono focus:outline-none focus:border-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed">
                     <p id="apiKeyChildLockHint" class="hidden text-[11px] text-amber-600 font-semibold mt-1">🔒 Für Kinderprofile gesperrt - zum Ändern oben in der Bibliothek zu einem Erwachsenen-Profil wechseln.</p>
+                    <!-- NEU (v0.56.0-beta): gemerkte Kontingent-Sperren je Modell (js/geminiQuota.js) -->
+                    <div id="geminiQuotaStatus" class="mt-2"></div>
                     <!-- NEU (v0.41.0-beta, Nutzerwunsch): Risiken von API-Keys offen benennen. -->
                     <details class="bg-amber-50 border border-amber-200 rounded-xl p-3 text-[11px] text-amber-900">
                         <summary class="font-bold cursor-pointer">⚠️ Wichtig zu API-Schlüsseln (bitte einmal lesen)</summary>

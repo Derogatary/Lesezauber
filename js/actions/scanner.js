@@ -76,6 +76,18 @@ async function runPageAnalysisCore(book, pageIdx, personaId) {
                 app.actions.recordVocabulary(personas[id].vocabulary);
             });
             applyPageMetadata(book, page, core, isCover);
+            // FIX (Nutzer-Feedback "bei der Erzählervariante bleibt es
+            // hängen"): fehlte im Sammel-Aufruf genau der Block des gewählten
+            // Erzählers (unlesbar/abgeschnitten), war die Seite trotzdem
+            // "fertig" - der Reader fand die Fassung nicht und stieß dieselbe
+            // Sammel-Analyse immer wieder an. Jetzt EIN gezielter
+            // Einzel-Aufruf nur für diesen Erzähler.
+            if (personaId && !page.variants[personaId] && app.personas.some(p => p.id === personaId)) {
+                console.warn(`Analyse: Block für Erzähler "${personaId}" fehlte - Einzel-Analyse.`);
+                const single = await app.api.analyze(b64, isCover, personaId, page.pdfSourceText || null, forceToc, bookType);
+                page.variants[personaId] = app.utils.buildPageVariant(single, page, bookType);
+                app.actions.recordVocabulary(single.vocabulary);
+            }
         }
 
         if (birkenbihl && Array.isArray(birkenbihl.pairs) && birkenbihl.pairs.length > 0) {
@@ -328,6 +340,10 @@ Object.assign(app.actions, {
             return;
         }
 
+        // FIX: beim Nachholen eines Erzählers für eine schon fertige Seite
+        // darf ein Fehler die Seite nicht auf "Fehler" setzen - die anderen
+        // Fassungen sind ja noch da.
+        const wasDone = page.status === 'done';
         page.status = 'processing';
         if (!isBatch) {
             app.state.apiBusy = true;
@@ -343,7 +359,7 @@ Object.assign(app.actions, {
             // geöffnete Buch wiederverwenden kann.
             await runPageAnalysisCore(book, pageIdx, personaId);
         } catch (e) {
-            page.status = 'error';
+            page.status = wasDone && page.variants && Object.keys(page.variants).length ? 'done' : 'error';
             app.ui.toast(e.message, '❌');
             throw e;
         } finally {

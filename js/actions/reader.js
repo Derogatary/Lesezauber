@@ -83,6 +83,12 @@ Object.assign(app.actions, {
     switchReadingPersona(personaId) {
         const changed = app.state.readingPersonaId !== personaId;
         app.state.readingPersonaId = personaId;
+        // FIX: erneutes Antippen nach einem Fehlschlag = neuer Versuch
+        // (siehe _personaFillAttempts in js/render/reader.js)
+        const book = app.library[app.state.currentBookId];
+        const page = book?.pages[app.state.currentPageIdx];
+        const key = page && `${book.id}|${page.id}|${personaId}`;
+        if (key && app.state._personaFillAttempts?.[key] === 'failed') delete app.state._personaFillAttempts[key];
         app.render.reader(app.state.currentPageIdx);
         // NEU (v0.39.0-beta, "Personas kommen nicht zur Geltung"): kurze,
         // sichtbare Rückmeldung, wer jetzt erzählt.
