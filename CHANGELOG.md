@@ -6,6 +6,15 @@ vollständige Historie, neueste Version zuerst. Diese Datei wurde aus
 `CLAUDE.md` ausgelagert, weil der Abschnitt dort mit der Zeit zu groß für
 schnellen Kontext wurde; inhaltlich unverändert übernommen.
 
+## v0.56.3-beta
+
+Nutzerwunsch: „Analyse und Vorlesen sollen getrennt ausgeschlossen werden können und nicht nur zusammen.“
+
+- Im ⋮-Menü einer Seite jetzt zwei Schalter statt „Von Analyse/Vorlesen ausschließen“: **🚫 Nicht auslesen (keine KI)** (`page.noAnalysis`) und **🔇 Beim Vorlesen überspringen** (`page.noRead`). Kennzeichen in der Buchansicht: „🚫 Nicht auslesen“, „🔇“ bzw. wie bisher „🚫 Ausgeschlossen“ (beides).
+- Nicht ausgelesen, aber vorgelesen (z.B. reine Bildseite): das automatische Vorlesen spielt eine eigene Aufnahme ab, falls vorhanden, sonst bleibt das Bild 4 Sekunden stehen, dann wird weitergeblättert.
+- Nur nicht vorgelesen (z.B. Impressum): wird normal ausgelesen, aber bei Vorlesen, Hörbuch, Video, Fragerunde, KI-Stimmen-Vorbereitung und Wortkarten übersprungen.
+- Alte Seiten mit `excluded` gelten weiter als „beides“; beim ersten Umschalten werden sie in die zwei Schalter aufgeteilt. Alle Stellen lesen über `app.utils.skipsAnalysis()`/`skipsReading()` (`js/utils.js`).
+
 ## v0.56.2-beta
 
 Nutzer-Screenshot: Nachtmodus „hängt immer noch“ bei „Erzähler-Variante · Seite 2 · Wir bekommen ein Baby“ (196 offen, kein Fehler angezeigt).

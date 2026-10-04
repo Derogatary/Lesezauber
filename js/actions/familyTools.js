@@ -76,7 +76,7 @@ Object.assign(app.utils, {
         const seen = new Set();
         const out = [];
         (book?.pages || []).forEach(p => {
-            if (p.excluded) return;
+            if (app.utils.skipsReading(p)) return;
             const variant = app.utils.resolveAnyVariant(p, personaId || app.settings?.persona);
             (variant?.difficultWords || []).forEach(w => {
                 if (!w || !w.word || !w.explanation) return;

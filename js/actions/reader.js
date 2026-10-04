@@ -199,5 +199,37 @@ Object.assign(app.actions, {
             page.excluded ? 'Seite ausgeschlossen (keine Analyse, kein Vorlesen)' : 'Seite wieder eingeschlossen',
             page.excluded ? '🚫' : '✅'
         );
+    },
+
+    // NEU (v0.56.3-beta, Nutzerwunsch "Analyse und Vorlesen sollen getrennt
+    // ausgeschlossen werden können"): zwei eigene Schalter statt einem
+    // gemeinsamen (siehe app.utils.skipsAnalysis/skipsReading in js/utils.js).
+    togglePageNoAnalysis(pageId) {
+        this._togglePageSkip(pageId, 'noAnalysis');
+    },
+
+    togglePageNoRead(pageId) {
+        this._togglePageSkip(pageId, 'noRead');
+    },
+
+    _togglePageSkip(pageId, field) {
+        const book = app.library[app.state.currentBookId];
+        const page = book?.pages.find(p => p.id === pageId);
+        if (!page) return;
+        // altes "beides ausgeschlossen" in die zwei Schalter aufteilen
+        if (page.excluded) {
+            page.noAnalysis = true;
+            page.noRead = true;
+            delete page.excluded;
+        }
+        page[field] = !page[field];
+        if (!page[field]) delete page[field];
+        app.dbOps.saveBook(book);
+        app.render.book(book.id);
+        const on = !!page[field];
+        const msg = field === 'noAnalysis'
+            ? (on ? 'Seite wird nicht ausgelesen (keine KI-Anfrage)' : 'Seite wird wieder ausgelesen')
+            : (on ? 'Seite wird beim Vorlesen übersprungen' : 'Seite wird wieder vorgelesen');
+        app.ui.toast(msg, on ? '🚫' : '✅');
     }
 });

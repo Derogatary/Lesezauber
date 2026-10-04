@@ -26,7 +26,7 @@ Object.assign(app.actions, {
         // klänge beim tatsächlichen Vorlesen ohnehin anders und würde den
         // Zwischenspeicher nur mit ungenutztem Text füllen.
         const personaId = app.state.readingPersonaId || app.settings.persona;
-        const pages = book.pages.filter(p => !p.excluded);
+        const pages = book.pages.filter(p => !app.utils.skipsReading(p));
         if (pages.length === 0) {
             app.ui.toast('Keine Seiten zum Vorbereiten vorhanden.', 'ℹ️');
             return;

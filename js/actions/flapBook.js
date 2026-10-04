@@ -47,7 +47,7 @@ Object.assign(app.utils, {
     flapsForPage(book, page, personaId) {
         if (!book || !page || !book.flapBook || page.flapOf) return [];
         return book.pages
-            .filter(p => p.flapOf === page.id && !p.excluded && p.status === 'done')
+            .filter(p => p.flapOf === page.id && !app.utils.skipsReading(p) && p.status === 'done')
             .map(p => ({ page: p, variant: app.utils.resolvePageVariant(p, personaId) }))
             .filter(f => f.variant);
     },
@@ -147,7 +147,7 @@ Object.assign(app.actions, {
         app.ui.toast(`🪟 Klappe von Seite ${baseIdx + 1} - wird dort mit vorgelesen.`, '✅');
         // Noch nicht ausgelesen? Wie jede andere Seite auslesen.
         const analyzeIfNeeded = (cropped) => {
-            if ((page.status === 'pending' || page.status === 'error') && !page.excluded && app.settings.apiKey) {
+            if ((page.status === 'pending' || page.status === 'error') && !app.utils.skipsAnalysis(page) && app.settings.apiKey) {
                 app.actions.analyzePage(ownIdx).catch(() => {});
             } else if (cropped && page.status === 'done') {
                 // Ausschnitt geändert -> Text passt evtl. nicht mehr

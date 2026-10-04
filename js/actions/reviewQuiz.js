@@ -32,7 +32,7 @@ Object.assign(app.utils, {
         const seenWords = new Set();
         app.utils.autoReadOrder(book).forEach(idx => {
             const page = book.pages[idx];
-            if (!page || page.excluded || app.utils.isFlapPage?.(book, page)) return;
+            if (!page || app.utils.skipsReading(page) || app.utils.isFlapPage?.(book, page)) return;
             const variant = app.utils.resolvePageVariant(page, personaId) || app.utils.resolveAnyVariant(page, personaId);
             if (!variant) return;
             if (variant.quizQ && variant.quizA && !app.utils.isAiHidden?.(page, personaId, 'quiz')) {

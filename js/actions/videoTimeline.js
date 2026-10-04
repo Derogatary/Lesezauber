@@ -228,7 +228,7 @@ Object.assign(app.cinema, {
             const page = book.pages[pageIdx];
             // Ausgeschlossene Seiten (Leerseiten, Impressum) überall gleich
             // behandeln wie beim automatischen Vorlesen, siehe js/tts.js.
-            if (!page || page.excluded) continue;
+            if (!page || app.utils.skipsReading(page)) continue;
             // NEU (v0.53.0-beta): Klappen laufen innerhalb ihrer Hauptseite
             if (app.utils.isFlapPage?.(book, page)) continue;
 

@@ -167,13 +167,13 @@ Object.assign(app.actions, {
         }
         if (app.state.apiBusy) { app.ui.toast('Bitte warten, es läuft gerade schon etwas anderes.', '⏳'); return; }
 
-        const relevant = original.pages.filter(p => !p.excluded && p.status === 'done');
+        const relevant = original.pages.filter(p => !app.utils.skipsAnalysis(p) && p.status === 'done');
         if (relevant.length === 0) {
             app.ui.toast('Erst die Seiten auslesen lassen, dann übersetzen.', 'ℹ️');
             return;
         }
         const personaCount = new Set(relevant.flatMap(p => Object.keys(collectVariants(p)))).size;
-        const notDone = original.pages.filter(p => !p.excluded && p.status !== 'done').length;
+        const notDone = original.pages.filter(p => !app.utils.skipsAnalysis(p) && p.status !== 'done').length;
         const msg = `"${original.title}" auf ${langInfo.promptLabel} übersetzen?\n\n`
             + `• Es entsteht ein NEUES Buch, das Original bleibt unverändert.\n`
             + `• ${relevant.length} Seite(n) = ${relevant.length} KI-Anfrage(n) - alle ${personaCount} Erzähler-Variante(n) je Seite in einer Anfrage.\n`
@@ -200,7 +200,7 @@ Object.assign(app.actions, {
             // Deutscher PDF-/EPUB-Text würde bei jeder späteren Varianten-
             // Umrechnung (buildPageVariant) wieder gewinnen.
             delete p.pdfSourceText;
-            if (!p.excluded && p.status === 'done') p.translation = { lang: langId, done: false };
+            if (!app.utils.skipsAnalysis(p) && p.status === 'done') p.translation = { lang: langId, done: false };
         });
         app.library[copy.id] = copy;
         app.dbOps.saveBook(copy);

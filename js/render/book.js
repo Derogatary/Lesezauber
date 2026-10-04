@@ -69,7 +69,7 @@ Object.assign(app.render, {
         // ausgeschlossene Seiten (siehe app.actions.togglePageExcluded)
         // zählen dabei nicht mit, die werden nie automatisch analysiert.
         const targetPersona = app.state.readingPersonaId || app.settings.persona;
-        const hasPending = book.pages.some(p => !p.excluded && (
+        const hasPending = book.pages.some(p => !app.utils.skipsAnalysis(p) && (
             p.status === 'pending' || p.status === 'error' ||
             (p.status === 'done' && !app.utils.resolvePageVariant(p, targetPersona))
         ));
@@ -119,7 +119,11 @@ Object.assign(app.render, {
             // NEU: überschreibt den Status-Badge - ausgeschlossene Seiten
             // (Leerseiten, Impressum etc.) werden nie analysiert, der
             // normale "Offen"-Badge wäre hier irreführend.
-            if (p.excluded) statusBadge = `<span class="bg-slate-300 text-slate-700 text-[10px] font-bold px-2 py-0.5 rounded-full">🚫 Ausgeschlossen</span>`;
+            // NEU (v0.56.3-beta): Analyse und Vorlesen getrennt ausschließbar
+            const noAna = app.utils.skipsAnalysis(p), noRead = app.utils.skipsReading(p);
+            if (noAna && noRead) statusBadge = `<span class="bg-slate-300 text-slate-700 text-[10px] font-bold px-2 py-0.5 rounded-full">🚫 Ausgeschlossen</span>`;
+            else if (noAna) statusBadge = `<span class="bg-slate-200 text-slate-700 text-[10px] font-bold px-2 py-0.5 rounded-full">🚫 Nicht auslesen</span>`;
+            else if (noRead) statusBadge = `${statusBadge} <span class="bg-slate-200 text-slate-700 text-[10px] font-bold px-2 py-0.5 rounded-full">🔇</span>`;
             // NEU (v0.51.0-beta, FIX v0.52.0-beta): Klappen-Foto eines Klappenbuchs -
             // normale Seite, Kennzeichen VOR dem Status (js/actions/flapBook.js)
             if (book.flapBook && p.flapOf) {
@@ -149,13 +153,14 @@ Object.assign(app.render, {
                                 <button onclick="app.actions.toggleCardMenu(${p.id})" title="Mehr Optionen" aria-label="Mehr Optionen" class="text-sm px-1.5 py-1 text-slate-500 hover:text-slate-800">⋮</button>
                                 <div id="cardMenu-${p.id}" data-card-menu="${p.id}" class="hidden absolute right-0 bottom-full mb-1 bg-white border border-slate-200 rounded-lg shadow-lg py-1 z-10 min-w-[150px]">
                                     <button onclick="app.actions.setCover(${p.id}); app.actions.toggleCardMenu(${p.id})" class="w-full text-left px-3 py-2 text-xs hover:bg-slate-50 ${isCover ? 'text-amber-600 font-bold' : 'text-slate-700'}">${isCover ? '⭐ Ist Cover' : '☆ Als Cover festlegen'}</button>
-                                    ${(!p.excluded && (p.status === 'error' || p.status === 'pending')) ? `<button onclick="app.actions.retryPage(${i}); app.actions.toggleCardMenu(${p.id})" class="w-full text-left px-3 py-2 text-xs hover:bg-slate-50 text-indigo-600">${p.status === 'error' ? '🔄 Erneut versuchen' : '▶️ Analysieren'}</button>` : ''}
-                                    ${(!p.excluded && p.status === 'done') ? `<button onclick="app.actions.toggleCardMenu(${p.id}); app.actions.reanalyzePage(${i})" class="w-full text-left px-3 py-2 text-xs hover:bg-slate-50 text-indigo-600">🔄 Neu auslesen</button>` : ''}
+                                    ${(!app.utils.skipsAnalysis(p) && (p.status === 'error' || p.status === 'pending')) ? `<button onclick="app.actions.retryPage(${i}); app.actions.toggleCardMenu(${p.id})" class="w-full text-left px-3 py-2 text-xs hover:bg-slate-50 text-indigo-600">${p.status === 'error' ? '🔄 Erneut versuchen' : '▶️ Analysieren'}</button>` : ''}
+                                    ${(!app.utils.skipsAnalysis(p) && p.status === 'done') ? `<button onclick="app.actions.toggleCardMenu(${p.id}); app.actions.reanalyzePage(${i})" class="w-full text-left px-3 py-2 text-xs hover:bg-slate-50 text-indigo-600">🔄 Neu auslesen</button>` : ''}
                                     ${book.flapBook ? (p.flapOf
                                         ? `<button onclick="app.actions.toggleCardMenu(${p.id}); app.actions.unassignFlap(${p.id})" class="w-full text-left px-3 py-2 text-xs hover:bg-slate-50 text-amber-700">🪟 Klappe lösen (eigene Seite)</button>`
                                         : `<button onclick="app.actions.toggleCardMenu(${p.id}); app.actions.assignFlap(${p.id})" class="w-full text-left px-3 py-2 text-xs hover:bg-slate-50 text-amber-700">🪟 Als Klappe zuordnen…</button>`) : ''}
                                     ${p.imgUrl ? `<button onclick="app.actions.toggleCardMenu(${p.id}); app.actions.openPageCrop(${p.id})" class="w-full text-left px-3 py-2 text-xs hover:bg-slate-50 text-slate-700">✂️ Zuschneiden${p.originalImgUrl ? ' (zugeschnitten)' : ''}</button>` : ''}
-                                    <button onclick="app.actions.togglePageExcluded(${p.id}); app.actions.toggleCardMenu(${p.id})" class="w-full text-left px-3 py-2 text-xs hover:bg-slate-50 ${p.excluded ? 'text-emerald-600 font-bold' : 'text-slate-700'}">${p.excluded ? '✅ Wieder einschließen' : '🚫 Von Analyse/Vorlesen ausschließen'}</button>
+                                    <button onclick="app.actions.togglePageNoAnalysis(${p.id}); app.actions.toggleCardMenu(${p.id})" class="w-full text-left px-3 py-2 text-xs hover:bg-slate-50 ${app.utils.skipsAnalysis(p) ? 'text-emerald-600 font-bold' : 'text-slate-700'}">${app.utils.skipsAnalysis(p) ? '✅ Wieder auslesen' : '🚫 Nicht auslesen (keine KI)'}</button>
+                                    <button onclick="app.actions.togglePageNoRead(${p.id}); app.actions.toggleCardMenu(${p.id})" class="w-full text-left px-3 py-2 text-xs hover:bg-slate-50 ${app.utils.skipsReading(p) ? 'text-emerald-600 font-bold' : 'text-slate-700'}">${app.utils.skipsReading(p) ? '🔊 Wieder vorlesen' : '🔇 Beim Vorlesen überspringen'}</button>
                                     <button onclick="app.actions.deletePage(${i})" class="w-full text-left px-3 py-2 text-xs hover:bg-red-50 text-red-500">🗑️ Entfernen</button>
                                 </div>
                             </div>

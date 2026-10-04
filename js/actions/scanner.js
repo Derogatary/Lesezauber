@@ -294,8 +294,8 @@ Object.assign(app.actions, {
         if (!page || page.status === 'processing') return;
         // dieselben Sperren wie in analyzePage() - VOR dem Leeren prüfen,
         // sonst stünde die Seite danach ohne Fassungen da
-        if (page.excluded || book.language) {
-            app.ui.toast(page.excluded ? 'Diese Seite ist ausgeschlossen.' : 'Das ist eine Übersetzung - neu auslesen geht nur im deutschen Original.', 'ℹ️');
+        if (app.utils.skipsAnalysis(page) || book.language) {
+            app.ui.toast(app.utils.skipsAnalysis(page) ? 'Diese Seite ist ausgeschlossen.' : 'Das ist eine Übersetzung - neu auslesen geht nur im deutschen Original.', 'ℹ️');
             return;
         }
         if (!app.settings.apiKey) {
@@ -329,7 +329,7 @@ Object.assign(app.actions, {
         // NEU: ausgeschlossene Seiten (siehe app.actions.togglePageExcluded)
         // werden nie analysiert - spart API-Kosten für Leerseiten/Impressum
         // etc. ohne Story-Inhalt.
-        if (page.excluded) {
+        if (app.utils.skipsAnalysis(page)) {
             if (!isBatch) app.ui.toast('Diese Seite ist ausgeschlossen und wird nicht analysiert.', '🚫');
             return;
         }
@@ -391,7 +391,7 @@ Object.assign(app.actions, {
         book.pages.forEach((p, i) => {
             // NEU: ausgeschlossene Seiten (siehe app.actions.togglePageExcluded)
             // nie automatisch mit-analysieren.
-            if (p.excluded) return;
+            if (app.utils.skipsAnalysis(p)) return;
             if (p.status === 'pending' || p.status === 'error') {
                 pendingIndices.push(i);
             } else if (p.status === 'done' && !app.utils.resolvePageVariant(p, targetPersona)) {

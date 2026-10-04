@@ -29,7 +29,7 @@ Object.assign(app.actions, {
         // automatischen Vorlesen (js/tts.js) auch.
         const pageIndices = book.pages
             .map((p, i) => i)
-            .filter(i => !book.pages[i].excluded)
+            .filter(i => !app.utils.skipsReading(book.pages[i]))
             // NEU (v0.53.0-beta): Klappen stecken schon in ihrer Hauptseite
             .filter(i => !app.utils.isFlapPage?.(book, book.pages[i]));
 

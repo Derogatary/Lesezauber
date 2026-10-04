@@ -44,7 +44,7 @@ Object.assign(app.render, {
         // FIX v0.52.0-beta: Klappen sind normale, eigens ausgelesene Seiten -
         // Text/Bildbeschreibung kommen aus deren Erzähler-Fassung
         const flaps = app.utils.flapsForPage(book, page, app.state.readingPersonaId);
-        const pending = book.pages.filter(p => p.flapOf === page.id && !p.excluded && p.status !== 'done').length;
+        const pending = book.pages.filter(p => p.flapOf === page.id && !app.utils.skipsAnalysis(p) && p.status !== 'done').length;
         if (!flaps.length && !pending) { box.classList.add('hidden'); box.innerHTML = ''; return; }
 
         const openFlap = flaps.find(f => f.page.id === app.state.openFlapId);

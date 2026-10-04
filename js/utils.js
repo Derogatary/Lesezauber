@@ -255,7 +255,7 @@ Object.assign(app.utils, {
         let missing = 0;
         Object.values(app.library).forEach(book => {
             book.pages.forEach(page => {
-                if (page.excluded) return;
+                if (app.utils.skipsAnalysis(page)) return;
                 if (app.utils.isPregenSkipped(book, page)) return; // NEU (v0.56.2-beta)
                 if (page.status === 'pending' || page.status === 'error') missing++;
             });
@@ -269,7 +269,7 @@ Object.assign(app.utils, {
         let missing = 0;
         Object.values(app.library).forEach(book => {
             book.pages.forEach(page => {
-                if (page.excluded) return; // FIX: ausgeschlossene Seiten nie mitzählen (werden nie analysiert)
+                if (app.utils.skipsAnalysis(page)) return; // FIX: ausgeschlossene Seiten nie mitzählen (werden nie analysiert)
                 if (page.status !== 'done') return;
                 if (app.utils.isPregenSkipped(book, page)) return; // NEU (v0.56.2-beta)
                 // NEU (übersetzte Bücher): dort werden fehlende Personas nicht
@@ -295,7 +295,7 @@ Object.assign(app.utils, {
             // 'pending', werden nie analysiert) durften "allDone" nie
             // verhindern - sonst bekam ein Buch mit auch nur einer
             // ausgeschlossenen Seite (z.B. Impressum) NIE ein Buch-Quiz.
-            const relevantPages = book.pages.filter(p => !p.excluded);
+            const relevantPages = book.pages.filter(p => !app.utils.skipsAnalysis(p));
             const allDone = relevantPages.length > 0 && relevantPages.every(p => p.status === 'done');
             if (allDone && !book.bookQuiz) missing++;
         });
@@ -320,7 +320,7 @@ Object.assign(app.utils, {
             // keine Birkenbihl-Zerlegung aus dem Deutschen.
             if (book.language) return;
             book.pages.forEach((page, pageIdx) => {
-                if (page.excluded) return; // FIX: ausgeschlossene Seiten nie mitzählen (werden nie analysiert)
+                if (app.utils.skipsAnalysis(page)) return; // FIX: ausgeschlossene Seiten nie mitzählen (werden nie analysiert)
                 if (page.status !== 'done') return;
                 const variant = app.utils.resolveAnyVariant(page, app.settings.persona);
                 if (!variant || !variant.text) return;
@@ -359,7 +359,7 @@ Object.assign(app.utils, {
             if (language && !app.ttsProviders.supportsForeignLanguage(app.ttsProviders.current(), language)) continue;
             for (let pageIdx = 0; pageIdx < book.pages.length; pageIdx++) {
                 const page = book.pages[pageIdx];
-                if (page.excluded) continue;
+                if (app.utils.skipsReading(page)) continue;
                 if (page.status !== 'done') continue;
                 const variant = app.utils.resolvePageVariant(page, personaId);
                 if (!variant || !variant.text) continue;
@@ -792,5 +792,23 @@ Object.assign(app.utils, {
     },
     countPregenSkipped() {
         return Object.values(pregenFails).filter(n => n >= PREGEN_MAX_FAILS).length;
+    }
+});
+
+// NEU (v0.56.3-beta, Nutzerwunsch "Analyse und Vorlesen sollen getrennt
+// ausgeschlossen werden können"): zwei eigene Schalter je Seite.
+//   page.noAnalysis - nie per KI auslesen (spart Anfragen, z.B. reine
+//                     Bildseiten); beim Vorlesen wird die Seite trotzdem
+//                     gezeigt (eigene Aufnahme, sonst kurze Bildpause).
+//   page.noRead     - normal auslesen, aber beim automatischen Vorlesen,
+//                     Hörbuch, Video, Fragerunde überspringen (z.B. Impressum).
+// Das alte page.excluded (beides zusammen) gilt weiter für beide - IMMER
+// über diese zwei Funktionen lesen, nie page.excluded direkt.
+Object.assign(app.utils, {
+    skipsAnalysis(page) {
+        return !!(page && (page.excluded || page.noAnalysis));
+    },
+    skipsReading(page) {
+        return !!(page && (page.excluded || page.noRead));
     }
 });

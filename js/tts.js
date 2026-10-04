@@ -17,6 +17,9 @@ const WORD_EXPLAIN_PAUSE_MS = 200;
 
 // Bedenkzeit zwischen Rätselfrage und Antwort beim automatischen Vorlesen
 const QUIZ_THINK_PAUSE_MS = 3000;
+// NEU (v0.56.3-beta): so lange bleibt eine nicht ausgelesene Bildseite beim
+// automatischen Vorlesen stehen
+const PICTURE_PAGE_PAUSE_MS = 4000;
 
 // NEU: Abwechslung statt immer derselben Ansage vor der Bildbeschreibung
 // FIX (v0.51.0-beta): ohne Doppelpunkte - seit der Doppelpunkt-Sprechpause
@@ -680,7 +683,8 @@ Object.assign(app.tts, {
         // NEU: ausgeschlossene Seiten (siehe app.actions.togglePageExcluded,
         // z.B. Leerseiten/Impressum) werden übersprungen statt mit einer
         // Fehlermeldung abzubrechen.
-        if (page.excluded) { advanceToNext(); return; }
+        // FIX (v0.56.3-beta): Vorlesen getrennt von der Analyse ausschließbar
+        if (app.utils.skipsReading(page)) { advanceToNext(); return; }
         // NEU (v0.52.0-beta): Klappen-Seiten werden innerhalb ihrer Hauptseite
         // vorgelesen (js/actions/flapBook.js), nicht noch einmal als eigene Seite
         if (app.utils.isFlapPage?.(book, page)) { advanceToNext(); return; }
@@ -699,6 +703,17 @@ Object.assign(app.tts, {
         // anzuhalten (der Reader holt die fehlende parallel nach).
         const variant = app.utils.resolvePageVariant(page, app.state.readingPersonaId)
             || (page.status === 'done' || page.status === 'processing' ? app.utils.resolveAnyVariant(page, app.state.readingPersonaId) : null);
+        // NEU (v0.56.3-beta): Seite "nicht auslesen", aber vorlesen -> eigene
+        // Aufnahme abspielen, falls vorhanden, sonst das Bild kurz zeigen und
+        // weiterblättern (statt mit "Seite noch nicht bereit" anzuhalten)
+        if (!variant && app.utils.skipsAnalysis(page)) {
+            if (app.voice.speakerForPage?.(book.id, page.id)) {
+                this._speakPageText(page, '', null, () => setTimeout(advanceToNext, 400), this._currentTextElementId());
+            } else {
+                setTimeout(() => { if (app.state.autoReadActive) advanceToNext(); }, PICTURE_PAGE_PAUSE_MS);
+            }
+            return;
+        }
         if (!variant) {
             this.stopAutoRead();
             app.ui.toast('Seite noch nicht bereit zum Vorlesen.', 'ℹ️');
@@ -726,7 +741,7 @@ Object.assign(app.tts, {
         const nextPage = book.pages[app.state.currentPageIdx + 1];
         // NEU (v0.43.0-beta): Seite mit eigener Aufnahme braucht keine KI-Aufnahme
         // (sonst würde Kontingent für etwas verbraucht, das nie abgespielt wird).
-        if (nextPage && !nextPage.excluded && !app.utils.isFlapPage?.(book, nextPage) && !app.voice.speakerForPage?.(book.id, nextPage.id)) {
+        if (nextPage && !app.utils.skipsReading(nextPage) && !app.utils.skipsAnalysis(nextPage) && !app.utils.isFlapPage?.(book, nextPage) && !app.voice.speakerForPage?.(book.id, nextPage.id)) {
             const nextVariant = app.utils.resolvePageVariant(nextPage, app.state.readingPersonaId);
             if (nextVariant && nextVariant.text) {
                 // NEU (Audio-Tags): dieselbe Fassung vorbereiten, die beim

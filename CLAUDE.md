@@ -187,6 +187,9 @@ import './actions/meineNeueDatei.js';
                    // Zuschneiden (js/actions/pageCrop.js) - "↩️ Original" stellt es wieder her
   excluded,        // optional bool - Seite komplett von Analyse UND Auto-Vorlesen ausgeschlossen
                    // (Leerseiten, Impressum etc., togglePageExcluded) - manuelles Ansehen bleibt möglich
+  noAnalysis, noRead, // NEU v0.56.3-beta, optional bool: getrennt nur nicht auslesen bzw. nur nicht
+                   // vorlesen (⋮-Menü). IMMER über app.utils.skipsAnalysis(page)/skipsReading(page)
+                   // lesen (berücksichtigen das alte excluded mit), nie die Felder direkt
   variants: {
     // bei bookType 'story': difficultWords NEU seit v0.36.8-beta, persona-
     // UNABHÄNGIG (kommt aus dem "core"-Block, siehe js/api.js) - Array
@@ -370,6 +373,6 @@ Feste Regeln:
 
 ## Versionsstand
 
-Aktuell `v0.56.2-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Version bei größeren Änderungen hochzählen (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).
+Aktuell `v0.56.3-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Version bei größeren Änderungen hochzählen (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).
 
 **Die vollständige Versionshistorie (was mit welcher Version kam, inkl. aller Entscheidungen) steht in [`CHANGELOG.md`](CHANGELOG.md), neueste Version zuerst.** Vor dem Einplanen eines Features dort nachsehen, sonst werden bereits gefallene Entscheidungen neu diskutiert. Neuer Eintrag bei jeder Versionserhöhung: oben in `CHANGELOG.md` ergänzen, nicht hier.

@@ -142,7 +142,7 @@ Object.assign(app.actions, {
         const book = app.library[app.state.currentBookId];
         if (!book) return;
         if (!book.approvedForKids) {
-            const pending = book.pages.filter(p => p.status !== 'done' && !p.excluded).length;
+            const pending = book.pages.filter(p => p.status !== 'done' && !app.utils.skipsAnalysis(p)).length;
             const extra = pending > 0 ? `\n\nHinweis: ${pending} Seite(n) sind noch nicht ausgelesen - deren Texte hat noch niemand gesehen.` : '';
             if (!confirm(`„${book.title}“ für den Kinder-Lesemodus freigeben?\n\nAm besten hast du die Texte der KI (Erstleser-Text, Zwischenrufe, Bildbeschreibung, Rätsel) einmal durchgeblättert. Unpassendes kannst du vorher mit 🚩 ausblenden.${extra}`)) return;
             book.approvedForKids = true;

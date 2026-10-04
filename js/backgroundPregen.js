@@ -53,7 +53,7 @@ async function findNextMissingTask() {
         // fremdsprachiges Buch - übersetzte Bücher deshalb hier auslassen.
         // Nur das Buch-Quiz (jetzt in der Buchsprache) darf nachkommen.
         if (book.language) {
-            const done = book.pages.filter(p => !p.excluded).every(p => p.status === 'done');
+            const done = book.pages.filter(p => !app.utils.skipsAnalysis(p)).every(p => p.status === 'done');
             if (done && !book.bookQuiz) return { type: 'bookQuiz', bookId };
             continue;
         }
@@ -62,7 +62,7 @@ async function findNextMissingTask() {
             const page = book.pages[i];
             // NEU: ausgeschlossene Seiten (Leerseiten, Impressum etc.) nie
             // automatisch anfassen - dieselbe Regel wie beim manuellen Scan.
-            if (page.excluded) continue;
+            if (app.utils.skipsAnalysis(page)) continue;
             // NEU (v0.56.2-beta): dreimal ohne Fortschritt -> diese Sitzung überspringen
             if (app.utils.isPregenSkipped(book, page)) continue;
 
@@ -110,7 +110,7 @@ async function findNextMissingTask() {
         // verbrennen. FIX: ausgeschlossene Seiten (bleiben absichtlich für
         // immer 'pending') dürfen "allDone" nicht blockieren, siehe
         // app.utils.countMissingBookQuiz() in js/utils.js (identische Logik).
-        const relevantPages = book.pages.filter(p => !p.excluded);
+        const relevantPages = book.pages.filter(p => !app.utils.skipsAnalysis(p));
         const allDone = relevantPages.length > 0 && relevantPages.every(p => p.status === 'done');
         if (allDone && !book.bookQuiz && bookType !== 'workbook') {
             return { type: 'bookQuiz', bookId };

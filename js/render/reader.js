@@ -274,7 +274,10 @@ Object.assign(app.render, {
             // Seite wurde noch nie analysiert - das übernimmt der
             // bestehende "Alle analysieren"-Button in der Buchansicht,
             // hier nur ein Hinweis.
-            const notYet = isWorkbook ? 'Dieses Blatt wurde noch nicht ausgelesen.' : 'Diese Seite wurde noch nicht analysiert.';
+            // NEU (v0.56.3-beta): bewusst nicht ausgelesene Seite ehrlich benennen
+            const notYet = app.utils.skipsAnalysis(page)
+                ? 'Diese Seite wird nicht ausgelesen (⋮ in der Buchansicht → „Wieder auslesen“).'
+                : isWorkbook ? 'Dieses Blatt wurde noch nicht ausgelesen.' : 'Diese Seite wurde noch nicht analysiert.';
             document.getElementById('readerOriginalText').innerText = notYet;
             document.getElementById('readerErstleserText').innerText = notYet;
             document.getElementById('imageDescCard')?.classList.add('hidden');
