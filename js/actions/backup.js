@@ -87,7 +87,9 @@ Object.assign(app.actions, {
             // ihr Übungsfeld als echten Text statt über den Umweg des
             // Canvas-Seitenbildes - schärfer auf Papier UND ohne die
             // Überschrift ein zweites Mal (im Bild) mitzudrucken.
-            const bodyBlock = p.generatedSheet
+            // Visual worksheet tasks need their actual canvas layout when printed.
+            // Plain text worksheets keep their sharper selectable print text.
+            const bodyBlock = p.generatedSheet && !p.generatedSheet.printAsImage
                 ? `<h2 style="margin:0 0 8px; font-size:22px;">${app.utils.sanitize(p.generatedSheet.heading)}</h2>
                    <div style="font-family: monospace; font-size:20px; line-height:2.1; margin-top:16px;">${
                        (p.generatedSheet.body || []).map(line => `<div>${line.trim() ? app.utils.sanitize(line) : '&nbsp;'}</div>`).join('')
