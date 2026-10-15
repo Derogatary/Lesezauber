@@ -211,6 +211,11 @@ const HELP_STEP = {
     schneiden: 'Tipp: Schneide die Streifen an den gestrichelten Linien aus. Lege sie erst richtig hin, dann klebe sie auf.'
 };
 
+// These tasks depend on their drawn layout: pictorial boxes, tracing
+// outlines, cut-out strips, word-search cells, or matching columns.
+// Print the actual worksheet image rather than a lossy text transcription.
+const VISUAL_PRINT_TASK_TYPES = new Set(['zuordnen', 'suchsel', 'nachspuren', 'ausmalen', 'schneiden']);
+
 Object.assign(app.studio, {
     // Nur Anzeige-/Nachschlage-Konstanten, keine onclick-Ziele (Sanity-
     // Check 3 aus CLAUDE.md prüft nur zweistufige app.NAMESPACE.funktion(-
@@ -575,7 +580,10 @@ Object.assign(app.studio, {
                     id: Date.now() + contentPages.length,
                     imgUrl: full, thumbUrl: thumb, status: 'done',
                     variants: { [app.settings.persona]: app.utils.buildPageVariant(result, {}, 'workbook') },
-                    generatedSheet: { heading: draw.heading, body: draw.body }
+                    generatedSheet: {
+                        heading: draw.heading, body: draw.body,
+                        printAsImage: resolved.some(task => VISUAL_PRINT_TASK_TYPES.has(task.type))
+                    }
                 });
             });
         });
