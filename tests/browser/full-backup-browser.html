@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><title>LZ IndexedDB Browser Pilot</title></head>
+<body><pre id="result">RUNNING</pre>
+<script type="module">
+let app, collectFullBackup, validateBackupData, writeStoredZip, readStoredZip;
+
+const show = value => { document.getElementById('result').textContent = value; };
+const bounded = (operation, label) => Promise.race([
+    operation,
+    new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout: ' + label)), 7000))
+]);
+const assert = (ok, reason) => { if (!ok) throw new Error(reason); };
+let key;
+let syntheticProviderCalls = 0;
+const provider = {
+    id: 'speechify', supportsRate: true, supportsStyle: false, supportsEmotionTag: true,
+    synthesize() { syntheticProviderCalls++; throw new Error('SYNTHESIS_UNEXPECTED'); }
+};
+const count = storeName => new Promise((resolve, reject) => {
+    const request = indexedDB.open('LeseZauberDB', 5);
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => {
+        const db = request.result;
+        let tx, c;
+        try { tx = db.transaction(storeName, 'readonly'); c = tx.objectStore(storeName).count(); }
+        catch (e) { db.close(); reject(e); return; }
+        c.onsuccess = () => resolve(c.result);
+        c.onerror = () => reject(c.error);
+        tx.oncomplete = () => db.close();
+    };
+});
+const audio = new Blob([new Uint8Array([7, 4, 255, 0, 22])], { type: 'audio/mpeg' });
+try {
+    show('MODULES_LOADING');
+    ({ app } = await import('../../js/core.js'));
+    await import('../../js/db.js');
+    await import('../../js/ttsNeural.js');
+    app.settings.ttsPersonaStyle = false;
+    app.settings.ttsCacheEnabled = true;
+    key = app.ttsNeural._cacheKey('Hallo Welt', provider, 'voice-test', 0.9, 'standard', null);
+    ({ collectFullBackup, validateBackupData } = await import('../../js/actions/fullBackup.js'));
+    ({ writeStoredZip, readStoredZip } = await import('../../js/backupZip.js'));
+    show('MODULES_OK');
+    if (sessionStorage.getItem('lz-backup-browser-stage') === 'reload') {
+        show('RELOAD_READBACK');
+        await app.dbOps.init(); // read-back from the actual IndexedDB after document reload
+        assert(Object.keys(app.library).length === 1, 'Buch nach Reload fehlt');
+        assert(app.studio.projects.proj_test?.title === 'Editierbares Werk', 'Werkstattprojekt nach Reload fehlt');
+        assert(app.vocabulary.Hallo?.translation === 'hello', 'Vokabel nach Reload fehlt');
+        const stored = await app.dbOps.getTtsAudio(key);
+        assert(stored?.blob instanceof Blob, 'Speechify-TTS Blob nach Reload fehlt');
+        assert(stored.blob.size === 5, 'Audio-Länge nach Reload falsch');
+        assert(new Uint8Array(await stored.blob.arrayBuffer())[2] === 255, 'Audio-Binärbytes verändert');
+        assert(stored.alignment.starts[0] === 12, 'Wort-Zeitstempel verloren');
+        show('CACHE_ONLY_PLAYBACK_CHECK');
+        const tts = await app.ttsNeural._getAudio('Hallo Welt', {
+            provider, voice: 'voice-test', rate: 0.9, personaId: 'standard'
+        });
+        assert(tts?.fromCache && tts.blob.size === 5, 'Speechify-Cachemiss nach Domaintransfer');
+        assert(syntheticProviderCalls === 0, 'Speechify-Synthese statt Cachetreffer');
+        assert(await count('ttsCache') === 1, 'Cacheeinträge nach Reload verändert');
+        sessionStorage.removeItem('lz-backup-browser-stage');
+        show('PASS_BROWSER_IDB_RELOAD_AUDIO_0_CREDITS');
+    } else {
+        app.library = {
+            book_test: { id: 'book_test', title: 'Synthetic', pages: [
+                { id: 1, text: 'Hallo', imgUrl: 'data:image/png;base64,AAAA' }
+            ] }
+        };
+        app.studio.projects = { proj_test: { id: 'proj_test', type: 'picturebook', title: 'Editierbares Werk' } };
+        app.vocabulary = { Hallo: { word: 'Hallo', translation: 'hello' } };
+        show('COLLECTING');
+        const oldKeys = app.dbOps.getTtsBackupKeys, oldAudio = app.dbOps.getTtsAudio;
+        app.dbOps.getTtsBackupKeys = async () => [key];
+        app.dbOps.getTtsAudio = async () => ({
+            key, blob: audio, bytes: 5, created: 1,
+            mime: 'audio/mpeg', alignment: { starts: [12], characters: ['H'] }
+        });
+        let entries;
+        try { ({ entries } = await collectFullBackup()); }
+        finally { app.dbOps.getTtsBackupKeys = oldKeys; app.dbOps.getTtsAudio = oldAudio; }
+        show('ZIP_WRITING');
+        const zip = await bounded(writeStoredZip(entries), 'writeStoredZip');
+        show('ZIP_READING');
+        const files = await bounded(readStoredZip(zip), 'readStoredZip');
+        show('ZIP_VALIDATING');
+        const load = async name => JSON.parse(await files.get(name).text());
+        const data = validateBackupData({
+            library: await load('library.json'),
+            projects: await load('studio-projects.json'),
+            vocabulary: await load('vocabulary.json'),
+            audioIndex: await load('audio/index.json'), files
+        });
+        assert(data.books.length === 1 && data.audio.length === 1, 'ZIP Inhalt falsch');
+        show('DB_INIT');
+        await app.dbOps.init();
+        assert(await count('books') === 0, 'Testbrowser nicht leer');
+
+        show('ROLLBACK_TEST');
+        // Deliberate duplicate key inside one readwrite transaction must roll everything back.
+        let aborted = false;
+        try {
+            await app.dbOps.restoreEmptyFullBackup({ ...data, books: [data.books[0], data.books[0]] });
+        } catch { aborted = true; }
+        assert(aborted, 'Duplikat-Transaktion wurde nicht abgebrochen');
+        for (const name of ['books', 'projects', 'vocabulary', 'ttsCache'])
+            assert(await count(name) === 0, 'Rollback hat Teilzustand in ' + name + ' hinterlassen');
+
+        // Full actual IndexedDB restore. No TTS provider or fetch is called by these methods.
+        show('RESTORE_REAL_DB');
+        await app.dbOps.restoreEmptyFullBackup(data);
+        for (const name of ['books', 'projects', 'vocabulary', 'ttsCache'])
+            assert(await count(name) === 1, 'Restore hat keinen Eintrag in ' + name);
+        sessionStorage.setItem('lz-backup-browser-stage', 'reload');
+        show('RELOADING_FOR_REAL_READBACK');
+        location.reload();
+    }
+} catch (e) {
+    show('FAIL_BROWSER_IDB: ' + e.message + '\n' + (e.stack || ''));
+}
+</script></body></html>

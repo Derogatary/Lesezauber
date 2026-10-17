@@ -27,3 +27,36 @@ jobs:
       - run: npm run build
       - name: Tailwind-Build aktuell?
         run: git diff --exit-code css/tailwind.css || (echo "css/tailwind.css ist veraltet - bitte 'npm run build' ausführen und committen." && exit 1)
+
+  browser-backup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Chromium IndexedDB rollback and offline-audio cache pilot
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 8765 --bind 127.0.0.1 > /tmp/lz-http.log 2>&1 &
+          server_pid=$!
+          chrome_pid=""
+          trap 'kill "$server_pid" "${chrome_pid:-0}" 2>/dev/null || true' EXIT
+          for i in {1..30}; do
+            if curl --silent --fail http://127.0.0.1:8765/tests/browser/full-backup-browser.html > /dev/null; then break; fi
+            sleep 0.2
+          done
+          chrome="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
+          "$chrome" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage \
+            --remote-debugging-port=9222 --remote-allow-origins='*' \
+            --user-data-dir="/tmp/lz-backup-chrome-$GITHUB_RUN_ID" \
+            about:blank > /tmp/lz-chrome.log 2>&1 &
+          chrome_pid=$!
+          node tests/browser/run-full-backup.mjs || {
+            echo 'Chrome diagnostics:'
+            tail -c 3000 /tmp/lz-chrome.log || true
+            echo 'Server diagnostics:'
+            tail -c 1600 /tmp/lz-http.log || true
+            exit 1
+          }

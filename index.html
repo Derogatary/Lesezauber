@@ -1876,6 +1876,18 @@
                     <input id="importFileInput" type="file" accept="application/json" onchange="app.actions.importLibrary(event)" class="hidden">
                 </div>
 
+                <!-- Vollbackup: Original-TTS-Blobs und Wortmarkierungen ohne Credits sichern. -->
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-3" data-parent-only>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-500">📦 Komplett-Backup mit KI-Stimmen</label>
+                    <p class="text-[11px] text-slate-500">Eine ZIP-Datei mit Bibliothek, SchreibZauber-Werken, Vokabeln, KI-Stimmen (auch Speechify) und zugehörigen Stimmeinstellungen. Keine Synthese oder Credits beim Export/Import; API-Schlüssel bleiben privat und müssen später separat eingerichtet werden.</p>
+                    <p class="text-[11px] text-amber-800">Bis zu 20.000 Audio-Einträge / 2 GiB lokaler Cache, soweit der Browser genügend Speicher erlaubt. ZIP kann sehr groß werden. Auf neuer Adresse nur in eine leere Bibliothek importieren. Geheim halten: Bücher und Audios sind enthalten.</p>
+                    <div class="flex gap-2">
+                        <button onclick="app.actions.exportFullBackup()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 rounded-xl text-sm transition">📤 Komplett sichern</button>
+                        <button onclick="app.actions.triggerFullBackupImport()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 rounded-xl text-sm transition">📥 ZIP einspielen</button>
+                    </div>
+                    <input id="fullBackupImportFile" type="file" accept=".zip,application/zip" onchange="app.actions.importFullBackup(event)" class="hidden">
+                </div>
+
                 <!-- NEU (v0.43.0-beta): eigene Aufnahmen - Übersicht + eigene Sicherungsdatei
                      (die normale Bibliotheks-Sicherung enthält sie NICHT). -->
                 <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-2">

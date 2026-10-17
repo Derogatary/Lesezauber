@@ -32,8 +32,9 @@ const VOICE_STORE_NAME = 'voiceRecordings';
 // Gemini wächst die Reichweite so von ca. 100 auf ca. 300 Seiten. Moderne
 // Browser gewähren IndexedDB großzügig Speicher, 300 MB bleibt auf
 // praktisch jedem Gerät unkritisch.
-const TTS_CACHE_MAX_ENTRIES = 600;
-const TTS_CACHE_MAX_BYTES = 300 * 1024 * 1024;
+// More entries preserve purchased provider audio; real device quota still applies.
+const TTS_CACHE_MAX_ENTRIES = 20000;
+const TTS_CACHE_MAX_BYTES = 2 * 1024 * 1024 * 1024;
 
 // Key, unter dem die Bibliothek in der alten (localStorage-basierten)
 // Version dieser App gespeichert wurde - nur für die einmalige Migration
@@ -373,6 +374,53 @@ Object.assign(app.dbOps, {
     },
     deleteVoiceRecording(key) {
         return voiceStoreRequest('readwrite', store => { store.delete(key); return null; });
+    },
+
+    // Full backup: list the cache keys without loading all audio Blobs at once.
+    async getTtsBackupKeys() {
+        const db = await openDatabase();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction(TTS_STORE_NAME, 'readonly');
+            const request = tx.objectStore(TTS_STORE_NAME).getAllKeys();
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+        });
+    },
+
+    // Atomic empty-target restore for a verified local full-backup.
+    // One transaction over all stores: on quota errors no half-restored backup.
+    async restoreEmptyFullBackup({ books, projects, vocabulary, audio }) {
+        const db = await openDatabase();
+        const stores = [STORE_NAME, PROJECTS_STORE_NAME, VOCAB_STORE_NAME, TTS_STORE_NAME];
+        // Refuse overwriting any pre-existing content, even if a caller bypasses the UI.
+        for (const storeName of stores) {
+            const count = await new Promise((resolve, reject) => {
+                const tx = db.transaction(storeName, 'readonly');
+                const r = tx.objectStore(storeName).count();
+                r.onsuccess = () => resolve(r.result);
+                r.onerror = () => reject(r.error);
+            });
+            if (count) throw new Error('Ziel-Bibliothek ist nicht leer: ' + storeName);
+        }
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction(stores, 'readwrite');
+            const batches = [[STORE_NAME, books], [PROJECTS_STORE_NAME, projects],
+                [VOCAB_STORE_NAME, vocabulary], [TTS_STORE_NAME, audio]];
+            try {
+                for (const [name, rows] of batches) {
+                    const store = tx.objectStore(name);
+                    for (const row of rows) store.add(row); // add, never overwrite
+                }
+            } catch (e) { tx.abort(); reject(e); return; }
+            tx.oncomplete = () => {
+                app.library = Object.fromEntries(books.map(b => [b.id, b]));
+                app.studio.projects = Object.fromEntries(projects.map(p => [p.id, p]));
+                app.vocabulary = Object.fromEntries(vocabulary.map(v => [v.word, v]));
+                resolve();
+            };
+            tx.onabort = () => reject(tx.error || new Error('Speichertransaktion zurückgesetzt'));
+            tx.onerror = () => {}; // abort handler owns the failure
+        });
     },
 
     // NEU: gespeicherte KI-Sprachaufnahme holen. Fehler sind hier bewusst
