@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import './helpers.mjs';
 import { writeStoredZip, readStoredZip } from '../js/backupZip.js';
-import { validateBackupData, collectFullBackup } from '../js/actions/fullBackup.js';
+import { validateBackupData, collectFullBackup, exportVoicePreferences, validateVoicePreferences } from '../js/actions/fullBackup.js';
 import { app } from '../js/core.js';
 
 const b = value => new Blob([value]);
@@ -128,4 +128,36 @@ test('Import rejects images that would silently disappear from an original book'
     const library = { book_2: { id: 'book_2', pages: [{ id: 1, imgUrl: 'https://other.site/example.png' }] } };
     assert.throws(() => validateBackupData({ library, projects: [], vocabulary: [], audioIndex: [], files }),
         /ungültige Bilddaten/);
+});
+
+test('Only nonsecret voice selectors roundtrip so identical Speechify cache keys remain possible', async () => {
+    const previous = { ...app.settings };
+    const oldReadingPersonaId = app.state?.readingPersonaId;
+    try {
+        app.settings.ttsProvider = 'speechify';
+        app.settings.ttsVoices = { speechify: 'voice_ABC' };
+        app.settings.speechRate = 0.95;
+        app.settings.speechifyKey = 'SECRET_DO_NOT_EXPORT';
+        app.settings.ttsPersonaStyle = true;
+        app.state.readingPersonaId = 'papa';
+        const voicePrefs = exportVoicePreferences();
+        const text = JSON.stringify(voicePrefs);
+        assert.equal(text.includes('SECRET_DO_NOT_EXPORT'), false);
+        const restored = validateVoicePreferences(JSON.parse(text));
+        assert.deepEqual({ ...restored.ttsVoices }, { speechify: 'voice_ABC' });
+        assert.equal(restored.ttsProvider, 'speechify');
+        assert.equal(restored.persona, 'papa');
+        assert.equal(restored.speechRate, 0.95);
+        assert.equal('speechifyKey' in restored, false);
+    } finally {
+        Object.assign(app.settings, previous);
+        app.state.readingPersonaId = oldReadingPersonaId;
+    }
+});
+
+test('Malicious/invalid TTS selectors cannot be imported', () => {
+    const base = { ttsProvider: 'speechify', ttsVoices: { speechify: 'voice_good' },
+        speechRate: 0.9, persona: 'standard', ttsPersonaStyle: true };
+    assert.throws(() => validateVoicePreferences({ ...base, speechRate: 999 }), /Stimmeneinstellungen/);
+    assert.throws(() => validateVoicePreferences({ ...base, ttsVoices: { speechify: 42 } }), /Stimmen-ID/);
 });
