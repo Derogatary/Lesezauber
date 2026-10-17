@@ -26,6 +26,7 @@ import './actions/scanner.js';
 import './actions/reader.js';
 import './actions/reorder.js';
 import './actions/backup.js';
+import './actions/fullBackup.js';
 import './actions/bookQuiz.js';
 // NEU (v0.56.0-beta): Fragerunde zum ganzen Buch
 import './actions/reviewQuiz.js';
