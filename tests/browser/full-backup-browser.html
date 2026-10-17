@@ -16,8 +16,9 @@ const count = storeName => new Promise((resolve, reject) => {
     request.onerror = () => reject(request.error);
     request.onsuccess = () => {
         const db = request.result;
-        const tx = db.transaction(storeName, 'readonly');
-        const c = tx.objectStore(storeName).count();
+        let tx, c;
+        try { tx = db.transaction(storeName, 'readonly'); c = tx.objectStore(storeName).count(); }
+        catch (e) { db.close(); reject(e); return; }
         c.onsuccess = () => resolve(c.result);
         c.onerror = () => reject(c.error);
         tx.oncomplete = () => db.close();
@@ -76,6 +77,8 @@ try {
             audioIndex: await load('audio/index.json'), files
         });
         assert(data.books.length === 1 && data.audio.length === 1, 'ZIP Inhalt falsch');
+        show('DB_INIT');
+        await app.dbOps.init();
         assert(await count('books') === 0, 'Testbrowser nicht leer');
 
         show('ROLLBACK_TEST');
