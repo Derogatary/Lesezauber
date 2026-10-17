@@ -27,3 +27,36 @@ jobs:
       - run: npm run build
       - name: Tailwind-Build aktuell?
         run: git diff --exit-code css/tailwind.css || (echo "css/tailwind.css ist veraltet - bitte 'npm run build' ausführen und committen." && exit 1)
+
+  browser-backup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Real Chromium IndexedDB full-backup pilot
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 8765 --bind 127.0.0.1 > /tmp/lz-http.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          for i in {1..30}; do
+            if curl --silent --fail http://127.0.0.1:8765/tests/browser/full-backup-browser.html > /dev/null; then break; fi
+            sleep 0.2
+          done
+          chrome="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
+          if [[ -z "$chrome" ]]; then echo 'Chromium unavailable'; exit 1; fi
+          "$chrome" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage \
+            --user-data-dir="/tmp/lz-backup-chrome-$GITHUB_RUN_ID" \
+            --virtual-time-budget=20000 --dump-dom \
+            http://127.0.0.1:8765/tests/browser/full-backup-browser.html \
+            > /tmp/lz-dom.txt 2> /tmp/lz-chrome.log
+          if ! grep -q 'PASS_BROWSER_IDB_RELOAD_AUDIO_0_CREDITS' /tmp/lz-dom.txt; then
+            echo 'Real browser backup pilot failed. DOM excerpt:'
+            tail -c 4500 /tmp/lz-dom.txt || true
+            echo 'Chrome diagnostics:'
+            tail -c 3000 /tmp/lz-chrome.log || true
+            echo 'Server diagnostics:'
+            tail -c 1000 /tmp/lz-http.log || true
+            exit 1
+          fi
+          echo 'PASS_BROWSER_IDB_RELOAD_AUDIO_0_CREDITS'
