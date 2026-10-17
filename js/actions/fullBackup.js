@@ -41,6 +41,61 @@ function encodeAudioMetadata(entry, file) {
         alignment: entry.alignment ?? null
     };
 }
+// Only voice selectors needed to match cached TTS keys. Never export credentials.
+export function exportVoicePreferences() {
+    return {
+        ttsProvider: app.settings.ttsProvider || 'device',
+        ttsVoices: { ...(app.settings.ttsVoices || {}) },
+        speechRate: app.settings.speechRate || 0.9,
+        persona: app.state.readingPersonaId || app.settings.persona || 'standard',
+        ttsPersonaStyle: app.settings.ttsPersonaStyle !== false
+    };
+}
+export function validateVoicePreferences(value) {
+    if (!value || typeof value !== 'object' ||
+        typeof value.ttsProvider !== 'string' || !/^[a-z0-9_-]{2,40}$/.test(value.ttsProvider) ||
+        !Number.isFinite(value.speechRate) || value.speechRate < 0.25 || value.speechRate > 3 ||
+        typeof value.persona !== 'string' || !/^[a-z0-9_-]{1,40}$/.test(value.persona) ||
+        typeof value.ttsPersonaStyle !== 'boolean' ||
+        !value.ttsVoices || typeof value.ttsVoices !== 'object' || Array.isArray(value.ttsVoices))
+        throw new Error('Stimmeneinstellungen ungültig');
+    const voices = Object.create(null);
+    for (const [provider, voice] of Object.entries(value.ttsVoices)) {
+        if (!/^[a-z0-9_-]{2,40}$/.test(provider) ||
+            typeof voice !== 'string' || voice.length > 180 ||
+            ['__proto__', 'constructor', 'prototype'].includes(provider))
+            throw new Error('Ungültige Stimmen-ID');
+        voices[provider] = voice;
+    }
+    return { ttsProvider: value.ttsProvider, ttsVoices: voices,
+        speechRate: value.speechRate, persona: value.persona,
+        ttsPersonaStyle: value.ttsPersonaStyle };
+}
+// Applies harmless selectors only after the database transaction succeeds.
+// Never starts synthesis and never restores secret API keys.
+function applyVoicePreferences(prefs) {
+    if (!prefs) return;
+    const ttsVoices = { ...prefs.ttsVoices };
+    const profile = app.state.currentProfileId && app.state.currentProfileId !== '__all__'
+        ? app.state.currentProfileId : (app.profiles?.[0]?.id || 'default');
+    app.profileTtsMap = app.profileTtsMap || {};
+    app.profileTtsMap[profile] = { ttsProvider: prefs.ttsProvider, ttsVoices };
+    localStorage.setItem('lz_profile_tts', JSON.stringify(app.profileTtsMap));
+    localStorage.setItem('lz_tts_provider', prefs.ttsProvider);
+    localStorage.setItem('lz_tts_voices', JSON.stringify(ttsVoices));
+    localStorage.setItem('lz_speech_rate', String(prefs.speechRate));
+    localStorage.setItem('lz_persona', prefs.persona);
+    localStorage.setItem('lz_tts_persona_style', prefs.ttsPersonaStyle ? '1' : '0');
+    localStorage.setItem('lz_tts_cache', '1');
+    app.settings.ttsProvider = prefs.ttsProvider;
+    app.settings.ttsVoices = ttsVoices;
+    app.settings.speechRate = prefs.speechRate;
+    app.settings.persona = prefs.persona;
+    app.settings.ttsPersonaStyle = prefs.ttsPersonaStyle;
+    app.settings.ttsCacheEnabled = true;
+    app.state.readingPersonaId = prefs.persona;
+}
+
 export function validateBackupData({ library, projects, vocabulary, audioIndex, files }) {
     if (!library || typeof library !== 'object' || Array.isArray(library) ||
         !Array.isArray(projects) || !Array.isArray(vocabulary) || !Array.isArray(audioIndex) ||
@@ -94,6 +149,7 @@ export function validateBackupData({ library, projects, vocabulary, audioIndex, 
     }
     const allowed = new Set(['manifest.json', 'library.json', 'studio-projects.json',
         'vocabulary.json', 'audio/index.json', ...referenced]);
+    if (files.has('voice-preferences.json')) allowed.add('voice-preferences.json');
     if (files.size !== allowed.size || [...files.keys()].some(name => !allowed.has(name)))
         throw new Error('Unbekannte ZIP-Dateien');
     return { books, projects, vocabulary, audio };
@@ -110,7 +166,8 @@ export async function collectFullBackup() {
     const entries = [
         { name: 'library.json', blob: jsonBlob(library) },
         { name: 'studio-projects.json', blob: jsonBlob(projects) },
-        { name: 'vocabulary.json', blob: jsonBlob(vocabulary) }
+        { name: 'vocabulary.json', blob: jsonBlob(vocabulary) },
+        { name: 'voice-preferences.json', blob: jsonBlob(exportVoicePreferences()) }
     ];
     if (entries[0].blob.size > MAX_LIBRARY_JSON) throw new Error('Bibliothek zu groß für ZIP-Pilot');
     const keys = await app.dbOps.getTtsBackupKeys();
@@ -132,6 +189,7 @@ export async function collectFullBackup() {
         format: 'lesezauber-full-backup', version: 1, createdAt: new Date().toISOString(),
         books: Object.keys(library).length, projects: projects.length,
         vocabulary: vocabulary.length, audio: index.length, audioBytes,
+        voicePreferences: true,
         integrity: 'ZIP CRC32 per file; verified by importer',
         excludes: ['api-keys', 'profiles', 'voiceRecordings']
     }) });
@@ -169,6 +227,8 @@ Object.assign(app.actions, {
             const projects = await parseJSONFile(files, 'studio-projects.json', MAX_LIBRARY_JSON);
             const vocabulary = await parseJSONFile(files, 'vocabulary.json', MAX_INDEX_JSON);
             const audioIndex = await parseJSONFile(files, 'audio/index.json', MAX_INDEX_JSON);
+            const prefs = files.has('voice-preferences.json')
+                ? validateVoicePreferences(await parseJSONFile(files, 'voice-preferences.json', 200000)) : null;
             const data = validateBackupData({ library, projects, vocabulary, audioIndex, files });
             if (data.books.length !== manifest.books || data.projects.length !== manifest.projects ||
                 data.vocabulary.length !== manifest.vocabulary || data.audio.length !== manifest.audio ||
@@ -177,8 +237,18 @@ Object.assign(app.actions, {
             // Intentional: restore only into a fresh destination, never merge/overwrite silently.
             if (!window.confirm('Geprüft: ' + data.books.length + ' Bücher, ' + data.audio.length +
                 ' KI-Audios. Nur in eine LEERE LeseZauber-Datenbank importieren. Fortfahren?')) return;
+            // Profile are intentionally not imported; assign all content to the target profile.
+            const target = app.state.currentProfileId && app.state.currentProfileId !== '__all__'
+                ? app.state.currentProfileId : (app.profiles?.[0]?.id || 'default');
+            data.books.forEach(book => { book.profileId = target; });
+            data.projects.forEach(project => { project.profileId = target; });
             await app.dbOps.restoreEmptyFullBackup(data);
-            app.ui.toast('Komplettes Backup wiederhergestellt. Bitte App neu laden und Vorlesen ohne API testen.', '✅');
+            try { applyVoicePreferences(prefs); } catch (e) {
+                console.error('Bücher/Audios gespeichert, Stimmeneinstellungen nicht vollständig wiederhergestellt:', e);
+                app.ui.toast('Backup importiert, aber Stimmeinstellungen bitte manuell prüfen.', '⚠️');
+                return;
+            }
+            app.ui.toast('Komplettes Backup wiederhergestellt. Stimmeinstellungen übernommen, API-Schlüssel separat einrichten.', '✅');
         } catch (e) {
             console.error('Komplett-Import fehlgeschlagen:', e);
             app.ui.toast('Komplett-Import abgebrochen: ' + e.message, '⚠️');
