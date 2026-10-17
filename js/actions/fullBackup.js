@@ -49,8 +49,11 @@ export function validateBackupData({ library, projects, vocabulary, audioIndex, 
     for (const [id, raw] of Object.entries(library)) {
         if (!validId(id) || !raw || raw.id !== id) throw new Error('Buch-ID ungültig');
         const pageCount = raw.pages?.length;
+        const imageSnapshot = (raw.pages || []).map(p => [p?.imgUrl, p?.thumbUrl, p?.comicCleanImgUrl]);
         const cleaned = cleanImportedBook(raw);
-        if (!cleaned || cleaned.pages.length !== pageCount) throw new Error('Buch enthält ungültige Seiten');
+        if (!cleaned || cleaned.pages.length !== pageCount ||
+            cleaned.pages.some((p, i) => ['imgUrl', 'thumbUrl', 'comicCleanImgUrl'].some((field, j) =>
+                imageSnapshot[i][j] !== p[field]))) throw new Error('Buch enthält ungültige Bilddaten');
         books.push(cleaned);
     }
     const ids = new Set(books.map(b => b.id));
@@ -100,7 +103,7 @@ async function parseJSONFile(files, name, maxBytes) {
     if (!blob || blob.size > maxBytes) throw new Error('Fehlender/zu großer Backupteil: ' + name);
     return JSON.parse(await blob.text());
 }
-async function collectFullBackup() {
+export async function collectFullBackup() {
     const library = { ...app.library };
     const projects = Object.values(app.studio.projects || {}).filter(p => p && !p._draft);
     const vocabulary = Object.values(app.vocabulary || {});
