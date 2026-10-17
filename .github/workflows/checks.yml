@@ -32,34 +32,31 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Real Chromium IndexedDB full-backup pilot
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Chromium IndexedDB rollback and offline-audio cache pilot
         shell: bash
         run: |
           set -euo pipefail
           python3 -m http.server 8765 --bind 127.0.0.1 > /tmp/lz-http.log 2>&1 &
           server_pid=$!
-          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          chrome_pid=""
+          trap 'kill "$server_pid" "${chrome_pid:-0}" 2>/dev/null || true' EXIT
           for i in {1..30}; do
             if curl --silent --fail http://127.0.0.1:8765/tests/browser/full-backup-browser.html > /dev/null; then break; fi
             sleep 0.2
           done
           chrome="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
-          if [[ -z "$chrome" ]]; then echo 'Chromium unavailable'; exit 1; fi
           "$chrome" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage \
+            --remote-debugging-port=9222 --remote-allow-origins='*' \
             --user-data-dir="/tmp/lz-backup-chrome-$GITHUB_RUN_ID" \
-            --virtual-time-budget=20000 --dump-dom \
-            http://127.0.0.1:8765/tests/browser/full-backup-browser.html \
-            > /tmp/lz-dom.txt 2> /tmp/lz-chrome.log
-          echo 'Rendered result field:'
-          grep -Eo '<pre id="result">[^<]*</pre>' /tmp/lz-dom.txt | head -c 650 || true
-          echo
-          if ! grep -Fq '<pre id="result">PASS_BROWSER_IDB_RELOAD_AUDIO_0_CREDITS</pre>' /tmp/lz-dom.txt; then
-            echo 'Real browser backup pilot failed. DOM excerpt:'
-            tail -c 4500 /tmp/lz-dom.txt || true
+            about:blank > /tmp/lz-chrome.log 2>&1 &
+          chrome_pid=$!
+          node tests/browser/run-full-backup.mjs || {
             echo 'Chrome diagnostics:'
             tail -c 3000 /tmp/lz-chrome.log || true
             echo 'Server diagnostics:'
-            tail -c 1000 /tmp/lz-http.log || true
+            tail -c 1600 /tmp/lz-http.log || true
             exit 1
-          fi
-          echo 'PASS_BROWSER_IDB_RELOAD_AUDIO_0_CREDITS'
+          }
