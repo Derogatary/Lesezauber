@@ -5,6 +5,10 @@
 let app, collectFullBackup, validateBackupData, writeStoredZip, readStoredZip;
 
 const show = value => { document.getElementById('result').textContent = value; };
+const bounded = (operation, label) => Promise.race([
+    operation,
+    new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout: ' + label)), 7000))
+]);
 const assert = (ok, reason) => { if (!ok) throw new Error(reason); };
 const key = 'speechify|voice-test|plain|0.9|14|abcd';
 const count = storeName => new Promise((resolve, reject) => {
@@ -59,8 +63,11 @@ try {
         let entries;
         try { ({ entries } = await collectFullBackup()); }
         finally { app.dbOps.getTtsBackupKeys = oldKeys; app.dbOps.getTtsAudio = oldAudio; }
-        show('ZIP_ROUNDTRIP');
-        const files = await readStoredZip(await writeStoredZip(entries));
+        show('ZIP_WRITING');
+        const zip = await bounded(writeStoredZip(entries), 'writeStoredZip');
+        show('ZIP_READING');
+        const files = await bounded(readStoredZip(zip), 'readStoredZip');
+        show('ZIP_VALIDATING');
         const load = async name => JSON.parse(await files.get(name).text());
         const data = validateBackupData({
             library: await load('library.json'),
