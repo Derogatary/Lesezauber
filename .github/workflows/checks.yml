@@ -50,7 +50,7 @@ jobs:
             --virtual-time-budget=20000 --dump-dom \
             http://127.0.0.1:8765/tests/browser/full-backup-browser.html \
             > /tmp/lz-dom.txt 2> /tmp/lz-chrome.log
-          if ! grep -q 'PASS_BROWSER_IDB_RELOAD_AUDIO_0_CREDITS' /tmp/lz-dom.txt; then
+          if ! grep -Fq '<pre id="result">PASS_BROWSER_IDB_RELOAD_AUDIO_0_CREDITS</pre>' /tmp/lz-dom.txt; then
             echo 'Real browser backup pilot failed. DOM excerpt:'
             tail -c 4500 /tmp/lz-dom.txt || true
             echo 'Chrome diagnostics:'
