@@ -2,7 +2,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import './helpers.mjs';
 import { writeStoredZip, readStoredZip } from '../js/backupZip.js';
-import { validateBackupData } from '../js/actions/fullBackup.js';
+import { validateBackupData, collectFullBackup } from '../js/actions/fullBackup.js';
+import { app } from '../js/core.js';
 
 const b = value => new Blob([value]);
 const baseEntries = () => [
@@ -89,4 +90,42 @@ test('Backup validation refuses malicious object IDs and does not use provider A
     assert.throws(() => validateBackupData({ library: unsafe, projects: [], vocabulary: [], audioIndex: [], files }), /ID/);
     const good = validateBackupData({ library: {}, projects: [], vocabulary: [], audioIndex: [], files });
     assert.equal(good.audio.length, 0);
+});
+
+test('Snapshot creates a local ZIP with cached TTS blobs without any provider request', async () => {
+    const old = { library: app.library, studio: app.studio, vocabulary: app.vocabulary, dbOps: app.dbOps, fetch: globalThis.fetch };
+    let reads = 0, requests = 0;
+    try {
+        app.library = { b_1: { id: 'b_1', pages: [{ id: 1 }] } };
+        app.studio = { projects: { proj_5: { id: 'proj_5', type: 'picturebook', title: 'Probe' } } };
+        app.vocabulary = {};
+        app.dbOps = {
+            getTtsBackupKeys: async () => ['speechify|voice|plain|1|10|abc'],
+            getTtsAudio: async () => { reads++; return {
+                key: 'speechify|voice|plain|1|10|abc', blob: new Blob([Uint8Array.of(10, 20, 30)], { type: 'audio/mpeg' }),
+                alignment: { characters: ['a'], starts: [0] }, bytes: 3, created: 4
+            }; }
+        };
+        globalThis.fetch = async () => { requests++; throw new Error('External provider must not be called'); };
+        const snapshot = await collectFullBackup();
+        const zip = await writeStoredZip(snapshot.entries);
+        const decoded = await readStoredZip(zip);
+        assert.equal(reads, 1);
+        assert.equal(requests, 0);
+        assert.equal(snapshot.stats.audio, 1);
+        assert.equal(JSON.parse(await decoded.get('audio/index.json').text())[0].key, 'speechify|voice|plain|1|10|abc');
+    } finally {
+        app.library = old.library; app.studio = old.studio;
+        app.vocabulary = old.vocabulary; app.dbOps = old.dbOps; globalThis.fetch = old.fetch;
+    }
+});
+
+test('Import rejects images that would silently disappear from an original book', () => {
+    const files = new Map([
+        ['manifest.json', b('')], ['library.json', b('')], ['studio-projects.json', b('')],
+        ['vocabulary.json', b('')], ['audio/index.json', b('')]
+    ]);
+    const library = { book_2: { id: 'book_2', pages: [{ id: 1, imgUrl: 'https://other.site/example.png' }] } };
+    assert.throws(() => validateBackupData({ library, projects: [], vocabulary: [], audioIndex: [], files }),
+        /ungültige Bilddaten/);
 });
