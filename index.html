@@ -35,6 +35,7 @@
 
         <!-- ================= VIEW 1: BIBLIOTHEK ================= -->
         <main id="viewLibrary" class="flex-grow overflow-y-auto pb-24 px-4 pt-6 view-transition">
+<aside aria-label="Umzugshinweis" style="margin:12px auto;padding:16px;max-width:1100px;border:1px solid #a5b4fc;border-radius:12px;background:#eef2ff;color:#1e1b4b;line-height:1.5"><strong>LeseZauber auf der eigenen EditionBoysen-Adresse</strong><p>Die bisherige GitHub-Pages-Bibliothek bleibt auf ihrem bisherigen Gerät und ihrer Adresse erhalten. Hier startet ein getrennter Speicher. Übertrage benötigte Inhalte selbst und behalte die alte Version, bis alles geprüft ist. ZIP-Sicherung: Bibliothek, SchreibZauber, Vokabeln und KI-Audios. Profile, eigene Mikrofonaufnahmen und API-Schlüssel sind nicht enthalten; Buchatlas separat exportieren.</p><a href="https://derogatary.github.io/Lesezauber/" rel="noopener noreferrer">Bisherige Version öffnen</a> · <a href="./datenschutz.html">Datenschutz und Umzugshinweise</a></aside>
             <!-- FIX: "flex-wrap" ergänzt - auf schmalen Handys reichte die
                  Breite nicht für Titel-Block UND die drei Icon-Buttons in
                  einer Zeile. Vorher lief die Zeile seitlich aus dem
@@ -1879,10 +1880,10 @@
                 <!-- Vollbackup: Original-TTS-Blobs und Wortmarkierungen ohne Credits sichern. -->
                 <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-3" data-parent-only>
                     <label class="block text-xs font-bold uppercase tracking-wider text-slate-500">📦 Komplett-Backup mit KI-Stimmen</label>
-                    <p class="text-[11px] text-slate-500">Eine ZIP-Datei mit Bibliothek, SchreibZauber-Werken, Vokabeln, KI-Stimmen (auch Speechify) und zugehörigen Stimmeinstellungen. Keine Synthese oder Credits beim Export/Import; API-Schlüssel bleiben privat und müssen später separat eingerichtet werden.</p>
+                    <p class="text-[11px] text-slate-500">Eine ZIP-Datei mit Bibliothek, SchreibZauber-Werken, Vokabeln, KI-Stimmen (auch Speechify) und zugehörigen Stimmeinstellungen. Keine Synthese oder Credits beim Export/Import. Nicht enthalten: Profile, eigene Mikrofonaufnahmen, API-Schlüssel und die gesonderte Buchatlas-Bibliothek. Diese Bereiche bei Bedarf separat sichern bzw. neu einrichten.</p>
                     <p class="text-[11px] text-amber-800">Bis zu 20.000 Audio-Einträge / 2 GiB lokaler Cache, soweit der Browser genügend Speicher erlaubt. ZIP kann sehr groß werden. Auf neuer Adresse nur in eine leere Bibliothek importieren. Geheim halten: Bücher und Audios sind enthalten.</p>
                     <div class="flex gap-2">
-                        <button onclick="app.actions.exportFullBackup()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 rounded-xl text-sm transition">📤 Komplett sichern</button>
+                        <button onclick="app.actions.exportFullBackup()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 rounded-xl text-sm transition">📤 Bibliothek &amp; KI-Audios sichern</button>
                         <button onclick="app.actions.triggerFullBackupImport()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 rounded-xl text-sm transition">📥 ZIP einspielen</button>
                     </div>
                     <input id="fullBackupImportFile" type="file" accept=".zip,application/zip" onchange="app.actions.importFullBackup(event)" class="hidden">
