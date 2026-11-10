@@ -19,7 +19,7 @@ Seit v0.10.0-beta gibt es den **Heft-Modus**: ein Buch kann statt einer Geschich
 - HTML/CSS/JS, ES-Module (`<script type="module">`)
 - Tailwind CSS v4, eigener Build - KEIN CDN (siehe Build-Schritt unten)
 - PDF.js, JSZip (vendored, lazy-geladen) für PDF-/EPUB-Import
-- Google Gemini API (Modell-Rotation über `GEMINI_MODELS` in `js/api.js`/`js/studio/studioApi.js` - jedes Modell hat sein eigenes Tageskontingent, bei 429 probiert `withGeminiModelRotation()` das nächste, absteigend nach Modellgüte, `gemini-3.1-flash-lite` als großzügigste Reserve am Ende) für Bildanalyse/Text, Mistral als optionaler Fallback erst wenn ALLE Modelle 429 melden
+- Google Gemini API (Modell-Rotation über `GEMINI_MODELS` in `js/api.js`/`js/studio/studioApi.js` - jedes Modell hat sein eigenes Tageskontingent, bei 429 probiert `app.api.generateGeminiContent()` das nächste, absteigend nach Modellgüte, `gemini-3.1-flash-lite` als großzügigste Reserve am Ende) für Bildanalyse/Text, Mistral als optionaler Fallback erst wenn ALLE Modelle 429 melden
 - Neuronale TTS-Anbieter (optional, opt-in): Gemini TTS, Google Cloud Chirp 3 HD, ElevenLabs, OpenAI, Speechify (`js/ttsProviders.js`)
 - Service Worker für PWA/Offline-Fähigkeit
 - Kein Bundler nötig (reine ES-Module) - nur Tailwind braucht einen Build-Schritt
@@ -373,6 +373,6 @@ Feste Regeln:
 
 ## Versionsstand
 
-Aktuell `v0.56.3-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Version bei größeren Änderungen hochzählen (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).
+Aktuell `v0.56.4-beta` (Anzeige im App-Header) - noch nicht veröffentlicht, aktiv in Entwicklung mit einer echten Nutzerfamilie als Testgruppe. Version bei größeren Änderungen hochzählen (Semantic Versioning: `MAJOR.MINOR.PATCH`, `-beta`-Suffix bis zur ersten öffentlichen Veröffentlichung).
 
 **Die vollständige Versionshistorie (was mit welcher Version kam, inkl. aller Entscheidungen) steht in [`CHANGELOG.md`](CHANGELOG.md), neueste Version zuerst.** Vor dem Einplanen eines Features dort nachsehen, sonst werden bereits gefallene Entscheidungen neu diskutiert. Neuer Eintrag bei jeder Versionserhöhung: oben in `CHANGELOG.md` ergänzen, nicht hier.

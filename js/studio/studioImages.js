@@ -5,8 +5,7 @@ import { app } from '../core.js';
 // echtes Bild, einzeln anstoßbar, NIE automatisch fürs ganze Buch auf
 // einmal (Konzept C.2, "Warum Stufe 5 vor Stufe 6 nicht übersprungen werden
 // darf" - dieselbe Zurückhaltung wie beim bestehenden Persona-System, siehe
-// CLAUDE.md). Ob dabei wirklich die Gemini-Bild-API, die kostenlose
-// Pollinations-Quelle (NEU) oder weiterhin der Platzhalter läuft,
+// CLAUDE.md). Ob dabei die Gemini-Bild-API oder der Platzhalter läuft,
 // entscheidet AUSSCHLIESSLICH app.studio.resolveImageSourceId()
 // (studioCore.js) anhand der ausdrücklichen Bestätigung in den
 // Einstellungen - dieses Modul fragt nie selbst danach, welche Quelle
@@ -122,12 +121,6 @@ Object.assign(app.studio, {
             for (let i = 0; i < spread.panels.length; i++) {
                 const panel = spread.panels[i];
                 app.ui.showLoader('Panels werden gezeichnet...', `${i + 1} von ${spread.panels.length}${sourceId !== 'placeholder' ? ' - das kann einige Sekunden dauern' : ''}`);
-                // NEU (Pollinations-Quelle): Pause VOR jedem weiteren Panel
-                // außer dem ersten - ohne eigenen Account erlaubt Pollinations
-                // nur ~1 Anfrage alle 15 Sekunden (siehe imageSource.js).
-                if (i > 0 && sourceId === 'pollinations') {
-                    await new Promise(r => setTimeout(r, app.studio.imageSource.pollinationsThrottleMs));
-                }
                 const result = await app.studio.imageSource.request(sourceId, {
                     formatId: 'comicPanel',
                     sketch: panel.visual || app.studio.spreadSceneHint(spread),
@@ -198,12 +191,7 @@ Object.assign(app.studio, {
             app.ui.toast('Keine Platzhalter zum Ersetzen gefunden.', 'ℹ️');
             return;
         }
-        // NEU (Pollinations-Quelle): kostet nichts, dafür ohne eigenen
-        // Account nur ~1 Bild alle 15 Sekunden - das darf die Abfrage vorher
-        // ehrlich sagen, statt einen Geldbetrag zu nennen, der gar nicht anfällt.
-        const confirmMsg = sourceId === 'gemini'
-            ? `${targets.length} Platzhalter durch echte KI-Bilder ersetzen? Das kostet ca. ${(targets.length * app.studio.GEMINI_IMAGE_PRICE_USD).toFixed(2)} $ (grobe Schätzung).`
-            : `${targets.length} Platzhalter durch kostenlose KI-Bilder (Pollinations) ersetzen? Das dauert wegen des Anfrage-Limits ca. ${Math.ceil(targets.length * app.studio.imageSource.pollinationsThrottleMs / 60000)} Minute(n).`;
+        const confirmMsg = `${targets.length} Platzhalter durch echte KI-Bilder ersetzen? Das kostet ca. ${(targets.length * app.studio.GEMINI_IMAGE_PRICE_USD).toFixed(2)} $ für die Bildausgabe (1K, zuzüglich Eingabe).`;
         if (!confirm(confirmMsg)) return;
 
         app.ui.showLoader('Bilder werden erzeugt...', `0 von ${targets.length}`);
@@ -212,11 +200,6 @@ Object.assign(app.studio, {
         try {
             for (const { s, i } of targets) {
                 app.ui.showLoader('Bilder werden erzeugt...', `${done + failed} von ${targets.length}`);
-                // NEU (Pollinations-Quelle): siehe Kommentar oben bei
-                // generateComicPage() - dieselbe Pause vor jedem weiteren Bild.
-                if (done + failed > 0 && sourceId === 'pollinations') {
-                    await new Promise(r => setTimeout(r, app.studio.imageSource.pollinationsThrottleMs));
-                }
                 try {
                     const result = await app.studio.imageSource.request(sourceId, {
                         // NEU (KDP-Panorama): Format pro Doppelseite.
@@ -270,11 +253,7 @@ async function replaceAllComicPanelPlaceholders(project, sourceId) {
         app.ui.toast('Keine Platzhalter zum Ersetzen gefunden.', 'ℹ️');
         return;
     }
-    // NEU (Pollinations-Quelle): siehe replaceAllPlaceholders() oben - gleiche
-    // ehrliche Ansage (Zeit statt Geld) für den kostenlosen Pfad.
-    const confirmMsg = sourceId === 'gemini'
-        ? `${targets.length} Panel-Platzhalter durch echte KI-Bilder ersetzen? Das kostet ca. ${(targets.length * app.studio.GEMINI_IMAGE_PRICE_USD).toFixed(2)} $ (grobe Schätzung).`
-        : `${targets.length} Panel-Platzhalter durch kostenlose KI-Bilder (Pollinations) ersetzen? Das dauert wegen des Anfrage-Limits ca. ${Math.ceil(targets.length * app.studio.imageSource.pollinationsThrottleMs / 60000)} Minute(n).`;
+    const confirmMsg = `${targets.length} Panel-Platzhalter durch echte KI-Bilder ersetzen? Das kostet ca. ${(targets.length * app.studio.GEMINI_IMAGE_PRICE_USD).toFixed(2)} $ für die Bildausgabe (1K, zuzüglich Eingabe).`;
     if (!confirm(confirmMsg)) return;
 
     app.ui.showLoader('Panels werden erzeugt...', `0 von ${targets.length}`);
@@ -284,9 +263,6 @@ async function replaceAllComicPanelPlaceholders(project, sourceId) {
     try {
         for (const { spread, panel, spreadIndex } of targets) {
             app.ui.showLoader('Panels werden erzeugt...', `${done + failed} von ${targets.length}`);
-            if (done + failed > 0 && sourceId === 'pollinations') {
-                await new Promise(r => setTimeout(r, app.studio.imageSource.pollinationsThrottleMs));
-            }
             try {
                 const result = await app.studio.imageSource.request(sourceId, {
                     formatId: 'comicPanel',

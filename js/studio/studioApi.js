@@ -2,29 +2,7 @@ import { app } from '../core.js';
 import './studioPrompts.js';
 
 // ================= SchreibZauber: KI-Aufrufe =================
-// js/api.js bleibt für die Lese-Seite zuständig (Konzept D.4) - die
-// Werkstatt bekommt bewusst EIGENE Aufruf-Funktionen. Sie nutzen aber
-// dieselben, vom Nutzer in den Einstellungen hinterlegten Keys und
-// dieselbe Gemini-zuerst-dann-Mistral-Fallback-Logik wie js/api.js, damit
-// sich die Werkstatt genauso verhält wie der Rest der App (kein zweiter
-// API-Key, kein anderes Fehlerbild).
-
-// Gleiche Modell-Liste wie js/api.js, bewusst hier dupliziert statt
-// importiert - beide Dateien sollen unabhängig voneinander änderbar
-// bleiben (siehe Konzept D.4), ein Modellwechsel bleibt trotzdem in jeder
-// Datei nur eine Zeile.
-// FIX (Sept. 2026, siehe ausführliche Begründung in js/api.js): Rotation
-// über mehrere Modelle statt eines einzelnen - jedes hat sein eigenes
-// Tageskontingent (~20 Anfragen bei den "vollen" Flash-Modellen laut
-// Nutzer-Screenshot), absteigend nach Modellgüte, gemini-3.1-flash-lite
-// als letzte, großzügigste Reserve (~500/Tag) vor dem Mistral-Fallback.
-const GEMINI_MODELS = [
-    'gemini-3.8-flash',
-    'gemini-3.7-flash',
-    'gemini-3.6-flash',
-    'gemini-3.5-flash',
-    'gemini-3.1-flash-lite'
-];
+// Die Werkstatt nutzt dieselbe Modellrotation wie der Reader.
 const MISTRAL_MODEL = 'mistral-small-latest';
 
 // Gleiche Aufräum-Logik wie js/api.js: manche Modelle wrappen die
@@ -34,48 +12,15 @@ function parseModelJson(rawText) {
     return JSON.parse(cleaned);
 }
 
-// NEU (Modell-Rotation, siehe ausführliche Begründung in js/api.js): probiert
-// GEMINI_MODELS der Reihe nach, sobald eins mit HTTP 429 antwortet. Jeder
-// andere Fehler bricht sofort ab - ein anderes Modell hätte dasselbe Problem.
-async function withGeminiModelRotation(callModel) {
-    // NEU (v0.56.0-beta): Modelle mit gemerkter Sperre (Tages-/Minutenlimit,
-    // js/geminiQuota.js) gar nicht erst anfragen
-    const models = app.geminiQuota.usable(GEMINI_MODELS);
-    for (const model of models) {
-        try {
-            const result = await callModel(model);
-            app.geminiQuota.noteSuccess(model); // NEU (v0.56.1-beta): Anfragen mitzählen
-            return result;
-        } catch (e) {
-            if (e.message !== 'RATE_LIMITED') throw e;
-            console.warn(`${model}: Ratenbegrenzung erreicht, versuche nächstes Modell`);
-        }
-    }
-    throw app.geminiQuota.exhaustedError(GEMINI_MODELS);
-}
-
 async function callGeminiText(prompt) {
-    if (!app.settings.apiKey) throw new Error('API_KEY_MISSING');
-
-    const textResult = await withGeminiModelRotation(async (model) => {
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
-            method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': app.settings.apiKey },
-            // NEU (Release-Prüfung A4): strenge Filterstufe, siehe js/api.js.
-            body: JSON.stringify({ safetySettings: app.api.safetySettingsKids, contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.7 } })
-        });
-
-        if (!res.ok) {
-            if (res.status === 400) throw new Error('Falscher API-Key (400)');
-            if (res.status === 403) throw new Error('API-Key ungültig (403)');
-            if (res.status === 429) throw await app.geminiQuota.rateLimited(model, res);
-            throw new Error(`Gemini-Fehler ${res.status}`);
-        }
-
-        const data = await res.json();
-        return data.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
+    const data = await app.api.generateGeminiContent({
+        safetySettings: app.api.safetySettingsKids,
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.7, responseMimeType: 'application/json' }
     });
-
-    return parseModelJson(textResult);
+    const { text, finishReason } = app.api.geminiTextResult(data);
+    if (!text || finishReason === 'MAX_TOKENS') throw new Error('Gemini hat kein vollständiges Ergebnis geliefert.');
+    return parseModelJson(text);
 }
 
 async function callMistralText(prompt) {

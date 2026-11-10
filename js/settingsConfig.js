@@ -153,7 +153,7 @@ Object.assign(app.settingsConfig, {
     toggleStudioImageGen(enabled) {
         if (app.utils.isSettingsLockedForActiveProfile()) return;
         if (enabled) {
-            const ok = confirm('Echte KI-Bilder in der Werkstatt kosten Geld (grob 0,07 $ pro Bild) und brauchen eine hinterlegte Zahlungsmethode am Google-Konto hinter deinem Gemini-Key - ohne Zahlungsmethode schlägt jeder Versuch mit einer Fehlermeldung fehl (Platzhalter funktionieren immer, kostenlos).\n\nWirklich aktivieren?');
+            const ok = confirm('Echte KI-Bilder in der Werkstatt kosten Geld (ca. 0,034 $ für die Bildausgabe bei 1K, zuzüglich Eingabe) und brauchen eine hinterlegte Zahlungsmethode am Google-Konto hinter deinem Gemini-Key - ohne Zahlungsmethode schlägt jeder Versuch mit einer Fehlermeldung fehl (Platzhalter funktionieren immer, kostenlos).\n\nWirklich aktivieren?');
             if (!ok) {
                 const toggle = document.getElementById('toggleStudioImageGen');
                 if (toggle) toggle.checked = false;
@@ -163,28 +163,6 @@ Object.assign(app.settingsConfig, {
         app.settings.studioImageGenEnabled = enabled;
         localStorage.setItem('lz_studio_image_gen', enabled ? '1' : '0');
         app.ui.toast(enabled ? 'Echte Bildgenerierung aktiviert' : 'Echte Bildgenerierung wieder ausgeschaltet', enabled ? '🎨' : '⏸️');
-    },
-
-    // NEU (Nutzerwunsch "kostenlos Bilderbücher erstellen"): Pollinations.ai
-    // als zweite, kostenlose Bildquelle - kein Key, keine Zahlungsmethode,
-    // aber ein unmoderierter Drittanbieter-Dienst und ohne Referenzbilder
-    // schwächere Figuren-Konsistenz als Gemini (siehe
-    // js/studio/imageSource.js providers.pollinations). Gleiche Haltung wie
-    // toggleStudioImageGen oben: kein Passwort, kein hartes Sperren, nur ein
-    // bewusstes Ja vorher, damit klar ist, was man bekommt.
-    toggleStudioImagePollinations(enabled) {
-        if (app.utils.isSettingsLockedForActiveProfile()) return;
-        if (enabled) {
-            const ok = confirm('Pollinations.ai ist kostenlos und braucht keinen eigenen Key - dafür läuft das Bild über einen fremden, unmoderierten Dienst (Bilder werden bewusst als "privat" angefragt, damit sie nicht im öffentlichen Feed der Seite landen).\n\nWichtig: ohne Referenzbilder wie bei Gemini bleiben Figuren über mehrere Seiten hinweg nur ÄHNLICH, nicht exakt gleich. Ohne eigenen Pollinations-Account ist außerdem nur etwa 1 Bild alle 15 Sekunden erlaubt - "alle Platzhalter ersetzen" dauert damit entsprechend länger.\n\nTrotzdem aktivieren?');
-            if (!ok) {
-                const toggle = document.getElementById('toggleStudioImagePollinations');
-                if (toggle) toggle.checked = false;
-                return;
-            }
-        }
-        app.settings.studioImagePollinationsEnabled = enabled;
-        localStorage.setItem('lz_studio_image_pollinations', enabled ? '1' : '0');
-        app.ui.toast(enabled ? 'Kostenlose Bildgenerierung (Pollinations) aktiviert' : 'Kostenlose Bildgenerierung (Pollinations) wieder ausgeschaltet', enabled ? '🎨' : '⏸️');
     },
 
     // NEU: Probe-Anhören. Speichert vorher den eingetippten Key, damit man
