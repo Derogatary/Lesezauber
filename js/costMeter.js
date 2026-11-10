@@ -35,9 +35,7 @@ const TTS_PRICE_PER_MILLION_CHARS = {
     // Tarif/Overage ab - bei kleineren Tarifen (z.B. "Creator") eher
     // Richtung 200+ USD/1 Mio. Zeichen.
     elevenlabs: 100,
-    // gpt-4o-mini-tts: laut Hinweistext ca. 1,3 US-Cent je Minute Audio
-    // (https://openai.com/api/pricing/), grob umgerechnet bei rund 900
-    // gesprochenen Zeichen pro Minute Vorlesetempo.
+    // Historische Kostenschätzung für bereits erfasste OpenAI-Nutzung.
     openai: 14
 };
 
@@ -97,10 +95,10 @@ Object.assign(app.costMeter, {
         const providers = Object.keys(ttsMonth).map(id => {
             const entry = ttsMonth[id];
             const pricePerMillion = TTS_PRICE_PER_MILLION_CHARS[id] || 0;
-            const provider = app.ttsProviders.get(id);
+            const provider = app.ttsProviders.list.find(entry => entry.id === id);
             return {
                 id,
-                label: provider ? provider.label.split(' (')[0] : id,
+                label: provider ? provider.label.split(' (')[0] : (id === 'openai' ? 'OpenAI (frühere Nutzung)' : id),
                 chars: entry.chars,
                 requests: entry.requests,
                 estCost: (entry.chars / 1_000_000) * pricePerMillion

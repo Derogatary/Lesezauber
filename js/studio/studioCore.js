@@ -601,7 +601,7 @@ Object.assign(app.studio, {
     },
 
     // Stufe 3 – Geschichte/Skript von der KI schreiben lassen. Ruft
-    // studioApi.js (eigener Gemini/Mistral-Aufruf, siehe Konzept D.4) und
+    // studioApi.js (eigener Gemini-Aufruf, siehe Konzept D.4) und
     // verteilt das Ergebnis über applyManuscript()/applyComicScript() auf
     // die Doppelseiten. NEU (Ausbaustufe 5): EINE Funktion für beide
     // Werktypen (der "Von der KI schreiben lassen"-Knopf in index.html

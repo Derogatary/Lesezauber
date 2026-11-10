@@ -59,7 +59,7 @@ Object.assign(app.actions, {
         ];
         // Sicherheitsnetz: falls ein Fehlertext doch einmal einen Key enthält
         // (z.B. eine URL), diesen unkenntlich machen.
-        const keys = [app.settings.apiKey, app.settings.mistralApiKey, app.settings.elevenLabsKey, app.settings.openAiKey, app.settings.googleTtsKey, app.settings.speechifyKey].filter(k => k && k.length > 8);
+        const keys = [app.settings.apiKey, app.settings.elevenLabsKey, app.settings.googleTtsKey, app.settings.speechifyKey].filter(k => k && k.length > 8);
         let text = lines.join('\n');
         keys.forEach(k => { text = text.split(k).join('[KEY ENTFERNT]'); });
         try {

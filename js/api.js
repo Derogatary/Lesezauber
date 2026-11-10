@@ -8,11 +8,6 @@ const GEMINI_MODELS = Object.freeze([
     'gemini-3.1-flash-lite'
 ]);
 
-// Mistral als optionaler Fallback, falls Gemini mal ausfällt oder das
-// Tageslimit erreicht ist. Wird nur genutzt, wenn ein Mistral-Key in den
-// Einstellungen hinterlegt ist - sonst verhält sich die App exakt wie vorher.
-const MISTRAL_MODEL = 'mistral-small-latest';
-
 // NEU (v0.40.0-beta, Release-Prüfung A4): ausdrückliche Sicherheitsfilter
 // für JEDEN Gemini-Aufruf. Ohne Angabe haben neuere Gemini-Modelle viele
 // Filter ganz abgeschaltet - für eine Kinder-App zu wenig. Zwei Stufen:
@@ -470,34 +465,6 @@ async function callGeminiAnalyze(prompt, base64Image) {
     return parseModelJson(textResult);
 }
 
-async function callMistralAnalyze(prompt, base64Image) {
-    if (!app.settings.mistralApiKey) throw new Error('MISTRAL_KEY_MISSING');
-
-    const res = await fetch('https://api.mistral.ai/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${app.settings.mistralApiKey}`
-        },
-        body: JSON.stringify({
-            model: MISTRAL_MODEL,
-            messages: [{
-                role: 'user',
-                content: [
-                    { type: 'text', text: prompt },
-                    { type: 'image_url', image_url: `data:image/webp;base64,${base64Image}` }
-                ]
-            }]
-        })
-    });
-
-    if (!res.ok) throw new Error(`Mistral-Fehler ${res.status}`);
-
-    const data = await res.json();
-    const textResult = data.choices?.[0]?.message?.content || '{}';
-    return parseModelJson(textResult);
-}
-
 // NEU (Mehrere-Personas-Analyse): wie callGeminiAnalyze() oben, aber OHNE
 // den abschließenden parseModelJson() - die Antwort enthält jetzt mehrere
 // Codeblöcke (siehe buildMultiPersonaAnalyzePrompt()), die JEDER FÜR SICH
@@ -517,39 +484,6 @@ async function callGeminiAnalyzeRaw(prompt, base64Image) {
     return text;
 }
 
-// NEU (Mehrere-Personas-Analyse): Mistral-Gegenstück zu
-// callGeminiAnalyzeRaw() oben - nur als allerletzter Rückfall gebraucht,
-// wenn WIRKLICH jedes Gemini-Modell 429 meldet (siehe analyzeAllPersonas()
-// unten). Mistral bekommt denselben Block-Prompt und liefert im besten
-// Fall dieselbe Struktur zurück - hält sich ein schwächeres Modell nicht
-// exakt daran, verliert parseMultiPersonaResponse() eben nur die Blöcke,
-// die nicht ordentlich zu finden waren, statt komplett zu scheitern.
-async function callMistralAnalyzeRaw(prompt, base64Image) {
-    if (!app.settings.mistralApiKey) throw new Error('MISTRAL_KEY_MISSING');
-
-    const res = await fetch('https://api.mistral.ai/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${app.settings.mistralApiKey}`
-        },
-        body: JSON.stringify({
-            model: MISTRAL_MODEL,
-            messages: [{
-                role: 'user',
-                content: [
-                    { type: 'text', text: prompt },
-                    { type: 'image_url', image_url: `data:image/webp;base64,${base64Image}` }
-                ]
-            }]
-        })
-    });
-
-    if (!res.ok) throw new Error(`Mistral-Fehler ${res.status}`);
-    const data = await res.json();
-    return data.choices?.[0]?.message?.content || '';
-}
-
 // NEU (Buch übersetzen): reine Text-Aufrufe OHNE JSON-Parsen - die Antwort
 // besteht aus mehreren Codeblöcken, die parseMultiPersonaResponse() einzeln
 // liest (gleiche Begründung wie bei callGeminiAnalyzeRaw() oben).
@@ -557,42 +491,6 @@ async function callGeminiTextRaw(prompt) {
     const { text } = geminiTextResult(await generateGeminiContent({ safetySettings: SAFETY_BOOK, contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.3 } }));
     app.costMeter.trackGeminiText(prompt.length);
     return text;
-}
-
-async function callMistralTextRaw(prompt) {
-    if (!app.settings.mistralApiKey) throw new Error('MISTRAL_KEY_MISSING');
-    const res = await fetch('https://api.mistral.ai/v1/chat/completions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${app.settings.mistralApiKey}` },
-        body: JSON.stringify({ model: MISTRAL_MODEL, messages: [{ role: 'user', content: prompt }] })
-    });
-    if (!res.ok) throw new Error(`Mistral-Fehler ${res.status}`);
-    const data = await res.json();
-    return data.choices?.[0]?.message?.content || '';
-}
-
-// NEU: reiner Text-Aufruf (kein Bild) fürs Buch-Quiz und den Heft-Generator,
-// genutzt vom Gemini/Mistral-Fallback-Paar unten.
-async function callMistralText(prompt) {
-    if (!app.settings.mistralApiKey) throw new Error('MISTRAL_KEY_MISSING');
-
-    const res = await fetch('https://api.mistral.ai/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${app.settings.mistralApiKey}`
-        },
-        body: JSON.stringify({
-            model: MISTRAL_MODEL,
-            messages: [{ role: 'user', content: prompt }]
-        })
-    });
-
-    if (!res.ok) throw new Error(`Mistral-Fehler ${res.status}`);
-
-    const data = await res.json();
-    const textResult = data.choices?.[0]?.message?.content || '[]';
-    return parseModelJson(textResult);
 }
 
 // NEU: reiner Text-Aufruf an Gemini. War bisher zweimal ausgeschrieben
@@ -663,45 +561,6 @@ async function callGeminiTextLenient(prompt, generationConfig = {}) {
     }
 }
 
-async function runTextPromptLenient(prompt, generationConfig, fallbackToastMsg) {
-    try {
-        return await callGeminiTextLenient(prompt, generationConfig);
-    } catch (geminiError) {
-        if (!app.settings.mistralApiKey) throw geminiError;
-
-        console.warn('Gemini fehlgeschlagen, versuche Mistral-Fallback:', geminiError.message);
-        try {
-            const result = await callMistralText(prompt);
-            app.ui.toast(fallbackToastMsg, '🔄');
-            return result;
-        } catch (mistralError) {
-            console.error('Auch Mistral-Fallback fehlgeschlagen:', mistralError);
-            throw geminiError;
-        }
-    }
-}
-
-// NEU: Text-Aufruf mit demselben Mistral-Fallback wie analyze() - erst
-// Gemini, bei jedem Fehler (auch fehlendem Gemini-Key) Mistral, sofern dort
-// ein Key hinterlegt ist.
-async function runTextPrompt(prompt, generationConfig = {}) {
-    try {
-        return await callGeminiText(prompt, generationConfig);
-    } catch (geminiError) {
-        if (!app.settings.mistralApiKey) throw geminiError;
-
-        console.warn('Gemini fehlgeschlagen, versuche Mistral-Fallback:', geminiError.message);
-        try {
-            const result = await callMistralText(prompt);
-            app.ui.toast('Gemini nicht erreichbar - Mistral eingesprungen', '🔄');
-            return result;
-        } catch (mistralError) {
-            console.error('Auch Mistral-Fallback fehlgeschlagen:', mistralError);
-            throw geminiError;
-        }
-    }
-}
-
 // NEU (Heft-Generator): Ein Heft mit mehr Blättern macht die JSON-Antwort
 // sehr lang - und je länger sie wird, desto eher bricht das Modell mitten
 // im JSON ab. 12 Blätter sind laut Konzept ohnehin eine gute Heftgröße.
@@ -763,21 +622,7 @@ Object.assign(app.api, {
         // NEU (Release-Prüfung A4): Schutz gegen Anweisungen auf der Seite.
         const guardedPrompt = `${prompt}\n\n${INJECTION_GUARD}`;
 
-        try {
-            return await callGeminiAnalyze(guardedPrompt, base64Image);
-        } catch (geminiError) {
-            if (!app.settings.mistralApiKey) throw geminiError;
-
-            console.warn('Gemini fehlgeschlagen, versuche Mistral-Fallback:', geminiError.message);
-            try {
-                const result = await callMistralAnalyze(guardedPrompt, base64Image);
-                app.ui.toast('Gemini nicht erreichbar - Mistral eingesprungen', '🔄');
-                return result;
-            } catch (mistralError) {
-                console.error('Auch Mistral-Fallback fehlgeschlagen:', mistralError);
-                throw geminiError;
-            }
-        }
+        return callGeminiAnalyze(guardedPrompt, base64Image);
     },
 
     // NEU (Nutzerwunsch: "so viel wie möglich aus einem Call rausbekommen") -
@@ -794,21 +639,7 @@ Object.assign(app.api, {
         // NEU (Release-Prüfung A4): Schutz gegen Anweisungen auf der Seite.
         const prompt = `${buildMultiPersonaAnalyzePrompt(isCover, knownText, forceToc, birkenbihlLangId)}\n\n${INJECTION_GUARD}`;
 
-        let rawText;
-        try {
-            rawText = await callGeminiAnalyzeRaw(prompt, base64Image);
-        } catch (geminiError) {
-            if (!app.settings.mistralApiKey) throw geminiError;
-
-            console.warn('Gemini fehlgeschlagen, versuche Mistral-Fallback:', geminiError.message);
-            try {
-                rawText = await callMistralAnalyzeRaw(prompt, base64Image);
-                app.ui.toast('Gemini nicht erreichbar - Mistral eingesprungen', '🔄');
-            } catch (mistralError) {
-                console.error('Auch Mistral-Fallback fehlgeschlagen:', mistralError);
-                throw geminiError;
-            }
-        }
+        const rawText = await callGeminiAnalyzeRaw(prompt, base64Image);
 
         return parseMultiPersonaResponse(rawText);
     },
@@ -832,33 +663,14 @@ Die Frage des Kindes steht zwischen <<< und >>>:
         // oder ein Hinweis auf "blockiert" an ein Kind.
         const BLOCKED_ANSWER = 'Das ist eine gute Frage für Mama, Papa oder einen anderen Erwachsenen. 🙂';
 
-        try {
-            const data = await generateGeminiContent({
-                safetySettings: SAFETY_KIDS,
-                contents: [{ parts: [{ text: prompt }, { inlineData: { mimeType: 'image/webp', data: base64Image } }] }]
-            });
-            const { text, finishReason } = geminiTextResult(data);
-            if (data.promptFeedback?.blockReason || finishReason === 'SAFETY') return BLOCKED_ANSWER;
-            app.costMeter.trackGeminiText(prompt.length);
-            return text || 'Das weiß ich leider nicht.';
-        } catch (geminiError) {
-            if (!app.settings.mistralApiKey) throw new Error('Verbindungsfehler');
-            try {
-                const res = await fetch('https://api.mistral.ai/v1/chat/completions', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${app.settings.mistralApiKey}` },
-                    body: JSON.stringify({
-                        model: MISTRAL_MODEL,
-                        messages: [{ role: 'user', content: [{ type: 'text', text: prompt }, { type: 'image_url', image_url: `data:image/webp;base64,${base64Image}` }] }]
-                    })
-                });
-                if (!res.ok) throw new Error('Mistral Fehler');
-                const data = await res.json();
-                return data.choices?.[0]?.message?.content || 'Das weiß ich leider nicht.';
-            } catch (mistralError) {
-                throw new Error('Verbindungsfehler');
-            }
-        }
+        const data = await generateGeminiContent({
+            safetySettings: SAFETY_KIDS,
+            contents: [{ parts: [{ text: prompt }, { inlineData: { mimeType: 'image/webp', data: base64Image } }] }]
+        });
+        const { text, finishReason } = geminiTextResult(data);
+        if (data.promptFeedback?.blockReason || finishReason === 'SAFETY') return BLOCKED_ANSWER;
+        app.costMeter.trackGeminiText(prompt.length);
+        return text || 'Das weiß ich leider nicht.';
     },
 
     // NEU: Verständnisfragen zum GESAMTEN Buch (reiner Text-Aufruf, kein
@@ -891,10 +703,7 @@ Antworte AUSSCHLIESSLICH als valides JSON-Array ohne Markdown-Blöcke, exakt in 
   {"question": "...", "answer": "..."}
 ]`;
 
-        // FIX: der Key-Check lag früher VOR dem try - ohne Gemini-Key gab es
-        // deshalb gar kein Buch-Quiz, obwohl ein Mistral-Key hinterlegt sein
-        // konnte. runTextPrompt() behandelt das jetzt wie analyze().
-        const questions = await runTextPrompt(prompt, { temperature: 0.3 });
+        const questions = await callGeminiText(prompt, { temperature: 0.3 });
         // Die Aufrufer speichern das Ergebnis direkt als
         // book.bookQuiz.questions und gehen von einem Array aus - eine leere
         // oder verunglückte Antwort darf dort kein Objekt hinterlassen.
@@ -927,9 +736,9 @@ Antworte AUSSCHLIESSLICH in validem JSON, ohne Markdown-Blöcke, exakt in diesem
   ]
 }`;
 
-        // NEU (Bugreport "Übersetzung schlägt fehl"): runTextPromptLenient()
-        // statt runTextPrompt() - siehe extractPairsLoosely() oben.
-        const result = await runTextPromptLenient(prompt, { temperature: 0.3 }, 'Gemini nicht erreichbar - Mistral eingesprungen (Birkenbihl)');
+        // NEU (Bugreport "Übersetzung schlägt fehl"): callGeminiTextLenient()
+        // statt callGeminiText() - siehe extractPairsLoosely() oben.
+        const result = await callGeminiTextLenient(prompt, { temperature: 0.3 });
         const pairs = Array.isArray(result?.pairs)
             ? result.pairs
                 .filter(p => p && typeof p.target === 'string' && p.target.trim())
@@ -966,20 +775,7 @@ ${blocks}
 
 Antworte AUSSCHLIESSLICH mit denselben Codeblöcken in derselben Form (\`\`\`persona:<id> ... \`\`\`), jeweils mit dem übersetzten JSON-Objekt darin, ohne weiteren Text.`;
 
-        let rawText;
-        try {
-            rawText = await callGeminiTextRaw(prompt);
-        } catch (geminiError) {
-            if (!app.settings.mistralApiKey) throw geminiError;
-            console.warn('Gemini fehlgeschlagen, versuche Mistral-Fallback:', geminiError.message);
-            try {
-                rawText = await callMistralTextRaw(prompt);
-                app.ui.toast('Gemini nicht erreichbar - Mistral eingesprungen (Übersetzung)', '🔄');
-            } catch (mistralError) {
-                console.error('Auch Mistral-Fallback fehlgeschlagen:', mistralError);
-                throw geminiError;
-            }
-        }
+        const rawText = await callGeminiTextRaw(prompt);
 
         const { personas } = parseMultiPersonaResponse(rawText);
         return personas;
@@ -1027,7 +823,7 @@ Antworte AUSSCHLIESSLICH mit denselben Codeblöcken in derselben Form (\`\`\`per
         // Hefts sich voneinander unterscheiden - aber deutlich unter 1, weil
         // Aufgabe und Lösung zusammenpassen müssen. maxOutputTokens hoch
         // genug für ein ganzes Heft, sonst bricht die Antwort mittendrin ab.
-        const result = await runTextPrompt(prompt, { temperature: 0.5, maxOutputTokens: 8192 });
+        const result = await callGeminiText(prompt, { temperature: 0.5, maxOutputTokens: 8192 });
 
         const raw = Array.isArray(result?.sheets) ? result.sheets : [];
         const usable = raw.map(normalizeGeneratedSheet).filter(Boolean);
@@ -1057,26 +853,13 @@ Antworte AUSSCHLIESSLICH mit denselben Codeblöcken in derselben Form (\`\`\`per
         };
     },
 
-    // NEU: Kontrolle eines bearbeiteten Übungsblattes. Nutzt dieselben
-    // Anbieter-Funktionen wie analyze() (inkl. Mistral-Fallback), nur mit
+    // NEU: Kontrolle eines bearbeiteten Übungsblattes. Nutzt dieselbe
+    // Gemini-Funktion wie analyze(), nur mit
     // einem anderen Prompt und dem Foto des bearbeiteten Blattes.
     async checkWorkedPage(base64Image, variant, personaId = app.settings.persona) {
         // NEU (Release-Prüfung A4): auch ein Kontroll-Foto ist nur Inhalt.
         const prompt = `${buildCheckPrompt(variant, personaId)}\n\n${INJECTION_GUARD}`;
 
-        try {
-            return await callGeminiAnalyze(prompt, base64Image);
-        } catch (geminiError) {
-            if (!app.settings.mistralApiKey) throw geminiError;
-            console.warn('Gemini-Kontrolle fehlgeschlagen, versuche Mistral-Fallback:', geminiError.message);
-            try {
-                const result = await callMistralAnalyze(prompt, base64Image);
-                app.ui.toast('Gemini nicht erreichbar - Mistral eingesprungen', '🔄');
-                return result;
-            } catch (mistralError) {
-                console.error('Auch Mistral-Fallback fehlgeschlagen:', mistralError);
-                throw geminiError;
-            }
-        }
+        return callGeminiAnalyze(prompt, base64Image);
     }
 });

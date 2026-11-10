@@ -2,7 +2,6 @@ import { app } from './core.js';
 
 Object.assign(app.settings, {
     apiKey: localStorage.getItem('lz_api_key') || '',
-    mistralApiKey: localStorage.getItem('lz_mistral_key') || '',
     persona: localStorage.getItem('lz_persona') || 'standard',
     // NEU (Birkenbihl-Methode): Zielsprache für den Interlinear-Modus im
     // Reader - global wie die Persona, nicht pro Buch (siehe app.birkenbihlLanguages
@@ -74,12 +73,11 @@ Object.assign(app.settings, {
     })(),
     googleTtsKey: localStorage.getItem('lz_google_tts_key') || '',
     elevenLabsKey: localStorage.getItem('lz_eleven_key') || '',
-    openAiKey: localStorage.getItem('lz_openai_key') || '',
     speechifyKey: localStorage.getItem('lz_speechify_key') || '',
     // Erzeugte Sprachaufnahmen behalten: dieselbe Seite ein zweites Mal
     // vorlesen kostet dann kein Kontingent mehr. Standard: an.
     ttsCacheEnabled: localStorage.getItem('lz_tts_cache') !== '0',
-    // Sprechanweisung aus der Erzähler-Persona mitgeben (nur Gemini/OpenAI)
+    // Sprechanweisung aus der Erzähler-Persona mitgeben (bei Gemini)
     ttsPersonaStyle: localStorage.getItem('lz_tts_persona_style') !== '0',
 
     // NEU (SchreibZauber Stufe 2): echte KI-Bildgenerierung in der Werkstatt

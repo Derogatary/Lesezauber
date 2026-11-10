@@ -20,19 +20,8 @@ const GEMINI_TTS_FALLBACK_MODEL = 'gemini-3.8-flash-lite-tts';
 // spricht also sauberes Deutsch.
 const ELEVEN_MODEL = 'eleven_v3';
 
-const OPENAI_TTS_MODEL = 'gpt-4o-mini-tts';
-
 const SPEECHIFY_MODEL = 'simba-3.5';
 const SPEECHIFY_LANGUAGE = 'de-DE';
-
-// NEU (KI-Stimme für die Birkenbihl-Zielsprache): Sprechanweisung für fremd-
-// sprachigen Text. Bewusst auf Englisch und OHNE Persona - der deutsche
-// Persona-Stilhinweis ("Du bist ein lustiger Papa...") würde die Stimme
-// sonst in Richtung deutscher Aussprache ziehen, und für ein lernendes Kind
-// zählt hier nur klare, muttersprachliche Aussprache.
-function foreignSpeechInstruction(language) {
-    return `Read the following text aloud in its own language (${language}) with native pronunciation - clearly, calmly and a little slower than normal, for a child who is learning this language. Only speak the text itself, not this instruction:`;
-}
 
 // NEU: Tarif-Lock (siehe Entscheidung in docs/ROADMAP.md). Reihenfolge der
 // Preisstufen, um beim Anbieter-/Modellwechsel zu erkennen, ob es teurer
@@ -277,42 +266,6 @@ async function elevenSynthesize(text, { voice, signal }) {
         : null;
 
     return { blob: new Blob([base64ToBytes(data.audio_base64)], { type: 'audio/mpeg' }), alignment };
-}
-
-// --------------------------------------------------------------- OpenAI
-async function openaiSynthesize(text, { voice, rate, styleHint, language, signal }) {
-    const key = app.settings.openAiKey;
-    if (!key) {
-        throw new TtsError('Kein OpenAI-API-Key hinterlegt.', { fatal: true, code: 'NO_KEY' });
-    }
-
-    let res;
-    try {
-        res = await fetch('https://api.openai.com/v1/audio/speech', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
-            body: JSON.stringify({
-                model: OPENAI_TTS_MODEL,
-                input: text,
-                voice: voice || 'nova',
-                // Eigenes Feld für die Sprechanweisung - anders als bei
-                // Gemini besteht hier keine Gefahr, dass sie mitgesprochen wird.
-                // NEU (Birkenbihl-Zielsprache): eigene, fremdsprachige Anweisung.
-                instructions: language
-                    ? foreignSpeechInstruction(language)
-                    : (styleHint || 'Lies wie in einem Kinderbuch vor: warm, deutlich und nicht gehetzt.'),
-                response_format: 'mp3',
-                speed: rate || 1.0
-            }),
-            signal
-        });
-    } catch (e) {
-        throw wrapNetworkError(e, 'OpenAI');
-    }
-
-    if (!res.ok) throw await describeHttpError(res, 'OpenAI');
-
-    return { blob: new Blob([await res.arrayBuffer()], { type: 'audio/mpeg' }), alignment: null };
 }
 
 // -------------------------------------------------------------- Speechify
@@ -599,8 +552,7 @@ Object.assign(app.ttsProviders, {
             // Fremdsprachen (Sprachcode-Anfang, z.B. 'en') der Anbieter
             // sauber aussprechen kann - '*' = alle. Fehlt das Feld oder
             // passt die Sprache nicht, liest weiterhin die Gerätestimme
-            // (siehe app.ttsNeural.speakForeign()). Gemini, ElevenLabs und
-            // OpenAI sind mehrsprachig und erkennen die Sprache am Text.
+            // (siehe app.ttsNeural.speakForeign()). Gemini und ElevenLabs sind mehrsprachig und erkennen die Sprache am Text.
             foreignLanguages: '*',
             synthesize: geminiSynthesize
         },
@@ -666,56 +618,12 @@ Object.assign(app.ttsProviders, {
             synthesize: elevenSynthesize
         },
         {
-            id: 'openai',
-            label: 'OpenAI (bis 6. Januar 2027)',
-            tier: 'Bezahlt',
-            costTier: 'cheap',
-            neural: true,
-            hint: 'OpenAI stellt diese Sprachausgabe am 6. Januar 2027 ein. Für neue Aufnahmen empfiehlt sich eine andere Stimme. Kein Gratis-Kontingent, dafür sehr günstig (ca. 1,3 Cent je Minute Audio) und die Erzähler-Persona lässt sich direkt als Sprechanweisung mitgeben.',
-            keySetting: 'openAiKey',
-            keyUrl: 'https://platform.openai.com/api-keys',
-            pricingUrl: 'https://openai.com/api/pricing/',
-            // NEU: alle 13 aktuellen gpt-4o-mini-tts-Stimmen (vorher 7) - die
-            // bewährten 7 bleiben oben, marin/cedar sind laut OpenAI die
-            // neueren, besonders hochwertigen Stimmen.
-            voices: [
-                { id: 'nova', label: 'Nova - weiblich, freundlich' },
-                { id: 'shimmer', label: 'Shimmer - weiblich, sanft' },
-                { id: 'coral', label: 'Coral - weiblich, lebhaft' },
-                { id: 'fable', label: 'Fable - erzählend' },
-                { id: 'alloy', label: 'Alloy - neutral' },
-                { id: 'onyx', label: 'Onyx - männlich, tief' },
-                { id: 'ballad', label: 'Ballad - männlich, ruhig' },
-                { id: 'ash', label: 'Ash - männlich, gelassen' },
-                { id: 'echo', label: 'Echo - männlich, klar' },
-                { id: 'sage', label: 'Sage - weiblich, weise, ruhig' },
-                { id: 'verse', label: 'Verse - neutral, ausdrucksstark' },
-                { id: 'marin', label: 'Marin - weiblich, hochwertig, klar' },
-                { id: 'cedar', label: 'Cedar - männlich, hochwertig, warm' }
-            ],
-            defaultVoice: 'nova',
-            supportsStyle: true,
-            supportsRate: true,
-            // NEU (Audio-Tags): OpenAI hat nur das globale "instructions"-Feld
-            // für den GANZEN Text (siehe styleHintFor), keine Inline-Tags
-            // mitten im Satz.
-            supportsTags: false,
-            foreignLanguages: '*',
-            synthesize: openaiSynthesize
-        },
-        {
             id: 'speechify',
             label: 'Speechify (günstig, exakte Zeitstempel)',
             tier: 'Bezahlt',
             costTier: 'cheap',
             neural: true,
-            // FIX (Nutzer-Screenshot, Stand Sept. 2026): Gratis-Kontingent war
-            // veraltet eingetragen (50.000 Zeichen/Monat) - das aktuelle
-            // Free-Konto zeigt 500.000 Zeichen Text-zu-Sprache ODER 60
-            // Minuten Sprach-Agenten pro Monat (EIN gemeinsames Guthaben,
-            // teilbar), danach pausiert es bis zum nächsten Monat statt
-            // automatisch kostenpflichtig weiterzulaufen.
-            hint: 'Ähnlich günstig wie OpenAI, hält die Wort-Hervorhebung aber zeichengenau synchron (wie ElevenLabs) - 10 US-Dollar je 1 Mio. Zeichen (Simba 3.5) statt ElevenLabs\' ca. 100 US-Dollar. Gratis-Konto: 500.000 Zeichen (oder 60 Minuten Sprach-Agenten, gemeinsames Guthaben) pro Monat. ⚠️ Die unten vorausgewählten Stimmen sprechen Deutsch mit englischem Akzent (englische Standardstimmen, keine deutschen) - auf "🔄 Stimmen aus meinem Konto laden" tippen, das lädt jetzt gezielt echte deutsche Stimmen nach.',
+            hint: 'Wortgenaue Hervorhebung mit Zeitstempeln. Der Gratis-Tarif braucht keine Kreditkarte: mit Simba 3.5 sind bis 21. November 2026 monatlich 500.000 Zeichen enthalten, danach rund 333.000. Ist das Guthaben leer, pausiert der Gratis-Tarif. Für Deutsch bei Bedarf Stimmen aus dem Konto nachladen.',
             keySetting: 'speechifyKey',
             keyUrl: 'https://platform.speechify.ai/api-keys',
             pricingUrl: 'https://speechify.com/pricing-api/',
@@ -766,7 +674,7 @@ Object.assign(app.ttsProviders, {
             // eigenem Speechify-Dashboard (Free-Tarif, Nutzer-Screenshot)
             // "TTS rate limit: 1 req/s", "Concurrent TTS requests: 1" - das
             // ist VIEL schneller als der 9-Sekunden-Standard, den die
-            // Hintergrund-Vorbereitung für Gemini/Mistral (Tages-
+            // Hintergrund-Vorbereitung für Gemini (Tages-
             // Anfragezahl als Engpass) nutzt. js/backgroundPregen.js liest
             // dieses Feld für die eigene Audio-Schleife; 1200ms statt exakt
             // 1000ms lässt etwas Sicherheitsabstand zum dokumentierten

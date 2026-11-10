@@ -98,7 +98,7 @@ Object.assign(app.studio, {
             return translations.get(JSON.stringify(freeTextOf(parts)));
         },
 
-        // Übersetzt die frei geschriebenen Teile einmal (Gemini, sonst Mistral).
+        // Übersetzt die frei geschriebenen Teile einmal (Gemini).
         // Ohne Key oder bei Fehlern bleibt es deutsch - mit Hinweis, nie stumm.
         async translate(parts) {
             const key = JSON.stringify(freeTextOf(parts));

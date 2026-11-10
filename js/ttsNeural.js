@@ -89,7 +89,7 @@ Object.assign(app.ttsNeural, {
     // FIX (Nutzerwunsch: "vollen Umfang von Speechify ausnutzen"): styleKey
     // prüfte bisher nur supportsStyle - Speechify färbt die Persona aber
     // über eine eigene Emotion-Markierung (supportsEmotionTag,
-    // emotionHintFor()), nicht über den Gemini/OpenAI-Stilhinweis. Ohne
+    // emotionHintFor()), nicht über den Gemini-Stilhinweis. Ohne
     // diese Ergänzung hätten zwei Personas mit unterschiedlicher Emotion
     // denselben Cache-Schlüssel bekommen und sich gegenseitig die falsche
     // (Emotion der zuerst gecachten Persona) Aufnahme untergeschoben.

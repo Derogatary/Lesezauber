@@ -175,10 +175,6 @@ Object.assign(app.render, {
         const apiKeyHint = document.getElementById('apiKeyChildLockHint');
         if (apiKeyHint) apiKeyHint.classList.toggle('hidden', !locked);
 
-        const mistralKeyInput = document.getElementById('inputMistralKey');
-        if (mistralKeyInput) mistralKeyInput.disabled = locked;
-        const mistralKeyHint = document.getElementById('mistralKeyChildLockHint');
-        if (mistralKeyHint) mistralKeyHint.classList.toggle('hidden', !locked);
 
         // Die Persona-Liste kommt aus config.js statt fest im HTML zu
         // stehen. Ergänzt man dort eine Persona, erscheint sie automatisch
@@ -194,7 +190,6 @@ Object.assign(app.render, {
 
         document.getElementById('inputApiKey').value = app.settings.apiKey;
         app.render.geminiQuotaStatus();
-        document.getElementById('inputMistralKey').value = app.settings.mistralApiKey;
         personaSelect.value = app.settings.persona;
 
         // NEU (Birkenbihl-Methode): Zielsprachen-Liste kommt aus config.js,

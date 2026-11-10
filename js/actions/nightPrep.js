@@ -184,7 +184,7 @@ async function poll() {
     night.lastOpen = open;
     // Offenes, das NICHT an Gemini hängt (KI-Stimmen-Aufnahmen)
     const otherOpen = Math.max(0, open - lzText - atlas);
-    const quotaBlocked = app.geminiQuota.dailyExhausted() && !app.settings.mistralApiKey;
+    const quotaBlocked = app.geminiQuota.dailyExhausted();
     const status = app.utils.nightPrepStatus({ open, lastProgressAt: night.lastProgressAt, now, quotaBlocked, otherOpen });
     app.render.nightPrep({ open, done: Math.max(0, night.startOpen - open) });
     if (status !== 'running') finish(status);
@@ -234,7 +234,7 @@ Object.assign(app.actions, {
             return;
         }
         // NEU (v0.56.0-beta): heute geht bei Gemini nichts mehr -> gleich sagen
-        if (app.geminiQuota.dailyExhausted() && !app.settings.mistralApiKey && open - lzText - atlas <= 0) {
+        if (app.geminiQuota.dailyExhausted() && open - lzText - atlas <= 0) {
             app.ui.toast(`Das Gemini-Tageskontingent ist aufgebraucht - neues gibt es ab ${app.geminiQuota.formatWhen(app.geminiQuota.nextFreeAt())}.`, '💤');
             return;
         }

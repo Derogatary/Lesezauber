@@ -6,7 +6,6 @@ const KEY_STORAGE = {
     apiKey: 'lz_api_key',
     googleTtsKey: 'lz_google_tts_key',
     elevenLabsKey: 'lz_eleven_key',
-    openAiKey: 'lz_openai_key',
     speechifyKey: 'lz_speechify_key'
 };
 
@@ -233,14 +232,11 @@ Object.assign(app.settingsConfig, {
 
         if (!locked) {
             const key = document.getElementById('inputApiKey').value.trim();
-            const mistralKey = document.getElementById('inputMistralKey').value.trim();
             // NEU: Key des gewählten Stimmen-Anbieters mitspeichern
             persistProviderKey(app.ttsProviders.current());
 
             app.settings.apiKey = key;
-            app.settings.mistralApiKey = mistralKey;
             localStorage.setItem('lz_api_key', key);
-            localStorage.setItem('lz_mistral_key', mistralKey);
         }
 
         app.settings.persona = persona;

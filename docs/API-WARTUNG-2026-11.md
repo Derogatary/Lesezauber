@@ -5,11 +5,10 @@
 - [Nano Banana 2.1](https://aistudio.google.com/docs/models/gemini-nano-banana-2.1): 1K-Ausgabe mit Bildreferenzen und Seitenverhältnis. Die [Schätzung](https://aistudio.google.com/docs/pricing#gemini-nano-banana-2.1) zeigt die Bildausgabe; Eingaben und ggf. weitere Ausgabe-Tokens werden zusätzlich berechnet.
 - [Speechify](https://docs.speechify.ai/build/guides/get-started/regions) und [Simba 3.5](https://docs.speechify.ai/build/api-reference/v1/audio/speech): Neuer Host vor dem Ende der alten Adresse am 19. Januar 2027. Wortmarken und SSML-Tempo bleiben. Die Emotion-Tags werden von Simba 3.5 ignoriert und daher nicht gesendet.
 - [ElevenLabs v2](https://elevenlabs.io/docs/api-reference/voices/search): Alle Seiten der Stimmenliste nachladen; keine zusätzliche Berechnung der Gesamtzahl anfordern. Die Audiosynthese mit Wortmarken bleibt auf ihrem separaten Endpoint.
-- [Mistral Vision](https://docs.mistral.ai/inference/conversations/vision): Der bestehende Chat-Completions-Endpunkt und `mistral-small-latest` sind weiterhin dokumentiert.
 
 ## Vor dem nächsten Release
 
 1. Die API-Verträge sind mit Testantworten geprüft. In der Vorschau mit eigenen, eingeschränkten Schlüsseln jeweils eine kurze Probe für Gemini-Sprache, Gemini-Bild, Speechify und ElevenLabs machen. Dabei insbesondere CORS, Deutsch, Wortmarken und PWA-Aktualisierung prüfen.
-2. [OpenAI Audio Speech](https://developers.openai.com/api/docs/guides/text-to-speech) endet am 6. Januar 2027. Wer OpenAI weiter anbieten will, braucht eine Realtime-Anbindung mit kurzlebigen Browser-Zugangsdaten aus einem Backend sowie einen Test für Audioexport und Offline-Cache. Bis dahin die Option als auslaufend kennzeichnen und bei Bedarf auf eine der anderen Stimmen wechseln.
-3. [Pollinations Connect](https://gen.pollinations.ai/) erst wieder freischalten, wenn die App registriert ist und der Nutzer die Bildanfragen explizit per OAuth mit PKCE autorisieren kann. Vorab klären, ob die Aufbewahrung und abrufbaren Bildlinks zu privaten Familieninhalten passen. Gespeicherte Pollinations-Bilder bleiben nutzbar.
+2. Mistral und OpenAI TTS sind aus der App entfernt. Profile und ältere Backups mit OpenAI als Vorlesestimme fallen auf die Gerätestimme zurück.
+3. Pollinations bleibt deaktiviert. Gespeicherte Pollinations-Bilder bleiben nutzbar.
 4. Wenn die Vorschau stabil läuft: Bei wiederholten Analyse- und Übersetzungsanfragen zuerst vorhandene Ergebnisse verwenden; dann gleichzeitig gestartete identische Anfragen anhand von Buchseite, Aufgabentyp und Prompt-Version zusammenführen. Bei langen Batch-Läufen die verbleibende Wartezeit aus `Retry-After` bzw. dem Anbieterfehler übernehmen und erst danach weiterarbeiten.
