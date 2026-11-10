@@ -160,22 +160,18 @@ function spreadSceneHint(spread) {
 // Figuren-Konsistenz) geht vor, wenn ausdrücklich bestätigt UND ein Key da
 // ist (siehe app.settingsConfig.toggleStudioImageGen,
 // docs/KONZEPT-SchreibZauber.md TEIL G Punkt 1 - Zahlungsmethode am
-// Google-Konto). Pollinations (NEU, Nutzerwunsch "kostenlos Bilderbücher
-// erstellen") ist der kostenlose Zweite-Wahl-Pfad ohne Key/Zahlungsmethode,
-// siehe app.settingsConfig.toggleStudioImagePollinations. Ohne beide
-// Bestätigungen bleibt es beim Platzhalter.
+// Google-Konto). Sonst bleiben Platzhalter verfügbar.
 function resolveImageSourceId() {
     if (app.settings.studioImageGenEnabled && app.settings.apiKey) return 'gemini';
-    if (app.settings.studioImagePollinationsEnabled) return 'pollinations';
     return 'placeholder';
 }
 
 // NEU: geschätzter USD-Preis pro ECHTEM Bildaufruf (docs/KONZEPT-SchreibZauber.md
-// C.2 "0,07 $ pro Bild bei 1K-Auflösung"). GESCHÄTZT, keine Anbieter-
+// C.2 "0,034 $ Bildausgabe bei 1K (zuzüglich Eingabe)"). GESCHÄTZT, keine Anbieter-
 // Abrechnung - gleiche Haltung wie der bestehende app.costMeter
 // (js/costMeter.js): rein lokal, keine harte Grenze, weil die App ohne
 // Server ohnehin keine durchsetzen könnte.
-const GEMINI_IMAGE_PRICE_USD = 0.07;
+const GEMINI_IMAGE_PRICE_USD = 0.034;
 
 // NEU: zentrale Stelle, die project.costLog nach einem Bildaufruf
 // fortschreibt - genutzt von studioCharacters.js (Figurenblatt) UND
@@ -605,7 +601,7 @@ Object.assign(app.studio, {
     },
 
     // Stufe 3 – Geschichte/Skript von der KI schreiben lassen. Ruft
-    // studioApi.js (eigener Gemini/Mistral-Aufruf, siehe Konzept D.4) und
+    // studioApi.js (eigener Gemini-Aufruf, siehe Konzept D.4) und
     // verteilt das Ergebnis über applyManuscript()/applyComicScript() auf
     // die Doppelseiten. NEU (Ausbaustufe 5): EINE Funktion für beide
     // Werktypen (der "Von der KI schreiben lassen"-Knopf in index.html

@@ -39,7 +39,7 @@ import { app } from './core.js';
 // anderen Anbieter callt."): KI-Stimmen-Aufnahmen (app.settings.
 // backgroundPregenAudio) sind NICHT Teil dieser Prioritäts-Kette - sie
 // rufen einen anderen Anbieter mit eigenem Kontingent auf (die Sprach-API
-// statt Gemini/Mistral) und laufen deshalb in einer komplett eigenen,
+// statt Gemini) und laufen deshalb in einer komplett eigenen,
 // parallelen Schleife ganz unten in dieser Datei (runOneAudioBackgroundTask/
 // scheduleNextAudio), unabhängig vom app.state.apiBusy dieser Schleife hier.
 const BACKGROUND_PAUSE_MS = 9000;
@@ -245,9 +245,9 @@ async function runOneBackgroundTask() {
     if (!task) return;
 
     // NEU (v0.56.0-beta, js/geminiQuota.js): sind alle Gemini-Modelle
-    // gesperrt und kein Mistral-Key da, gar nicht erst anfragen - vorher lief
+    // gesperrt, gar nicht erst anfragen - vorher lief
     // alle 9 Sekunden eine sinnlose Anfrage gegen das leere Kontingent.
-    if (app.geminiQuota.allBlocked() && !app.settings.mistralApiKey) {
+    if (app.geminiQuota.allBlocked()) {
         const at = app.geminiQuota.nextFreeAt();
         app.state.pregenActivity = {
             ...(app.state.pregenActivity || {}),
@@ -341,10 +341,10 @@ scheduleNext();
 // anderen Anbieter callt."): Audio-Vorbereitung lief bisher als niedrigste
 // Stufe in DERSELBEN Schleife wie Grundanalyse/Personas/Buch-Quiz/
 // Birkenbihl (findNextMissingTask() oben). Das war architektonisch falsch:
-// jene vier Aufgaben teilen sich alle dasselbe Gemini/Mistral-
+// jene vier Aufgaben teilen sich alle dasselbe Gemini-
 // Tageskontingent und MÜSSEN sich deshalb tatsächlich einen Slot alle 9
 // Sekunden teilen. Eine KI-Stimmen-Aufnahme ruft dagegen einen KOMPLETT
-// ANDEREN Anbieter auf (Speechify/ElevenLabs/Google Cloud/OpenAI/
+// ANDEREN Anbieter auf (Speechify/ElevenLabs/Google Cloud/
 // Gemini-TTS, je nach app.settings.ttsProvider) mit eigenem, unabhängigem
 // Kontingent - sie hätte in der gemeinsamen Schleife unnötig lange warten
 // müssen, bis eine große Bibliothek komplett textlich fertig ist, obwohl
@@ -392,7 +392,7 @@ async function runOneAudioBackgroundTask() {
 // Sprach-Anbieter (app.ttsProviders.current().bgPregenIntervalMs, siehe
 // js/ttsProviders.js) statt fest nach BACKGROUND_PAUSE_MS - Speechify
 // erlaubt laut eigenem Dashboard 1 Anfrage/Sekunde, viel schneller als der
-// für Gemini/Mistral gedachte 9-Sekunden-Standard. Wird bei jedem Zyklus
+// für Gemini gedachte 9-Sekunden-Standard. Wird bei jedem Zyklus
 // neu ermittelt, damit ein Anbieterwechsel mitten in der Vorbereitung
 // sofort die passende Geschwindigkeit übernimmt. Anbieter ohne bestätigten
 // Wert fallen auf denselben vorsichtigen Standard wie die Text-Schleife

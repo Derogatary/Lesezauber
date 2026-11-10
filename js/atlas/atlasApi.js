@@ -74,14 +74,13 @@ async function fetchGeminiWithRetry(action, options) {
         headers: { ...(options.headers || {}), 'x-goog-api-key': apiKey }
     });
     let waitAttempt = 0;
-    let modelIdx = 0;
 
     for (let iteration = 0; iteration < MAX_LOOP_ITERATIONS; iteration++) {
-        const model = models[modelIdx];
+        const model = models[0];
         const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:${action}`;
         let res;
         try {
-            res = await fetch(url, finalOptions);
+            res = await fetch(url, { ...finalOptions, signal: AbortSignal.timeout(90000) });
         } catch (networkErr) {
             if (waitAttempt >= MAX_RETRIES) throw networkErr;
             const delay = backoffDelay(waitAttempt);
@@ -104,7 +103,6 @@ async function fetchGeminiWithRetry(action, options) {
             models = app.geminiQuota.usable(allModels);
             if (models.length > 0) {
                 console.warn(`Buchatlas: ${model} limitiert, versuche nächstes Modell`);
-                modelIdx = 0;
                 continue;
             }
             // Alle Tageskontingente leer: Warten bringt heute nichts mehr.
@@ -112,13 +110,13 @@ async function fetchGeminiWithRetry(action, options) {
             // Nur Minutenlimits: so lange warten, bis das erste Modell frei ist
             if (waitAttempt >= MAX_RETRIES) throw app.geminiQuota.exhaustedError(allModels);
             const freeAt = app.geminiQuota.nextFreeAt(allModels) || (Date.now() + backoffDelay(waitAttempt));
-            const delay = Math.min(Math.max(1000, freeAt - Date.now() + 500), MAX_BACKOFF_MS);
+            const delay = Math.max(1000, freeAt - Date.now() + 500);
+            if (delay > MAX_BACKOFF_MS) throw app.geminiQuota.exhaustedError(allModels);
             app.atlas.ui.setProgress(`Rate-Limit bei allen Modellen - automatischer neuer Versuch in ${Math.round(delay / 1000)}s...`);
             await sleep(delay);
             waitAttempt++;
             models = app.geminiQuota.usable(allModels);
-            if (models.length === 0) models = allModels.slice(); // Sicherheitsnetz
-            modelIdx = 0;
+            if (models.length === 0) throw app.geminiQuota.exhaustedError(allModels);
             continue;
         }
 
@@ -246,7 +244,7 @@ Antworte AUSSCHLIESSLICH als valides JSON-Objekt ohne Markdown-Blöcke, exakt in
 
         const data = await res.json();
         recordApiUsage(data);
-        const textResult = data.candidates?.[0]?.content?.parts?.[0]?.text || '{"chapters":[],"entities":[]}';
+        const textResult = app.api.geminiTextResult(data).text || '{"chapters":[],"entities":[]}';
         const parsed = parseModelJson(textResult);
         return {
             chapters: Array.isArray(parsed.chapters) ? parsed.chapters : [],
@@ -276,7 +274,7 @@ Antworte AUSSCHLIESSLICH mit der reinen Übersetzung - keine Anführungszeichen 
 
         const data = await res.json();
         recordApiUsage(data);
-        const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        const raw = app.api.geminiTextResult(data).text || '';
         // Falls das Modell die Übersetzung trotz Anweisung in Anführungszeichen
         // packt, diese am Rand entfernen - der Rest bleibt unangetastet.
         return raw.trim().replace(/^["“„]+/, '').replace(/["“”]+$/, '').trim();
@@ -309,7 +307,7 @@ Antworte AUSSCHLIESSLICH mit der reinen Rückübersetzung - keine Anführungszei
 
         const data = await res.json();
         recordApiUsage(data);
-        const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        const raw = app.api.geminiTextResult(data).text || '';
         return raw.trim().replace(/^["“„]+/, '').replace(/["“”]+$/, '').trim();
     },
 
@@ -338,7 +336,7 @@ Antworte AUSSCHLIESSLICH mit der reinen Rückübersetzung - keine Anführungszei
 
         const data = await res.json();
         recordApiUsage(data);
-        return (data.candidates?.[0]?.content?.parts?.[0]?.text || '').trim();
+        return (app.api.geminiTextResult(data).text || '').trim();
     },
 
     // Für den Namens-Konsistenz-Check (siehe actions/bookTranslate.js):
@@ -364,7 +362,7 @@ Antworte AUSSCHLIESSLICH als JSON-Array mit GENAU ${names.length} Einträgen, in
 
         const data = await res.json();
         recordApiUsage(data);
-        const textResult = data.candidates?.[0]?.content?.parts?.[0]?.text || '[]';
+        const textResult = app.api.geminiTextResult(data).text || '[]';
         const parsed = parseModelJson(textResult);
         return Array.isArray(parsed) ? parsed : [];
     }

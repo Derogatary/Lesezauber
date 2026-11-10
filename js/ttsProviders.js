@@ -10,11 +10,8 @@ import { app } from './core.js';
 // Anbieter = ein weiterer Eintrag hier; Einstellungen-Dropdown, Speicherung
 // und Reader nutzen ihn danach automatisch (analog zu app.personas).
 
-// Preview-Modelle bei Google werden regelmäßig umbenannt. Schlägt das
-// primäre Modell mit "not found" fehl, wird automatisch das ältere
-// versucht - so bleibt die App auch nach einer Umbenennung nutzbar.
-const GEMINI_TTS_MODEL = 'gemini-3.1-flash-tts-preview';
-const GEMINI_TTS_FALLBACK_MODEL = 'gemini-2.5-flash-preview-tts';
+const GEMINI_TTS_MODEL = 'gemini-3.8-flash-tts';
+const GEMINI_TTS_FALLBACK_MODEL = 'gemini-3.8-flash-lite-tts';
 
 // NEU (Audio-Tags, Entscheidung Sept. 2026): eleven_v3 ist seit der
 // allgemeinen Verfügbarkeit (März 2026) genauso teuer wie v2, versteht
@@ -23,31 +20,8 @@ const GEMINI_TTS_FALLBACK_MODEL = 'gemini-2.5-flash-preview-tts';
 // spricht also sauberes Deutsch.
 const ELEVEN_MODEL = 'eleven_v3';
 
-const OPENAI_TTS_MODEL = 'gpt-4o-mini-tts';
-
-// FIX (Nutzer-Screenshot aus dem Speechify-Dashboard, Stand Sept. 2026):
-// simba-3.2 ist zwar das "Recommended"-Modell mit der geringsten Latenz,
-// spricht aber NUR Englisch - für Deutsch (und Spanisch/Französisch/
-// Italienisch/Portugiesisch) ist weiterhin simba-3.0 zuständig, geroutet
-// über das "language"-Feld im Request. War vorher fälschlich auf 3.2
-// gestellt, hätte auf Deutsch also gar nicht funktioniert bzw. wäre auf
-// Englisch ausgesprochen worden.
-const SPEECHIFY_MODEL = 'simba-3.0';
+const SPEECHIFY_MODEL = 'simba-3.5';
 const SPEECHIFY_LANGUAGE = 'de-DE';
-// NEU (KI-Stimme für die Birkenbihl-Zielsprache): laut derselben Modell-
-// Aufteilung spricht simba-3.2 nur Englisch, simba-3.0 die übrigen
-// europäischen Sprachen - Türkisch/Niederländisch kann Speechify gar nicht,
-// siehe foreignLanguages am Anbieter-Eintrag unten.
-const SPEECHIFY_ENGLISH_MODEL = 'simba-3.2';
-
-// NEU (KI-Stimme für die Birkenbihl-Zielsprache): Sprechanweisung für fremd-
-// sprachigen Text. Bewusst auf Englisch und OHNE Persona - der deutsche
-// Persona-Stilhinweis ("Du bist ein lustiger Papa...") würde die Stimme
-// sonst in Richtung deutscher Aussprache ziehen, und für ein lernendes Kind
-// zählt hier nur klare, muttersprachliche Aussprache.
-function foreignSpeechInstruction(language) {
-    return `Read the following text aloud in its own language (${language}) with native pronunciation - clearly, calmly and a little slower than normal, for a child who is learning this language. Only speak the text itself, not this instruction:`;
-}
 
 // NEU: Tarif-Lock (siehe Entscheidung in docs/ROADMAP.md). Reihenfolge der
 // Preisstufen, um beim Anbieter-/Modellwechsel zu erkennen, ob es teurer
@@ -149,69 +123,56 @@ function wrapNetworkError(error, providerLabel) {
 }
 
 // ---------------------------------------------------------------- Gemini
-async function geminiRequest(model, text, voice, signal) {
-    const body = {
-        contents: [{ parts: [{ text }] }],
-        generationConfig: {
-            responseModalities: ['AUDIO'],
-            speechConfig: {
-                voiceConfig: { prebuiltVoiceConfig: { voiceName: voice || 'Kore' } }
-            }
-        }
-    };
-
-    return fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': app.settings.apiKey },
-        body: JSON.stringify(body),
-        signal
-    });
-}
-
 async function geminiSynthesize(text, { voice, styleHint, language, signal }) {
-    if (!app.settings.apiKey) {
+    const key = app.settings.apiKey;
+    if (!key) {
         throw new TtsError('Kein Gemini-API-Key hinterlegt.', { fatal: true, code: 'NO_KEY' });
     }
+    const style = language
+        ? `Clear native pronunciation in ${language}, at a calm pace for a child learning the language.`
+        : styleHint;
+    const content = { type: 'text', text };
+    if (style) content.annotations = [{ type: 'speech_metadata', style }];
+    const timeout = AbortSignal.timeout(120000);
+    const requestSignal = signal ? AbortSignal.any([signal, timeout]) : timeout;
 
-    // Gemini-TTS wird über den Prompt gesteuert: Ein vorangestellter
-    // Sprechauftrag färbt die Stimme (z.B. "sanft, wie eine Gute-Nacht-Fee")
-    // und wird selbst nicht mitgesprochen.
-    // NEU (Birkenbihl-Zielsprache): mit "language" statt des deutschen
-    // Vorlese-Auftrags eine neutrale, fremdsprachige Anweisung - sonst liest
-    // Gemini englischen Text mit deutschem Einschlag vor.
-    const prompt = language
-        ? `${foreignSpeechInstruction(language)}\n\n${text}`
-        : (styleHint ? `${styleHint}\n\n${text}` : `Lies den folgenden Text vor:\n\n${text}`);
+    async function request(model) {
+        return fetch('https://generativelanguage.googleapis.com/v1beta/interactions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
+            body: JSON.stringify({
+                model,
+                store: false,
+                input: [{ type: 'user_input', content: [content] }],
+                response_format: { type: 'audio', mime_type: 'audio/wav' },
+                generation_config: { speech_config: [{ voice: voice || 'Kore' }] }
+            }),
+            signal: requestSignal
+        });
+    }
 
     let res;
     try {
-        res = await geminiRequest(GEMINI_TTS_MODEL, prompt, voice, signal);
-        // 404/400 = Modellname existiert nicht (mehr) -> älteres Modell probieren
-        if (res.status === 404 || res.status === 400) {
-            console.warn(`Gemini-TTS-Modell ${GEMINI_TTS_MODEL} nicht verfügbar, versuche ${GEMINI_TTS_FALLBACK_MODEL}.`);
-            res = await geminiRequest(GEMINI_TTS_FALLBACK_MODEL, prompt, voice, signal);
+        res = await request(GEMINI_TTS_MODEL);
+        if (res.status === 404) {
+            res = await request(GEMINI_TTS_FALLBACK_MODEL);
         }
     } catch (e) {
         throw wrapNetworkError(e, 'Gemini');
     }
-
     if (!res.ok) throw await describeHttpError(res, 'Gemini');
 
     const data = await res.json();
-    const part = data.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
-    if (!part) {
-        throw new TtsError('Gemini hat keine Audiodaten zurückgeliefert.', { code: 'EMPTY' });
-    }
+    const audio = (data.steps || []).flatMap(step => step.content || [])
+        .filter(part => part.type === 'audio' && part.data).at(-1);
+    if (!audio) throw new TtsError('Gemini hat keine Audiodaten zurückgeliefert.', { code: 'EMPTY' });
 
-    const bytes = base64ToBytes(part.inlineData.data);
-    const mime = part.inlineData.mimeType || '';
-
-    // Kommt ausnahmsweise schon ein fertiges Format (z.B. WAV/MP3), nicht
-    // noch einmal verpacken.
-    if (/wav|mpeg|mp3|ogg/i.test(mime)) {
-        return { blob: new Blob([bytes], { type: mime }), alignment: null };
-    }
-    return { blob: pcmToWavBlob(bytes, sampleRateFromMime(mime)), alignment: null };
+    const bytes = base64ToBytes(audio.data);
+    const mime = audio.mime_type || 'audio/wav';
+    const blob = mime.startsWith('audio/l16')
+        ? pcmToWavBlob(bytes, audio.sample_rate || sampleRateFromMime(mime))
+        : new Blob([bytes], { type: mime });
+    return { blob, alignment: null };
 }
 
 // -------------------------------------------------- Google Cloud (Chirp 3)
@@ -307,42 +268,6 @@ async function elevenSynthesize(text, { voice, signal }) {
     return { blob: new Blob([base64ToBytes(data.audio_base64)], { type: 'audio/mpeg' }), alignment };
 }
 
-// --------------------------------------------------------------- OpenAI
-async function openaiSynthesize(text, { voice, rate, styleHint, language, signal }) {
-    const key = app.settings.openAiKey;
-    if (!key) {
-        throw new TtsError('Kein OpenAI-API-Key hinterlegt.', { fatal: true, code: 'NO_KEY' });
-    }
-
-    let res;
-    try {
-        res = await fetch('https://api.openai.com/v1/audio/speech', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
-            body: JSON.stringify({
-                model: OPENAI_TTS_MODEL,
-                input: text,
-                voice: voice || 'nova',
-                // Eigenes Feld für die Sprechanweisung - anders als bei
-                // Gemini besteht hier keine Gefahr, dass sie mitgesprochen wird.
-                // NEU (Birkenbihl-Zielsprache): eigene, fremdsprachige Anweisung.
-                instructions: language
-                    ? foreignSpeechInstruction(language)
-                    : (styleHint || 'Lies wie in einem Kinderbuch vor: warm, deutlich und nicht gehetzt.'),
-                response_format: 'mp3',
-                speed: rate || 1.0
-            }),
-            signal
-        });
-    } catch (e) {
-        throw wrapNetworkError(e, 'OpenAI');
-    }
-
-    if (!res.ok) throw await describeHttpError(res, 'OpenAI');
-
-    return { blob: new Blob([await res.arrayBuffer()], { type: 'audio/mpeg' }), alignment: null };
-}
-
 // -------------------------------------------------------------- Speechify
 // Speechify liefert Wort-Zeitstempel als "speech_marks" (Zeichen-Offset im
 // Text + Millisekunden), nicht Zeichen-für-Zeichen wie ElevenLabs. Hier auf
@@ -380,6 +305,10 @@ async function openaiSynthesize(text, { voice, rate, styleHint, language, signal
 // Reihe nach mit den Wörtern des Textes abgeglichen. Reicht das nicht
 // (zu wenige Treffer), greift die bisherige Positions-Zuordnung.
 function flattenSpeechMarkWords(node, out = []) {
+    if (Array.isArray(node)) {
+        node.forEach(mark => flattenSpeechMarkWords(mark, out));
+        return out;
+    }
     if (!node || typeof node !== 'object') return out;
     if (node.type === 'word' && typeof node.start_time === 'number') out.push(node);
     if (Array.isArray(node.chunks)) node.chunks.forEach(c => flattenSpeechMarkWords(c, out));
@@ -430,8 +359,8 @@ function alignmentFromSpeechMarks(marks, text, offsetMap, contentBounds) {
     const byValue = alignmentBySpeechMarkValues(marks, text);
     if (byValue) return byValue;
 
-    const chunks = marks && marks.chunks;
-    if (!Array.isArray(chunks) || !chunks.length) return null;
+    const chunks = flattenSpeechMarkWords(marks);
+    if (!chunks.length) return null;
 
     const startSecByCharIndex = new Map();
     for (const chunk of chunks) {
@@ -480,20 +409,9 @@ function escapeSsmlWithOffsets(text) {
 // ein Wortanfang liegen, die Tags selbst werden nicht mitgesprochen (siehe
 // contentBounds/alignmentFromSpeechMarks).
 //
-// NEU (Nutzerwunsch: "vollen Umfang von Speechify ausnutzen") - zwei
-// UNABHÄNGIGE, verschachtelbare Ebenen statt nur der Emotion:
-// - speechify:style emotion="..." (Persona-Gefühl, siehe emotionHintFor())
-// - prosody rate="...%" (Vorlesegeschwindigkeit, siehe app.settings.speechRate)
-// Beide können einzeln, zusammen oder gar nicht vorkommen - die Prozent-
-// Länge der jeweils geöffneten Tags wird einfach aufsummiert, die restliche
-// Versatz-Logik bleibt unverändert.
-function buildSpeechifySsml(text, { emotion, ratePercent } = {}) {
+function buildSpeechifySsml(text, { ratePercent } = {}) {
     let openTags = '<speak>';
     let closeTags = '</speak>';
-    if (emotion) {
-        openTags += `<speechify:style emotion="${emotion}">`;
-        closeTags = '</speechify:style>' + closeTags;
-    }
     if (typeof ratePercent === 'number') {
         const sign = ratePercent >= 0 ? '+' : '';
         openTags += `<prosody rate="${sign}${ratePercent}%">`;
@@ -508,7 +426,7 @@ function buildSpeechifySsml(text, { emotion, ratePercent } = {}) {
     };
 }
 
-async function speechifySynthesize(text, { voice, signal, emotion, rate, language }) {
+async function speechifySynthesize(text, { voice, signal, rate, language }) {
     const key = app.settings.speechifyKey;
     if (!key) {
         throw new TtsError('Kein Speechify-API-Key hinterlegt.', { fatal: true, code: 'NO_KEY' });
@@ -530,8 +448,8 @@ async function speechifySynthesize(text, { voice, signal, emotion, rate, languag
     let input = text;
     let offsetMap = null;
     let contentBounds = null;
-    if (emotion || ratePercent !== null) {
-        const built = buildSpeechifySsml(text, { emotion, ratePercent });
+    if (ratePercent !== null) {
+        const built = buildSpeechifySsml(text, { ratePercent });
         input = built.ssml;
         offsetMap = built.offsetMap;
         contentBounds = built.contentBounds;
@@ -539,15 +457,13 @@ async function speechifySynthesize(text, { voice, signal, emotion, rate, languag
 
     let res;
     try {
-        res = await fetch('https://api.sws.speechify.com/v1/audio/speech', {
+        res = await fetch('https://api.speechify.ai/v1/audio/speech', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
             body: JSON.stringify({
                 input,
                 voice_id: voice || 'beatrice_32',
-                // NEU (Birkenbihl-Zielsprache): Modell und Sprachfeld folgen
-                // der Zielsprache, Englisch läuft über das eigene Modell.
-                model: (language && language.startsWith('en')) ? SPEECHIFY_ENGLISH_MODEL : SPEECHIFY_MODEL,
+                model: SPEECHIFY_MODEL,
                 audio_format: 'mp3',
                 language: language || SPEECHIFY_LANGUAGE
             }),
@@ -630,16 +546,13 @@ Object.assign(app.ttsProviders, {
             ],
             defaultVoice: 'Kore',
             supportsStyle: true,
-            // NEU (Audio-Tags): Gemini kennt über 200 Inline-Tags mitten im
-            // Satz ([whispers], [laughs], [excited], ...) - wird genutzt,
-            // wenn eine Seite ein speechText hat (siehe js/tts.js).
-            supportsTags: true,
+            // Die gespeicherten eckigen Tags entsprechen nicht der Syntax von 3.8 TTS.
+            supportsTags: false,
             // NEU (KI-Stimme für die Birkenbihl-Zielsprache): welche
             // Fremdsprachen (Sprachcode-Anfang, z.B. 'en') der Anbieter
             // sauber aussprechen kann - '*' = alle. Fehlt das Feld oder
             // passt die Sprache nicht, liest weiterhin die Gerätestimme
-            // (siehe app.ttsNeural.speakForeign()). Gemini, ElevenLabs und
-            // OpenAI sind mehrsprachig und erkennen die Sprache am Text.
+            // (siehe app.ttsNeural.speakForeign()). Gemini und ElevenLabs sind mehrsprachig und erkennen die Sprache am Text.
             foreignLanguages: '*',
             synthesize: geminiSynthesize
         },
@@ -705,58 +618,14 @@ Object.assign(app.ttsProviders, {
             synthesize: elevenSynthesize
         },
         {
-            id: 'openai',
-            label: 'OpenAI (günstig, gut steuerbar)',
-            tier: 'Bezahlt',
-            costTier: 'cheap',
-            neural: true,
-            hint: 'Kein Gratis-Kontingent, dafür sehr günstig (ca. 1,3 Cent je Minute Audio) und die Erzähler-Persona lässt sich direkt als Sprechanweisung mitgeben.',
-            keySetting: 'openAiKey',
-            keyUrl: 'https://platform.openai.com/api-keys',
-            pricingUrl: 'https://openai.com/api/pricing/',
-            // NEU: alle 13 aktuellen gpt-4o-mini-tts-Stimmen (vorher 7) - die
-            // bewährten 7 bleiben oben, marin/cedar sind laut OpenAI die
-            // neueren, besonders hochwertigen Stimmen.
-            voices: [
-                { id: 'nova', label: 'Nova - weiblich, freundlich' },
-                { id: 'shimmer', label: 'Shimmer - weiblich, sanft' },
-                { id: 'coral', label: 'Coral - weiblich, lebhaft' },
-                { id: 'fable', label: 'Fable - erzählend' },
-                { id: 'alloy', label: 'Alloy - neutral' },
-                { id: 'onyx', label: 'Onyx - männlich, tief' },
-                { id: 'ballad', label: 'Ballad - männlich, ruhig' },
-                { id: 'ash', label: 'Ash - männlich, gelassen' },
-                { id: 'echo', label: 'Echo - männlich, klar' },
-                { id: 'sage', label: 'Sage - weiblich, weise, ruhig' },
-                { id: 'verse', label: 'Verse - neutral, ausdrucksstark' },
-                { id: 'marin', label: 'Marin - weiblich, hochwertig, klar' },
-                { id: 'cedar', label: 'Cedar - männlich, hochwertig, warm' }
-            ],
-            defaultVoice: 'nova',
-            supportsStyle: true,
-            supportsRate: true,
-            // NEU (Audio-Tags): OpenAI hat nur das globale "instructions"-Feld
-            // für den GANZEN Text (siehe styleHintFor), keine Inline-Tags
-            // mitten im Satz.
-            supportsTags: false,
-            foreignLanguages: '*',
-            synthesize: openaiSynthesize
-        },
-        {
             id: 'speechify',
             label: 'Speechify (günstig, exakte Zeitstempel)',
             tier: 'Bezahlt',
             costTier: 'cheap',
             neural: true,
-            // FIX (Nutzer-Screenshot, Stand Sept. 2026): Gratis-Kontingent war
-            // veraltet eingetragen (50.000 Zeichen/Monat) - das aktuelle
-            // Free-Konto zeigt 500.000 Zeichen Text-zu-Sprache ODER 60
-            // Minuten Sprach-Agenten pro Monat (EIN gemeinsames Guthaben,
-            // teilbar), danach pausiert es bis zum nächsten Monat statt
-            // automatisch kostenpflichtig weiterzulaufen.
-            hint: 'Ähnlich günstig wie OpenAI, hält die Wort-Hervorhebung aber zeichengenau synchron (wie ElevenLabs) - 10 US-Dollar je 1 Mio. Zeichen (simba-3.0, für Deutsch) statt ElevenLabs\' ca. 100 US-Dollar. Gratis-Konto: 500.000 Zeichen (oder 60 Minuten Sprach-Agenten, gemeinsames Guthaben) pro Monat. ⚠️ Die unten vorausgewählten Stimmen sprechen Deutsch mit englischem Akzent (englische Standardstimmen, keine deutschen) - auf "🔄 Stimmen aus meinem Konto laden" tippen, das lädt jetzt gezielt echte deutsche Stimmen nach.',
+            hint: 'Wortgenaue Hervorhebung mit Zeitstempeln. Der Gratis-Tarif braucht keine Kreditkarte: mit Simba 3.5 sind bis 21. November 2026 monatlich 500.000 Zeichen enthalten, danach rund 333.000. Ist das Guthaben leer, pausiert der Gratis-Tarif. Für Deutsch bei Bedarf Stimmen aus dem Konto nachladen.',
             keySetting: 'speechifyKey',
-            keyUrl: 'https://console.speechify.ai/api-keys',
+            keyUrl: 'https://platform.speechify.ai/api-keys',
             pricingUrl: 'https://speechify.com/pricing-api/',
             // FIX (Nutzer-Feedback: "redet mit englischem Akzent"): diese 8
             // Stimmen sind laut Anbieter-Doku die bekannten simba-3.2-
@@ -792,15 +661,7 @@ Object.assign(app.ttsProviders, {
             // verlangsamt/beschleunigt) UND sorgt dafür, dass der Zwischen-
             // speicher-Schlüssel nach Geschwindigkeit unterscheidet.
             supportsRate: true,
-            // NEU (Nutzerwunsch: "vollen Umfang von Speechify ausnutzen"):
-            // eigene Emotion-Markierung statt Freitext-Stilhinweis (den
-            // versteht Speechify nicht) - siehe emotionHintFor() unten und
-            // speechifyEmotion in js/config.js. Bewusst ein ZWEITES Feld statt
-            // supportsStyle umzuwidmen: Gemini/OpenAI bekommen einen freien
-            // Satz als Sprechanweisung, Speechify nur eine von 13 festen
-            // Emotionen über SSML - unterschiedliche Mechanismen, die sich
-            // nicht sauber in ein Feld pressen lassen.
-            supportsEmotionTag: true,
+            // Simba 3.5 ignoriert Emotion-Tags.
             // NEU (Zusammenführung): Speechify kam mit dem Anbieter-Paket dazu,
             // die Audio-Tags entstanden parallel auf einem Zweig ohne diesen
             // Anbieter - deshalb fehlte das Feld hier ganz. Bewusst auf false:
@@ -813,7 +674,7 @@ Object.assign(app.ttsProviders, {
             // eigenem Speechify-Dashboard (Free-Tarif, Nutzer-Screenshot)
             // "TTS rate limit: 1 req/s", "Concurrent TTS requests: 1" - das
             // ist VIEL schneller als der 9-Sekunden-Standard, den die
-            // Hintergrund-Vorbereitung für Gemini/Mistral (Tages-
+            // Hintergrund-Vorbereitung für Gemini (Tages-
             // Anfragezahl als Engpass) nutzt. js/backgroundPregen.js liest
             // dieses Feld für die eigene Audio-Schleife; 1200ms statt exakt
             // 1000ms lässt etwas Sicherheitsabstand zum dokumentierten
@@ -828,10 +689,8 @@ Object.assign(app.ttsProviders, {
             // echte Synthese-Aufrufe pro Anbieter-ID hintereinander, sobald
             // dieses Feld gesetzt ist (siehe withProviderLock() dort).
             maxConcurrentRequests: 1,
-            // NEU (Birkenbihl-Zielsprache): nur die Sprachen, die die
-            // Speechify-Modelle laut Dashboard sprechen - Türkisch und
-            // Niederländisch bleiben bei der Gerätestimme.
-            foreignLanguages: ['en', 'fr', 'es', 'it', 'pt'],
+            // Birkenbihl-Zielsprachen mit Unterstützung in Simba 3.5.
+            foreignLanguages: ['en', 'fr', 'es', 'it', 'pt', 'nl', 'tr'],
             synthesize: speechifySynthesize
         }
     ],
@@ -899,16 +758,37 @@ Object.assign(app.ttsProviders, {
         const key = app.settings.elevenLabsKey;
         if (!key) throw new TtsError('Kein ElevenLabs-API-Key hinterlegt.', { fatal: true, code: 'NO_KEY' });
 
-        let res;
-        try {
-            res = await fetch('https://api.elevenlabs.io/v1/voices', { headers: { 'xi-api-key': key } });
-        } catch (e) {
-            throw wrapNetworkError(e, 'ElevenLabs');
-        }
-        if (!res.ok) throw await describeHttpError(res, 'ElevenLabs');
+        const voices = new Map();
+        const tokens = new Set();
+        let pageToken;
+        do {
+            const url = new URL('https://api.elevenlabs.io/v2/voices');
+            url.searchParams.set('page_size', '100');
+            url.searchParams.set('include_total_count', 'false');
+            if (pageToken) url.searchParams.set('next_page_token', pageToken);
+            let res;
+            try {
+                res = await fetch(url, {
+                    headers: { 'xi-api-key': key },
+                    signal: AbortSignal.timeout(15000)
+                });
+            } catch (e) {
+                throw wrapNetworkError(e, 'ElevenLabs');
+            }
+            if (!res.ok) throw await describeHttpError(res, 'ElevenLabs');
 
-        const data = await res.json();
-        return (data.voices || []).map(v => ({ id: v.voice_id, label: v.name }));
+            const data = await res.json();
+            for (const voice of data.voices || []) {
+                if (voice.voice_id) voices.set(voice.voice_id, { id: voice.voice_id, label: voice.name || voice.voice_id });
+            }
+            if (!data.has_more) break;
+            pageToken = data.next_page_token;
+            if (!pageToken || tokens.has(pageToken)) {
+                throw new TtsError('ElevenLabs hat die Stimmenliste unvollständig geliefert.');
+            }
+            tokens.add(pageToken);
+        } while (pageToken);
+        return [...voices.values()];
     },
 
     // NEU: eigene/geklonte Stimmen aus dem Speechify-Konto nachladen, analog
@@ -929,7 +809,7 @@ Object.assign(app.ttsProviders, {
 
         let res;
         try {
-            res = await fetch('https://api.sws.speechify.com/v1/voices?limit=200&locale=de-DE', {
+            res = await fetch('https://api.speechify.ai/v1/voices?locale=de-DE', {
                 headers: { 'Authorization': `Bearer ${key}` }
             });
         } catch (e) {
@@ -939,7 +819,7 @@ Object.assign(app.ttsProviders, {
 
         const data = await res.json();
         const voices = data.voices || data || [];
-        return voices.map(v => {
+        return voices.filter(v => v.id || v.voice_id).map(v => {
             const name = v.display_name || v.name || v.id;
             const extra = [v.gender, v.locale].filter(Boolean).join(', ');
             return { id: v.id || v.voice_id, label: extra ? `${name} (${extra})` : name };

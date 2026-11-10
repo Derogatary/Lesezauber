@@ -13,7 +13,7 @@
          seine API-Adresse hier bei connect-src ergänzen, sonst blockt der
          Browser den Aufruf (Konsole: "Refused to connect"). 'wasm-unsafe-eval'
          braucht PDF.js für seine WebAssembly-Bilddecoder. -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; worker-src 'self' blob:; connect-src 'self' data: blob: https://generativelanguage.googleapis.com https://texttospeech.googleapis.com https://api.mistral.ai https://api.elevenlabs.io https://api.openai.com https://api.sws.speechify.com https://image.pollinations.ai; object-src 'none'; base-uri 'self'; form-action 'self'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; worker-src 'self' blob:; connect-src 'self' data: blob: https://generativelanguage.googleapis.com https://texttospeech.googleapis.com https://api.elevenlabs.io https://api.speechify.ai; object-src 'none'; base-uri 'self'; form-action 'self'">
     <title>LeseZauber Pro</title>
 
     <!-- PWA: installierbar machen -->
@@ -61,7 +61,7 @@
                     <button id="pregenBadge" data-parent-only onclick="app.nav.go('settings')" class="hidden text-xs font-bold text-indigo-600 mt-0.5 hover:underline"></button>
                     <!-- NEU (v0.44.0-beta): direkt in den Nachtmodus -->
                     <button id="nightPrepLibBtn" data-parent-only onclick="app.actions.startNightPrep()" class="hidden text-xs font-bold text-slate-600 mt-0.5 ml-2 hover:underline">🌙 über Nacht</button>
-                    <p data-app-version class="text-[10px] text-slate-400 font-semibold mt-0.5">v0.56.3-beta</p>
+                    <p data-app-version class="text-[10px] text-slate-400 font-semibold mt-0.5">v0.56.4-beta</p>
                 </div>
                 <!-- FIX (v0.45.1-beta, Nutzer-Screenshot): seit dem Kindermodus-Knopf
                      passte die Knopfreihe nicht mehr aufs Handy und die ganze Seite
@@ -1575,7 +1575,7 @@
                         <ul class="list-disc pl-4 mt-2 space-y-1 leading-relaxed">
                             <li><strong>Der Schlüssel ist wie ein Passwort mit Kreditkarte dran.</strong> Wer ihn hat, kann auf deine Rechnung bzw. dein Kontingent KI-Anfragen stellen.</li>
                             <li>Er liegt <strong>unverschlüsselt</strong> im Browser dieses Geräts. Jeder mit Zugriff auf das entsperrte Gerät oder eine bösartige Browser-Erweiterung könnte ihn auslesen. Keine unbekannten Erweiterungen installieren, Gerät mit Sperre sichern.</li>
-                            <li><strong>Ausgabenlimit setzen:</strong> beim Anbieter (Google Cloud, OpenAI, ElevenLabs …) ein Budget/Limit und eine Benachrichtigung einrichten. Die App selbst kann keine harte Grenze erzwingen.</li>
+                            <li><strong>Ausgabenlimit setzen:</strong> beim Anbieter (Google Cloud, Speechify, ElevenLabs …) ein Budget/Limit und eine Benachrichtigung einrichten. Die App selbst kann keine harte Grenze erzwingen.</li>
                             <li>Einen <strong>eigenen Schlüssel nur für LeseZauber</strong> anlegen und ihn in der Anbieter-Konsole auf die nötige Schnittstelle beschränken - dann lässt er sich bei Verdacht einfach löschen, ohne anderes zu stören.</li>
                             <li>Schlüssel <strong>nie weitergeben</strong> und nicht in Screenshots zeigen. Bibliotheks-Sicherungen und das Fehlerprotokoll enthalten ihn nicht.</li>
                             <li>Gerät verloren oder etwas kommt dir komisch vor? Schlüssel beim Anbieter sofort <strong>löschen und neu erzeugen</strong>.</li>
@@ -1647,22 +1647,10 @@
                         </label>
                         <input id="toggleStudioImageGen" type="checkbox" onchange="app.settingsConfig.toggleStudioImageGen(this.checked)" class="w-5 h-5 accent-indigo-600">
                     </div>
-                    <p class="text-[11px] text-slate-500">Solange ausgeschaltet, erzeugt SchreibZauber nur kostenlose Platzhalter-Bilder. Einschalten nutzt den echten Gemini-Bild-Endpunkt - der kostet Geld (grob 0,07 $ pro Bild) und braucht eine hinterlegte Zahlungsmethode am Google-Konto hinter deinem Gemini-Key.</p>
+                    <p class="text-[11px] text-slate-500">Solange ausgeschaltet, erzeugt SchreibZauber nur kostenlose Platzhalter-Bilder. Einschalten nutzt den echten Gemini-Bild-Endpunkt - der kostet Geld (ca. 0,034 $ für die Bildausgabe bei 1K, zuzüglich Eingabe) und braucht eine hinterlegte Zahlungsmethode am Google-Konto hinter deinem Gemini-Key.</p>
                 </div>
 
-                <!-- NEU (Nutzerwunsch "kostenlos Bilderbücher erstellen"): Pollinations.ai
-                     als zweite, kostenlose Bildquelle - siehe js/studio/imageSource.js
-                     providers.pollinations. Greift nur, wenn Gemini-Bilder (oben) NICHT
-                     aktiv/verfügbar sind, siehe resolveImageSourceId() in studioCore.js. -->
-                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-2">
-                    <div class="flex items-center justify-between">
-                        <label for="toggleStudioImagePollinations" class="text-xs font-bold uppercase tracking-wider text-slate-500">
-                            🎨 Kostenlose KI-Bilder (Pollinations)
-                        </label>
-                        <input id="toggleStudioImagePollinations" type="checkbox" onchange="app.settingsConfig.toggleStudioImagePollinations(this.checked)" class="w-5 h-5 accent-indigo-600">
-                    </div>
-                    <p class="text-[11px] text-slate-500">Kein Key, keine Zahlungsmethode nötig - läuft über den kostenlosen Dienst Pollinations.ai. Dafür ohne Referenzbilder: Figuren bleiben über mehrere Seiten hinweg nur ähnlich, nicht exakt gleich wie bei Gemini, und ohne eigenen Pollinations-Account ist nur etwa 1 Bild alle 15 Sekunden erlaubt. Wird ignoriert, solange oben "Echte KI-Bilder" (Gemini) aktiv ist.</p>
-                </div>
+                <p class="text-[11px] text-slate-500">Pollinations ist derzeit nicht verfügbar: Der Dienst verlangt inzwischen eine Anmeldung. Vorhandene Bilder bleiben erhalten.</p>
 
                 <!-- NEU: zweiseitiges Layout (Option) -->
                 <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-2">
@@ -1684,20 +1672,6 @@
                         <input id="toggleFocusEffects" type="checkbox" onchange="app.settingsConfig.toggleFocusEffects(this.checked)" class="w-5 h-5 accent-indigo-600">
                     </div>
                     <p class="text-[11px] text-slate-500">Langsamer Zoom übers Bild und weiche Überblendung beim Seitenwechsel im Vollbild-Vorlese-Modus. Wer reduzierte Bewegung eingestellt hat, bekommt ohnehin einen harten Schnitt ohne Zoom.</p>
-                </div>
-
-                <!-- Mistral als optionaler Fallback -->
-                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-3">
-                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-500">
-                        Mistral-Fallback (optional)
-                    </label>
-                    <p class="text-[11px] text-slate-500">Springt nur ein, wenn Gemini mal ausfällt oder das Tageslimit erreicht ist.</p>
-                    <input id="inputMistralKey" type="password" placeholder="Mistral API Key (optional)" class="w-full text-sm text-slate-900 bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 font-mono focus:outline-none focus:border-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed">
-                    <p id="mistralKeyChildLockHint" class="hidden text-[11px] text-amber-600 font-semibold mt-1">🔒 Für Kinderprofile gesperrt - zum Ändern oben in der Bibliothek zu einem Erwachsenen-Profil wechseln.</p>
-                    <a href="https://console.mistral.ai/" target="_blank" class="text-xs text-indigo-600 font-semibold hover:underline flex items-center gap-1">
-                        <span>🔑 Kostenlosen Mistral-Key holen</span>
-                        <span>↗</span>
-                    </a>
                 </div>
 
                 <!-- Persona Selection -->

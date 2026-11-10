@@ -45,7 +45,6 @@ Eine Web-App, mit der du Kinderbuch-Seiten mit dem Handy fotografierst (oder aus
 - 🗣️ Alle Systemstimmen wählbar (nicht nur Deutsch) - Sprache passt sich automatisch der gewählten Stimme an, z.B. für fremdsprachige Bücher
 - 📄 PDF-Import: jede PDF-Seite wird automatisch als Bild gerendert und läuft durch dieselbe Analyse wie fotografierte Seiten
 - ✅ Bereits auswählbarer PDF-Text wird direkt übernommen statt per OCR neu erkannt zu werden (fehlerfrei, spart aber keinen KI-Aufruf, da Bildbeschreibung/Quiz weiterhin nötig sind)
-- 🔄 Optionaler Mistral-Fallback, falls Gemini mal ausfällt oder das Tageslimit erreicht ist
 - ♻️ Automatischer zweiter Versuch bei kurzzeitiger Google-Server-Überlastung (503), statt den ganzen Analyse-Stapel abzubrechen
 - 🎓 Vokabeltrainer: sammelt automatisch die Nomen, die durch Emojis ersetzt wurden, als Karteikarten zum Üben
 - ❓ Eingebaute Hilfe-Ansicht, ⌨️ Tastatursteuerung am Desktop (Pfeiltasten, Escape)
@@ -59,7 +58,7 @@ Eine Web-App, mit der du Kinderbuch-Seiten mit dem Handy fotografierst (oder aus
 - 🎭 Persona beim Lesen umschaltbar (unabhängig von der Standard-Persona), wird pro Seite bei Bedarf einmalig nachgeladen und dauerhaft gespeichert
 - 🎉 Verständnisfragen zum gesamten Buch am Ende (nicht nur pro Seite)
 - ⚡ Eigener Tailwind-Build statt CDN (schnelleres Laden, kein Live-Compiling im Browser)
-- 🗣️ **Echte KI-Vorlese-Stimmen** statt der maschinellen Gerätestimme - wahlweise Gemini (Free Tier), Google Cloud Chirp 3 HD, ElevenLabs, OpenAI oder Speechify, mit Probe-Anhören, Zwischenspeicher und automatischem Rückfall auf die Gerätestimme (siehe eigenen Abschnitt unten)
+- 🗣️ **Echte KI-Vorlese-Stimmen** statt der maschinellen Gerätestimme - wahlweise Gemini (Free Tier), Google Cloud Chirp 3 HD, ElevenLabs oder Speechify, mit Probe-Anhören, Zwischenspeicher und automatischem Rückfall auf die Gerätestimme (siehe eigenen Abschnitt unten)
 - 🌙 Optionale Hintergrund-Vorbereitung: erstellt fehlende Erzähler-Varianten und Buch-Quiz automatisch, wenn gerade nichts läuft (aus-/einschaltbar in den Einstellungen)
 - 📝 **Übungsheft-Modus:** Arbeitsblätter statt Geschichten - die KI liest die Aufgabenstellung aus, erklärt sie kindgerecht, gibt eine Schritt-für-Schritt-Hilfe und zeigt auf Wunsch die Lösung. Vorlesen bleibt danach stehen, statt weiterzublättern (das Kind hat ja zu tun). Gedacht für die Schulvorbereitung zu Hause, siehe `docs/KONZEPT-Uebungshefte.md`
 - 📷 **Blatt kontrollieren lassen:** das Kind fotografiert sein ausgefülltes Übungsblatt, die KI vergleicht es mit Aufgabe und Lösung und gibt eine vorgelesene Rückmeldung (Lob zuerst, dann Tipps - nie "falsch"). Ist alles richtig, wird die Aufgabe automatisch abgehakt; erkennt die KI das Foto nicht sicher, sagt sie das, statt zu raten
@@ -89,8 +88,7 @@ Alles läuft weiterhin ohne eigenen Server: Die App holt die Audiodatei direkt b
 | **Gemini KI-Stimme** | **Free Tier** (kostenlos, aber wenige Anfragen/Tag) | Zum Ausprobieren ohne neues Konto - nutzt denselben Key wie die Seitenanalyse. | vorhandener Gemini-Key |
 | **Google Cloud Chirp 3 HD** | 1 Mio. Zeichen/Monat gratis, danach ca. 30 $/Mio. Zeichen | Der Alltags-Tipp fürs ganze Buch: 1 Mio. Zeichen sind grob mehrere tausend Buchseiten. Braucht ein Google-Cloud-Projekt mit hinterlegter Zahlungsart. | eigener API-Key |
 | **ElevenLabs** | 10.000 Zeichen/Monat gratis (privat), bezahlt ab ca. 5 $/Monat, danach ca. 100 $/Mio. Zeichen | Beste Vorlese-Qualität und zeichengenaue Zeitstempel → die Wort-Hervorhebung läuft exakt mit. Der teuerste Anbieter hier. | eigener API-Key |
-| **OpenAI** | kein Gratis-Kontingent, ca. 1,3 Cent je Minute Audio | Günstig und gut steuerbar - die Erzähler-Persona wird als Sprechanweisung mitgeschickt. | eigener API-Key |
-| **Speechify** | 500.000 Zeichen/Monat gratis (Stand Sept. 2026), danach ca. 10 $/Mio. Zeichen | Ähnlich günstig wie OpenAI, aber ebenfalls zeichengenaue Zeitstempel wie ElevenLabs - grob 10× günstiger. Deutsch läuft über Modell `simba-3.0`. | eigener API-Key |
+| **Speechify** | Simba 3.5: 500.000 Zeichen/Monat bis 21. November 2026, danach rund 333.000; der Gratis-Tarif pausiert bei leerem Guthaben. | Wortgenaue Hervorhebung mit Zeitstempeln. | eigener API-Key, im Gratis-Tarif keine Kreditkarte ([Preise](https://speechify.com/pricing-api/)) |
 
 Faustregel: **Gemini** zum kostenlosen Reinschnuppern, **Google Cloud Chirp 3 HD** für den Dauerbetrieb, **Speechify**, wenn die Wort-Hervorhebung exakt sitzen soll ohne ElevenLabs' Preis, **ElevenLabs**, wenn es unbedingt die beste Qualität sein soll.
 
@@ -101,7 +99,7 @@ Faustregel: **Gemini** zum kostenlosen Reinschnuppern, **Google Cloud Chirp 3 HD
 - **Rückfall:** Kein Internet, Tageslimit erreicht oder Key falsch? Dann springt automatisch die Gerätestimme ein, mit einem kurzen Hinweis - das Vorlesen bricht nie einfach ab.
 - **Wort-Hervorhebung:** Läuft auch bei KI-Stimmen mit. Bei ElevenLabs und Speechify zeichengenau, bei den übrigen Anbietern anhand der Audiolänge geschätzt.
 - **Tarif-Lock:** Beim Wechsel in eine teurere Preisstufe (z.B. von Gemini zu ElevenLabs) fragt die App vorher noch einmal nach - schützt vor einem Versehen, nicht vor Absicht.
-- **Persona-Stimmlage:** Bei Gemini und OpenAI wird die gewählte Erzähler-Persona als Sprechanweisung mitgeschickt - die "Gute-Nacht-Fee" klingt dann tatsächlich sanfter als der "Weise Professor".
+- **Persona-Stimmlage:** Bei Gemini wird die gewählte Erzähler-Persona als Sprechanweisung mitgeschickt - die "Gute-Nacht-Fee" klingt dann tatsächlich sanfter als der "Weise Professor".
 - **Vorbereitet für den Video-Export:** Die Aufnahmen liegen als echte Dateien inklusive Länge und Wort-Zeitpunkten vor (`app.ttsNeural.renderAudio()` / `renderPageSegments()`). Damit lässt sich später ein Video aus Buchseite + Stimme + mitlaufenden Untertiteln bauen, ohne dass dafür noch einmal Kontingent verbraucht wird. Mit der Gerätestimme geht das nicht - die spricht direkt über den Lautsprecher und gibt keine Datei heraus.
 
 ### Einrichten
@@ -111,7 +109,7 @@ Faustregel: **Gemini** zum kostenlosen Reinschnuppern, **Google Cloud Chirp 3 HD
 3. Stimme auswählen und auf **🔊 Stimme testen** tippen. Der Test sagt direkt, ob der Key funktioniert.
 4. Speichern.
 
-> **Hinweis zu ElevenLabs:** Der Anbieter rät von API-Keys direkt im Browser ab und kann Browser-Zugriffe sperren. Meldet der Test "vom Browser aus nicht erreichbar", liegt es daran - dann bleiben Google Cloud oder OpenAI als Alternativen. Eigene/geklonte Stimmen aus dem eigenen Konto lassen sich per Knopf nachladen.
+> **Hinweis zu ElevenLabs:** Der Anbieter rät von API-Keys direkt im Browser ab und kann Browser-Zugriffe sperren. Meldet der Test "vom Browser aus nicht erreichbar", liegt es daran - dann bleiben Gemini, Speechify und Google Cloud als Alternativen. Eigene/geklonte Stimmen aus dem eigenen Konto lassen sich per Knopf nachladen.
 
 ## 🚀 Live nutzen
 
@@ -171,7 +169,7 @@ js/
   nav.js                  Ansichten-Router
   api.js                  Google-Gemini-Anfragen
   tts.js                  Sprachausgabe inkl. Auto-Vorlese-Modus (Weiche Gerät/KI-Stimme)
-  ttsProviders.js         KI-Stimmen-Anbieter (Gemini, Google Cloud, ElevenLabs, OpenAI, Speechify)
+  ttsProviders.js         KI-Stimmen-Anbieter (Gemini, Google Cloud, ElevenLabs, Speechify)
   ttsNeural.js            Abspielen, Zwischenspeicher & Wort-Hervorhebung der KI-Stimmen
   ui.js                   Toast-Meldungen & Ladeanzeige
   utils.js                Hilfsfunktionen (Bildverkleinerung, Sanitizing, Cover)
@@ -227,7 +225,7 @@ docs/
 
 - Alle Daten liegen im Browser des jeweiligen Geräts (IndexedDB) – kein automatischer Abgleich zwischen mehreren Geräten. Für den Umzug auf ein neues Gerät: Export/Import unter ⚙️ nutzen.
 - Der Gemini-API-Key liegt im Klartext im Browser des Geräts (kein eigener Server dazwischen). Das gilt genauso für die Keys der KI-Stimmen-Anbieter - deshalb dort möglichst Keys mit knappem Budget/Limit verwenden.
-- Neue Seiten scannen/analysieren braucht Internet (die KI-Auswertung läuft über Gemini bzw. Mistral). Die App selbst und bereits analysierte Bücher funktionieren dank Service Worker auch offline - Tailwind liegt seit dem eigenen Build lokal mit im Cache.
+- Neue Seiten scannen/analysieren braucht Internet (die KI-Auswertung läuft über Gemini). Die App selbst und bereits analysierte Bücher funktionieren dank Service Worker auch offline - Tailwind liegt seit dem eigenen Build lokal mit im Cache.
 - KI-Stimmen brauchen Internet. Bereits gespeicherte Aufnahmen (Stimmen-Speicher) spielen auch offline; für alles andere übernimmt automatisch die Gerätestimme.
 - iOS Safari kann Website-Speicher (auch IndexedDB) nach langer Inaktivität automatisch löschen, wenn die Seite nicht zum Homescreen hinzugefügt wurde – regelmäßiger Export ist deshalb weiterhin empfehlenswert.
 

@@ -6,6 +6,12 @@ vollständige Historie, neueste Version zuerst. Diese Datei wurde aus
 `CLAUDE.md` ausgelagert, weil der Abschnitt dort mit der Zeit zu groß für
 schnellen Kontext wurde; inhaltlich unverändert übernommen.
 
+## v0.56.4-beta — API-Wartung
+
+- Reader und SchreibZauber teilen den Gemini-Aufruf. Die Rotation überspringt bekannte Kontingentsperren und die auf andere Modelle umgeleiteten Flash-Aliasse. Neu als Reserve: Gemini 3.5 Flash-Lite. Buchatlas sendet keine Anfragen mehr an weiterhin gesperrte Modelle.
+- Gemini-Vorlesen nutzt 3.8 Flash TTS über die Interactions API ohne gespeicherten Sitzungszustand. Werkstattbilder nutzen Nano Banana 2.1 in 1K. Speechify wechselt zu seinem aktuellen Host und Simba 3.5; Wortmarken bleiben unterstützt. ElevenLabs lädt die vollständige Stimmenliste über v2.
+- Der anonyme Pollinations-Zugriff entfällt. Vorhandene Bilder bleiben sichtbar; Platzhalter, eigene Bilder und Gemini bleiben verfügbar. Mistral und OpenAI TTS sind entfernt. War OpenAI als Vorlesestimme ausgewählt, nutzt LeseZauber die Gerätestimme, bis eine andere Stimme gewählt wird.
+
 ## v0.56.3-beta
 
 Nutzerwunsch: „Analyse und Vorlesen sollen getrennt ausgeschlossen werden können und nicht nur zusammen.“

@@ -9,7 +9,7 @@ import { app } from './core.js';
 // - instruction: wie die KI den Text SCHREIBT (Wortwahl, Tonfall im Text)
 // - ttsStyle:    wie die KI-Stimme ihn SPRICHT (Tempo, Lautstärke, Gefühl)
 // NEU: ttsStyle ist optional - fehlt es, wird instruction genutzt. Wirkt
-// nur bei Anbietern, die Sprech-Anweisungen verstehen (Gemini, OpenAI),
+// nur bei Anbietern, die Sprech-Anweisungen verstehen (Gemini),
 // und nur wenn in den Einstellungen "Stimme an Erzähler-Persona anpassen"
 // eingeschaltet ist.
 //

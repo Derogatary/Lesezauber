@@ -175,10 +175,6 @@ Object.assign(app.render, {
         const apiKeyHint = document.getElementById('apiKeyChildLockHint');
         if (apiKeyHint) apiKeyHint.classList.toggle('hidden', !locked);
 
-        const mistralKeyInput = document.getElementById('inputMistralKey');
-        if (mistralKeyInput) mistralKeyInput.disabled = locked;
-        const mistralKeyHint = document.getElementById('mistralKeyChildLockHint');
-        if (mistralKeyHint) mistralKeyHint.classList.toggle('hidden', !locked);
 
         // Die Persona-Liste kommt aus config.js statt fest im HTML zu
         // stehen. Ergänzt man dort eine Persona, erscheint sie automatisch
@@ -194,7 +190,6 @@ Object.assign(app.render, {
 
         document.getElementById('inputApiKey').value = app.settings.apiKey;
         app.render.geminiQuotaStatus();
-        document.getElementById('inputMistralKey').value = app.settings.mistralApiKey;
         personaSelect.value = app.settings.persona;
 
         // NEU (Birkenbihl-Methode): Zielsprachen-Liste kommt aus config.js,
@@ -249,15 +244,7 @@ Object.assign(app.render, {
             studioImgToggle.disabled = locked;
         }
 
-        // NEU (Nutzerwunsch "kostenlos Bilderbücher erstellen"): Pollinations
-        // als zweite Bildquelle - gleiche Sperre wie oben (Kind-Profile
-        // sollen keinen unmoderierten Drittanbieter-Dienst selbst umschalten
-        // können), auch wenn hier kein Geld im Spiel ist.
-        const studioPollinationsToggle = document.getElementById('toggleStudioImagePollinations');
-        if (studioPollinationsToggle) {
-            studioPollinationsToggle.checked = app.settings.studioImagePollinationsEnabled;
-            studioPollinationsToggle.disabled = locked;
-        }
+
 
         // NEU: Übersicht statt nur einer einzelnen Zeile (Nutzerwunsch) -
         // zeigt alle drei Hintergrund-Aufgaben getrennt, in derselben
@@ -374,7 +361,7 @@ Object.assign(app.render, {
             <details class="text-[11px] text-slate-600 ${blocked.length ? 'bg-amber-50 border-amber-200' : 'bg-slate-50 border-slate-200'} border rounded-xl p-2" ${blocked.length ? 'open' : ''}>
                 <summary class="font-bold cursor-pointer">📊 Gemini heute: ${total} ${total === 1 ? 'Anfrage' : 'Anfragen'}${blocked.length ? ` · ${blocked.length} von ${rows.length} Modellen gesperrt` : ' · alle Modelle frei'}</summary>
                 <ul class="space-y-0.5 mt-1">${list}</ul>
-                <p class="text-slate-500 mt-1">Gezählt wird, was dieses Gerät seit dem letzten Zurücksetzen geschickt hat. Wie viele noch übrig sind, verrät Google der App nicht - das zeigt nur <a href="https://aistudio.google.com/" target="_blank" rel="noopener" class="underline">Google AI Studio</a> (dort das Projekt wählen, Bereich Nutzung/Rate-Limits). Faustregel: volle Flash-Modelle ca. 20 am Tag, Flash-Lite deutlich mehr. Zurückgesetzt wird um Mitternacht Pazifik-Zeit (bei uns meist 9:00 Uhr).</p>
+                <p class="text-slate-500 mt-1">Gezählt wird, was dieses Gerät seit dem letzten Zurücksetzen geschickt hat. Wie viele noch übrig sind, verrät Google der App nicht - das zeigt nur <a href="https://aistudio.google.com/" target="_blank" rel="noopener" class="underline">Google AI Studio</a> (dort das Projekt wählen, Bereich Nutzung/Rate-Limits). Die Limits hängen vom Projekt, Modell und Tarif ab. Zurückgesetzt wird um Mitternacht Pazifik-Zeit (bei uns meist 9:00 Uhr).</p>
                 ${blocked.length ? '<button onclick="app.actions.resetGeminiQuota()" class="mt-1 text-[11px] font-bold px-2.5 py-1 rounded-lg border border-slate-300 bg-white hover:bg-slate-50">🔄 Sperren jetzt zurücksetzen</button>' : ''}
             </details>`;
     }
