@@ -5,7 +5,7 @@ description: "Use to critique or improve an existing LeseZauber Pro screen, UX f
 
 # LeseZauber Pro · UI and Webdesign Review (DRAFT)
 
-First read [the current project cursor](https://app.notion.com/p/3f93af1e29e38118a9d9d0e18350b67c), existing UI components, design tokens, user goal and CLAUDE.md, README.md, js/core.js, js/main.js, css/tailwind-input.css, docs/. Do not treat historical screenshots or archived docs as the active deployed version.
+First read [the current project cursor](https://app.notion.com/p/f7cd9b48510841daa8efaeafbfc842f8), existing UI components, design tokens, user goal and CLAUDE.md, README.md, js/core.js, js/main.js, css/tailwind-input.css, docs/. Do not treat historical screenshots or archived docs as the active deployed version.
 
 ## Current UI priorities
 Eltern-Einrichtung, Bibliothek, Start/Weiterlesen, Vorlesemodus, Reader-Fokus, leere/fehlgeschlagene Bildanalyse, Offline-Status, große Buttons und reduzierte Bewegung. Vorhandenes Tailwind-Build-Verfahren aus CLAUDE.md respektieren; gebaute CSS-Datei nicht handeditieren.
