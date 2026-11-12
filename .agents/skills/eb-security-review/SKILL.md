@@ -5,7 +5,7 @@ description: "Use for a security, privacy, authorization, import, external-provi
 
 # LeseZauber Pro · Security Review (DRAFT)
 
-Read the current [project cursor](https://app.notion.com/p/3f93af1e29e38118a9d9d0e18350b67c) and the actual commit/branch first; read CLAUDE.md, README.md, js/core.js, js/main.js, css/tailwind-input.css, docs/. Existing AGENTS/CLAUDE instructions and project P0 rules outrank this skill.
+Read the current [project cursor](https://app.notion.com/p/f7cd9b48510841daa8efaeafbfc842f8) and the actual commit/branch first; read CLAUDE.md, README.md, js/core.js, js/main.js, css/tailwind-input.css, docs/. Existing AGENTS/CLAUDE instructions and project P0 rules outrank this skill.
 
 ## Specific boundaries
 Kinderprofile, private Bücher/Bilder, IndexedDB, optionale Gemini-/Mistral-/TTS-Anbieter, API-Kosten/Quoten sowie Rechte an fotografierten Seiten getrennt betrachten. API-Schlüssel im Browser sind eine dokumentierte bestehende Architekturgrenze, nicht ohne Kontext einen neuen Bug behaupten. Niemals persönliche Bilder/Buchseiten an Skill-/QA-Dienste senden.
