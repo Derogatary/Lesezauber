@@ -48,7 +48,12 @@ export async function loadReaderPackage(file, zipLimits) {
 
   // --- Quittung export.json ---
   const receipt = parseJson(entries.get('export.json'), 'INVALID_RECEIPT');
-  check(onlyKeys(receipt, ['format', 'packageId', 'manifestSha256', 'sourceSha256', 'decision', 'note', 'files']) &&
+  // `assets` (Herkunftsnachweis Original-/Paket-Hash je Bild, vom Studio-Export mitgeliefert) ist optional und rein informativ.
+  const {assets: receiptAssets, ...receiptCore} = isRecord(receipt) ? receipt : {};
+  check(receiptAssets === undefined || (Array.isArray(receiptAssets) && receiptAssets.length <= 2500 &&
+    receiptAssets.every(a => isRecord(a) && ID.test(a.assetId) && ID.test(a.packageAssetId) && SHA.test(a.sha256) &&
+      SHA.test(a.sourceSha256) && Number.isSafeInteger(a.metadataRemoved))), 'RECEIPT_MISMATCH');
+  check(onlyKeys(receiptCore, ['format', 'packageId', 'manifestSha256', 'sourceSha256', 'decision', 'note', 'files']) &&
     receipt.format === READER_EXPORT_FORMAT && receipt.packageId === manifest.packageId &&
     receipt.manifestSha256 === manifestSha256 && receipt.sourceSha256 === manifest.source.sha256 &&
     str(receipt.note, 1000) && Array.isArray(receipt.files), 'RECEIPT_MISMATCH');

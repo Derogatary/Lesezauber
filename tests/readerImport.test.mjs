@@ -178,3 +178,11 @@ test('Guard: kein Schema-Upgrade, kein Netzwerk, kein Zugriff auf Profile/Aufnah
         assert.doesNotMatch(src, /fetch\(|XMLHttpRequest|WebSocket|sendBeacon|localStorage|indexedDB/, file);
     }
 });
+
+test('studio export receipt with its optional assets provenance list is accepted; malformed assets are refused', async () => {
+    const H = 'a'.repeat(64);
+    const good = [{ assetId: 'asset-cover', packageAssetId: 'asset-cover', sha256: H, sourceSha256: H, metadataRemoved: 0 }];
+    await loadReaderPackage(makePackage({ tweak: { receipt: r => { r.assets = good; } } }).zip());
+    await assert.rejects(loadReaderPackage(makePackage({ tweak: { receipt: r => { r.assets = [{ assetId: 'x' }]; } } }).zip()),
+        e => e.code === 'RECEIPT_MISMATCH');
+});
