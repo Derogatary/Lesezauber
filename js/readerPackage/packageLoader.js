@@ -99,8 +99,11 @@ export async function loadReaderPackage(file, zipLimits) {
       sameList(side.segmentIds, chapter.segments.map(s => s.id)) && Array.isArray(side.images) && side.images.length <= 100 &&
       (side.audio === null || isRecord(side.audio)), 'INVALID_CHAPTER_JSON');
     for (const image of side.images) {
-      check(onlyKeys(image, ['assetId', 'role']) && assetIds.has(image.assetId) && chapter.assetIds.includes(image.assetId) &&
-        IMAGE_ROLES.includes(image.role), 'INVALID_CHAPTER_JSON');
+      // Studio-Export: `assetId` ist die Studio-Bild-ID, `packageAssetId` die (bei gleichen Bytes zusammengefuehrte) Manifest-ID.
+      const {packageAssetId, ...core} = isRecord(image) ? image : {};
+      const manifestId = packageAssetId ?? image?.assetId;
+      check(onlyKeys(core, ['assetId', 'role']) && (packageAssetId === undefined || ID.test(packageAssetId)) && ID.test(core.assetId) &&
+        assetIds.has(manifestId) && chapter.assetIds.includes(manifestId) && IMAGE_ROLES.includes(image.role), 'INVALID_CHAPTER_JSON');
     }
     chapterSidecars.set(chapter.id, side);
   });

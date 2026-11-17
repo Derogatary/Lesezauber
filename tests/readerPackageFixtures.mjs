@@ -102,10 +102,10 @@ export function makePackage({ title = 'Erfundenes Testbuch', decisionId = 'dec1'
     const json = (v) => enc.encode(JSON.stringify(v, null, 2) + '\n');
     const book = { format: 'editionboysen-reader-book/1', packageId: manifest.packageId, bookId, title, language: 'de', snapshotNo,
         coverAssetId: withCover ? 'asset-cover' : null, chapterCount: manifestChapters.length, imageCount: manifestAssets.length };
-    const sidecars = chapterDefs.map((c, index) => ({ path: `chapters/${c.id}.json`, bytes: json({
+    const sidecars = chapterDefs.map((c, index) => ({ path: `chapters/${c.id}.json`, bytes: json(((side) => { tweak?.sidecar?.(side); return side; })({
         format: 'editionboysen-reader-chapter/1', chapterId: c.id, position: index + 1, revision: 1, revisionSha256: 'c'.repeat(64),
         title: c.title, segmentIds: manifestChapters[index].segments.map(s => s.id),
-        images: c.images.map(assetId => ({ assetId, role: 'illustration' })), audio: null }) }));
+        images: c.images.map(assetId => ({ assetId, role: 'illustration' })), audio: null })) }));
     if (tweak?.book) tweak.book(book);
     const files = [
         { name: 'manifest.json', bytes: manifestBytes, method: 8 },

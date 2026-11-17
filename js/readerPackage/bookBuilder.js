@@ -61,7 +61,7 @@ export function buildLibraryBook(pkg, {personaIds, images, placeholder, profileI
 
   for (const chapter of manifest.chapters) {
     const side = chapterSidecars.get(chapter.id);
-    const chapterImages = side.images.map(i => i.assetId);
+    const chapterImages = side.images.map(i => i.packageAssetId ?? i.assetId);
     const groups = groupSegments(chapter.segments);
     const placeholderImage = placeholder ? placeholder(chapter.title) : null;
     groups.forEach((group, n) => {

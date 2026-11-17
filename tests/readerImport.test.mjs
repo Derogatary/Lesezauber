@@ -186,3 +186,12 @@ test('studio export receipt with its optional assets provenance list is accepted
     await assert.rejects(loadReaderPackage(makePackage({ tweak: { receipt: r => { r.assets = [{ assetId: 'x' }]; } } }).zip()),
         e => e.code === 'RECEIPT_MISMATCH');
 });
+
+test('studio chapter sidecar images carry packageAssetId (merged duplicates): the manifest id wins, a stranger id is refused', async () => {
+    const alias = (side) => { side.images = side.images.map(i => ({ assetId: 'studio-' + i.assetId, packageAssetId: i.assetId, role: i.role })); };
+    const pkg = await loadReaderPackage(makePackage({ tweak: { sidecar: alias } }).zip());
+    const book = buildLibraryBook(pkg, { personaIds: PERSONAS, images, placeholder, now: 1000 });
+    assert.ok(book.pages.some(p => p.imgUrl === 'data:image/webp;base64,BB'), 'chapter image resolved through packageAssetId');
+    await assert.rejects(loadReaderPackage(makePackage({ tweak: { sidecar: side => { side.images = side.images.map(i => ({ ...i, packageAssetId: 'nope' })); } } }).zip()),
+        e => e.code === 'INVALID_CHAPTER_JSON');
+});
