@@ -35,6 +35,8 @@ import './actions/birkenbihl.js';
 import './actions/focusMode.js';
 import './actions/pdfImport.js';
 import './actions/epubImport.js';
+// NEU: Reader-Paket-Import (private Vorschau aus dem Autorenstudio)
+import './actions/readerPackageImport.js';
 import './actions/vocabTrainer.js';
 import './actions/workbook.js';
 import './actions/progress.js';

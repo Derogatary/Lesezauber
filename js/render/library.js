@@ -220,6 +220,7 @@ Object.assign(app.render, {
                             ${book.pages.length} ${app.utils.resolveBookType(book) === 'workbook' ? 'Blätter' : 'Seiten'}
                         </span>
                         ${book.approvedForKids && !kidMode ? '<span class="absolute top-2 right-2 bg-white/90 text-[10px] font-bold px-2 py-0.5 rounded-full text-emerald-700" title="Für den Kinder-Lesemodus freigegeben">🧒 frei</span>' : ''}
+                        ${app.actions.isReaderPreviewBook?.(book) ? '<span class="absolute top-2 left-2 bg-white/90 text-[10px] font-bold px-2 py-0.5 rounded-full text-amber-800">✍️ Vorschau – nicht veröffentlichen</span>' : ''}
                         ${app.utils.resolveBookType(book) === 'workbook' ? '<span class="absolute top-2 left-2 bg-white/90 text-[10px] font-bold px-2 py-0.5 rounded-full text-indigo-700">📝 Übungsheft</span>' : ''}
                     </div>
                     <div class="p-3 flex-grow flex flex-col justify-between">

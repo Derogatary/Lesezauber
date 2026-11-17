@@ -234,6 +234,7 @@ Object.assign(app.render, {
             }
         }
         fillHint?.classList.toggle('hidden', !usingFallback);
+        document.getElementById('readerPreviewNotice')?.classList.toggle('hidden', !app.actions.isReaderPreviewBook?.(book));
 
         // NEU (v0.39.0-beta): Zwischenruf der Persona als Sprechblase unter
         // dem Text (Original- UND Erstleser-Tab). Ältere Seiten ohne

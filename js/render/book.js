@@ -26,6 +26,7 @@ Object.assign(app.render, {
                 <h2 class="text-base font-extrabold text-slate-900">${app.utils.sanitize(book.title)}</h2>
                 <p class="text-xs text-slate-500 font-medium">Autor: ${app.utils.sanitize(book.author)}</p>
                 ${publisherLine}
+                ${app.actions.isReaderPreviewBook?.(book) ? `<p class="text-[10px] font-bold text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1 mt-1">✍️ Vorschau aus dem Autorenstudio – nicht veröffentlichen (Stand ${Number(book.readerPackage.snapshotNo) || '?'})</p>` : ''}
                 <p class="text-[10px] text-slate-500 mt-1">${bookTypeInfo ? bookTypeInfo.icon + ' ' + app.utils.sanitize(bookTypeInfo.label) + ' · ' : ''}${book.pages.length} ${unit} gespeichert</p>
             </div>`;
 

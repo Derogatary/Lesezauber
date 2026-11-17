@@ -1,4 +1,5 @@
 import { app } from './core.js';
+import { commitReaderBook } from './readerPackage/readerStore.js';
 
 // ================= IndexedDB Speicher-Engine =================
 // Jedes Buch ist ein eigener Datensatz (statt wie früher die gesamte
@@ -316,6 +317,15 @@ Object.assign(app.dbOps, {
             console.error('Speichern fehlgeschlagen:', e);
             app.ui.toast(storageErrorMessage(e, 'Speichern fehlgeschlagen.'), '⚠️');
         });
+    },
+
+    // NEU (Reader-Paket-Import, Vorschau aus dem Autorenstudio): EINE Transaktion nur auf dem
+    // Store 'books', add() statt put(), keine Schema-Aenderung - siehe js/readerPackage/readerStore.js.
+    // Wirft ReaderStoreError('ALREADY_INSTALLED' | 'QUOTA' | ...); app.library wird erst NACH dem Commit ergaenzt.
+    async commitReaderPackageBook(book) {
+        const db = await openDatabase();
+        await commitReaderBook(db, book);
+        app.library[book.id] = book;
     },
 
     deleteBook(bookId) {
