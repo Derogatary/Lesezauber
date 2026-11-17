@@ -6,6 +6,10 @@ vollständige Historie, neueste Version zuerst. Diese Datei wurde aus
 `CLAUDE.md` ausgelagert, weil der Abschnitt dort mit der Zeit zu groß für
 schnellen Kontext wurde; inhaltlich unverändert übernommen.
 
+## Unveroeffentlicht (Branch feat/reader-package-import-20261117)
+
+- Import privater Reader-Pakete aus dem Autorenstudio (siehe `docs/READER-PAKET-IMPORT.md`). Kein Schema-Upgrade. sw.js CACHE_NAME v96.
+
 ## v0.56.3-beta
 
 Nutzerwunsch: „Analyse und Vorlesen sollen getrennt ausgeschlossen werden können und nicht nur zusammen.“

@@ -1,7 +1,7 @@
 // Bei jeder inhaltlichen Änderung an einer dieser Dateien diese Nummer
 // erhöhen - sonst bekommen wiederkehrende Besucher weiter die alte
 // zwischengespeicherte Version ausgeliefert.
-const CACHE_NAME = 'lesezauber-shell-v95';
+const CACHE_NAME = 'lesezauber-shell-v96';
 
 // FIX (v89, v0.54.0-beta): Vorlese-Reihenfolge Bild vor Wörtern für alle Seiten.
 
@@ -382,6 +382,14 @@ const APP_SHELL = [
     './js/atlas/render/atlasTranslate.js',
     './js/atlas/atlasNight.js',
     './js/actions/epubImport.js',
+    './js/actions/readerPackageImport.js',
+    './js/readerPackage/readerPackageV1.js',
+    './js/readerPackage/readerImportPlan.js',
+    './js/readerPackage/zipReader.js',
+    './js/readerPackage/imageInfo.js',
+    './js/readerPackage/packageLoader.js',
+    './js/readerPackage/bookBuilder.js',
+    './js/readerPackage/readerStore.js',
     './js/backupZip.js',
     './js/actions/fullBackup.js',
     './manifest.json'
