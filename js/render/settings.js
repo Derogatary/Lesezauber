@@ -240,25 +240,6 @@ Object.assign(app.render, {
         const twoPageToggle = document.getElementById('toggleTwoPageLayout');
         if (twoPageToggle) twoPageToggle.checked = app.settings.twoPageLayout;
 
-        // NEU (SchreibZauber Stufe 2): echte Bildgenerierung - Schalterstellung
-        // anzeigen, für Kinderprofile gesperrt wie der API-Key selbst (kostet
-        // Geld, siehe app.settingsConfig.toggleStudioImageGen).
-        const studioImgToggle = document.getElementById('toggleStudioImageGen');
-        if (studioImgToggle) {
-            studioImgToggle.checked = app.settings.studioImageGenEnabled;
-            studioImgToggle.disabled = locked;
-        }
-
-        // NEU (Nutzerwunsch "kostenlos Bilderbücher erstellen"): Pollinations
-        // als zweite Bildquelle - gleiche Sperre wie oben (Kind-Profile
-        // sollen keinen unmoderierten Drittanbieter-Dienst selbst umschalten
-        // können), auch wenn hier kein Geld im Spiel ist.
-        const studioPollinationsToggle = document.getElementById('toggleStudioImagePollinations');
-        if (studioPollinationsToggle) {
-            studioPollinationsToggle.checked = app.settings.studioImagePollinationsEnabled;
-            studioPollinationsToggle.disabled = locked;
-        }
-
         // NEU: Übersicht statt nur einer einzelnen Zeile (Nutzerwunsch) -
         // zeigt alle drei Hintergrund-Aufgaben getrennt, in derselben
         // Reihenfolge, in der js/backgroundPregen.js sie auch abarbeitet

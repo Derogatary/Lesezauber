@@ -26,6 +26,8 @@ Object.assign(app.nav, {
     // sonst würde jedes "Zurück" sofort wieder einen "Vorwärts"-Eintrag
     // erzeugen (Ping-Pong statt echtem Zurückgehen).
     go(viewId, opts = {}) {
+        // Alte Verlaufseintraege der entfernten Werkstatt fuehren in die Bibliothek.
+        if (['studio', 'studioWizard', 'workbookGenerator'].includes(viewId)) viewId = 'lib';
         // NEU (v0.42.0-beta): im Kinder-Lesemodus nur Bibliothek/Reader/
         // Vokabeln/Hilfe - Buchansicht wird zur Bibliothek umgeleitet, alles
         // andere gesperrt (js/actions/kidMode.js).
@@ -33,17 +35,6 @@ Object.assign(app.nav, {
             const target = app.actions.kidModeGuard(viewId);
             if (target === null) return;
             viewId = target;
-        }
-        // NEU: Verlässt man die Werkstatt-Stufenansicht, ohne je etwas
-        // eingegeben zu haben, den beim Klick auf "Bilderbuch/Arbeitsheft
-        // erstellen" nur im Speicher angelegten Entwurf wieder verwerfen
-        // (siehe app.studio.newProject) statt ihn als leere Karteikarte in
-        // der Werkstatt-Übersicht liegen zu lassen.
-        if (app.state.currentView === 'studioWizard' && viewId !== 'studioWizard') {
-            const openProject = app.studio.projects[app.state.currentStudioProjectId];
-            if (openProject?._draft) {
-                delete app.studio.projects[openProject.id];
-            }
         }
 
         // Verlässt man den Reader während der Auto-Modus läuft, muss die
@@ -77,7 +68,7 @@ Object.assign(app.nav, {
         if (viewId !== 'atlas') app.atlas.actions.resetLibrarySelection?.();
 
         // NEU (v0.47.0-beta): + die fünf Buchatlas-Ansichten (app.atlas.nav.viewIds)
-        ['viewLibrary', 'viewBook', 'viewScanner', 'viewReader', 'viewSettings', 'viewVocab', 'viewHelp', 'viewStudioLibrary', 'viewStudioWizard', 'viewWorkbookGenerator', ...(app.atlas.nav.viewIds || [])].forEach(id => {
+        ['viewLibrary', 'viewBook', 'viewScanner', 'viewReader', 'viewSettings', 'viewVocab', 'viewHelp', ...(app.atlas.nav.viewIds || [])].forEach(id => {
             const el = document.getElementById(id);
             if (el) el.classList.add('view-hidden');
         });
@@ -103,15 +94,6 @@ Object.assign(app.nav, {
             app.render.vocabTrainer();
         } else if (viewId === 'help') {
             document.getElementById('viewHelp').classList.remove('view-hidden');
-        } else if (viewId === 'studio') {
-            document.getElementById('viewStudioLibrary').classList.remove('view-hidden');
-            app.render.studioLibrary();
-        } else if (viewId === 'studioWizard') {
-            document.getElementById('viewStudioWizard').classList.remove('view-hidden');
-            app.render.studioWizard();
-        } else if (viewId === 'workbookGenerator') {
-            document.getElementById('viewWorkbookGenerator').classList.remove('view-hidden');
-            app.render.workbookGenerator();
         } else if (viewId.startsWith('atlas')) {
             // NEU (v0.47.0-beta): Buchatlas-Ansichten (atlas, atlasBook,
             // atlasWiki, atlasTranslate, atlasSettings) - js/atlas/atlasCore.js
@@ -127,7 +109,6 @@ Object.assign(app.nav, {
                 view: viewId,
                 bookId: app.state.currentBookId,
                 pageIdx: app.state.currentPageIdx,
-                studioProjectId: app.state.currentStudioProjectId,
                 // NEU (v0.47.0-beta): geöffnetes Buchatlas-Buch
                 atlasBookId: app.atlas.state.currentBookId
             });
@@ -139,7 +120,6 @@ window.addEventListener('popstate', (event) => {
     const state = event.state || { view: 'lib' };
     if (state.bookId !== undefined) app.state.currentBookId = state.bookId;
     if (state.pageIdx !== undefined) app.state.currentPageIdx = state.pageIdx;
-    if (state.studioProjectId !== undefined) app.state.currentStudioProjectId = state.studioProjectId;
     if (state.atlasBookId !== undefined) app.atlas.state.currentBookId = state.atlasBookId;
     app.nav.go(state.view, { fromHistory: true });
 });

@@ -104,7 +104,7 @@ Object.assign(app.actions, {
             : '';
         const msg = approved === 0
             ? 'Kinder-Lesemodus einschalten?\n\nNoch ist KEIN Buch freigegeben - die Bibliothek wäre leer. Bücher gibst du in der Buchansicht frei („🧒 Für den Kinder-Lesemodus freigeben“).'
-            : `Kinder-Lesemodus einschalten?\n\nSichtbar sind dann nur ${approved} freigegebene(s) Buch/Bücher. Einstellungen, SchreibZauber und Import sind ausgeblendet. Zum Verlassen fragt die App eine Einmaleins-Aufgabe ab.${chatNote}`;
+            : `Kinder-Lesemodus einschalten?\n\nSichtbar sind dann nur ${approved} freigegebene(s) Buch/Bücher. Einstellungen und Import sind ausgeblendet. Zum Verlassen fragt die App eine Einmaleins-Aufgabe ab.${chatNote}`;
         if (!confirm(msg)) return;
         try { localStorage.setItem(KID_MODE_KEY, '1'); } catch (e) { console.error('Kinder-Lesemodus nicht speicherbar:', e); }
         applyBodyClass(true);

@@ -41,7 +41,6 @@ import './actions/vocabTrainer.js';
 import './actions/workbook.js';
 import './actions/progress.js';
 import './actions/checkWork.js';
-import './actions/workbookGenerator.js';
 import './actions/prepareAudio.js';
 // NEU (v0.39.0-beta): ganzes Buch übersetzen (Kopie in Zielsprache).
 import './actions/bookTranslate.js';
@@ -74,40 +73,6 @@ import './actions/videoTimeline.js';
 import './actions/videoPreview.js';
 import './actions/videoExport.js';
 
-// NEU: SchreibZauber (Werkstatt für eigene Werke) - siehe
-// docs/KONZEPT-SchreibZauber.md. studioCore.js importiert seinerseits
-// imageFormats.js/placeholder.js/imageSource.js, deshalb reicht hier ein
-// gebündelter Import pro Datei statt einer festen Ladereihenfolge.
-import './studio/studioCore.js';
-import './studio/studioPrompts.js';
-import './studio/studioApi.js';
-import './studio/studioExport.js';
-import './studio/studioMetaPages.js';
-// NEU (Stufe 2 - Bilder): Stilkarte/Figuren-Bibel, Storyboard,
-// Bildgenerierung - siehe docs/KONZEPT-SchreibZauber.md TEIL E.
-import './studio/studioCharacters.js';
-import './studio/studioStoryboard.js';
-import './studio/studioImages.js';
-// NEU (v0.45.0-beta): Bilder manuell austauschen (Prompt kopieren / Bild einfügen)
-import './studio/studioManualImages.js';
-// NEU (v0.46.0-beta): Zielprogramme für kopierte Bild-Prompts
-import './studio/imageTargets.js';
-// NEU (Ausbaustufe 3 - Layout & Druck): Textplatzierung/Silbenfarben
-// (studioLayout.js) und der davon unabhängige Doppelseiten-Druck
-// (studioPrint.js) - siehe docs/KONZEPT-SchreibZauber.md TEIL E.
-import './studio/studioLayout.js';
-import './studio/studioPrint.js';
-// NEU (Ausbaustufe 4 - Arbeitsheft): eigener Werktyp-Pfad, siehe
-// docs/KONZEPT-SchreibZauber.md TEIL C.4. worksheet.js importiert
-// worksheetCanvas.js selbst mit, deshalb reicht hier ein Eintrag.
-import './studio/worksheet.js';
-// NEU (v0.55.0-beta): Ausmalbilder fürs Arbeitsheft (Prompt kopieren, Bild einfügen)
-import './studio/worksheetImages.js';
-// NEU (Ausbaustufe 5 - Comic): Sprechblasen-Overlay + -Verwaltung, sowie
-// Panel-Layout/Zusammensetzen, siehe docs/KONZEPT-SchreibZauber.md TEIL E.
-import './studio/studioBalloons.js';
-import './studio/studioComicPanels.js';
-
 // NEU (v0.47.0-beta): Buchatlas - Wiki & Übersetzung für eigene Texte,
 // wieder eingegliedert (vorher eigene Netlify-Seite). atlasCore.js zuerst:
 // Zustand, Navigation und die Brücke zu LeseZaubers Toast/Loader/Key.
@@ -136,17 +101,8 @@ import './render/birkenbihl.js';
 import './render/settings.js';
 import './render/vocab.js';
 import './render/workbook.js';
-import './render/workbookGenerator.js';
 import './render/progress.js';
 import './render/checkWork.js';
-import './render/studioLibrary.js';
-import './render/studioWizard.js';
-import './render/studioCharacters.js';
-import './render/studioStoryboard.js';
-import './render/studioImages.js';
-import './render/studioManualImages.js';
-import './render/studioLayout.js';
-import './render/studioWorkbookWizard.js';
 
 import './readerUI.js';
 import './settingsConfig.js';

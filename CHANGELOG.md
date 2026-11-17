@@ -6,7 +6,16 @@ vollständige Historie, neueste Version zuerst. Diese Datei wurde aus
 `CLAUDE.md` ausgelagert, weil der Abschnitt dort mit der Zeit zu groß für
 schnellen Kontext wurde; inhaltlich unverändert übernommen.
 
-## Unveroeffentlicht (Branch feat/reader-package-import-20261117)
+## v0.57.0-beta - Lesezauber wird der Reader
+
+Entscheid 2026-11-17: Erstellen zieht ins Autorenstudio (studio.editionboysen.de), Lesezauber bleibt der Reader.
+
+- **Entfernt:** SchreibZauber/Werkstatt (Bilderbuch, Comic, Arbeitsheft: `js/studio/*`, `js/render/studio*.js`), Heft-Generator (`workbookGenerator`, `app.api.generateWorksheets`), Studio-Bildgenerierung und die zwei Einstellungs-Schalter dazu, Bibliotheks-Knopf "SchreibZauber" und "Übungsheft von der KI", Routen `studio`/`studioWizard`/`workbookGenerator`, Studio-Druck/KDP/Export, Tests der entfernten Module.
+- **Bleibt:** Bibliothek, Reader, Vorlesen/KI-Stimmen, Profile, Kindermodus, Quiz/Vokabeln/Sticker, Heft-Kontrolle, Klappenbuch, Birkenbihl, Übersetzen, Import (PDF/EPUB/Scan/Reader-Paket), Video/Hörbuch, Voll-Backup, Buchatlas.
+- **Daten:** Object Store `projects` und `studio-projects.json` im Voll-Backup unverändert (Export und Wiederherstellung funktionieren weiter), keine DB-Versionsänderung. Alte Studio-Bücher bleiben lesbar; die Buchansicht verweist auf das Autorenstudio.
+- sw.js CACHE_NAME v98.
+
+## Reader-Paket-Import (in v0.57.0-beta enthalten, vorher Branch feat/reader-package-import-20261117)
 
 - Import privater Reader-Pakete aus dem Autorenstudio (siehe `docs/READER-PAKET-IMPORT.md`). Kein Schema-Upgrade. sw.js CACHE_NAME v96.
 

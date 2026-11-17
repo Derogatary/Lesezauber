@@ -201,10 +201,6 @@ js/
     progress.js               Fortschrittsbalken, Erledigt-Knopf, Belohnungen
     checkWork.js              Ergebniskarte der Blatt-Kontrolle
     cinema.js                 Canvas-Renderer für den Film (Bild + Untertitel)
-  studio/                 SchreibZauber-Fundament (noch nicht verdrahtet, s. Konzept)
-    imageFormats.js         Seitenformate für selbst erstellte Werke
-    imageSource.js          Woher ein Bild kommt (Foto, Upload, KI)
-    placeholder.js          Platzhalter-Bilder, solange kein echtes Bild da ist
   atlas/                  🗺️ Buchatlas: Wiki & Übersetzung für eigene Texte (eigener Namensraum app.atlas)
   vendor/
     pdfjs/                  PDF.js (Mozilla) - wird nur bei PDF-Import nachgeladen
@@ -238,10 +234,10 @@ docs/
 > Entscheidungen zu Vorlesen/Stimmen und eine Kostenübersicht: [`docs/ROADMAP.md`](docs/ROADMAP.md). Die Liste hier ist nur die Kurzfassung.
 
 **Bleibt komplett im Browser (kein Server nötig):**
-- 🪄 **SchreibZauber** - eigener Bereich zum Schreiben und Illustrieren eigener Bilderbücher, Comics/Hefte und Kinder-Arbeitshefte. Ausführliches Konzept: [`docs/KONZEPT-SchreibZauber.md`](docs/KONZEPT-SchreibZauber.md)
+- 🪄 **SchreibZauber/Werkstatt**: seit v0.57.0-beta aus Lesezauber entfernt - neue Bilderbücher, Comics und Arbeitshefte entstehen im **Autorenstudio** (studio.editionboysen.de) und kommen als Reader-Paket in den Lesezauber. Alte Werkstatt-Daten bleiben erhalten (Backup).
 - 🎨 KI-generierte Illustrationen für textlastige EPUB-Kapitel ohne eigenes Bild, optional im Comic-Stil (Gemini kann mittlerweile auch Bilder erzeugen, gleicher Key wie bisher) - Cover-Bild-Sonderfall erstmal nicht nötig
 - 📱 Native App / Android-Store-Verpackung (Capacitor) - verpackt den bestehenden Code weitgehend unverändert
-- 📝 **Heft-Generator**: Übungsblätter von der KI erstellen lassen (Geschichte + Lernziel auswählen) - Entwurf und offene Punkte in `docs/KONZEPT-Uebungshefte.md`
+- 📝 **Heft-Generator**: seit v0.57.0-beta aus Lesezauber entfernt (Erstellen liegt im Autorenstudio). Bestehende Übungshefte lassen sich weiter lesen und per Foto kontrollieren.
 - 🎬 **Video-Export** - **seit v0.16.0-beta gebaut** (Seite UND ganzes Buch, siehe Funktionsliste oben). Offen sind nur noch Kleinigkeiten: Ton auch in der Vorschau, eine gesprochene Ansage auf der Titelkarte, eine eigene Karte mit Denkpause für die Rätselfrage und eine höhere Bildauflösung für die Vorlage. Setzt eine KI-Stimme voraus. Ausführliches Konzept dazu (Sprach-API, Video/MP4, Hörbuch, Mehrformat - was, wie und warum): [`docs/KONZEPT-Video.md`](docs/KONZEPT-Video.md)
 
 **Bräuchte einen eigenen Server** (aktuell bewusst zurückgestellt):
