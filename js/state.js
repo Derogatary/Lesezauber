@@ -80,23 +80,7 @@ Object.assign(app.settings, {
     // vorlesen kostet dann kein Kontingent mehr. Standard: an.
     ttsCacheEnabled: localStorage.getItem('lz_tts_cache') !== '0',
     // Sprechanweisung aus der Erzähler-Persona mitgeben (nur Gemini/OpenAI)
-    ttsPersonaStyle: localStorage.getItem('lz_tts_persona_style') !== '0',
-
-    // NEU (SchreibZauber Stufe 2): echte KI-Bildgenerierung in der Werkstatt
-    // - bewusst NICHT Standard (Default false), siehe
-    // docs/KONZEPT-SchreibZauber.md TEIL G Punkt 1 und
-    // app.settingsConfig.toggleStudioImageGen(). Ohne diese Bestätigung
-    // bleibt app.studio.resolveImageSourceId() (studioCore.js) immer bei
-    // 'placeholder'.
-    studioImageGenEnabled: localStorage.getItem('lz_studio_image_gen') === '1',
-
-    // NEU (Nutzerwunsch "kostenlos Bilderbücher erstellen"): kostenlose,
-    // schlüsselfreie Bildquelle Pollinations.ai als Alternative zu Gemini -
-    // ebenfalls bewusst NICHT Standard (Default false), auch wenn sie nichts
-    // kostet: unmoderierter Drittanbieter-Dienst, schwächere Figuren-
-    // Konsistenz als Gemini (kein Referenzbild-Mechanismus). Siehe
-    // app.settingsConfig.toggleStudioImagePollinations().
-    studioImagePollinationsEnabled: localStorage.getItem('lz_studio_image_pollinations') === '1'
+    ttsPersonaStyle: localStorage.getItem('lz_tts_persona_style') !== '0'
 });
 
 Object.assign(app.state, {
@@ -133,12 +117,5 @@ Object.assign(app.state, {
     newBookType: 'story',
     // NEU: Zustand der Film-Vorschau (Zeitplan, Abspielposition,
     // Animationsschritt) - siehe js/actions/videoPreview.js. null = zu.
-    videoPreview: null,
-    // NEU: aktuell geöffnetes SchreibZauber-Werk (siehe js/studio/studioCore.js) -
-    // gleiches Muster wie currentBookId.
-    currentStudioProjectId: null,
-    // NEU (Heft-Generator, Auftrag 11): zuletzt von der KI vorgeschlagene
-    // Blätter, bevor daraus ein Buch wird - siehe js/actions/workbookGenerator.js.
-    // Bewusst nur zur Laufzeit (wie newBookType), kein localStorage nötig.
-    workbookGeneratorDraft: null
+    videoPreview: null
 });

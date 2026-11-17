@@ -1,7 +1,9 @@
 // Bei jeder inhaltlichen Änderung an einer dieser Dateien diese Nummer
 // erhöhen - sonst bekommen wiederkehrende Besucher weiter die alte
 // zwischengespeicherte Version ausgeliefert.
-const CACHE_NAME = 'lesezauber-shell-v96';
+const CACHE_NAME = 'lesezauber-shell-v98';
+// NEU (v98, v0.57.0-beta): Lesezauber wird der Reader. Erstellen (SchreibZauber/Werkstatt, Heft-Generator, Bildgenerierung, Studio-Druck/-Export) entfernt - das macht jetzt das Autorenstudio (studio.editionboysen.de). js/studio/*, js/render/studio*.js und die Heft-Generator-Dateien sind aus APP_SHELL entfernt.
+
 
 // FIX (v89, v0.54.0-beta): Vorlese-Reihenfolge Bild vor Wörtern für alle Seiten.
 
@@ -296,7 +298,6 @@ const APP_SHELL = [
     './js/actions/workbook.js',
     './js/actions/progress.js',
     './js/actions/checkWork.js',
-    './js/actions/workbookGenerator.js',
     './js/actions/prepareAudio.js',
     './js/actions/bookTranslate.js',
     './js/actions/appHealth.js',
@@ -318,46 +319,9 @@ const APP_SHELL = [
     './js/render/settings.js',
     './js/render/vocab.js',
     './js/render/workbook.js',
-    './js/render/workbookGenerator.js',
     './js/render/progress.js',
     './js/render/checkWork.js',
     './js/render/cinema.js',
-    './js/studio/imageFormats.js',
-    './js/studio/placeholder.js',
-    './js/studio/imageSource.js',
-    './js/studio/studioCore.js',
-    './js/studio/studioPrompts.js',
-    './js/studio/studioApi.js',
-    './js/studio/studioExport.js',
-    './js/studio/studioMetaPages.js',
-    // NEU (Stufe 2 - Bilder): Stilkarte/Figuren-Bibel, Storyboard, Bildgenerierung.
-    './js/studio/studioCharacters.js',
-    './js/studio/studioStoryboard.js',
-    './js/studio/studioImages.js',
-    './js/studio/studioManualImages.js',
-    './js/studio/imageTargets.js',
-    // NEU (Ausbaustufe 3 - Layout & Druck): siehe
-    // docs/KONZEPT-SchreibZauber.md, Abschnitt "Stand nach Stufe 3".
-    './js/studio/studioLayout.js',
-    './js/studio/studioPrint.js',
-    // NEU (Ausbaustufe 4 - Arbeitsheft): eigener Werktyp-Pfad, siehe
-    // docs/KONZEPT-SchreibZauber.md TEIL C.4.
-    './js/studio/worksheet.js',
-    './js/studio/worksheetImages.js',
-    './js/studio/worksheetCanvas.js',
-    './js/studio/wordSearch.js',
-    // NEU (Ausbaustufe 5 - Comic): Sprechblasen-Overlay + -Verwaltung,
-    // Panel-Layout/Zusammensetzen.
-    './js/studio/studioBalloons.js',
-    './js/studio/studioComicPanels.js',
-    './js/render/studioLibrary.js',
-    './js/render/studioWizard.js',
-    './js/render/studioCharacters.js',
-    './js/render/studioStoryboard.js',
-    './js/render/studioImages.js',
-    './js/render/studioManualImages.js',
-    './js/render/studioLayout.js',
-    './js/render/studioWorkbookWizard.js',
     './js/backgroundPregen.js',
     './js/keyboard.js',
     './js/gestures.js',

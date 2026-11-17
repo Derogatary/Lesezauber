@@ -69,7 +69,6 @@ if (!csp) {
 } else {
     const connect = (csp.match(/connect-src ([^;]+)/) || [])[1] || '';
     const hosts = new Set([...allJs.matchAll(/fetch\(\s*[`'"]https:\/\/([a-zA-Z0-9.-]+)/g)].map(m => m[1]));
-    hosts.add('image.pollinations.ai'); // wird über eine zusammengesetzte URL abgerufen
     for (const h of hosts) if (!connect.includes(`https://${h}`)) problems.push(`fetch() an https://${h}, aber nicht in connect-src der CSP`);
 }
 

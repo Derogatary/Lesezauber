@@ -27,6 +27,7 @@ Object.assign(app.render, {
                 <p class="text-xs text-slate-500 font-medium">Autor: ${app.utils.sanitize(book.author)}</p>
                 ${publisherLine}
                 ${app.actions.isReaderPreviewBook?.(book) ? `<p class="text-[10px] font-bold text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1 mt-1">✍️ Vorschau aus dem Autorenstudio – nicht veröffentlichen (Stand ${Number(book.readerPackage.snapshotNo) || '?'})</p>` : ''}
+                ${(book.studioProjectId && !book.readerPackage) ? `<p class="text-[10px] text-slate-600 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 mt-1">Erstellt mit der früheren Werkstatt – neue Bücher entstehen jetzt im Autorenstudio (studio.editionboysen.de)</p>` : ''}
                 <p class="text-[10px] text-slate-500 mt-1">${bookTypeInfo ? bookTypeInfo.icon + ' ' + app.utils.sanitize(bookTypeInfo.label) + ' · ' : ''}${book.pages.length} ${unit} gespeichert</p>
             </div>`;
 
